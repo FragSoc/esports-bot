@@ -82,3 +82,16 @@ class db_gateway():
             return True
         except Exception as err:
             raise RuntimeError('Error occurred using UPDATE') from err
+
+    def delete(self, table, where_params):
+        # Example usage:
+        # db_gateway().delete('loggingchannel', where_params={'guild_id': 44})
+        try:
+            db = db_connection()
+            query_string = f'DELETE FROM {table} WHERE {self.get_param_select_str(where_params)}'
+            db.commit_query(query_string)
+            db.close()
+            return True
+            #return query_string
+        except Exception as err:
+            raise RuntimeError('Error occurred using DELETE') from err
