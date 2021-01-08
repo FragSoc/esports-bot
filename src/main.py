@@ -1,36 +1,29 @@
-import psycopg2
+import os
+from dotenv import load_dotenv
 import discord
 from discord.ext import tasks, commands
 from discord.utils import get
+from db_gateway import db_gateway
+load_dotenv()
 
-TOKEN = 'NjQ1MDM2ODIyNzI4Mjc4MDM2.Xc8vWg.YI2rCTXrP0AOm8c7oc3P2SSmXuY'
+TOKEN = os.getenv('DISCORD_TOKEN')
+print(TOKEN)
 
-class db_connection():
-    def __init__(self):
-        self.conn = psycopg2.connect(host="192.168.1.77",
-                                        database="esportsbot",
-                                        user="postgres",
-                                        password="Pass2020!")
-        self.cur = self.conn.cursor()
-
-    def query(self, query):
-        self.cur.execute(query)
-        self.conn.commit()
-
-    def close(self):
-        self.cur.close()
-        self.conn.close()
-
-
-def add_new_vm(vc_id, guild_id, owner_id):
+def add_new_vm(guild_id, owner_id, channel_id):
     db = db_connection()
-    db.query(f'INSERT INTO voicemaster (vc_id, guild_id, owner_id) VALUES ({vc_id}, {guild_id}, {owner_id})')
+    db.exec_query(f'INSERT INTO voicemaster (guild_id, owner_id, channel_id) VALUES ({guild_id}, {owner_id}, {channel_id})')
     db.close()
 
 def add_new_log_channel(guild_id, channel_id):
     db = db_connection()
-    db.query(f'INSERT INTO loggingchannel (guild_id, channel_id) VALUES ({guild_id}, {channel_id})')
+    db.exec_query(f'INSERT INTO loggingchannel (guild_id, channel_id) VALUES ({guild_id}, {channel_id})')
     db.close()
+
+def is_vm(guild_id, channel_id):
+    db = db_connection()
+    returned = db.return_query(f'SELECT * FROM voicemaster WHERE guild_id = {guild_id} AND channel_id = {channel_id}')
+    db.close()
+    print(returned)
 
 client = commands.Bot(command_prefix = '!')
 client.remove_command('help')
@@ -45,8 +38,22 @@ async def on_ready():
 async def setLog(ctx, givenChannelId):
     channel_id = int(givenChannelId)
     guild_id = int(ctx.author.guild.id)
-    await ctx.channel.send(f"ChannelID: {channel_id}, GuildID: {guild_id}")
     add_new_log_channel(guild_id, channel_id)
+    await ctx.channel.send(f"ChannelID: {channel_id}, GuildID: {guild_id}")
 
+@client.command()
+@commands.has_permissions(manage_messages=True)
+async def thisChannelIn(ctx):
+    channel_id = int(ctx.channel.id)
+    guild_id = int(ctx.author.guild.id)
+    is_vm(guild_id, channel_id)
 
-client.run(TOKEN)
+@client.command()
+@commands.has_permissions(manage_messages=True)
+async def addChannel(ctx):
+    channel_id = int(ctx.channel.id)
+    guild_id = int(ctx.author.guild.id)
+    owner_id = ctx.author.id
+    add_new_vm(guild_id, owner_id, channel_id)
+
+#client.run(TOKEN)
