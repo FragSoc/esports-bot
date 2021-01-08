@@ -25,7 +25,6 @@ class db_connection():
         self.conn.close()
 
 class db_gateway():
-    
     @staticmethod
     def get_param_insert_str(params):
         key_string = str()
@@ -71,3 +70,15 @@ class db_gateway():
             return returned_data
         except Exception as err:
             raise RuntimeError('Error occurred using SELECT') from err
+
+    def update(self, table, set_params, where_params):
+        # Example usage:
+        # db_gateway().update('loggingchannel', set_params={'guild_id': '44'}, where_params={'channel_id': '795761577705078808'})
+        try:
+            db = db_connection()
+            query_string = f'UPDATE {table} SET {self.get_param_select_str(set_params)} WHERE {self.get_param_select_str(where_params)}'
+            db.commit_query(query_string)
+            db.close()
+            return True
+        except Exception as err:
+            raise RuntimeError('Error occurred using UPDATE') from err
