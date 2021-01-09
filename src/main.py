@@ -19,12 +19,6 @@ def add_new_vm(guild_id, owner_id, channel_id):
     db.close()
 
 
-def add_new_log_channel(guild_id, channel_id):
-    db = db_connection()
-    db.exec_query(f'INSERT INTO loggingchannel (guild_id, channel_id) VALUES ({guild_id}, {channel_id})')
-    db.close()
-
-
 def is_vm(guild_id, channel_id):
     db = db_connection()
     returned = db.return_query(f'SELECT * FROM voicemaster WHERE guild_id = {guild_id} AND channel_id = {channel_id}')
@@ -55,18 +49,112 @@ async def addChannel(ctx):
     add_new_vm(guild_id, owner_id, channel_id)
 
 
+######### REWRITE #########
+
+
 @client.command()
-@commands.has_permissions(manage_messages=True)
-async def setlogchannel(ctx, givenChannelId=None):
+@commands.has_permissions(administrator=True)
+async def setlogchannel(ctx, given_channel_id=None):
     start_time = time.time()
-    log_to_channel = givenChannelId if givenChannelId else ctx.channel.id
-    log_channel_exists = db_gateway().get('loggingchannel', params={'guild_id': ctx.author.guild.id})
+
+    cleaned_channel_id = get_cleaned_id(given_channel_id) if given_channel_id else ctx.channel.id
+    log_channel_exists = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})
     if bool(log_channel_exists):
-        db_gateway().update('loggingchannel', set_params={'channel_id': log_to_channel}, where_params={'guild_id': ctx.author.guild.id})
-        await ctx.channel.send("Updated")
+        if log_channel_exists[0]['log_channel_id'] != cleaned_channel_id:
+            db_gateway().update('guild_info', set_params={'log_channel_id': cleaned_channel_id}, where_params={'guild_id': ctx.author.guild.id})
+            mention_log_channel = client.get_channel(cleaned_channel_id).mention
+            await ctx.channel.send(f"Logging channel has been set to {mention_log_channel}")
+        else:
+            await ctx.channel.send("Logging channel already set to this channel")
     else:
-        db_gateway().insert('loggingchannel', params={'guild_id': ctx.author.guild.id, 'channel_id': log_to_channel})
-        await ctx.channel.send("Inserted")
+        db_gateway().insert('guild_info', params={'guild_id': ctx.author.guild.id, 'log_channel_id': cleaned_channel_id})
+        await ctx.channel.send("Logging channel has been set")
+
+    end_time = time.time()
+    await ctx.channel.send(f'Action took: {round(end_time-start_time, 3)}s')
+
+
+@client.command()
+@commands.has_permissions(administrator=True)
+async def getlogchannel(ctx):
+    start_time = time.time()
+
+    log_channel_exists = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})
+
+    if log_channel_exists[0]['log_channel_id']:
+        mention_log_channel = client.get_channel(log_channel_exists[0]['log_channel_id']).mention
+        await ctx.channel.send(f"Logging channel is set to {mention_log_channel}")
+    else:
+        await ctx.channel.send("Logging channel has not been set")
+
+    end_time = time.time()
+    await ctx.channel.send(f'Action took: {round(end_time-start_time, 3)}s')
+
+
+@client.command()
+@commands.has_permissions(administrator=True)
+async def removelogchannel(ctx):
+    start_time = time.time()
+
+    log_channel_exists = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})
+
+    if log_channel_exists[0]['log_channel_id']:
+        db_gateway().update('guild_info', set_params={'log_channel_id': 'NULL'}, where_params={'guild_id': ctx.author.guild.id})
+        await ctx.channel.send("Log channel has been removed")
+    else:
+        await ctx.channel.send("Log channel has not been set")
+
+    end_time = time.time()
+    await ctx.channel.send(f'Action took: {round(end_time-start_time, 3)}s')
+
+
+@client.command()
+@commands.has_permissions(administrator=True)
+async def setdefaultrole(ctx, given_role_id=None):
+    start_time = time.time()
+
+    cleaned_role_id = get_cleaned_id(given_role_id) if given_role_id else False
+    if cleaned_role_id:
+        # Given a role, update record
+        db_gateway().update('guild_info', set_params={'default_role_id': cleaned_role_id}, where_params={'guild_id': ctx.author.guild.id})
+        await ctx.channel.send(f"Default role has been set to {cleaned_role_id}")
+    else:
+        # Not given a role
+        await ctx.channel.send("You need to either @ a role or paste the ID")
+
+    end_time = time.time()
+    await ctx.channel.send(f'Action took: {round(end_time-start_time, 3)}s')
+
+
+@client.command()
+@commands.has_permissions(administrator=True)
+async def getdefaultrole(ctx):
+    start_time = time.time()
+
+    default_role_exists = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})
+
+    if default_role_exists[0]['default_role_id']:
+        await ctx.channel.send(f"Default role is set to {default_role_exists[0]['default_role_id']}")
+    else:
+        await ctx.channel.send("Default role has not been set")
+
+    end_time = time.time()
+    await ctx.channel.send(f'Action took: {round(end_time-start_time, 3)}s')
+
+
+@client.command()
+@commands.has_permissions(administrator=True)
+async def removedefaultrole(ctx):
+    start_time = time.time()
+
+    default_role_exists = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})
+
+    if default_role_exists[0]['default_role_id']:
+        db_gateway().update('guild_info', set_params={'default_role_id': 'NULL'}, where_params={'guild_id': ctx.author.guild.id})
+        await ctx.channel.send("Default role has been removed")
+    else:
+        await ctx.channel.send("Default role has not been set")
+
     end_time = time.time()
     await ctx.channel.send(f'Action took: {round(end_time-start_time, 3)}s')
 

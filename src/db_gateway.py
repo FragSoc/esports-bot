@@ -38,7 +38,10 @@ class db_gateway():
     def get_param_select_str(params):
         key_val_string = str()
         for key, val in params.items():
-            key_val_string += f"{key}='{val}' AND "
+            if val == 'NULL':
+                key_val_string += f"{key}={val} AND "
+            else:
+                key_val_string += f"{key}='{val}' AND "
         return key_val_string[:-5]
 
     def insert(self, table, params):
