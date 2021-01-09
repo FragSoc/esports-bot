@@ -1,6 +1,8 @@
 import os
 from dotenv import load_dotenv
 import discord
+intents = discord.Intents.default()
+intents.members = True
 from discord.ext import tasks, commands
 from discord.utils import get
 from db_gateway import db_gateway
@@ -10,7 +12,7 @@ import time
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-client = commands.Bot(command_prefix = '!')
+client = commands.Bot(command_prefix = '!', intents=intents)
 client.remove_command('help')
 
 def add_new_vm(guild_id, owner_id, channel_id):
@@ -24,12 +26,6 @@ def is_vm(guild_id, channel_id):
     returned = db.return_query(f'SELECT * FROM voicemaster WHERE guild_id = {guild_id} AND channel_id = {channel_id}')
     db.close()
     print(returned)
-
-
-@client.event
-async def on_ready():
-    print('Bot is now active')
-    await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="to my tears"))
 
 
 @client.command()
@@ -50,6 +46,36 @@ async def addChannel(ctx):
 
 
 ######### REWRITE #########
+
+
+@client.event
+async def on_ready():
+    print('Bot is now active')
+    await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="to my tears"))
+
+
+@client.event
+async def on_guild_join(guild):
+    print(f"Joined the guild: {guild.name}")
+    db_gateway().insert('guild_info', params={'guild_id': guild.id})
+
+
+@client.event
+async def on_guild_remove(guild):
+    print(f"Left the guild: {guild.name}")
+    db_gateway().delete('guild_info', where_params={'guild_id': guild.id})
+
+
+@client.event
+async def on_member_join(member):
+    print(f"User {member.name} joined the guild {member.guild.name}")
+
+    default_role_exists = db_gateway().get('guild_info', params={'guild_id': member.guild.id})
+
+    if default_role_exists[0]['default_role_id']:
+        await member.add_roles(member.guild.get_role(default_role_exists[0]['default_role_id']))
+    else:
+        print("No default role set")
 
 
 @client.command()
