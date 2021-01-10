@@ -48,7 +48,6 @@ async def on_member_join(member):
         await member.add_roles(default_role)
         await send_to_log_channel(member.guild.id, f"{member.mention} has joined the server and received the {default_role.mention} role")
     else:
-        # print("No default role set")
         await send_to_log_channel(member.guild.id, f"{member.mention} has joined the server")
 
 
@@ -130,13 +129,11 @@ async def removelogchannel(ctx):
 async def setdefaultrole(ctx, given_role_id=None):
     cleaned_role_id = get_cleaned_id(given_role_id) if given_role_id else False
     if cleaned_role_id:
-        # Given a role, update record
         db_gateway().update('guild_info', set_params={'default_role_id': cleaned_role_id}, where_params={'guild_id': ctx.author.guild.id})
         await ctx.channel.send(f"Default role has been set to {cleaned_role_id}")
         default_role = ctx.author.guild.get_role(cleaned_role_id)
         await send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has set the default role to {default_role.mention}")
     else:
-        # Not given a role
         await ctx.channel.send("You need to either @ a role or paste the ID")
 
 
@@ -168,7 +165,6 @@ async def removedefaultrole(ctx):
 @commands.has_permissions(administrator=True)
 async def setvmmaster(ctx, given_channel_id=None):
     if given_channel_id:
-        # Given a channel ID, update record
         channel_exists = db_gateway().get('voicemaster_master', params={'guild_id': ctx.author.guild.id, 'channel_id': given_channel_id})
         if channel_exists:
             await ctx.channel.send("This VC is already set as a VM master")
@@ -178,7 +174,6 @@ async def setvmmaster(ctx, given_channel_id=None):
             new_vm_master_channel = client.get_channel(int(given_channel_id))
             await send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has made {new_vm_master_channel.name} - {new_vm_master_channel.id} a VM master VC")
     else:
-        # Not given a channel ID
         await ctx.channel.send("You need to include the VC ID")
 
 
@@ -200,7 +195,6 @@ async def getvmmaster(ctx):
 @commands.has_permissions(administrator=True)
 async def removevmmaster(ctx, given_channel_id=None):
     if given_channel_id:
-        # Given a channel ID, check it exists
         channel_exists = db_gateway().get('voicemaster_master', params={'guild_id': ctx.author.guild.id, 'channel_id': given_channel_id})
         if channel_exists:
             db_gateway().delete('voicemaster_master', where_params={'guild_id': ctx.author.guild.id, 'channel_id': given_channel_id})
@@ -209,7 +203,6 @@ async def removevmmaster(ctx, given_channel_id=None):
         else:
             await ctx.channel.send("This VC is not currently a VM master")
     else:
-        # Not given a channel ID
         await ctx.channel.send("You need to include the VC ID")
 
 
@@ -237,7 +230,6 @@ async def killallslaves(ctx):
 
 
 @client.command()
-#@commands.has_permissions(administrator=True)
 async def lockvm(ctx):
     in_vm_slave = db_gateway().get('voicemaster_slave', params={'guild_id': ctx.author.guild.id,'channel_id': ctx.author.voice.channel.id})
 
@@ -257,20 +249,17 @@ async def lockvm(ctx):
 
 
 @client.command()
-#@commands.has_permissions(administrator=True)
 async def unlockvm(ctx):
     in_vm_slave = db_gateway().get('voicemaster_slave', params={'guild_id': ctx.author.guild.id,'channel_id': ctx.author.voice.channel.id})
 
     if in_vm_slave:
         if in_vm_slave[0]['owner_id'] == ctx.author.id:
             if in_vm_slave[0]['locked']:
-                # Unlock it
                 db_gateway().update('voicemaster_slave', set_params={'locked': False}, where_params={'guild_id': ctx.author.guild.id,'channel_id': ctx.author.voice.channel.id})
                 await ctx.author.voice.channel.edit(user_limit = 0)
                 await ctx.channel.send("Your VM slave has been unlocked 🔓")
                 await send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has unlocked their VM slave")
             else:
-                # Not locked
                 await ctx.channel.send("Your VM slave is already unlocked")
         else:
             await ctx.channel.send("You are not the owner of this VM slave")
