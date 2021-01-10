@@ -2,11 +2,11 @@ version: "3"
    
 services:
   db:
-    image: postgres
+    build: ./db_instance/
     environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=Pass2020!
+    ports: 
+      - 5432:5432
   web:
     build: .
     command: python main.py
