@@ -215,6 +215,16 @@ async def removevmchannel(ctx, given_channel_id=None):
 
 @client.command()
 @commands.has_permissions(administrator=True)
+async def removeallmasters(ctx):
+    all_vm_masters = db_gateway().get('voicemaster_master', params={'guild_id': ctx.author.guild.id})
+    for vm_master in all_vm_masters:
+        db_gateway().delete('voicemaster_master', where_params={'channel_id': vm_master['channel_id']})
+    await ctx.channel.send("Cleared all VM masters from this server")
+    await send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has removed all VM masters")
+
+
+@client.command()
+@commands.has_permissions(administrator=True)
 async def killvmslaves(ctx):
     all_vm_slaves = db_gateway().get('voicemaster_slave', params={'guild_id': ctx.author.guild.id})
     for vm_slave in all_vm_slaves:
