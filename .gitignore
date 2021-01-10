@@ -2,3 +2,4 @@ local_db
 .env
 __pycache__
 test-file.py
+/src/cogs/TestCog.py
