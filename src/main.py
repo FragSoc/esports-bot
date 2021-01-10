@@ -1,5 +1,4 @@
 import os
-from dotenv import load_dotenv
 import discord
 intents = discord.Intents.default()
 intents.members = True
@@ -7,6 +6,7 @@ from discord.ext import tasks, commands
 from discord.utils import get
 from db_gateway import db_gateway
 from base_functions import *
+from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -166,7 +166,7 @@ async def removedefaultrole(ctx):
 
 @client.command()
 @commands.has_permissions(administrator=True)
-async def setvmchannel(ctx, given_channel_id=None):
+async def setvmmaster(ctx, given_channel_id=None):
     if given_channel_id:
         # Given a channel ID, update record
         channel_exists = db_gateway().get('voicemaster_master', params={'guild_id': ctx.author.guild.id, 'channel_id': given_channel_id})
@@ -184,7 +184,7 @@ async def setvmchannel(ctx, given_channel_id=None):
 
 @client.command()
 @commands.has_permissions(administrator=True)
-async def getvmchannel(ctx):
+async def getvmmaster(ctx):
     master_vm_exists = db_gateway().get('voicemaster_master', params={'guild_id': ctx.author.guild.id})
 
     if master_vm_exists:
@@ -198,7 +198,7 @@ async def getvmchannel(ctx):
 
 @client.command()
 @commands.has_permissions(administrator=True)
-async def removevmchannel(ctx, given_channel_id=None):
+async def removevmmaster(ctx, given_channel_id=None):
     if given_channel_id:
         # Given a channel ID, check it exists
         channel_exists = db_gateway().get('voicemaster_master', params={'guild_id': ctx.author.guild.id, 'channel_id': given_channel_id})
@@ -225,7 +225,7 @@ async def removeallmasters(ctx):
 
 @client.command()
 @commands.has_permissions(administrator=True)
-async def killvmslaves(ctx):
+async def killallslaves(ctx):
     all_vm_slaves = db_gateway().get('voicemaster_slave', params={'guild_id': ctx.author.guild.id})
     for vm_slave in all_vm_slaves:
         vm_slave_channel = client.get_channel(vm_slave['channel_id'])

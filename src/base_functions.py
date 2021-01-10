@@ -19,7 +19,3 @@ def get_whether_in_vm_slave(guild_id, channel_id):
     in_slave = db_gateway().get('voicemaster_slave', params={'guild_id': guild_id, 'channel_id': channel_id})
     return bool(in_slave)
 
-
-# def send_to_log_channel(guild_id):
-#     db_logging_call = db_gateway().get('loggingchannel', params={'guild_id': guild_id})
-#     return db_logging_call[0]['channel_id']
