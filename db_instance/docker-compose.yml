@@ -1,9 +1,0 @@
-version: "3"
-   
-services:
-  db:
-    build: .
-    environment:
-      - POSTGRES_PASSWORD=test_pass
-    ports: 
-      - 5432:5432
