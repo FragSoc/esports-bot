@@ -29,14 +29,14 @@ async def on_ready():
 
 # https://discordpy.readthedocs.io/en/latest/ext/tasks/
 # Need to add requirements!
-@tasks.loop(seconds=5.0)
-async def printer():
-    print("Looped")
+# @tasks.loop(seconds=5.0)
+# async def printer():
+#     print("Looped")
 
-@printer.before_loop
-async def before_printer():
-    print('waiting...')
-    await client.wait_until_ready()
+# @printer.before_loop
+# async def before_printer():
+#     print('waiting...')
+#     await client.wait_until_ready()
 
 
 @client.event
