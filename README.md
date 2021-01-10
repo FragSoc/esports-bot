@@ -40,3 +40,73 @@ Exit Vim and run docker-compose:
 ```console
 $ docker-compose up
 ```
+
+## Current commands
+<details>
+<summary>Voicemaster</summary>
+
+### Voicemaster
+
+##### !setvmmaster {channel_id}
+Make the given ID a Voicemaster master
+
+##### !getvmmasters
+Get all the Voicemaster masters in the server
+
+##### !removevmmaster
+Remove the given ID as a Voicemaster master
+
+##### !removeallmasters
+Remove all Voicemaster masters from the server
+
+##### !killallslaves
+Kill all the Voicemaster slave channels in the server
+
+##### !lockvm
+Locks the Voicemaster slave you're currently in to the number of current members
+
+##### !unlockvm
+Unlocks the Voicemaster slave you're currently in
+</details>
+
+<details>
+<summary>Default Role</summary>
+
+### Default role
+
+##### !setdefaultrole
+Set the default role to the @'ed role or given role ID
+
+##### !getdefaultrole
+Gets the current default role value
+
+##### !removedefaultrole
+Removes the current default role
+</details>
+
+<details>
+<summary>Log Channel</summary>
+
+### Log Channel
+
+##### !setlogchannel
+Set the log channel to the #'ed channel or given role ID
+
+##### !getlogchannel
+Gets the current log channel value
+
+##### !removelogchannel
+Removes the current log channel value
+</details>
+
+<details>
+<summary>Administrator Tools</summary>
+
+### Administrator Tools
+
+##### !clear
+Clear the specified number of messages from the current text channel
+
+##### !members
+List the current number of members in the server
+</details>
