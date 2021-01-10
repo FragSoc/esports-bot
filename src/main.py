@@ -15,12 +15,6 @@ client = commands.Bot(command_prefix = '!', intents=intents)
 client.remove_command('help')
 
 
-async def send_to_log_channel(guild_id, msg):
-    db_logging_call = db_gateway().get('guild_info', params={'guild_id': guild_id})
-    if db_logging_call:
-        await client.get_channel(db_logging_call[0]['log_channel_id']).send(msg)
-
-
 @client.event
 async def on_ready():
     print('Bot is now active')
@@ -161,110 +155,9 @@ async def removedefaultrole(ctx):
         await ctx.channel.send("Default role has not been set")
 
 
-@client.command()
-@commands.has_permissions(administrator=True)
-async def setvmmaster(ctx, given_channel_id=None):
-    if given_channel_id:
-        channel_exists = db_gateway().get('voicemaster_master', params={'guild_id': ctx.author.guild.id, 'channel_id': given_channel_id})
-        if channel_exists:
-            await ctx.channel.send("This VC is already set as a VM master")
-        else:
-            db_gateway().insert('voicemaster_master', params={'guild_id': ctx.author.guild.id, 'channel_id': given_channel_id})
-            await ctx.channel.send("This VC has now been set as a VM master")
-            new_vm_master_channel = client.get_channel(int(given_channel_id))
-            await send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has made {new_vm_master_channel.name} - {new_vm_master_channel.id} a VM master VC")
-    else:
-        await ctx.channel.send("You need to include the VC ID")
 
-
-@client.command()
-@commands.has_permissions(administrator=True)
-async def getvmmaster(ctx):
-    master_vm_exists = db_gateway().get('voicemaster_master', params={'guild_id': ctx.author.guild.id})
-
-    if master_vm_exists:
-        master_vm_str = str()
-        for record in master_vm_exists:
-            master_vm_str += f"{client.get_channel(record['channel_id']).name} - {str(record['channel_id'])}\n"
-        await ctx.channel.send(f"Current VM master VCs in this server:\n{master_vm_str}")
-    else:
-        await ctx.channel.send("No VCs in this server currently set as VM masters")
-
-
-@client.command()
-@commands.has_permissions(administrator=True)
-async def removevmmaster(ctx, given_channel_id=None):
-    if given_channel_id:
-        channel_exists = db_gateway().get('voicemaster_master', params={'guild_id': ctx.author.guild.id, 'channel_id': given_channel_id})
-        if channel_exists:
-            db_gateway().delete('voicemaster_master', where_params={'guild_id': ctx.author.guild.id, 'channel_id': given_channel_id})
-            await ctx.channel.send("This VC is no longer a VM master")
-            await send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has removed {new_vm_master_channel.name} - {new_vm_master_channel.id} from VM master VC")
-        else:
-            await ctx.channel.send("This VC is not currently a VM master")
-    else:
-        await ctx.channel.send("You need to include the VC ID")
-
-
-@client.command()
-@commands.has_permissions(administrator=True)
-async def removeallmasters(ctx):
-    all_vm_masters = db_gateway().get('voicemaster_master', params={'guild_id': ctx.author.guild.id})
-    for vm_master in all_vm_masters:
-        db_gateway().delete('voicemaster_master', where_params={'channel_id': vm_master['channel_id']})
-    await ctx.channel.send("Cleared all VM masters from this server")
-    await send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has removed all VM masters")
-
-
-@client.command()
-@commands.has_permissions(administrator=True)
-async def killallslaves(ctx):
-    all_vm_slaves = db_gateway().get('voicemaster_slave', params={'guild_id': ctx.author.guild.id})
-    for vm_slave in all_vm_slaves:
-        vm_slave_channel = client.get_channel(vm_slave['channel_id'])
-        if vm_slave_channel:
-            await vm_slave_channel.delete()
-        db_gateway().delete('voicemaster_slave', where_params={'channel_id': vm_slave['channel_id']})
-    await ctx.channel.send("Cleared all VM slaves from this server")
-    await send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has removed all VM slaves")
-
-
-@client.command()
-async def lockvm(ctx):
-    in_vm_slave = db_gateway().get('voicemaster_slave', params={'guild_id': ctx.author.guild.id,'channel_id': ctx.author.voice.channel.id})
-
-    if in_vm_slave:
-        if in_vm_slave[0]['owner_id'] == ctx.author.id:
-            if not in_vm_slave[0]['locked']:
-                db_gateway().update('voicemaster_slave', set_params={'locked': True}, where_params={'guild_id': ctx.author.guild.id,'channel_id': ctx.author.voice.channel.id})
-                await ctx.author.voice.channel.edit(user_limit = len(ctx.author.voice.channel.members))
-                await ctx.channel.send("Your VM slave has been locked 🔒")
-                await send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has locked their VM slave")
-            else:
-                await ctx.channel.send("Your VM slave is already locked")
-        else:
-            await ctx.channel.send("You are not the owner of this VM slave")
-    else:
-        await ctx.channel.send("You are not currently in a VM slave")
-
-
-@client.command()
-async def unlockvm(ctx):
-    in_vm_slave = db_gateway().get('voicemaster_slave', params={'guild_id': ctx.author.guild.id,'channel_id': ctx.author.voice.channel.id})
-
-    if in_vm_slave:
-        if in_vm_slave[0]['owner_id'] == ctx.author.id:
-            if in_vm_slave[0]['locked']:
-                db_gateway().update('voicemaster_slave', set_params={'locked': False}, where_params={'guild_id': ctx.author.guild.id,'channel_id': ctx.author.voice.channel.id})
-                await ctx.author.voice.channel.edit(user_limit = 0)
-                await ctx.channel.send("Your VM slave has been unlocked 🔓")
-                await send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has unlocked their VM slave")
-            else:
-                await ctx.channel.send("Your VM slave is already unlocked")
-        else:
-            await ctx.channel.send("You are not the owner of this VM slave")
-    else:
-        await ctx.channel.send("You are not currently in a VM slave")
+client.load_extension('cogs.VoicemasterCog')
+#client.load_extension('cogs.LoggingCog')
 
 
 client.run(TOKEN)
