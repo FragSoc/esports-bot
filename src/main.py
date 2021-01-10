@@ -28,6 +28,7 @@ async def on_ready():
     printer.start()
 
 # https://discordpy.readthedocs.io/en/latest/ext/tasks/
+# Need to add requirements!
 @tasks.loop(seconds=5.0)
 async def printer():
     print("Looped")
