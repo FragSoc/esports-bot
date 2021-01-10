@@ -74,90 +74,9 @@ async def on_voice_state_update(member, before, after):
         await send_to_log_channel(member.guild.id, f"{member.mention} has created a VM slave")
 
 
-@client.command()
-@commands.has_permissions(administrator=True)
-async def setlogchannel(ctx, given_channel_id=None):
-    cleaned_channel_id = get_cleaned_id(given_channel_id) if given_channel_id else ctx.channel.id
-    log_channel_exists = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})
-    if bool(log_channel_exists):
-        if log_channel_exists[0]['log_channel_id'] != cleaned_channel_id:
-            db_gateway().update('guild_info', set_params={'log_channel_id': cleaned_channel_id}, where_params={'guild_id': ctx.author.guild.id})
-            mention_log_channel = client.get_channel(cleaned_channel_id).mention
-            await ctx.channel.send(f"Logging channel has been set to {mention_log_channel}")
-            await send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has set this channel as the logging channel")
-        else:
-            await ctx.channel.send("Logging channel already set to this channel")
-    else:
-        db_gateway().insert('guild_info', params={'guild_id': ctx.author.guild.id, 'log_channel_id': cleaned_channel_id})
-        mention_log_channel = client.get_channel(cleaned_channel_id).mention
-        await ctx.channel.send(f"Logging channel has been set to {mention_log_channel}")
-        await send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has set this channel as the logging channel")
-
-
-@client.command()
-@commands.has_permissions(administrator=True)
-async def getlogchannel(ctx):
-    log_channel_exists = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})
-
-    if log_channel_exists[0]['log_channel_id']:
-        mention_log_channel = client.get_channel(log_channel_exists[0]['log_channel_id']).mention
-        await ctx.channel.send(f"Logging channel is set to {mention_log_channel}")
-    else:
-        await ctx.channel.send("Logging channel has not been set")
-
-
-@client.command()
-@commands.has_permissions(administrator=True)
-async def removelogchannel(ctx):
-    log_channel_exists = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})
-
-    if log_channel_exists[0]['log_channel_id']:
-        db_gateway().update('guild_info', set_params={'log_channel_id': 'NULL'}, where_params={'guild_id': ctx.author.guild.id})
-        await ctx.channel.send("Log channel has been removed")
-    else:
-        await ctx.channel.send("Log channel has not been set")
-
-
-@client.command()
-@commands.has_permissions(administrator=True)
-async def setdefaultrole(ctx, given_role_id=None):
-    cleaned_role_id = get_cleaned_id(given_role_id) if given_role_id else False
-    if cleaned_role_id:
-        db_gateway().update('guild_info', set_params={'default_role_id': cleaned_role_id}, where_params={'guild_id': ctx.author.guild.id})
-        await ctx.channel.send(f"Default role has been set to {cleaned_role_id}")
-        default_role = ctx.author.guild.get_role(cleaned_role_id)
-        await send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has set the default role to {default_role.mention}")
-    else:
-        await ctx.channel.send("You need to either @ a role or paste the ID")
-
-
-@client.command()
-@commands.has_permissions(administrator=True)
-async def getdefaultrole(ctx):
-    default_role_exists = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})
-
-    if default_role_exists[0]['default_role_id']:
-        await ctx.channel.send(f"Default role is set to {default_role_exists[0]['default_role_id']}")
-    else:
-        await ctx.channel.send("Default role has not been set")
-
-
-@client.command()
-@commands.has_permissions(administrator=True)
-async def removedefaultrole(ctx):
-    default_role_exists = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})
-
-    if default_role_exists[0]['default_role_id']:
-        db_gateway().update('guild_info', set_params={'default_role_id': 'NULL'}, where_params={'guild_id': ctx.author.guild.id})
-        await ctx.channel.send("Default role has been removed")
-        await send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has removed the default role")
-    else:
-        await ctx.channel.send("Default role has not been set")
-
-
-
 client.load_extension('cogs.VoicemasterCog')
-#client.load_extension('cogs.LoggingCog')
+client.load_extension('cogs.DefaultRoleCog')
+client.load_extension('cogs.LogChannelCog')
 
 
 client.run(TOKEN)
