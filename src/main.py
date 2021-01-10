@@ -25,6 +25,17 @@ async def send_to_log_channel(guild_id, msg):
 async def on_ready():
     print('Bot is now active')
     await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="to my tears"))
+    printer.start()
+
+# https://discordpy.readthedocs.io/en/latest/ext/tasks/
+@tasks.loop(seconds=5.0)
+async def printer():
+    print("Looped")
+
+@printer.before_loop
+async def before_printer():
+    print('waiting...')
+    await client.wait_until_ready()
 
 
 @client.event
