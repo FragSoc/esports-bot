@@ -5,7 +5,7 @@ intents.members = True
 from discord.ext import tasks, commands
 from discord.utils import get
 from db_gateway import db_gateway
-from base_functions import *
+from base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -25,18 +25,6 @@ async def send_to_log_channel(guild_id, msg):
 async def on_ready():
     print('Bot is now active')
     await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="to my tears"))
-    printer.start()
-
-# https://discordpy.readthedocs.io/en/latest/ext/tasks/
-# Need to add requirements!
-# @tasks.loop(seconds=5.0)
-# async def printer():
-#     print("Looped")
-
-# @printer.before_loop
-# async def before_printer():
-#     print('waiting...')
-#     await client.wait_until_ready()
 
 
 @client.event
@@ -95,6 +83,7 @@ async def on_voice_state_update(member, before, after):
 client.load_extension('cogs.VoicemasterCog')
 client.load_extension('cogs.DefaultRoleCog')
 client.load_extension('cogs.LogChannelCog')
+client.load_extension('cogs.TwitterIntegrationCog')
 
 
 client.run(TOKEN)

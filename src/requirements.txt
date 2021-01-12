@@ -1,3 +1,4 @@
 psycopg2-binary>=2.8
 discord.py
 python-dotenv
+git+git://github.com/JustAnotherArchivist/snscrape.git#egg=snscrape
