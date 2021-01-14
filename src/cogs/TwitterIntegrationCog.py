@@ -25,7 +25,6 @@ class TwitterIntegrationCog(commands.Cog):
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def addtwitter(self, ctx, twitter_handle=None, announce_channel=None):
-        
         if twitter_handle is not None and announce_channel is not None:
             if (twitter_handle.replace('_', '')).isalnum():
                 twitter_in_db = db_gateway().get('twitter_info', params={'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle})
@@ -42,6 +41,23 @@ class TwitterIntegrationCog(commands.Cog):
         else:
             await ctx.channel.send("You need to provide a Twitter handle and a channel")
         
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def removetwitter(self, ctx, twitter_handle=None):
+        if twitter_handle is not None:
+            if (twitter_handle.replace('_', '')).isalnum():
+                twitter_in_db = db_gateway().get('twitter_info', params={'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle})
+                if bool(twitter_in_db):
+                    db_gateway().delete('twitter_info', where_params={'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle})
+                    await ctx.channel.send(f"Removed alerts for @{twitter_handle}")
+                else:
+                    await ctx.channel.send(f"No alerts set for @{twitter_handle}")
+            else:
+                await ctx.channel.send("You need to provide a correct Twitter handle")
+        else:
+            await ctx.channel.send("You need to provide a Twitter handle") 
+
 
     def get_tweets(self, given_username, tweet_number=1):
         # Using TwitterSearchScraper to scrape data and append tweets to list
@@ -72,6 +88,7 @@ class TwitterIntegrationCog(commands.Cog):
         end_time = time.time()
         print(f'Checking tweets took: {round(end_time-start_time, 3)}s')
 
+
     @tweet_checker.before_loop
     async def before_tweet_checker(self):
         print('Updating tweets in DB')
@@ -79,7 +96,6 @@ class TwitterIntegrationCog(commands.Cog):
         for each in returned_val:
             single_tweet = self.get_tweets(each['twitter_handle'], 1)
             db_gateway().update('twitter_info', set_params={'previous_tweet_id': int(single_tweet[0]['id'])}, where_params={'guild_id': each['guild_id'], 'twitter_handle': each['twitter_handle']})
-
         print('Waiting on bot to become ready before start Twitter cog')
         await self.bot.wait_until_ready()
 
