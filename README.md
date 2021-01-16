@@ -53,7 +53,7 @@ Make the given ID a Voicemaster master
 ##### !getvmmasters
 Get all the Voicemaster masters in the server
 
-##### !removevmmaster
+##### !removevmmaster {channel_id}
 Remove the given ID as a Voicemaster master
 
 ##### !removeallmasters
@@ -74,7 +74,7 @@ Unlocks the Voicemaster slave you're currently in
 
 ### Default role
 
-##### !setdefaultrole
+##### !setdefaultrole {@role or role_id}
 Set the default role to the @'ed role or given role ID
 
 ##### !getdefaultrole
@@ -89,7 +89,7 @@ Removes the current default role
 
 ### Log Channel
 
-##### !setlogchannel
+##### !setlogchannel {#channel or channel_id}
 Set the log channel to the #'ed channel or given role ID
 
 ##### !getlogchannel
@@ -109,4 +109,22 @@ Clear the specified number of messages from the current text channel
 
 ##### !members
 List the current number of members in the server
+</details>
+
+<details>
+<summary>Twitter Integration</summary>
+
+### Twitter Integration
+
+##### !addtwitter {twitter_handle} {#channel or channel_id}
+Add a Twitter handle to notify in the specified channel when they tweet or quote retweet
+
+##### !removetwitter {twitter_handle}
+Remove the given Twitter handle from notifications
+
+##### !changetwitterchannel {twitter_handle} {#channel or channel_id}
+Change the notify channel for the given Twitter handle
+
+##### !getalltwitters
+List all the current Twitter handles configured in the server
 </details>
