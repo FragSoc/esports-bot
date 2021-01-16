@@ -59,6 +59,40 @@ class TwitterIntegrationCog(commands.Cog):
             await ctx.channel.send("You need to provide a Twitter handle") 
 
 
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def changetwitterchannel(self, ctx, twitter_handle=None, announce_channel=None):
+        if twitter_handle is not None and announce_channel is not None:
+            if (twitter_handle.replace('_', '')).isalnum():
+                twitter_in_db = db_gateway().get('twitter_info', params={'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle})
+                if bool(twitter_in_db):
+                    # In DB
+                    cleaned_channel_id = get_cleaned_id(announce_channel)
+                    channel_mention = self.bot.get_channel(cleaned_channel_id).mention
+                    db_gateway().update('twitter_info', set_params={'channel_id': cleaned_channel_id}, where_params={'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle})
+                    await ctx.channel.send(f"{twitter_handle} has been updated and will now notify in {channel_mention}")
+                else:
+                    # Not set up
+                    await ctx.channel.send(f"{twitter_handle} is not configured in this server")
+            else:
+                await ctx.channel.send("You need to provide a correct Twitter handle")
+        else:
+            await ctx.channel.send("You need to provide a Twitter handle and a channel")
+
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def getalltwitters(self, ctx):
+        all_guild_twitters = db_gateway().get('twitter_info', params={'guild_id': ctx.author.guild.id})
+        if all_guild_twitters:
+            all_twitters_str = str()
+            for twitter in all_guild_twitters:
+                all_twitters_str += f"{twitter['twitter_handle']} is set to notify in {self.bot.get_channel(twitter['channel_id']).mention}\n"
+            await ctx.channel.send(f"Current Twitters set in this server:\n{all_twitters_str}")
+        else:
+            await ctx.channel.send("No Twitters have currently been set in this server")
+
+
     def get_tweets(self, given_username, tweet_number=1):
         # Using TwitterSearchScraper to scrape data and append tweets to list
         tweets_list = list()
