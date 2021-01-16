@@ -7,7 +7,7 @@ services:
       - POSTGRES_PASSWORD=Pass2020!
     ports: 
       - 5432:5432
-  web:
+  bot:
     build: .
     command: python main.py
     volumes:

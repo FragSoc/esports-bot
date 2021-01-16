@@ -30,8 +30,8 @@ class db_gateway():
         key_string = str()
         val_string = str()
         for key, val in params.items():
-            key_string += f'{key}, '
-            val_string += f'{val}, '
+            key_string += f"{key}, "
+            val_string += f"'{val}', "
         return (key_string[:-2], val_string[:-2])
     
     @staticmethod
@@ -73,6 +73,18 @@ class db_gateway():
             return returned_data
         except Exception as err:
             raise RuntimeError('Error occurred using SELECT') from err
+
+    def getall(self, table):
+        # Example usage:
+        # returned_val = db_gateway().getall('voicemaster')
+        try:
+            db = db_connection()
+            query_string = f'SELECT * FROM {table}'
+            returned_data = db.return_query(query_string)
+            db.close()
+            return returned_data
+        except Exception as err:
+            raise RuntimeError('Error occurred using SELECT ALL') from err
 
     def update(self, table, set_params, where_params):
         # Example usage:

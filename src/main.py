@@ -5,7 +5,7 @@ intents.members = True
 from discord.ext import tasks, commands
 from discord.utils import get
 from db_gateway import db_gateway
-from base_functions import *
+from base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -94,6 +94,7 @@ async def initialsetup(ctx):
 client.load_extension('cogs.VoicemasterCog')
 client.load_extension('cogs.DefaultRoleCog')
 client.load_extension('cogs.LogChannelCog')
+client.load_extension('cogs.TwitterIntegrationCog')
 client.load_extension('cogs.AdminCog')
 
 
