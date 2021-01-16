@@ -15,10 +15,10 @@ client = commands.Bot(command_prefix = '!', intents=intents)
 client.remove_command('help')
 
 
-async def send_to_log_channel(guild_id, msg):
+async def send_to_log_channel(self, guild_id, msg):
     db_logging_call = db_gateway().get('guild_info', params={'guild_id': guild_id})
-    if db_logging_call:
-        await client.get_channel(db_logging_call[0]['log_channel_id']).send(msg)
+    if db_logging_call and db_logging_call[0]['log_channel_id']:
+        await self.bot.get_channel(db_logging_call[0]['log_channel_id']).send(msg)
 
 
 @client.event
@@ -80,10 +80,22 @@ async def on_voice_state_update(member, before, after):
         await send_to_log_channel(member.guild.id, f"{member.mention} has created a VM slave")
 
 
+@client.command()
+@commands.has_permissions(administrator=True)
+async def initialsetup(ctx):
+    already_in_db = True if db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id}) else False
+    if already_in_db:
+        await ctx.channel.send("This server is already set up")
+    else:
+        db_gateway().insert('guild_info', params={'guild_id': ctx.author.guild.id})
+        await ctx.channel.send("This server has now been initialised")
+
+
 client.load_extension('cogs.VoicemasterCog')
 client.load_extension('cogs.DefaultRoleCog')
 client.load_extension('cogs.LogChannelCog')
 client.load_extension('cogs.TwitterIntegrationCog')
+client.load_extension('cogs.AdminCog')
 
 
 client.run(TOKEN)

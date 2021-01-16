@@ -9,7 +9,7 @@ class VoicemasterCog(commands.Cog):
 
     async def send_to_log_channel(self, guild_id, msg):
         db_logging_call = db_gateway().get('guild_info', params={'guild_id': guild_id})
-        if db_logging_call:
+        if db_logging_call and db_logging_call[0]['log_channel_id']:
             await self.bot.get_channel(db_logging_call[0]['log_channel_id']).send(msg)
 
         
