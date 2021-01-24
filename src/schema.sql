@@ -1,11 +1,13 @@
-IF NOT EXISTS(SELECT * FROM sys.databases WHERE name = 'esportsbot')
-BEGIN
-    CREATE DATABASE esportsbot;
-END
 
-IF NOT EXISTS(SELECT * FROM sysobjects WHERE name = 'guild_info')
+IF NOT EXISTS(SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('esportsbot'))
+THEN
+    CREATE DATABASE esportsbot;
+END IF;
+
+\c esportsbot
+
+IF NOT EXISTS(SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'guild_info')
 BEGIN
-    \c esportsbot
     CREATE TABLE guild_info (
         guild_id bigint NOT NULL,
         log_channel_id bigint,
@@ -16,9 +18,8 @@ BEGIN
 
 END
 
-IF NOT EXISTS(SELECT * FROM sysobjects WHERE name = 'voicemaster_master')
+IF NOT EXISTS(SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'voicemaster_master')
 BEGIN
-    \c esportsbot
     CREATE TABLE voicemaster_master (
         master_id bigint NOT NULL,
         guild_id bigint NOT NULL,
@@ -36,9 +37,8 @@ BEGIN
         ADD CONSTRAINT voicemaster_master_pkey PRIMARY KEY (master_id);
 END
 
-IF NOT EXISTS(SELECT * FROM sysobjects WHERE name = 'voicemaster_slave')
+IF NOT EXISTS(SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'voicemaster_slave')
 BEGIN
-    \c esportsbot
     CREATE TABLE voicemaster_slave (
         vc_id bigint NOT NULL,
         guild_id bigint NOT NULL,
@@ -58,3 +58,4 @@ BEGIN
         ADD CONSTRAINT voicemaster_pkey PRIMARY KEY (vc_id);
 
 END
+

@@ -2,7 +2,7 @@ version: "3"
    
 services:
   db:
-    build: postgres:latest
+    image: "postgres:latest"
     environment:
       - POSTGRES_PASSWORD=Pass2020!
     ports: 
@@ -13,11 +13,13 @@ services:
     environment: 
       - DISCORD_TOKEN=**
       - PG_HOST=**
-      - PG_DATABASE=esportsbot
+      - PG_DATABASE=**
       - PG_USER=postgres
-      - PG_PWD=**
+      - PG_PWD=Pass2020!
       - TWITCH_CLIENT_ID=**
       - TWITCH_CLIENT_SECRET=**
+      - ENABLE_TWITTER=False
+      - ENABLE_TWITCH=False
     volumes:
       - ./src/:/code
     depends_on:

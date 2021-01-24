@@ -90,14 +90,15 @@ async def initialsetup(ctx):
         db_gateway().insert('guild_info', params={'guild_id': ctx.author.guild.id})
         await ctx.channel.send("This server has now been initialised")
 
-# Run startup SQL script
 
 client.load_extension('cogs.VoicemasterCog')
 client.load_extension('cogs.DefaultRoleCog')
 client.load_extension('cogs.LogChannelCog')
 client.load_extension('cogs.AdminCog')
-# client.load_extension('cogs.TwitterIntegrationCog')
-client.load_extension('cogs.TwitchIntegrationCog')
+if os.getenv('ENABLE_TWITTER') == "True":
+    client.load_extension('cogs.TwitterIntegrationCog')
+if os.getenv('ENABLE_TWITCH') == "True":
+    client.load_extension('cogs.TwitchIntegrationCog')
 
 
 client.run(TOKEN)
