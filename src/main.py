@@ -94,8 +94,11 @@ async def initialsetup(ctx):
 client.load_extension('cogs.VoicemasterCog')
 client.load_extension('cogs.DefaultRoleCog')
 client.load_extension('cogs.LogChannelCog')
-client.load_extension('cogs.TwitterIntegrationCog')
 client.load_extension('cogs.AdminCog')
+if os.getenv('ENABLE_TWITTER') == "True":
+    client.load_extension('cogs.TwitterIntegrationCog')
+if os.getenv('ENABLE_TWITCH') == "True":
+    client.load_extension('cogs.TwitchIntegrationCog')
 
 
 client.run(TOKEN)
