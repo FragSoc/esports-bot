@@ -90,6 +90,7 @@ async def initialsetup(ctx):
         db_gateway().insert('guild_info', params={'guild_id': ctx.author.guild.id})
         await ctx.channel.send("This server has now been initialised")
 
+# Run startup SQL script
 
 client.load_extension('cogs.VoicemasterCog')
 client.load_extension('cogs.DefaultRoleCog')

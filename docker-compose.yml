@@ -2,7 +2,7 @@ version: "3"
    
 services:
   db:
-    build: ./db_instance/
+    build: postgres:latest
     environment:
       - POSTGRES_PASSWORD=Pass2020!
     ports: 
@@ -10,6 +10,14 @@ services:
   bot:
     build: .
     command: python main.py
+    environment: 
+      - DISCORD_TOKEN=**
+      - PG_HOST=**
+      - PG_DATABASE=esportsbot
+      - PG_USER=postgres
+      - PG_PWD=**
+      - TWITCH_CLIENT_ID=**
+      - TWITCH_CLIENT_SECRET=**
     volumes:
       - ./src/:/code
     depends_on:
