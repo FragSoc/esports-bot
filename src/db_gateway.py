@@ -1,12 +1,13 @@
 import psycopg2
 import os
 
+
 class db_connection():
     def __init__(self):
         self.conn = psycopg2.connect(host=os.getenv('PG_HOST'),
-                                        database=os.getenv('PG_DATABASE'),
-                                        user=os.getenv('PG_USER'),
-                                        password=os.getenv('PG_PWD'))
+                                     database=os.getenv('PG_DATABASE'),
+                                     user=os.getenv('PG_USER'),
+                                     password=os.getenv('PG_PWD'))
         self.cur = self.conn.cursor()
 
     def commit_query(self, query):
@@ -24,6 +25,7 @@ class db_connection():
         self.cur.close()
         self.conn.close()
 
+
 class db_gateway():
     @staticmethod
     def get_param_insert_str(params):
@@ -33,7 +35,7 @@ class db_gateway():
             key_string += f"{key}, "
             val_string += f"'{val}', "
         return (key_string[:-2], val_string[:-2])
-    
+
     @staticmethod
     def get_param_select_str(params):
         key_val_string = str()
@@ -59,7 +61,7 @@ class db_gateway():
             return True
         except Exception as err:
             raise RuntimeError('Error occurred using INSERT') from err
-        
+
     def get(self, table, params):
         # Example usage:
         # returned_val = db_gateway().get('voicemaster', params={
@@ -107,6 +109,6 @@ class db_gateway():
             db.commit_query(query_string)
             db.close()
             return True
-            #return query_string
+            # return query_string
         except Exception as err:
             raise RuntimeError('Error occurred using DELETE') from err
