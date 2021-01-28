@@ -1,13 +1,16 @@
 import psycopg2
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import os
 
 
 class db_connection():
-    def __init__(self):
+    def __init__(self, database=None):
         self.conn = psycopg2.connect(host=os.getenv('PG_HOST'),
-                                     database=os.getenv('PG_DATABASE'),
+                                     database=os.getenv(
+                                         'PG_DATABASE') if database is None else database,
                                      user=os.getenv('PG_USER'),
                                      password=os.getenv('PG_PWD'))
+        self.conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         self.cur = self.conn.cursor()
 
     def commit_query(self, query):
@@ -112,3 +115,25 @@ class db_gateway():
             # return query_string
         except Exception as err:
             raise RuntimeError('Error occurred using DELETE') from err
+
+    def pure_return(self, sql_query, database=None):
+        # Example usage:
+        # db_gateway().pure("SELECT * FROM 'guild_info'"")
+        try:
+            db = db_connection(database)
+            returned_data = db.return_query(sql_query)
+            db.close()
+            return returned_data
+        except Exception as err:
+            raise RuntimeError('Error occurred using PURE') from err
+
+    def pure_query(self, sql_query, database=None):
+        # Example usage:
+        # db_gateway().pure('SELECT * FROM 'guild_info'')
+        try:
+            db = db_connection(database)
+            returned_data = db.commit_query(sql_query)
+            db.close()
+            return returned_data
+        except Exception as err:
+            raise RuntimeError('Error occurred using PURE') from err

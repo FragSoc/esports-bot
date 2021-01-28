@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
+from generate_schema import generate_schema
 from db_gateway import db_gateway
 from discord.utils import get
 from discord.ext import tasks, commands
@@ -97,6 +98,8 @@ async def initialsetup(ctx):
             'guild_id': ctx.author.guild.id})
         await ctx.channel.send("This server has now been initialised")
 
+# Generate Database Schema
+generate_schema()
 
 client.load_extension('cogs.VoicemasterCog')
 client.load_extension('cogs.DefaultRoleCog')
@@ -106,6 +109,5 @@ if os.getenv('ENABLE_TWITTER') == "True":
     client.load_extension('cogs.TwitterIntegrationCog')
 if os.getenv('ENABLE_TWITCH') == "True":
     client.load_extension('cogs.TwitchIntegrationCog')
-
 
 client.run(TOKEN)
