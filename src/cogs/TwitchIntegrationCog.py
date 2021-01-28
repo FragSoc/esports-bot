@@ -6,6 +6,7 @@ import time
 import os
 import pprint
 
+
 class TwitchIntegrationCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -18,11 +19,14 @@ class TwitchIntegrationCog(commands.Cog):
     @commands.command()
     async def addtwitch(self, ctx, twitch_handle=None, announce_channel=None):
         if twitch_handle is not None and announce_channel is not None:
-            twitch_in_db = db_gateway().get('twitch_info', params={'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle})
+            twitch_in_db = db_gateway().get('twitch_info', params={
+                'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle})
             if not bool(twitch_in_db):
                 cleaned_channel_id = get_cleaned_id(announce_channel)
-                channel_mention = self.bot.get_channel(cleaned_channel_id).mention
-                db_gateway().insert('twitch_info', params={'guild_id': ctx.author.guild.id, 'channel_id': cleaned_channel_id, 'twitch_handle': twitch_handle, 'currently_live': False})
+                channel_mention = self.bot.get_channel(
+                    cleaned_channel_id).mention
+                db_gateway().insert('twitch_info', params={
+                    'guild_id': ctx.author.guild.id, 'channel_id': cleaned_channel_id, 'twitch_handle': twitch_handle, 'currently_live': False})
                 await ctx.channel.send(f"{twitch_handle} is valid and has been added, their notifications will be placed in {channel_mention}")
             else:
                 await ctx.channel.send(f"{twitch_handle} is already configured")
@@ -45,12 +49,15 @@ class TwitchIntegrationCog(commands.Cog):
         print("LIVE CHECK!")
         all_twitch_handles = db_gateway().getall('twitch_info')
         if all_twitch_handles:
-            twitch_handle_arr = list(map(lambda x: x['twitch_handle'], all_twitch_handles))
+            twitch_handle_arr = list(
+                map(lambda x: x['twitch_handle'], all_twitch_handles))
             twitch_handle_arr.append('esl_csgo')
             twitch_handle_arr.append('zangetsushi')
-            returned_data = self.twitch_handler.request_data(twitch_handle_arr).json()
+            returned_data = self.twitch_handler.request_data(
+                twitch_handle_arr).json()
             pprint.pprint(returned_data['data'])
-            live_users = list(map(lambda x: x['user_name'].lower(), returned_data['data']))
+            live_users = list(
+                map(lambda x: x['user_name'].lower(), returned_data['data']))
             pprint.pprint(live_users)
             for each in twitch_handle_arr:
                 if each in live_users:
@@ -72,10 +79,10 @@ class TwitchAPIHandler:
         self.client_id = os.getenv('TWITCH_CLIENT_ID')
         self.client_secret = os.getenv('TWITCH_CLIENT_SECRET')
         self.params = {
-                        'client_id': self.client_id,
-                        'client_secret': self.client_secret,
-                        'grant_type': 'client_credentials'
-                    }
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
+            'grant_type': 'client_credentials'
+        }
         self.token = None
 
     def base_headers(self):
@@ -87,10 +94,10 @@ class TwitchAPIHandler:
     def generate_new_oauth(self):
         OAuthURL = 'https://id.twitch.tv/oauth2/token'
         params = {
-                    'client_id': self.client_id,
-                    'client_secret': self.client_secret,
-                    'grant_type': 'client_credentials'
-                }
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
+            'grant_type': 'client_credentials'
+        }
         oauth_response = requests.post(OAuthURL, params)
         if oauth_response.status_code == 200:
             oauth_response_json = oauth_response.json()
@@ -105,7 +112,8 @@ class TwitchAPIHandler:
             self.generate_new_oauth()
         data_url = 'https://api.twitch.tv/helix/streams?'
         data_url = data_url+"user_login="+("&user_login=".join(twitch_handles))
-        data_response = requests.get(data_url, headers=self.base_headers(), params=self.params)
+        data_response = requests.get(
+            data_url, headers=self.base_headers(), params=self.params)
         return data_response
 
 
