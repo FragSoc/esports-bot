@@ -5,8 +5,6 @@ services:
     image: "postgres:latest"
     environment:
       - POSTGRES_PASSWORD=Pass2020!
-    ports: 
-      - 5432:5432
     restart: unless-stopped
     volumes:
       - "db_data:/var/lib/postgresql/data"
