@@ -19,9 +19,9 @@ $ vim secrets.env
 
 4. Edit the below environment variables:
 ```console
-DISCORD_TOKEN = ''
-TWITCH_CLIENT_ID = ''
-TWITCH_CLIENT_SECRET = ''
+DISCORD_TOKEN=
+TWITCH_CLIENT_ID=
+TWITCH_CLIENT_SECRET=
 ```
 
 5. Run docker-compose:
