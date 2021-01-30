@@ -89,8 +89,8 @@ async def on_voice_state_update(member, before, after):
 @client.command()
 @commands.has_permissions(administrator=True)
 async def initialsetup(ctx):
-    already_in_db = True if db_gateway().get(
-        'guild_info', params={'guild_id': ctx.author.guild.id}) else False
+    already_in_db = db_gateway().get(
+        'guild_info', params={'guild_id': ctx.author.guild.id})
     if already_in_db:
         await ctx.channel.send("This server is already set up")
     else:
