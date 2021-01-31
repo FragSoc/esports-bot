@@ -19,51 +19,59 @@ class TwitchIntegrationCog(commands.Cog):
     @commands.command()
     async def addtwitch(self, ctx, twitch_handle=None, announce_channel=None):
         if twitch_handle is not None and announce_channel is not None:
+            # Check if Twitch channel has already been added
             twitch_in_db = db_gateway().get('twitch_info', params={
                 'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle})
-            if not bool(twitch_in_db):
-                cleaned_channel_id = get_cleaned_id(announce_channel)
-                channel_mention = self.bot.get_channel(
-                    cleaned_channel_id).mention
-                db_gateway().insert('twitch_info', params={
-                    'guild_id': ctx.author.guild.id, 'channel_id': cleaned_channel_id, 'twitch_handle': twitch_handle, 'currently_live': False})
-                await ctx.channel.send(f"{twitch_handle} is valid and has been added, their notifications will be placed in {channel_mention}")
+            cleaned_channel_id = get_cleaned_id(
+                announce_channel)
+            channel_mention = self.bot.get_channel(
+                cleaned_channel_id).mention
+            if not twitch_in_db:
+                # Check user exists
+                user_exists = bool(
+                    self.twitch_handler.request_user(twitch_handle))
+                if user_exists:
+                    # Get live status of the channel
+                    live_status = bool(self.twitch_handler.request_data(
+                        [twitch_handle]))
+                    # Insert Twitch channel into DB
+                    db_gateway().insert('twitch_info', params={
+                        'guild_id': ctx.author.guild.id, 'channel_id': cleaned_channel_id, 'twitch_handle': twitch_handle.lower(), 'currently_live': live_status})
+                    await ctx.channel.send(f"{twitch_handle} is valid and has been added, their notifications will be placed in {channel_mention}")
+                else:
+                    await ctx.channel.send(f"{twitch_handle} is not a valid Twitch handle")
             else:
-                await ctx.channel.send(f"{twitch_handle} is already configured")
+                await ctx.channel.send(f"{twitch_handle} is already configured to {channel_mention}")
         else:
             await ctx.channel.send("You need to provide a Twitch handle and a channel")
-
-    @commands.command()
-    async def test(self, ctx, twitch_handle=None):
-        start_time = time.time()
-        if twitch_handle is not None:
-            print(self.twitch_handler.request_data([twitch_handle]))
-        else:
-            await ctx.channel.send("You need to provide a Twitch handle")
-        end_time = time.time()
-        print(f'Checking tweets took: {round(end_time-start_time, 3)}s')
 
     @tasks.loop(seconds=50)
     async def live_checker(self):
         start_time = time.time()
         print("LIVE CHECK!")
+        # Change to a DISTINCT select on handle?
         all_twitch_handles = db_gateway().getall('twitch_info')
-        if all_twitch_handles:
-            twitch_handle_arr = list(
-                map(lambda x: x['twitch_handle'], all_twitch_handles))
-            twitch_handle_arr.append('esl_csgo')
-            twitch_handle_arr.append('zangetsushi')
-            returned_data = self.twitch_handler.request_data(
-                twitch_handle_arr).json()
-            pprint.pprint(returned_data['data'])
-            live_users = list(
-                map(lambda x: x['user_name'].lower(), returned_data['data']))
-            pprint.pprint(live_users)
-            for each in twitch_handle_arr:
-                if each in live_users:
-                    print(f"{each} is LIVE")
-                else:
-                    print(f"{each} is OFFLINE")
+        pprint.pprint(all_twitch_handles)
+        twitch_status_arr = dict(
+            lambda x: {x['twitch_handle']: x['currently_live']}, all_twitch_handles)
+        pprint.pprint(twitch_status_arr)
+        # if all_twitch_handles:
+        #     # Create list of all twitch handles in the database
+        #     twitch_handle_arr = list(
+        #         map(lambda x: x['twitch_handle'], all_twitch_handles))
+        #     # Query Twitch to receive array of all live users
+        #     returned_data = self.twitch_handler.request_data(
+        #         twitch_handle_arr)
+        #     live_users = list(
+        #         map(lambda x: x['user_name'].lower(), returned_data))
+        #     # Loop through all users comparing them to the live list
+        #     for twitch_handle in twitch_handle_arr:
+        #         if twitch_handle in live_users:
+        #             # User is live
+        #             print(f"{twitch_handle} is LIVE")
+        #         else:
+        #             # User is not live
+        #             print(f"{twitch_handle} is OFFLINE")
         end_time = time.time()
         print(f'Checking tweets took: {round(end_time-start_time, 3)}s')
 
@@ -112,9 +120,21 @@ class TwitchAPIHandler:
             self.generate_new_oauth()
         data_url = 'https://api.twitch.tv/helix/streams?'
         data_url = data_url+"user_login="+("&user_login=".join(twitch_handles))
+        print(f"DATA URL - {data_url}")
         data_response = requests.get(
             data_url, headers=self.base_headers(), params=self.params)
-        return data_response
+        return data_response.json()['data']
+
+    def request_user(self, twitch_handle):
+        print(f"Current token: {self.token}")
+        if self.token is None or self.token['expires_in'] < time.time():
+            self.generate_new_oauth()
+        data_url = f'https://api.twitch.tv/helix/users?login={twitch_handle}'
+        #data_url = data_url+"user_login="+("&user_login=".join(twitch_handles))
+        print(f"DATA URL - {data_url}")
+        data_response = requests.get(
+            data_url, headers=self.base_headers(), params=self.params)
+        return data_response.json()['data']
 
 
 def setup(bot):
