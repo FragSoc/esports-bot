@@ -1,6 +1,6 @@
 from discord.ext import commands
 from db_gateway import db_gateway
-from main import send_to_log_channel
+from base_functions import send_to_log_channel
 
 
 class VoicemasterCog(commands.Cog):
@@ -41,7 +41,10 @@ class VoicemasterCog(commands.Cog):
 
         else:
             # Invalid input
-            await ctx.channel.send("The ID argument is not a valid Discord ID format")
+            if not given_channel_id:
+                await ctx.channel.send("You need to provide a VC ID as well")
+            else:
+                await ctx.channel.send("The ID argument is not a valid Discord ID format")
 
     @commands.command()
     @commands.has_permissions(administrator=True)
