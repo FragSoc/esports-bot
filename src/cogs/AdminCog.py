@@ -1,6 +1,6 @@
 from discord.ext import commands
 from db_gateway import db_gateway
-from main import send_to_log_channel
+from base_functions import send_to_log_channel
 
 
 class AdminCog(commands.Cog):

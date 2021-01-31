@@ -1,7 +1,7 @@
 from discord.ext import commands
 from db_gateway import db_gateway
 from base_functions import get_cleaned_id
-from main import send_to_log_channel
+from base_functions import send_to_log_channel
 
 
 class LogChannelCog(commands.Cog):
