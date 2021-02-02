@@ -4,7 +4,6 @@ from base_functions import get_cleaned_id
 import requests
 import time
 import os
-import pprint
 
 
 class TwitchIntegrationCog(commands.Cog):
@@ -83,7 +82,6 @@ class TwitchIntegrationCog(commands.Cog):
             for twitch_handle in twitch_handle_arr:
                 if twitch_handle in live_users:
                     # User is live
-                    print(f"{twitch_handle} is LIVE")
                     if not twitch_status_dict[f'{twitch_handle}']:
                         # User was not live before but now is
                         db_gateway().update('twitch_info', set_params={
@@ -97,7 +95,6 @@ class TwitchIntegrationCog(commands.Cog):
                                 await self.bot.get_channel(each['channel_id']).send(f"{twitch_handle} just went live!")
                 else:
                     # User is not live
-                    print(f"{twitch_handle} is OFFLINE")
                     db_gateway().update('twitch_info', set_params={
                         'currently_live': False}, where_params={'twitch_handle': twitch_handle})
         return round(time.time()-start_time, 3)
@@ -133,27 +130,23 @@ class TwitchAPIHandler:
             oauth_response_json = oauth_response.json()
             oauth_response_json['expires_in'] += time.time()
             self.token = oauth_response_json
-            print("GENERATED NEW TOKEN!")
+            print("TWITCH: Generated new OAuth token")
             return self.token
 
     def request_data(self, twitch_handles):
-        print(f"Current token: {self.token}")
         if self.token is None or self.token['expires_in'] < time.time():
             self.generate_new_oauth()
         data_url = 'https://api.twitch.tv/helix/streams?'
         data_url = data_url+"user_login="+("&user_login=".join(twitch_handles))
-        print(f"DATA URL - {data_url}")
         data_response = requests.get(
             data_url, headers=self.base_headers(), params=self.params)
         return data_response.json()['data']
 
     def request_user(self, twitch_handle):
-        print(f"Current token: {self.token}")
         if self.token is None or self.token['expires_in'] < time.time():
             self.generate_new_oauth()
         data_url = f'https://api.twitch.tv/helix/users?login={twitch_handle}'
         #data_url = data_url+"user_login="+("&user_login=".join(twitch_handles))
-        print(f"DATA URL - {data_url}")
         data_response = requests.get(
             data_url, headers=self.base_headers(), params=self.params)
         return data_response.json()['data']
