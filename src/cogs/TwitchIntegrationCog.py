@@ -47,34 +47,38 @@ class TwitchIntegrationCog(commands.Cog):
 
     @tasks.loop(seconds=50)
     async def live_checker(self):
+        print('TWITCH: Retrieving current statuses')
+        time_taken = await self.get_and_compare_statuses(True)
+        print(f'TWITCH: Retrieved current statuses in {time_taken}s')
+
+    @live_checker.before_loop
+    async def before_live_checker(self):
+        print('TWITCH: Waiting until bot is ready')
+        await self.bot.wait_until_ready()
+        print('TWITCH: Updating current statuses')
+        time_taken = await self.get_and_compare_statuses(False)
+        print(f'TWITCH: Updated current statuses in {time_taken}s')
+
+    async def get_and_compare_statuses(self, alert):
         start_time = time.time()
-        print("LIVE CHECK!")
-        # Change to a DISTINCT select on handle?
-        # all_twitch_handles = db_gateway().getalldistinct('twitch_info', '')
         all_twitch_handles = db_gateway().pure_return(
             'SELECT DISTINCT twitch_handle FROM "twitch_info"')
-        # pprint.pprint(all_twitch_handles)
         if all_twitch_handles:
-
             # Create list of all twitch handles in the database
             twitch_handle_arr = list(
                 map(lambda x: x['twitch_handle'], all_twitch_handles))
-            # pprint.pprint(twitch_handle_arr)
             # Create dict consisting of twitch handles and live statuses
             twitch_status_dict = dict()
             all_twitch_statuses = db_gateway().pure_return(
                 'SELECT DISTINCT twitch_handle, currently_live FROM "twitch_info"')
-            # pprint.pprint(all_twitch_statuses)
             for twitch_user in all_twitch_statuses:
                 twitch_status_dict[twitch_user['twitch_handle']
                                    ] = twitch_user['currently_live']
-            # pprint.pprint(twitch_status_dict)
             # Query Twitch to receive array of all live users
             returned_data = self.twitch_handler.request_data(
                 twitch_handle_arr)
             live_users = list(
                 map(lambda x: x['user_name'].lower(), returned_data))
-
             # Loop through all users comparing them to the live list
             for twitch_handle in twitch_handle_arr:
                 if twitch_handle in live_users:
@@ -84,24 +88,19 @@ class TwitchIntegrationCog(commands.Cog):
                         # User was not live before but now is
                         db_gateway().update('twitch_info', set_params={
                             'currently_live': True}, where_params={'twitch_handle': twitch_handle})
-                        # Grab all channels to be alerted
-                        all_channels = db_gateway().get('twitch_info', params={
-                            'twitch_handle': twitch_handle})
-                        for each in all_channels:
-                            # Send alert to specified channel to each['channel_id']
-                            await self.bot.get_channel(each['channel_id']).send(f"{twitch_handle} just went live!")
+                        if alert:
+                            # Grab all channels to be alerted
+                            all_channels = db_gateway().get('twitch_info', params={
+                                'twitch_handle': twitch_handle})
+                            for each in all_channels:
+                                # Send alert to specified channel to each['channel_id']
+                                await self.bot.get_channel(each['channel_id']).send(f"{twitch_handle} just went live!")
                 else:
                     # User is not live
                     print(f"{twitch_handle} is OFFLINE")
                     db_gateway().update('twitch_info', set_params={
                         'currently_live': False}, where_params={'twitch_handle': twitch_handle})
-        end_time = time.time()
-        print(f'Checking TWITCH took: {round(end_time-start_time, 3)}s')
-
-    @live_checker.before_loop
-    async def before_live_checker(self):
-        print('TWITCH: Waiting until bot is ready')
-        await self.bot.wait_until_ready()
+        return round(time.time()-start_time, 3)
 
 
 class TwitchAPIHandler:

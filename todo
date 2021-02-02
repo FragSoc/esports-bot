@@ -7,6 +7,7 @@ Todos:
         ☐ Check input validation on Admin tools
         ☐ Check input validation on Twitter
         ☐ Check input validation on Twitch
+        ☐ Implement logging
 
     Twitter:
         ☐ Add Twitter handle to the database tied to a channel ID for alert (get latest tweet ID for comparison)
@@ -19,14 +20,15 @@ Todos:
         ☐ Create command to display all the Twitter alerts for the server
 
     Twitch:
-        ☐ Add Twitch handle to the database tied to a channel ID for alert (get live status for comparison)
-        ☐ Check for live status by comparing current live status with database value
-        ☐ Schedule check to occur every 50s
+        ✔ Add Twitch handle to the database tied to a channel ID for alert (get live status for comparison) @done(21-01-31 21:32)
+        ✔ Check for live status by comparing current live status with database value @done(21-02-02 21:25)
+        ✔ Schedule check to occur every 50s @done(21-02-02 21:25)
         ☐ Allow for custom alert structure when adding Twitch handle
         ☐ Create command to remove Twitch handles from the database (also remove all)
         ☐ Allow you to edit the channel the alert is sent to
         ☐ Allow you to edit the message structure for the alert
         ☐ Create command to display all the Twitch alerts for the server
+        ✔ Update statuses on bot boot @done(21-02-02 21:25)
 
     Role Reaction:
         ☐ Create new Cog
