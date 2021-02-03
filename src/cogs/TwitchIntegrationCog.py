@@ -44,6 +44,23 @@ class TwitchIntegrationCog(commands.Cog):
         else:
             await ctx.channel.send("You need to provide a Twitch handle and a channel")
 
+    @commands.command()
+    async def removetwitch(self, ctx, twitch_handle=None):
+        if twitch_handle is not None:
+            # Entered a Twitter handle
+            twitch_handle = twitch_handle.lower()
+            handle_exists = db_gateway().get('twitch_info', params={
+                'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle})
+            if handle_exists:
+                # Handle exists
+                db_gateway().delete('twitch_info',
+                                    where_params={'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle})
+                await ctx.channel.send(f"Alerts for {twitch_handle} have been removed from this server")
+            else:
+                await ctx.channel.send("Entered Twitch handle is not configured in this server")
+        else:
+            await ctx.channel.send("You need to provide a Twitch handle")
+
     @tasks.loop(seconds=50)
     async def live_checker(self):
         print('TWITCH: Retrieving current statuses')
