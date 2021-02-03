@@ -24,7 +24,7 @@ Todos:
         ✔ Check for live status by comparing current live status with database value @done(21-02-02 21:25)
         ✔ Schedule check to occur every 50s @done(21-02-02 21:25)
         ☐ Allow for custom alert structure when adding Twitch handle
-        ☐ Create command to remove Twitch handles from the database (also remove all)
+        ✔ Create command to remove Twitch handles from the database (also remove all) @done(21-02-03 21:52)
         ☐ Allow you to edit the channel the alert is sent to
         ☐ Allow you to edit the message structure for the alert
         ☐ Create command to display all the Twitch alerts for the server

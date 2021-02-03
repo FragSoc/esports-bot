@@ -4,6 +4,7 @@ from base_functions import get_cleaned_id
 import requests
 import time
 import os
+import pprint
 
 
 class TwitchIntegrationCog(commands.Cog):
@@ -60,6 +61,23 @@ class TwitchIntegrationCog(commands.Cog):
                 await ctx.channel.send("Entered Twitch handle is not configured in this server")
         else:
             await ctx.channel.send("You need to provide a Twitch handle")
+
+    @commands.command()
+    async def removealltwitch(self, ctx):
+        db_gateway().delete('twitch_info', where_params={
+            'guild_id': ctx.author.guild.id})
+        await ctx.channel.send("Removed all Twitch alerts from this server")
+
+    @commands.command()
+    async def getalltwitch(self, ctx):
+        returned_val = db_gateway().get('twitch_info', params={
+            'guild_id': ctx.author.guild.id})
+        all_handles = "** **\n__**Twitch Alerts**__\n"
+        for each in returned_val:
+            channel_mention = self.bot.get_channel(
+                each['channel_id']).mention
+            all_handles += f"{each['twitch_handle']} is set to alert in {channel_mention}\n"
+        await ctx.channel.send(all_handles)
 
     @tasks.loop(seconds=50)
     async def live_checker(self):
