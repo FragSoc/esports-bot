@@ -1,6 +1,6 @@
 from __future__ import annotations
 from emoji import UNICODE_EMOJI
-from .. import botState
+from .. import client
 from . import exceptions, stringTyping
 
 from typing import Union, TYPE_CHECKING
@@ -85,7 +85,7 @@ class Emote:
         self.unicode = unicode
         self.isID = id != -1
         self.isUnicode = not self.isID
-        self.sendable = self.unicode if self.isUnicode else str(botState.client.get_emoji(self.id))
+        self.sendable = self.unicode if self.isUnicode else str(client.instance().get_emoji(self.id))
         if self.sendable == "None":
             if logUnknownEmojis:
                 print("Unrecognised custom emoji ID in Emote constructor: " + str(self.id))

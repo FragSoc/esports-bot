@@ -1,7 +1,5 @@
 import os
 import discord
-intents = discord.Intents.default()
-intents.members = True
 from discord.ext import tasks, commands
 from discord.utils import get
 from db_gateway import db_gateway
@@ -10,52 +8,13 @@ from dotenv import load_dotenv
 load_dotenv()
 from typing import Dict
 
-import trimatix
+from trimatix import client, lib
 from trimatix.reactionMenus.reactionMenu import ReactionMenu
-from trimatix import lib
 
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-
-class EsportsBot(commands.Bot):
-    """A discord.commands.Bot subclass, adding a dictionary of active reaction menus.
-
-    :var reactionMenus: A associating integer menu message IDs to ReactionMenu objects.
-    :vartype reactionMenus: Dict[int, ReactionMenu]
-    """
-
-    def __init__(self, command_prefix, **options):
-        super().__init__(command_prefix, **options)
-        self.reactionMenus: Dict[int, ReactionMenu] = {}
-
-
-    def addMenu(self, menu: ReactionMenu):
-        """Register a ReactionMenu with the bot.
-        This allows the menu to be interacted with through reaction_added - see the event listener below.
-
-        :param ReactionMenu menu: The menu to register
-        :raise KeyError: When a menu with the same id as menu is already registered
-        """
-        if menu.msg.id in self.reactionMenus:
-            raise KeyError("A menu is already registered with the given ID: " + str(menu.msg.id))
-        self.reactionMenus[menu.msg.id] = menu
-
-
-    def removeMenu(self, menu: ReactionMenu):
-        """Unregister the given menu, preventing menu interaction through reactions.
-
-        :param ReactionMenu menu: The menu to remove
-        :raise KeyError: When the given menu is not registered with the bot
-        """
-        if menu.msg.id not in self.reactionMenus:
-            raise KeyError("The given menu is not registered with the bot: " + str(menu.msg.id))
-        del self.reactionMenus[menu.msg.id]
-
-
-
-client = EsportsBot(command_prefix = '!', intents=intents)
-trimatix.init(client)
+client = client.instance()
 client.remove_command('help')
 
 async def send_to_log_channel(self, guild_id, msg):
@@ -173,7 +132,7 @@ async def on_raw_message_delete(payload: discord.RawMessageDeleteEvent):
     :param discord.RawMessageDeleteEvent payload: An event describing the message deleted.
     """
     if payload.message_id in client.reactionMenus:
-        await client.reactionMenus[payload.message_id].delete()
+        client.reactionMenus.removeID(payload.message_id)
 
 
 @client.event
@@ -185,7 +144,7 @@ async def on_raw_bulk_message_delete(payload: discord.RawBulkMessageDeleteEvent)
     """
     for msgID in payload.message_ids:
         if msgID in client.reactionMenus:
-            await client.reactionMenus[msgID].delete()
+            client.reactionMenus.removeID(msgID)
 
 
 @client.command()

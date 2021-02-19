@@ -18,6 +18,17 @@ BEGIN
 
 END
 
+IF NOT EXISTS(SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'reaction_menus')
+BEGIN
+    CREATE TABLE reaction_menus (
+        message_id bigint NOT NULL,
+        menu JSONB
+    );
+    ALTER TABLE ONLY reaction_menus
+        ADD CONSTRAINT menu_pkey PRIMARY KEY (message_id);
+
+END
+
 IF NOT EXISTS(SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'voicemaster_master')
 BEGIN
     CREATE TABLE voicemaster_master (

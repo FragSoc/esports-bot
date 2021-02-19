@@ -3,11 +3,12 @@ from discord.ext.commands.context import Context
 from db_gateway import db_gateway
 from . import lib
 from .reactionMenus import reactionRoleMenu
+from .client import EsportsBot
 
 
 class MenusCog(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: "EsportsBot"):
+        self.bot: "EsportsBot" = bot
 
     
     @commands.command(name="del-menu", usage="del-menu <id>", help="Remove the specified reaction menu. You can also just delete the message, if you have permissions.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.")
@@ -22,6 +23,11 @@ class MenusCog(commands.Cog):
         msgID = int(args)
         if msgID in self.bot.reactionMenus:
             await self.bot.reactionMenus[msgID].delete()
+            try:
+                self.bot.reactionMenus.removeID(msgID)
+            except KeyError:
+                pass
+            await ctx.send("✅ Menu deleted!")
         else:
             await ctx.send(":x: Unrecognised reaction menu!")
 
@@ -48,10 +54,13 @@ class MenusCog(commands.Cog):
                 elif len(menu.options) == 1:
                     await menu.delete()
                     await ctx.send("The menu has no more options! Menu deleted.")
+                    self.bot.reactionMenus.remove(menu)
                 else:
                     del menu.options[roleEmoji]
                     await menu.msg.remove_reaction(roleEmoji.sendable, ctx.guild.me)
                     await menu.updateMessage(noRefreshOptions=True)
+                    self.bot.reactionMenus.updateDB(menu)
+                    await ctx.send("✅ Removed option " + roleEmoji.sendable + " from menu " + str(menu.msg.id) + "!")
 
     
     @commands.command(name="add-role-menu-option", usage="add-role-menu-option <menu-id> <emoji> <@role mention>", help="Add a role to a role menu.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.\nYour emoji must not be in the menu already.\nGive your role to grant/remove as a mention.")
@@ -84,6 +93,8 @@ class MenusCog(commands.Cog):
                     menu.options[roleEmoji] = reactionRoleMenu.ReactionRoleMenuOption(roleEmoji, role, menu)
                     await menu.msg.add_reaction(roleEmoji.sendable)
                     await menu.updateMessage(noRefreshOptions=True)
+                    self.bot.reactionMenus.updateDB(menu)
+                    await ctx.send("✅ Added option " + roleEmoji.sendable + " to menu " + str(menu.msg.id) + "!")
         
 
 
@@ -200,7 +211,7 @@ class MenusCog(commands.Cog):
 
         menu = reactionRoleMenu.ReactionRoleMenu(menuMsg, self.bot, reactionRoles, targetRole=targetRole, titleTxt=menuSubject)
         await menu.updateMessage()
-        self.bot.addMenu(menu)
+        self.bot.reactionMenus.add(menu)
         await ctx.send("Role menu " + str(menuMsg.id) + " has been created!")
 
 

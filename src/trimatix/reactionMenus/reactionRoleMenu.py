@@ -1,7 +1,6 @@
-from discord.member import Member
 from . import reactionMenu
 from .. import lib
-from discord import Colour, Guild, Role, Message, User, Client
+from discord import Colour, Guild, Role, Message, User, Client, Member, PartialMessage
 from typing import List, Union, Dict
 
 
@@ -62,10 +61,10 @@ class ReactionRoleMenuOption(reactionMenu.ReactionMenuOption):
         :return: A dictionary containing all information needed to reconstruct this menu option
         :rtype: dict
         """
-
         return {"role": self.role.id}
 
 
+@reactionMenu.saveableMenu
 class ReactionRoleMenu(reactionMenu.ReactionMenu):
     """A reaction menu that grants and removes roles when interacted with.
     """
@@ -101,7 +100,6 @@ class ReactionRoleMenu(reactionMenu.ReactionMenu):
             desc = "React for your desired role!"
 
         super(ReactionRoleMenu, self).__init__(msg, client, options=roleOptions, titleTxt=titleTxt, desc=desc, col=col, footerTxt=footerTxt, img=img, thumb=thumb, icon=icon, authorName=authorName, targetMember=targetMember, targetRole=targetRole)
-        self.saveable = True
 
 
     def toDict(self) -> dict:
@@ -116,29 +114,30 @@ class ReactionRoleMenu(reactionMenu.ReactionMenu):
         return baseDict
 
 
-async def fromDict(client: Client, rmDict : dict) -> ReactionRoleMenu:
-    """Reconstruct a ReactionRolePicker from its dictionary-serialized representation.
+    @classmethod
+    def fromDict(csl, client: Client, rmDict : dict) -> "ReactionRoleMenu":
+        """Reconstruct a ReactionRolePicker from its dictionary-serialized representation.
 
-    :param dict rmDict: A dictionary containing all information needed to construct the desired ReactionRolePicker
-    :return: A new ReactionRolePicker object as described in rmDict
-    :rtype: ReactionRolePicker
-    """
-    dcGuild = client.get_guild(rmDict["guild"])
-    msg = await dcGuild.get_channel(rmDict["channel"]).fetch_message(rmDict["msg"])
+        :param dict rmDict: A dictionary containing all information needed to construct the desired ReactionRolePicker
+        :return: A new ReactionRolePicker object as described in rmDict
+        :rtype: ReactionRolePicker
+        """
+        dcGuild = client.get_guild(rmDict["guild"])
+        msg = dcGuild.get_channel(rmDict["channel"]).get_partial_message(rmDict["msg"])
 
-    reactionRoles = {}
-    for reaction in rmDict["options"]:
-        reactionRoles[lib.emotes.Emote.fromStr(reaction)] = dcGuild.get_role(rmDict["options"][reaction]["role"])
+        reactionRoles = {}
+        for reaction in rmDict["options"]:
+            reactionRoles[lib.emotes.Emote.fromStr(reaction)] = dcGuild.get_role(rmDict["options"][reaction]["role"])
 
 
-    return ReactionRoleMenu(msg, reactionRoles,
-                                titleTxt=rmDict["titleTxt"] if "titleTxt" in rmDict else "",
-                                desc=rmDict["desc"] if "desc" in rmDict else "",
-                                col=Colour.from_rgb(rmDict["col"][0], rmDict["col"][1], rmDict["col"][2]) if "col" in rmDict else Colour.default(),
-                                footerTxt=rmDict["footerTxt"] if "footerTxt" in rmDict else "",
-                                img=rmDict["img"] if "img" in rmDict else "",
-                                thumb=rmDict["thumb"] if "thumb" in rmDict else "",
-                                icon=rmDict["icon"] if "icon" in rmDict else "",
-                                authorName=rmDict["authorName"] if "authorName" in rmDict else "",
-                                targetMember=dcGuild.get_member(rmDict["targetMember"]) if "targetMember" in rmDict else None,
-                                targetRole=dcGuild.get_role(rmDict["targetRole"]) if "targetRole" in rmDict else None)
+        return ReactionRoleMenu(msg, reactionRoles,
+                                    titleTxt=rmDict["titleTxt"] if "titleTxt" in rmDict else "",
+                                    desc=rmDict["desc"] if "desc" in rmDict else "",
+                                    col=Colour.from_rgb(rmDict["col"][0], rmDict["col"][1], rmDict["col"][2]) if "col" in rmDict else Colour.default(),
+                                    footerTxt=rmDict["footerTxt"] if "footerTxt" in rmDict else "",
+                                    img=rmDict["img"] if "img" in rmDict else "",
+                                    thumb=rmDict["thumb"] if "thumb" in rmDict else "",
+                                    icon=rmDict["icon"] if "icon" in rmDict else "",
+                                    authorName=rmDict["authorName"] if "authorName" in rmDict else "",
+                                    targetMember=dcGuild.get_member(rmDict["targetMember"]) if "targetMember" in rmDict else None,
+                                    targetRole=dcGuild.get_role(rmDict["targetRole"]) if "targetRole" in rmDict else None)
