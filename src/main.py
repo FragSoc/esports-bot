@@ -9,12 +9,58 @@ import discord
 intents = discord.Intents.default()
 intents.members = True
 load_dotenv()
+from typing import Dict
+
+import trimatix
+from trimatix.reactionMenus.reactionMenu import ReactionMenu
+from trimatix import lib
+
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 client = commands.Bot(command_prefix='!', intents=intents)
 client.remove_command('help')
 
+
+class EsportsBot(commands.Bot):
+    """A discord.commands.Bot subclass, adding a dictionary of active reaction menus.
+
+    :var reactionMenus: A associating integer menu message IDs to ReactionMenu objects.
+    :vartype reactionMenus: Dict[int, ReactionMenu]
+    """
+
+    def __init__(self, command_prefix, **options):
+        super().__init__(command_prefix, **options)
+        self.reactionMenus: Dict[int, ReactionMenu] = {}
+
+
+    def addMenu(self, menu: ReactionMenu):
+        """Register a ReactionMenu with the bot.
+        This allows the menu to be interacted with through reaction_added - see the event listener below.
+
+        :param ReactionMenu menu: The menu to register
+        :raise KeyError: When a menu with the same id as menu is already registered
+        """
+        if menu.msg.id in self.reactionMenus:
+            raise KeyError("A menu is already registered with the given ID: " + str(menu.msg.id))
+        self.reactionMenus[menu.msg.id] = menu
+
+
+    def removeMenu(self, menu: ReactionMenu):
+        """Unregister the given menu, preventing menu interaction through reactions.
+
+        :param ReactionMenu menu: The menu to remove
+        :raise KeyError: When the given menu is not registered with the bot
+        """
+        if menu.msg.id not in self.reactionMenus:
+            raise KeyError("The given menu is not registered with the bot: " + str(menu.msg.id))
+        del self.reactionMenus[menu.msg.id]
+
+
+
+client = EsportsBot(command_prefix = '!', intents=intents)
+trimatix.init(client)
+client.remove_command('help')
 
 async def send_to_log_channel(self, guild_id, msg):
     db_logging_call = db_gateway().get(
@@ -86,6 +132,71 @@ async def on_voice_state_update(member, before, after):
         await send_to_log_channel(member.guild.id, f"{member.mention} has created a VM slave")
 
 
+@client.event
+async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
+    """Called every time a reaction is added to a message.
+    If the message is a reaction menu, and the reaction is an option for that menu, trigger the menu option's behaviour.
+
+    :param discord.RawReactionActionEvent payload: An event describing the message and the reaction added
+    """
+    # ignore bot reactions
+    if payload.user_id != client.user.id:
+        # Get rich, useable reaction data
+        _, user, emoji = await discordUtil.reactionFromRaw(client, payload)
+        if None in [user, emoji]:
+            return
+
+        # If the message reacted to is a reaction menu
+        if payload.message_id in client.reactionMenus and \
+                client.reactionMenus[payload.message_id].hasEmojiRegistered(emoji):
+            # Envoke the reacted option's behaviour
+            await client.reactionMenus[payload.message_id].reactionAdded(emoji, user)
+
+
+@client.event
+async def on_raw_reaction_remove(payload: discord.RawReactionActionEvent):
+    """Called every time a reaction is removed from a message.
+    If the message is a reaction menu, and the reaction is an option for that menu, trigger the menu option's behaviour.
+
+    :param discord.RawReactionActionEvent payload: An event describing the message and the reaction removed
+    """
+    # ignore bot reactions
+    if payload.user_id != client.user.id:
+        # Get rich, useable reaction data
+        _, user, emoji = await lib.discordUtil.reactionFromRaw(client, payload)
+        if None in [user, emoji]:
+            return
+
+        # If the message reacted to is a reaction menu
+        if payload.message_id in client.reactionMenus and \
+                client.reactionMenus[payload.message_id].hasEmojiRegistered(emoji):
+            # Envoke the reacted option's behaviour
+            await client.reactionMenus[payload.message_id].reactionRemoved(emoji, user)
+
+
+@client.event
+async def on_raw_message_delete(payload: discord.RawMessageDeleteEvent):
+    """Called every time a message is deleted.
+    If the message was a reaction menu, deactivate and unschedule the menu.
+
+    :param discord.RawMessageDeleteEvent payload: An event describing the message deleted.
+    """
+    if payload.message_id in client.reactionMenus:
+        await client.reactionMenus[payload.message_id].delete()
+
+
+@client.event
+async def on_raw_bulk_message_delete(payload: discord.RawBulkMessageDeleteEvent):
+    """Called every time a group of messages is deleted.
+    If any of the messages were a reaction menus, deactivate and unschedule those menus.
+
+    :param discord.RawBulkMessageDeleteEvent payload: An event describing all messages deleted.
+    """
+    for msgID in payload.message_ids:
+        if msgID in client.reactionMenus:
+            await client.reactionMenus[msgID].delete()
+
+
 @client.command()
 @commands.has_permissions(administrator=True)
 async def initialsetup(ctx):
@@ -105,6 +216,7 @@ client.load_extension('cogs.VoicemasterCog')
 client.load_extension('cogs.DefaultRoleCog')
 client.load_extension('cogs.LogChannelCog')
 client.load_extension('cogs.AdminCog')
+client.load_extension('trimatix.MenusCog')
 if os.getenv('ENABLE_TWITTER') == "True":
     client.load_extension('cogs.TwitterIntegrationCog')
 if os.getenv('ENABLE_TWITCH') == "True":
