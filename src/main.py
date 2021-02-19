@@ -9,8 +9,10 @@ from base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 from dotenv import load_dotenv
 load_dotenv()
 from typing import Dict
+
+import trimatix
 from trimatix.reactionMenus.reactionMenu import ReactionMenu
-from trimatix import lib, botState
+from trimatix import lib
 
 
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -53,7 +55,7 @@ class EsportsBot(commands.Bot):
 
 
 client = EsportsBot(command_prefix = '!', intents=intents)
-botState.client = client
+trimatix.init(client)
 client.remove_command('help')
 
 async def send_to_log_channel(self, guild_id, msg):
@@ -131,7 +133,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
     # ignore bot reactions
     if payload.user_id != client.user.id:
         # Get rich, useable reaction data
-        _, user, emoji = await lib.discordUtil.reactionFromRaw(client, payload)
+        _, user, emoji = await discordUtil.reactionFromRaw(client, payload)
         if None in [user, emoji]:
             return
 

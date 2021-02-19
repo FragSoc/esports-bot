@@ -5,16 +5,6 @@ from . import lib
 from .reactionMenus import reactionRoleMenu
 
 
-def strIsRoleMention(mention: str) -> bool:
-    """Decide whether the given string is a discord role mention, being <@&ROLEID> where ROLEID is an integer discord role id.
-
-    :param str mention: The string to check
-    :return: True if mention matches the formatting of a discord role mention, False otherwise
-    :rtype: bool
-    """
-    return mention.endswith(">") and mention.startswith("<@&") and lib.emotes.strIsInt(mention[3:-1])
-
-
 class MenusCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -42,7 +32,7 @@ class MenusCog(commands.Cog):
         argsSplit = args.split(" ")
         if len(argsSplit) < 2:
             await ctx.send(":x: Please provide a menu ID and an emoji!")
-        elif not lib.emotes.strIsInt(argsSplit[0]):
+        elif not lib.stringTyping.strIsInt(argsSplit[0]):
             await ctx.send(":x: Invalid menu ID - please give a number!")
         elif int(argsSplit[0]) not in self.bot.reactionMenus:
             await ctx.send(":x: Unknown role menu ID!")
@@ -70,11 +60,11 @@ class MenusCog(commands.Cog):
         argsSplit = args.split(" ")
         if len(argsSplit) < 3:
             await ctx.send(":x: Please provide a menu ID, an emoji, and a role mention!")
-        elif not lib.emotes.strIsInt(argsSplit[0]):
+        elif not lib.stringTyping.strIsInt(argsSplit[0]):
             await ctx.send(":x: Invalid menu ID - please give a number!")
         elif int(argsSplit[0]) not in self.bot.reactionMenus:
             await ctx.send(":x: Unknown role menu ID!")
-        elif not strIsRoleMention(argsSplit[2]):
+        elif not lib.stringTyping.strIsRoleMention(argsSplit[2]):
             await ctx.send(":x: Invalid role mention!")
         else:
             menu = self.bot.reactionMenus[int(argsSplit[0])]
@@ -196,7 +186,7 @@ class MenusCog(commands.Cog):
 
         targetRole = None
         if "target" in kwArgs:
-            if strIsRoleMention(kwArgs["target"]):
+            if lib.stringTyping.strIsRoleMention(kwArgs["target"]):
                 targetRole = ctx.guild.get_role(int(kwArgs["target"].lstrip("<@&").rstrip(">")))
                 if targetRole is None:
                     await ctx.send(":x: Unknown target role!")

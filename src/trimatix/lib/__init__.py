@@ -1,1 +1,1 @@
-from . import discordUtil, emotes, exceptions
+from . import discordUtil, emotes, exceptions, stringTyping

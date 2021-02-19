@@ -1,8 +1,7 @@
 from __future__ import annotations
 from emoji import UNICODE_EMOJI
 from .. import botState
-from . import exceptions
-import traceback
+from . import exceptions, stringTyping
 
 from typing import Union, TYPE_CHECKING
 if TYPE_CHECKING:
@@ -14,23 +13,6 @@ err_UnknownEmoji = "❓"
 raiseUnkownEmojis = False
 logUnknownEmojis = True
 emojiLang = "en"
-
-
-def strIsInt(x) -> bool:
-    """Decide whether or not something is either an integer, or is castable to integer.
-
-    :param x: The object to type-check
-    :return: True if x is an integer or if x can be casted to integer. False otherwise
-    :rtype: bool
-    """
-
-    try:
-        int(x)
-    except TypeError:
-        return False
-    except ValueError:
-        return False
-    return True
 
 
 def strIsUnicodeEmoji(c: str) -> bool:
@@ -57,7 +39,7 @@ def strIsCustomEmoji(s: str) -> bool:
             second = first + s[first + 1:].index(":") + 1
         except ValueError:
             return False
-        return strIsInt(s[second + 1:-1])
+        return stringTyping.strIsInt(s[second + 1:-1])
     return False
 
 
@@ -261,7 +243,7 @@ class Emote:
             return Emote(unicode=s, rejectInvalid=rejectInvalid)
         elif strIsCustomEmoji(s):
             return Emote(id=int(s[s[s.index(":") + 1:].index(":") + 3:-1]), rejectInvalid=rejectInvalid)
-        elif strIsInt(s):
+        elif stringTyping.strIsInt(s):
             return Emote(id=int(s), rejectInvalid=rejectInvalid)
         else:
             raise TypeError("Expected s of type str, dict or Emote, got " + type(s).__name__)
