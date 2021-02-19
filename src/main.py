@@ -6,16 +6,6 @@ from discord.utils import get
 from discord.ext import tasks, commands
 import os
 import discord
-<<<<<<< HEAD
-from discord.ext import tasks, commands
-from discord.utils import get
-from db_gateway import db_gateway
-from base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
-from dotenv import load_dotenv
-=======
-intents = discord.Intents.default()
-intents.members = True
->>>>>>> 1f2245f86dbc28d4bd9eec9e0b3a544d96545e3b
 load_dotenv()
 from typing import Dict
 
@@ -108,7 +98,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
     # ignore bot reactions
     if payload.user_id != client.user.id:
         # Get rich, useable reaction data
-        _, user, emoji = await discordUtil.reactionFromRaw(client, payload)
+        _, user, emoji = await lib.discordUtil.reactionFromRaw(client, payload)
         if None in [user, emoji]:
             return
 
