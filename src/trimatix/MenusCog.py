@@ -1,8 +1,8 @@
 from discord.ext import commands
 from discord.ext.commands.context import Context
 from db_gateway import db_gateway
-from .. import lib
-from ..reactionMenus import reactionRoleMenu
+from . import lib
+from .reactionMenus import reactionRoleMenu
 
 
 def strIsRoleMention(mention: str) -> bool:
@@ -22,7 +22,7 @@ class MenusCog(commands.Cog):
     
     @commands.command(name="del-menu", usage="del-menu <id>", help="Remove the specified reaction menu. You can also just delete the message, if you have permissions.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.")
     @commands.has_permissions(administrator=True)
-    async def admin_cmd_del_reaction_menu(self, ctx: Context, args: str):
+    async def admin_cmd_del_reaction_menu(self, ctx: Context, *, args: str):
         """Force the expiry of the specified reaction menu message, regardless of reaction menu type.
 
         :param discord.Message message: the discord message calling the command
@@ -38,7 +38,7 @@ class MenusCog(commands.Cog):
     
     @commands.command(name="del-role-menu-option", usage="del-role-menu-option <menu-id> <emoji>", help="Remove a role from a role menu.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.\nYour emoji must be an option in the menu.")
     @commands.has_permissions(administrator=True)
-    async def admin_cmd_remove_role_menu_option(self, ctx: Context, args: str):
+    async def admin_cmd_remove_role_menu_option(self, ctx: Context, *, args: str):
         argsSplit = args.split(" ")
         if len(argsSplit) < 2:
             await ctx.send(":x: Please provide a menu ID and an emoji!")
@@ -66,7 +66,7 @@ class MenusCog(commands.Cog):
     
     @commands.command(name="add-role-menu-option", usage="add-role-menu-option <menu-id> <emoji> <@role mention>", help="Add a role to a role menu.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.\nYour emoji must not be in the menu already.\nGive your role to grant/remove as a mention.")
     @commands.has_permissions(administrator=True)
-    async def admin_cmd_add_role_menu_option(self, ctx: Context, args: str):
+    async def admin_cmd_add_role_menu_option(self, ctx: Context, *, args: str):
         argsSplit = args.split(" ")
         if len(argsSplit) < 3:
             await ctx.send(":x: Please provide a menu ID, an emoji, and a role mention!")
@@ -99,7 +99,7 @@ class MenusCog(commands.Cog):
 
     @commands.command(name="make-role-menu", usage="make-role-menu <title>\n<option1 emoji> <@option1 role>\n...    ...\n[kwargs]", help="Create a reaction role menu. Each option must be on its own new line, as an emoji, followed by a space, followed by a mention of the role to grant. The `title` is displayed at the top of the meny and is optional, to exclude your title simply give a new line. \n__kwargs__\n- Give target=@role mention to limit use of the menu only to users with the specified role.\n- You may set expiry time for your menu, with each time division on a new line. Acceptable time divisions are: seconds, minutes, hours, days. To force the menu to never expire, give **all** time divisions as `off`.(default: minutes=5)")
     @commands.has_permissions(administrator=True)
-    async def admin_cmd_make_role_menu(self, ctx: Context, args: str):
+    async def admin_cmd_make_role_menu(self, ctx: Context, *, args: str):
         """Create a reaction role menu, allowing users to self-assign or remove roles by adding and removing reactions.
         Option reactions must be either unicode, or custom to the server where the menu is being created.
 
@@ -176,8 +176,15 @@ class MenusCog(commands.Cog):
                 if role is None:
                     await ctx.send(":x: Unrecognised role: " + roleStr)
                     return
-                elif role.position > botRole.position:
+                elif role.position >= botRole.position:
                     await ctx.send(":x: I can't grant the **" + role.name + "** role!\nMake sure it's below my '" + botRole.name + "' role in the server roles list.")
+                    return
+                elif role.is_bot_managed():
+                    await ctx.send(":x: I can't grant the **" + role.name + "** role!\nThis role is managed by a bot.")
+                    return
+                elif role.is_integration():
+                    await ctx.send(":x: I can't grant the **" + role.name + "** role!\nThis role is managed by an integration.")
+                    return
                 reactionRoles[dumbReact] = role
 
         if len(reactionRoles) == 0:

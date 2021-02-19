@@ -52,7 +52,7 @@ class ReactionRoleMenuOption(reactionMenu.ReactionMenuOption):
 
     def __init__(self, emoji : lib.emotes.Emote, role : Role, menu : reactionMenu.ReactionMenu):
         self.role = role
-        super(ReactionRoleMenuOption, self).__init__(self.role.name, emoji, addFunc=giveRole, addArgs=(menu.message.guild, self.role, menu.msg.id), removeFunc=removeRole, removeArgs=(menu.message.guild, self.role, menu.msg.id))
+        super(ReactionRoleMenuOption, self).__init__(self.role.name, emoji, addFunc=giveRole, addArgs=(menu.msg.guild, self.role, menu.msg.id), removeFunc=removeRole, removeArgs=(menu.msg.guild, self.role, menu.msg.id))
 
 
     def toDict(self) -> dict:

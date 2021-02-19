@@ -9,8 +9,9 @@ from base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 from dotenv import load_dotenv
 load_dotenv()
 from typing import Dict
-from .reactionMenus.reactionMenu import ReactionMenu
-from . import lib
+from trimatix.reactionMenus.reactionMenu import ReactionMenu
+from trimatix import lib, botState
+
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 
@@ -22,8 +23,8 @@ class EsportsBot(commands.Bot):
     :vartype reactionMenus: Dict[int, ReactionMenu]
     """
 
-    def __init__(self, command_prefix, help_command=commands.bot._DefaultRepr, description=None, **options):
-        super().__init__(command_prefix, help_command=help_command, description=description, **options)
+    def __init__(self, command_prefix, **options):
+        super().__init__(command_prefix, **options)
         self.reactionMenus: Dict[int, ReactionMenu] = {}
 
 
@@ -52,6 +53,7 @@ class EsportsBot(commands.Bot):
 
 
 client = EsportsBot(command_prefix = '!', intents=intents)
+botState.client = client
 client.remove_command('help')
 
 async def send_to_log_channel(self, guild_id, msg):
@@ -199,7 +201,7 @@ client.load_extension('cogs.VoicemasterCog')
 client.load_extension('cogs.DefaultRoleCog')
 client.load_extension('cogs.LogChannelCog')
 client.load_extension('cogs.AdminCog')
-client.load_extension('cogs.MenusCog')
+client.load_extension('trimatix.MenusCog')
 if os.getenv('ENABLE_TWITTER') == "True":
     client.load_extension('cogs.TwitterIntegrationCog')
 if os.getenv('ENABLE_TWITCH') == "True":
