@@ -11,9 +11,9 @@ services:
     build: .
     command: python main.py
     environment: 
-      - DISCORD_TOKEN=NzIxMzA5OTQxMzY5MDEyMjg0.XuSqZg.43QDmd4xZkK9JdmAvp939LBMvq4
-      - PG_HOST=192.168.0.11
-      - PG_DATABASE=esportsbot
+      - DISCORD_TOKEN=**
+      - PG_HOST=**
+      - PG_DATABASE=**
       - PG_USER=postgres
       - PG_PWD=Pass2020!
       - TWITCH_CLIENT_ID=**
