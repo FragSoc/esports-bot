@@ -133,6 +133,15 @@ List all the current Twitter handles configured in the server
 <summary>Reaction Role Menus</summary>
 
 ### Reaction Role Menus
+Esportsbot now includes a slightly stripped down version of the reaction menus implementation provided by [BASED](https://github.com/Trimatix/BASED).
+
+Making new types of reaction menus is easy - simply extend `trimatix.reactionMenus.reactionMenu.ReactionMenu`.
+
+To register a menu instance for interaction, use `trimatix.botState.client.reactionMenus.add(yourMenuInstance)`. For an example of this, see `trimatix.MenusCog.admin_cmd_make_role_menu`.
+
+All saveable reaction menus are automatically added and removed from Esportsbot's PostgreSQL database, and will be loaded in again on bot startup. To register your `ReactionMenu` subclass as saveable, use the `reactionMenu.saveableMenu` class decorator. Saveable menus **MUST** provide complete `toDict` and `fromDict` implementations. For examples of this, see `trimatix.reactionMenus.reactionRoleMenu`.
+
+`ReactionMenu`s store each option in the menu as an instance of a `reactionMenu.ReactionMenuOption` subclass - each `ReactionMenuOption` has its own individual behaviour for when reactions are added and removed. This already provides a huge amount of flexibility, but you can achieve even more with a custom `ReactionMenuOption` subclass. To make your `ReactionMenuOption` saveable, provide complete `toDict` and `fromDict` implementations. For an example of this, see `trimatix.reactionMenus.reactionRoleMenu.ReactionRoleMenuOption`.
 
 ##### !make-role-menu
 ```
