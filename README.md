@@ -128,3 +128,42 @@ Change the notify channel for the given Twitter handle
 ##### !getalltwitters
 List all the current Twitter handles configured in the server
 </details>
+
+<details>
+<summary>Reaction Role Menus</summary>
+
+### Reaction Role Menus
+
+##### !make-role-menu
+```
+!make-role-menu {title}
+{option1 emoji} {@option1 role}
+...    ...
+```
+Create a reaction role menu.
+
+Each option must be on its own new line, as an emoji, followed by a space, followed by a mention of the role to grant.
+
+The `title` is displayed at the top of the meny and is optional, to exclude your title simply give a new line.
+
+##### !add-role-menu-option {menu-id} {emoji} {@role mention}
+Add a role to a role menu.
+
+To get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.
+
+Your emoji must not be in the menu already, adding the same role more than once is allowed.
+
+Give your role to grant/remove as a mention.
+
+##### !del-role-menu-option {menu-id} {emoji}
+Remove a role from a role menu.
+
+To get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.
+
+Your emoji must be an option in the menu.
+
+##### !del-menu {id}
+Remove the specified reaction menu. You can also just delete the message, if you have permissions.
+
+To get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.
+</details>
