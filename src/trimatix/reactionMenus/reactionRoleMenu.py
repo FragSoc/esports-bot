@@ -70,7 +70,7 @@ class ReactionRoleMenu(reactionMenu.ReactionMenu):
     """
 
     def __init__(self, msg : Message, client: Client, reactionRoles : Dict[lib.emotes.Emote, Role],
-            titleTxt : str = "", desc : str = "", col : Colour = Colour.default(),
+            titleTxt : str = "", desc : str = "", col : Colour = None,
             footerTxt : str = "", img : str = "", thumb : str = "", icon : str = "", authorName : str = "",
             targetMember : Member = None, targetRole : Role = None):
         """
@@ -99,7 +99,7 @@ class ReactionRoleMenu(reactionMenu.ReactionMenu):
         if desc == "":
             desc = "React for your desired role!"
 
-        super(ReactionRoleMenu, self).__init__(msg, client, options=roleOptions, titleTxt=titleTxt, desc=desc, col=col, footerTxt=footerTxt, img=img, thumb=thumb, icon=icon, authorName=authorName, targetMember=targetMember, targetRole=targetRole)
+        super(ReactionRoleMenu, self).__init__(msg, client, options=roleOptions, titleTxt=titleTxt, desc=desc, col=col if col is not None else Colour.blue(), footerTxt=footerTxt, img=img, thumb=thumb, icon=icon, authorName=authorName, targetMember=targetMember, targetRole=targetRole)
 
 
     def toDict(self) -> dict:
@@ -137,7 +137,7 @@ class ReactionRoleMenu(reactionMenu.ReactionMenu):
         return ReactionRoleMenu(msg, client, reactionRoles,
                                     titleTxt=rmDict["titleTxt"] if "titleTxt" in rmDict else "",
                                     desc=rmDict["desc"] if "desc" in rmDict else "",
-                                    col=Colour.from_rgb(rmDict["col"][0], rmDict["col"][1], rmDict["col"][2]) if "col" in rmDict else Colour.default(),
+                                    col=Colour.from_rgb(rmDict["col"][0], rmDict["col"][1], rmDict["col"][2]) if "col" in rmDict else Colour.blue(),
                                     footerTxt=rmDict["footerTxt"] if "footerTxt" in rmDict else "",
                                     img=rmDict["img"] if "img" in rmDict else "",
                                     thumb=rmDict["thumb"] if "thumb" in rmDict else "",

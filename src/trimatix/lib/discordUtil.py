@@ -7,7 +7,7 @@ async def reactionFromRaw(client: Client, payload: RawReactionActionEvent) -> Tu
 
     :param RawReactionActionEvent payload: Payload describing the reaction action
     :return: The message whose reactions changed, the user who completed the action, and the emoji that changed.
-    :rtype: Tuple[Message, Union[User, Member], BasedEmoji]
+    :rtype: Tuple[Message, Union[User, Member], Emote]
     """
     emoji = None
     user = None
