@@ -18,7 +18,9 @@ def generate_schema():
         CREATE TABLE guild_info(
             guild_id bigint NOT NULL,
             log_channel_id bigint,
-            default_role_id bigint
+            default_role_id bigint,
+            lan_role_id bigint,
+            lan_signin_menu_id bigint
         );
         ALTER TABLE ONLY guild_info
         ADD CONSTRAINT loggingchannel_pkey PRIMARY KEY(guild_id);
