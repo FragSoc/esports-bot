@@ -25,6 +25,21 @@ def generate_schema():
         """
         db_gateway().pure_query(query_string)
 
+    # Does the reaction_menus table exist?
+    reaction_menus_exists = db_gateway().pure_return(
+        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'reaction_menus'")
+    if not reaction_menus_exists:
+        # Does not exist
+        query_string = """
+        CREATE TABLE reaction_menus(
+            message_id bigint NOT NULL,
+            menu jsonb,
+        );
+        ALTER TABLE ONLY reaction_menus
+        ADD CONSTRAINT menu_pkey PRIMARY KEY(message_id);
+        """
+        db_gateway().pure_query(query_string)
+
     # Does the voicemaster_master table exist?
     voicemaster_master_exists = db_gateway().pure_return(
         "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'voicemaster_master'")

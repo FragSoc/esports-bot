@@ -81,7 +81,7 @@ class ReactionRoleMenu(reactionMenu.ReactionMenu):
         :param str titleTxt: The content of the embed title (Default "**Role Menu**")
         :param str desc: he content of the embed description; appears at the top below the title (Default "React for your desired role!")
         :param discord.Colour col: The colour of the embed's side strip (Default None)
-        :param str footerTxt: Secondary description appearing in darker font at the bottom of the embed (Default time until menu expiry if timeout is not None, "" otherwise)
+        :param str footerTxt: Secondary description appearing in darker font at the bottom of the embed (Default "")
         :param str img: URL to a large icon appearing as the content of the embed, left aligned like a field (Default "")
         :param str thumb: URL to a larger image appearing to the right of the title (Default "")
         :param str icon: URL to a smaller image to the left of authorName. AuthorName is required for this to be displayed. (Default "")
@@ -110,7 +110,7 @@ class ReactionRoleMenu(reactionMenu.ReactionMenu):
         """
         # TODO: Remove this method. The guild is already saved in ReactionMenu.toDict
         baseDict = super(ReactionRoleMenu, self).toDict()
-        baseDict["guild"] = self.message.guild.id
+        baseDict["guild"] = self.msg.guild.id
         return baseDict
 
 
@@ -123,14 +123,18 @@ class ReactionRoleMenu(reactionMenu.ReactionMenu):
         :rtype: ReactionRolePicker
         """
         dcGuild = client.get_guild(rmDict["guild"])
-        msg = dcGuild.get_channel(rmDict["channel"]).get_partial_message(rmDict["msg"])
+        channelGetter = client if dcGuild is None else dcGuild
+        dcChannel = channelGetter.get_channel(rmDict["channel"])
+        if dcChannel is None:
+            raise lib.exceptions.UnrecognisedReactionMenuMessage(rmDict["guild"], rmDict["channel"], rmDict["msg"])
+        msg = PartialMessage(channel=dcChannel, id=rmDict["msg"])
 
         reactionRoles = {}
         for reaction in rmDict["options"]:
             reactionRoles[lib.emotes.Emote.fromStr(reaction)] = dcGuild.get_role(rmDict["options"][reaction]["role"])
 
 
-        return ReactionRoleMenu(msg, reactionRoles,
+        return ReactionRoleMenu(msg, client, reactionRoles,
                                     titleTxt=rmDict["titleTxt"] if "titleTxt" in rmDict else "",
                                     desc=rmDict["desc"] if "desc" in rmDict else "",
                                     col=Colour.from_rgb(rmDict["col"][0], rmDict["col"][1], rmDict["col"][2]) if "col" in rmDict else Colour.default(),

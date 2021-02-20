@@ -287,8 +287,7 @@ class ReactionMenu:
         :param str titleTxt: The content of the embed title (Default "")
         :param str desc: he content of the embed description; appears at the top below the title (Default "")
         :param discord.Colour col: The colour of the embed's side strip (Default None)
-        :param str footerTxt: Secondary description appearing in darker font at the bottom of the embed
-                                (Default time until menu expiry if timeout is not None, "" otherwise)
+        :param str footerTxt: Secondary description appearing in darker font at the bottom of the embed (Default "")
         :param str img: URL to a large icon appearing as the content of the embed, left aligned like a field (Default "")
         :param str thumb: URL to a larger image appearing to the right of the title (Default "")
         :param str icon: URL to a smaller image to the left of authorName.
@@ -468,9 +467,6 @@ class ReactionMenu:
         if self.authorName != "":
             data["authorName"] = self.authorName
 
-        if self.timeout != None:
-            data["timeout"] = self.timeout.expiryTime.timestamp()
-
         if self.targetMember is not None:
             data["targetMember"] = self.targetMember.id
 
@@ -500,10 +496,10 @@ def saveableMenu(cls):
 
 
 def isSaveableMenuClass(cls):
-    return issubclass(cls, ReactionMenu) and cls in saveableMenuTypeNames
+    return issubclass(cls, ReactionMenu) and cls in saveableNameMenuTypes
 
 def isSaveableMenuInstance(o):
-    return isinstance(o, ReactionMenu) and type(o) in saveableNameMenuTypes
+    return isinstance(o, ReactionMenu) and type(o) in saveableMenuTypeNames
 
 def isSaveableMenuTypeName(clsName: str):
     return clsName in saveableNameMenuTypes

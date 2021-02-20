@@ -7,9 +7,14 @@ from db_gateway import db_gateway
 from typing import Dict, Union
 
 from trimatix.reactionMenus import reactionMenu
+from trimatix.lib.exceptions import UnrecognisedReactionMenuMessage
 
 
 class ReactionMenuDB(dict):
+
+    def __init__(self):
+        self.initializing = True
+
 
     def __contains__(self, menu: Union[ReactionMenu, int]) -> bool:
         if isinstance(menu, int):
@@ -33,8 +38,8 @@ class ReactionMenuDB(dict):
 
         super().__setitem__(menuID, menu)
 
-        if reactionMenu.isSaveableMenuInstance(menu):
-            db_gateway().insert('reaction_menus', params={'message_id': menu.msg.id, 'menu': Json(menu.toDict())})
+        if not self.initializing and reactionMenu.isSaveableMenuInstance(menu):
+            db_gateway().insert('reaction_menus', params={'message_id': menu.msg.id, 'menu': str(Json(menu.toDict())).lstrip("'").rstrip("'")})
 
 
     def __delitem__(self, menu: Union[ReactionMenu, int]) -> None:
@@ -49,7 +54,7 @@ class ReactionMenuDB(dict):
         super().__delitem__(menu.msg.id)
 
         if reactionMenu.isSaveableMenuInstance(menu):
-            db_gateway().delete('reaction_menus', params={'message_id': menu.msg.id})
+            db_gateway().delete('reaction_menus', where_params={'message_id': menu.msg.id})
 
 
     def add(self, menu: ReactionMenu):
@@ -90,7 +95,7 @@ class ReactionMenuDB(dict):
         if menu.msg.id not in self:
             raise KeyError("The given menu is not registered: " + str(menu.msg.id))
         if reactionMenu.isSaveableMenuInstance(menu):
-            db_gateway().update('reaction_menus', set_params={'menu': Json(menu.toDict())}, where_params={'message_id': menu.msg.id})
+            db_gateway().update('reaction_menus', set_params={'menu': str(Json(menu.toDict())).lstrip("'").rstrip("'")}, where_params={'message_id': menu.msg.id})
 
 
 class EsportsBot(commands.Bot):
@@ -103,10 +108,25 @@ class EsportsBot(commands.Bot):
     def __init__(self, command_prefix, **options):
         super().__init__(command_prefix, **options)
         self.reactionMenus: ReactionMenuDB = ReactionMenuDB()
+    
+
+    def init(self):
         menusData = db_gateway().getall('reaction_menus')
-        for msgID, menuDict in menusData:
-            if 'type' in menuDict and reactionMenu.isSaveableMenuTypeName(menuDict['type']):
-                self.reactionMenus.add(reactionMenu.saveableMenuClassFromName(menuDict['type']).fromDict(self, menuDict))
+        for menuData in menusData:
+            msgID, menuDict = menuData['message_id'], menuData['menu']
+            if 'type' in menuDict:
+                if reactionMenu.isSaveableMenuTypeName(menuDict['type']):
+                    try:
+                        self.reactionMenus.add(reactionMenu.saveableMenuClassFromName(menuDict['type']).fromDict(self, menuDict))
+                    except UnrecognisedReactionMenuMessage:
+                        print("Unrecognised message for " + menuDict['type'] + ", removing from the database: " + str(menuDict["msg"]))
+                        db_gateway().delete('reaction_menus', where_params={'message_id': msgID})
+                else:
+                    print("Non saveable menu in database:",msgID,menuDict["type"])
+            else:
+                print("no type for menu " + str(msgID))
+
+        self.reactionMenus.initializing = False
 
 
 _instance: EsportsBot = None

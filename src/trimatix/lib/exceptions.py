@@ -12,3 +12,11 @@ class UnrecognisedEmoji(Exception):
         """
         super().__init__(comment)
         self.id = id
+
+
+class UnrecognisedReactionMenuMessage(Exception):
+    def __init__(self, guild: int, channel: int, msg: int):
+        self.guild = guild
+        self.channel = channel
+        self.msg = msg
+        super().__init__()
