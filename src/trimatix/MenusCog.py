@@ -98,7 +98,7 @@ class MenusCog(commands.Cog):
         
 
 
-    @commands.command(name="make-role-menu", usage="make-role-menu <title>\n<option1 emoji> <@option1 role>\n...    ...", help="Create a reaction role menu. Each option must be on its own new line, as an emoji, followed by a space, followed by a mention of the role to grant. The `title` is displayed at the top of the meny and is optional, to exclude your title simply give a new line. \n__kwargs__\n- Give target=@role mention to limit use of the menu only to users with the specified role.\n- You may set expiry time for your menu, with each time division on a new line. Acceptable time divisions are: seconds, minutes, hours, days. To force the menu to never expire, give **all** time divisions as `off`.(default: minutes=5)")
+    @commands.command(name="make-role-menu", usage="make-role-menu <title>\n<option1 emoji> <@option1 role>\n...    ...", help="Create a reaction role menu. Each option must be on its own new line, as an emoji, followed by a space, followed by a mention of the role to grant. The `title` is displayed at the top of the meny and is optional, to exclude your title simply give a new line.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_make_role_menu(self, ctx: Context, *, args: str):
         """Create a reaction role menu, allowing users to self-assign or remove roles by adding and removing reactions.
