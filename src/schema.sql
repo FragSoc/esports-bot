@@ -13,7 +13,8 @@ BEGIN
         log_channel_id bigint,
         default_role_id bigint,
         lan_role_id bigint,
-        lan_signin_menu_id bigint
+        lan_signin_menu_id bigint,
+        shared_role_id bigint
     );
     ALTER TABLE ONLY guild_info
         ADD CONSTRAINT loggingchannel_pkey PRIMARY KEY (guild_id);
