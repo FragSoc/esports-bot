@@ -105,6 +105,7 @@ client.load_extension('cogs.VoicemasterCog')
 client.load_extension('cogs.DefaultRoleCog')
 client.load_extension('cogs.LogChannelCog')
 client.load_extension('cogs.AdminCog')
+client.load_extension('trimatix.AutoLANCog')
 if os.getenv('ENABLE_TWITTER') == "True":
     client.load_extension('cogs.TwitterIntegrationCog')
 if os.getenv('ENABLE_TWITCH') == "True":
