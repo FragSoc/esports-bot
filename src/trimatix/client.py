@@ -1,10 +1,11 @@
 from discord.ext import commands
-from discord import Intents
+from discord import Intents, Embed, Message, Colour
 from .reactionMenus.reactionMenu import ReactionMenu
 from .reactionMenus import reactionRoleMenu
 from psycopg2.extras import Json
 from db_gateway import db_gateway
 from typing import Dict, Union
+from datetime import datetime
 
 from trimatix.reactionMenus import reactionMenu
 from trimatix.lib.exceptions import UnrecognisedReactionMenuMessage
@@ -172,6 +173,26 @@ class EsportsBot(commands.Bot):
                 print("no type for menu " + str(msgID))
 
         self.reactionMenus.initializing = False
+
+    
+    async def adminLog(self, message: Message, actions: Dict[str, str], *args, **kwargs):
+        """Log an event or series of events to the server's admin logging channel.
+        
+        :param Message message: The message that triggered this log. Probably a command.
+        :param actions: A dictionary associating action types with action details. No key or value can be empty.
+        :type actions: Dict[str, str]
+        """
+        db_logging_call = db_gateway().get('guild_info', params={'guild_id': message.guild.id})
+        if db_logging_call and db_logging_call[0]['log_channel_id']:
+            if "embed" not in kwargs:
+                logEmbed = Embed(description=" | ".join((message.author.mention, "#" + message.channel.name, "[message](" + message.jump_url + ")")))
+                logEmbed.set_author(icon_url=self.user.avatar_url_as(size=64), name="Admin Log")
+                logEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
+                logEmbed.colour = Colour.random()
+                for aTitle, aDesc in zip(*actions.items()):
+                    logEmbed.add_field(name=str(aTitle), value=str(aDesc), inline=False)
+                kwargs["embed"] = logEmbed
+            await self.get_channel(db_logging_call[0]['log_channel_id']).send(*args, **kwargs)
 
 
 _instance: EsportsBot = None
