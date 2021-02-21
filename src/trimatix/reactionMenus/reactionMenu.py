@@ -1,16 +1,17 @@
 import inspect
 from discord import Embed, Colour, NotFound, HTTPException, Forbidden, Member, User, Message, Role, RawReactionActionEvent, Client
+from discord.reaction import Reaction
 from .. import lib
-from abc import abstractmethod
-from typing import Union, Dict, List
+from abc import abstractclassmethod, abstractmethod
+from typing import Union, Dict, List, Any
 import asyncio
 from types import FunctionType
 
 
-async def deleteReactionMenu(menu):
-    """Delete the currently active reaction menu and its message entirely, with the given message ID
+async def deleteReactionMenu(menu: "ReactionMenu"):
+    """Delete the currently active reaction menu and its message entirely.
 
-    :param ReactionMenu menuID: The menu to remove, corresponding with the discord ID of the menu's message
+    :param ReactionMenu menu: The menu to remove
     """
     try:
         await menu.msg.delete()
@@ -53,8 +54,8 @@ class ReactionMenuOption:
     :vartype removeHasArgs: bool
     """
 
-    def __init__(self, name: str, emoji: lib.emotes.Emote, addFunc: FunctionType = None, addArgs=None,
-                    removeFunc: FunctionType = None, removeArgs=None):
+    def __init__(self, name: str, emoji: lib.emotes.Emote, addFunc : FunctionType = None, addArgs : Any = None,
+                    removeFunc : FunctionType = None, removeArgs : Any = None):
         """
         :param str name: The name of this option, as displayed in the menu embed.
         :param lib.emotes.Emote emoji: The emoji that a user must react with to trigger this option
@@ -159,8 +160,16 @@ class ReactionMenuOption:
         return {"name": self.name, "emoji": self.emoji.toDict(**kwargs)}
 
 
-    @classmethod
-    def fromDict(cls, data: dict, **kwargs):
+    @abstractclassmethod
+    def fromDict(cls, data: dict, **kwargs) -> "ReactionMenuOption":
+        """Deserialize a dictionary representation of a reaction menu option into a functioning ReactionMenuOption object.
+        This is undefined for the base ReactionMenuOption class.
+
+        :param dict data: A dictionary containing all information needed to reconstruct the desired menu option
+        :return: A reaction menu option as described in data
+        :rtype: ReactionMenuOption
+        :raise NotImplementedError: When calling on a non-saveable menu option type, such as the base ReactionMenuOption
+        """
         raise NotImplementedError("Attempted to fromDict an unserializable menu option type: " + cls.__name__)
 
 
@@ -170,8 +179,8 @@ class NonSaveableReactionMenuOption(ReactionMenuOption):
     Instead, inherit directly from ReactionMenuOption or another suitable subclass that is not marked as unsaveable.
     """
 
-    def __init__(self, name: str, emoji: lib.emotes.Emote, addFunc: FunctionType = None, addArgs=None,
-                        removeFunc: FunctionType = None, removeArgs=None):
+    def __init__(self, name: str, emoji: lib.emotes.Emote, addFunc : FunctionType = None, addArgs : Any = None,
+                        removeFunc : FunctionType = None, removeArgs : Any = None):
         """
         :param str name: The name of this option, as displayed in the menu embed.
         :param lib.emotes.Emote emoji: The emoji that a user must react with to trigger this option
@@ -192,6 +201,16 @@ class NonSaveableReactionMenuOption(ReactionMenuOption):
         :raise NotImplementedError: Always.
         """
         raise NotImplementedError("Attempted to call toDict on a non-saveable reaction menu option")
+
+
+    @classmethod
+    def fromDict(cls, data: dict, **kwargs):
+        """fromDict is not defined for NonSaveableReactionMenuOption.
+
+        :param dict data: ignored
+        :raise NotImplementedError: Always
+        """
+        raise NotImplementedError("Attempted to fromDict an unserializable menu option type: " + cls.__name__)
 
 
 class DummyReactionMenuOption(ReactionMenuOption):
@@ -216,6 +235,15 @@ class DummyReactionMenuOption(ReactionMenuOption):
         :rtype: dict
         """
         return super(DummyReactionMenuOption, self).toDict(**kwargs)
+
+
+    def fromDict(cls, data: dict, **kwargs) -> "DummyReactionMenuOption":
+        """Deserialize a dictionary representing a DummyReactionMenuOption into a functioning object.
+
+        :return: A dictionary containing all necessary information to reconstruct this option instance
+        :rtype: dict
+        """
+        return DummyReactionMenuOption(data["name"], lib.emotes.Emote.fromDict(data["emoji"]))
 
 
 class ReactionMenu:
@@ -275,10 +303,10 @@ class ReactionMenu:
     :vartype targetRole: discord.Role
     """
 
-    def __init__(self, msg: Message, client: Client, options: Dict[lib.emotes.Emote, ReactionMenuOption] = None,
-                 titleTxt: str = "", desc: str = "", col: Colour = Colour.blue(),
-                 footerTxt: str = "", img: str = "", thumb: str = "", icon: str = "",
-                 authorName: str = "", targetMember: Member = None, targetRole: Role = None):
+    def __init__(self, msg: Message, client: Client, options : Dict[lib.emotes.Emote, ReactionMenuOption] = None,
+                 titleTxt : str = "", desc : str = "", col : Colour = Colour.blue(),
+                 footerTxt : str = "", img : str = "", thumb : str = "", icon : str = "",
+                 authorName : str = "", targetMember : Member = None, targetRole : Role = None):
         """
         :param discord.Message msg: the message where this menu is embedded
         :param discord.Client client: The client that instanced this menu
@@ -476,8 +504,16 @@ class ReactionMenu:
         return data
 
 
-    @classmethod
-    def fromDict(cls, data: dict, **kwargs):
+    @abstractclassmethod
+    def fromDict(cls, data: dict, **kwargs) -> "ReactionMenu":
+        """Deserialize a dictionary representation of a reaction menu into a functioning ReactionMenu object.
+        This is undefined for the base ReactionMenu class.
+
+        :param dict data: A dictionary containing all information needed to reconstruct the desired menu
+        :return: A reaction menu as described in data
+        :rtype: ReactionMenu
+        :raise NotImplementedError: When calling on a non-saveable menu option type, such as the base ReactionMenu
+        """
         raise NotImplementedError("Attempted to fromDict an unserializable menu type: " + cls.__name__)
 
 
@@ -485,7 +521,17 @@ saveableMenuTypeNames: Dict[type, str] = {}
 saveableNameMenuTypes: Dict[str, type] = {}
 
 
-def saveableMenu(cls):
+def saveableMenu(cls: type) -> type:
+    """A decorator registering a ReactionMenu subclass as saveable.
+    Once applied, instances of your class will automatically save their toDict representation to SQL on creation,
+    and the instance will be reconstructed on bot restart with your provided fromDict implementation.
+    Both cls.toDict and cls.fromDict must be present and complete for this decorator to function.
+
+    :param type cls: A ReactionMenu subclass to register as saveable
+    :return: cls
+    :rtype: type
+    :raise TypeError: When cls is not a subclass of ReactionMenu
+    """
     if not issubclass(cls, ReactionMenu):
         raise TypeError("Invalid use of saveableMenu decorator: " + cls.__name__ + " is not a ReactionMenu subtype")
     if cls not in saveableMenuTypeNames:
@@ -495,14 +541,40 @@ def saveableMenu(cls):
     return cls
 
 
-def isSaveableMenuClass(cls):
+def isSaveableMenuClass(cls: type) -> bool:
+    """Decide if the given class has been registered as a saveable reaction menu.
+
+    :param type cls: The class to check for saveability registration
+    :return: True if cls is a saveable reaction menu class, False otherwise
+    :rtype: bool
+    """
     return issubclass(cls, ReactionMenu) and cls in saveableNameMenuTypes
 
-def isSaveableMenuInstance(o):
+def isSaveableMenuInstance(o: ReactionMenu) -> bool:
+    """Decide if o is an instance of a saveable reaction menu class.
+
+    :param ReactionMenu o: The ReactionMenu instance to check for saveability registration
+    :return: True if o is a saveable reaction menu instance, False otherwise
+    :rtype: bool
+    """
     return isinstance(o, ReactionMenu) and type(o) in saveableMenuTypeNames
 
-def isSaveableMenuTypeName(clsName: str):
+def isSaveableMenuTypeName(clsName: str) -> bool:
+    """Decide if clsName is the name of a saveable reaction menu class.
+
+    :param str clsName: The name of the class to check for saveability registration
+    :return: True if clsName corresponds to a a saveable reaction menu class, False otherwise
+    :rtype: bool
+    """
     return clsName in saveableNameMenuTypes
 
-def saveableMenuClassFromName(clsName: str):
+def saveableMenuClassFromName(clsName: str) -> type:
+    """Retreive the saveable ReactionMenu subclass that as the given class name.
+    clsName must correspond to a ReactionMenu subclass that has been registered as saveble with the saveableMenu decorator.
+
+    :param str clsName: The name of the class to retreive
+    :return: A saveable ReactionMenu subclass with the name clsName
+    :rtype: type
+    :raise KeyError: If no ReactionMenu subclass with the given name has been registered as saveable
+    """
     return saveableNameMenuTypes[clsName]
