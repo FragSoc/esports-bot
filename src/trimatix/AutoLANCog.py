@@ -2,6 +2,7 @@ from discord.ext import commands
 from discord.ext.commands.context import Context
 from db_gateway import db_gateway
 from .client import EsportsBot
+import asyncio
 
 
 class AutoLANCog(commands.Cog):
@@ -72,15 +73,18 @@ class AutoLANCog(commands.Cog):
                         await lanChannel.set_permissions(sharedRole, read_messages=False,
                                                             reason=ctx.author.name + " used the " + self.bot.command_prefix + "close-lan command")
                         loadingTxts[0] = loadingTxts[0][:-1] + "✅"
-                        await loadingMsg.edit(content="\n".join(loadingTxts))
+                        asyncio.ensure_future(loadingMsg.edit(content="\n".join(loadingTxts)))
+                    membersFutures = set()
                     for member in lanRole.members:
-                        await member.remove_roles(lanRole, reason=ctx.author.name + " used the " + self.bot.command_prefix + "close-lan command")
-                        loadingTxts[1] = loadingTxts[1][:-1] + "✅"
-                        await loadingMsg.edit(content="\n".join(loadingTxts))
+                        membersFutures.add(asyncio.ensure_future(member.remove_roles(lanRole, reason=ctx.author.name + " used the " + self.bot.command_prefix + "close-lan command")))
                     await signinMenu.msg.clear_reactions()
                     await signinMenu.updateMessage()
                     loadingTxts[2] = loadingTxts[2][:-1] + "✅"
                     await loadingMsg.edit(content="\n".join(loadingTxts))
+                    if usersEdited:
+                        asyncio.wait(membersFutures)
+                        loadingTxts[1] = loadingTxts[1][:-1] + "✅"
+                        await loadingMsg.edit(content="\n".join(loadingTxts))
                     await ctx.message.reply("Done!")
 
 
