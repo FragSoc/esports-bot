@@ -63,6 +63,26 @@ class ReactionRoleMenuOption(reactionMenu.ReactionMenuOption):
         """
         return {"role": self.role.id}
 
+    
+    @classmethod
+    def fromDict(self, data: dict, **kwargs) -> "ReactionRoleMenuOption":
+        """Deserialize a dictionary representation of a ReactionRoleMenuOption into a functioning object.
+        In order to fetch this option's role, the guild containing the role is a required kwarg for this deserializer.
+        The option's emoji and owning ReactionMenu are also required kwargs.
+
+        :param dict data: A dictionary containing the ID of this option's role
+        :param Guild dcGuild: The guild containing the role with the ID given in data (Default None)
+        :param Emote emoji: The emote to represent this option in the menu (Default None)
+        :param ReactionMenu menu: The menu owning this option (Default None)
+        :return: A ReactionRoleMenuOption that grants/removes the role identified in data
+        :rtype: ReactionRoleMenuOption
+        """
+        params = {"dcGuild": Guild, "emoji": lib.emotes.Emote, "menu": reactionMenu.ReactionMenu}
+        for oName, oType in zip(*params.items()):
+            if oName not in kwargs: raise NameError("Missing required kwarg: " + oName)
+            if not isinstance(kwargs[oName], oType): raise TypeError("Expected type " + oType.__name__ + " for parameter " + oName + ", received " + type(kwargs[oName]).__name__)
+        return ReactionRoleMenuOption(kwargs["emoji"], kwargs["dcGuild"].get_role(data["role"]), kwargs["menu"])
+
 
 @reactionMenu.saveableMenu
 class ReactionRoleMenu(reactionMenu.ReactionMenu):
