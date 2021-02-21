@@ -9,13 +9,14 @@ import discord
 load_dotenv()
 from typing import Dict
 
-from trimatix import client, lib
+from trimatix import client as discordClient
+from trimatix import lib
 from trimatix.reactionMenus.reactionMenu import ReactionMenu
 
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-client = client.instance()
+client = discordClient.instance()
 client.remove_command('help')
 
 async def send_to_log_channel(self, guild_id, msg):
