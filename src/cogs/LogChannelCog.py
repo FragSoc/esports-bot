@@ -1,17 +1,12 @@
 from discord.ext import commands
 from db_gateway import db_gateway
 from base_functions import get_cleaned_id
+from base_functions import send_to_log_channel
 
 
 class LogChannelCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-    async def send_to_log_channel(self, guild_id, msg):
-        db_logging_call = db_gateway().get(
-            'guild_info', params={'guild_id': guild_id})
-        if db_logging_call and db_logging_call[0]['log_channel_id']:
-            await self.bot.get_channel(db_logging_call[0]['log_channel_id']).send(msg)
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -27,7 +22,7 @@ class LogChannelCog(commands.Cog):
                 mention_log_channel = self.bot.get_channel(
                     cleaned_channel_id).mention
                 await ctx.channel.send(f"Logging channel has been set to {mention_log_channel}")
-                await self.send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has set this channel as the logging channel")
+                await send_to_log_channel(self, ctx.author.guild.id, f"{ctx.author.mention} has set this channel as the logging channel")
             else:
                 await ctx.channel.send("Logging channel already set to this channel")
         else:
@@ -36,7 +31,7 @@ class LogChannelCog(commands.Cog):
             mention_log_channel = self.bot.get_channel(
                 cleaned_channel_id).mention
             await ctx.channel.send(f"Logging channel has been set to {mention_log_channel}")
-            await self.send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has set this channel as the logging channel")
+            await send_to_log_channel(self, ctx.author.guild.id, f"{ctx.author.mention} has set this channel as the logging channel")
 
     @commands.command()
     @commands.has_permissions(administrator=True)

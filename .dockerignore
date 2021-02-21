@@ -1,1 +1,5 @@
-local_db
+README.md
+.dockerignore
+Dockerfile
+docker-compose.yml
+todo

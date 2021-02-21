@@ -7,7 +7,6 @@ from discord.ext import tasks, commands
 import os
 import discord
 load_dotenv()
-from typing import Dict
 
 from trimatix import client as discordClient
 from trimatix import lib
@@ -19,11 +18,12 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 client = discordClient.instance()
 client.remove_command('help')
 
-async def send_to_log_channel(self, guild_id, msg):
+
+async def send_to_log_channel(guild_id, msg):
     db_logging_call = db_gateway().get(
         'guild_info', params={'guild_id': guild_id})
     if db_logging_call and db_logging_call[0]['log_channel_id']:
-        await self.bot.get_channel(db_logging_call[0]['log_channel_id']).send(msg)
+        await client.get_channel(db_logging_call[0]['log_channel_id']).send(msg)
 
 
 @client.event
@@ -158,8 +158,8 @@ async def on_raw_bulk_message_delete(payload: discord.RawBulkMessageDeleteEvent)
 @client.command()
 @commands.has_permissions(administrator=True)
 async def initialsetup(ctx):
-    already_in_db = True if db_gateway().get(
-        'guild_info', params={'guild_id': ctx.author.guild.id}) else False
+    already_in_db = db_gateway().get(
+        'guild_info', params={'guild_id': ctx.author.guild.id})
     if already_in_db:
         await ctx.channel.send("This server is already set up")
     else:
