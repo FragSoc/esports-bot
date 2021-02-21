@@ -189,7 +189,7 @@ class EsportsBot(commands.Bot):
                 logEmbed.set_author(icon_url=self.user.avatar_url_as(size=64), name="Admin Log")
                 logEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
                 logEmbed.colour = Colour.random()
-                for aTitle, aDesc in zip(*actions.items()):
+                for aTitle, aDesc in actions.items():
                     logEmbed.add_field(name=str(aTitle), value=str(aDesc), inline=False)
                 kwargs["embed"] = logEmbed
             await self.get_channel(db_logging_call[0]['log_channel_id']).send(*args, **kwargs)

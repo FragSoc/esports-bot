@@ -19,12 +19,14 @@ class MenusCog(commands.Cog):
         """
         msgID = int(args)
         if msgID in self.bot.reactionMenus:
+            menuTypeName = type(self.bot.reactionMenus[msgID]).__name__
             await self.bot.reactionMenus[msgID].delete()
             try:
                 self.bot.reactionMenus.removeID(msgID)
             except KeyError:
                 pass
             await ctx.send("✅ Menu deleted!")
+            await self.bot.adminLog(ctx.message, {"Reaction menu deleted": "id: " + str(msgID) + "\ntype: " + menuTypeName})
         else:
             await ctx.send(":x: Unrecognised reaction menu!")
 
@@ -50,16 +52,20 @@ class MenusCog(commands.Cog):
             else:
                 if not menu.hasEmojiRegistered(roleEmoji):
                     await ctx.send(":x: That emoji is not in the menu!")
-                elif len(menu.options) == 1:
-                    await menu.delete()
-                    await ctx.send("The menu has no more options! Menu deleted.")
-                    self.bot.reactionMenus.remove(menu)
                 else:
-                    del menu.options[roleEmoji]
-                    await menu.msg.remove_reaction(roleEmoji.sendable, ctx.guild.me)
-                    await menu.updateMessage(noRefreshOptions=True)
-                    self.bot.reactionMenus.updateDB(menu)
-                    await ctx.send("✅ Removed option " + roleEmoji.sendable + " from menu " + str(menu.msg.id) + "!")
+                    optionRole = menu.options[roleEmoji].role
+                    adminActions = {"Reaction menu option removed": "id: " + str(menu.msg.id) + "\ntype: " + type(menu).__name__ + "\nOption: " + roleEmoji.sendable + " <@&" + str(optionRole.id) + ">\n[Menu](" + menu.msg.jump_url + ")"}
+                    if len(menu.options) == 1:
+                        await menu.delete()
+                        await ctx.send("The menu has no more options! Menu deleted.")
+                        adminActions["Reaction menu deleted (last option removed)"] = "id: " + str(menu.msg.id) + "\ntype: " + type(menu).__name__
+                    else:
+                        del menu.options[roleEmoji]
+                        await menu.msg.remove_reaction(roleEmoji.sendable, ctx.guild.me)
+                        await menu.updateMessage(noRefreshOptions=True)
+                        self.bot.reactionMenus.updateDB(menu)
+                        await ctx.send("✅ Removed option " + roleEmoji.sendable + " from menu " + str(menu.msg.id) + "!")
+                    await self.bot.adminLog(ctx.message, adminActions)
 
     
     @commands.command(name="add-role-menu-option", usage="add-role-menu-option <menu-id> <emoji> <@role mention>", help="Add a role to a role menu.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.\nYour emoji must not be in the menu already.\nGive your role to grant/remove as a mention.")
@@ -96,6 +102,7 @@ class MenusCog(commands.Cog):
                     await menu.updateMessage(noRefreshOptions=True)
                     self.bot.reactionMenus.updateDB(menu)
                     await ctx.send("✅ Added option " + roleEmoji.sendable + " to menu " + str(menu.msg.id) + "!")
+                    await self.bot.adminLog(ctx.message, {"Reaction menu option added": "id: " + str(menu.msg.id) + "\ntype: " + type(menu).__name__ + "\nOption: " + roleEmoji.sendable + " <@&" + str(role.id) + ">\n[Menu](" + menu.msg.jump_url + ")"})
         
 
 
@@ -207,6 +214,7 @@ class MenusCog(commands.Cog):
         await menu.updateMessage()
         self.bot.reactionMenus.add(menu)
         await ctx.send("Role menu " + str(menuMsg.id) + " has been created!")
+        await self.bot.adminLog(ctx.message, {"Reaction Role Menu Created": "id: " + str(menu.msg.id) + "\ntype: " + type(menu).__name__ + "\nOptions: " + str(len(reactionRoles)) + "\n[Menu](" + menu.msg.jump_url + ")"})
 
 
 def setup(bot):

@@ -78,7 +78,7 @@ class ReactionRoleMenuOption(reactionMenu.ReactionMenuOption):
         :rtype: ReactionRoleMenuOption
         """
         params = {"dcGuild": Guild, "emoji": lib.emotes.Emote, "menu": reactionMenu.ReactionMenu}
-        for oName, oType in zip(*params.items()):
+        for oName, oType in params.items():
             if oName not in kwargs: raise NameError("Missing required kwarg: " + oName)
             if not isinstance(kwargs[oName], oType): raise TypeError("Expected type " + oType.__name__ + " for parameter " + oName + ", received " + type(kwargs[oName]).__name__)
         return ReactionRoleMenuOption(kwargs["emoji"], kwargs["dcGuild"].get_role(data["role"]), kwargs["menu"])
