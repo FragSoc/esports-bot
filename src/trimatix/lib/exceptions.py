@@ -15,8 +15,17 @@ class UnrecognisedEmoji(Exception):
 
 
 class UnrecognisedReactionMenuMessage(Exception):
+    """Exception to indicate that a reaction menu failed to initialize as its message could not be fetched from discord.
+    This could be for a number of reasons, for example a change in permissions, or the message was deleted.
+    """
+
     def __init__(self, guild: int, channel: int, msg: int):
+        """
+        :param int guild: The id of the guild containing the requested message
+        :param int channel: The id of the channel containing the requested message
+        :param int msg: The id of the requested message
+        """
         self.guild = guild
         self.channel = channel
         self.msg = msg
-        super().__init__()
+        super().__init__("Failed to fetch message for reaction menu: guild " + str(guild) + " channel " + str(channel) + " message " + str(msg))
