@@ -88,6 +88,8 @@ class MenusCog(commands.Cog):
                 roleEmoji = lib.emotes.Emote.fromStr(argsSplit[1], rejectInvalid=True)
             except lib.exceptions.UnrecognisedEmoji:
                 await ctx.send(":x: I don't know that emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
+            except TypeError:
+                await ctx.send(":x: Invalid emoji: " + argsSplit[1])
             else:
                 role = ctx.guild.get_role(int(argsSplit[2].lstrip("<@&").rstrip(">")))
                 if role is None:
@@ -173,8 +175,15 @@ class MenusCog(commands.Cog):
                     await ctx.send(":x: Cannot use the same emoji for two options!")
                     return
 
+                if lib.stringTyping.strIsRoleMention(roleStr):
+                    roleID = int(roleStr.lstrip("<@&").rstrip(">"))
+                elif lib.stringTyping.strIsInt(roleStr):
+                    roleID = int(roleStr)
+                else:
+                    await ctx.send(":x: Invalid role given for option " + dumbReact.sendable + "!")
+                    return
 
-                role = ctx.guild.get_role(int(roleStr.lstrip("<@&").rstrip(">")))
+                role = ctx.guild.get_role(roleID)
                 if role is None:
                     await ctx.send(":x: Unrecognised role: " + roleStr)
                     return
@@ -214,7 +223,7 @@ class MenusCog(commands.Cog):
         await menu.updateMessage()
         self.bot.reactionMenus.add(menu)
         await ctx.send("Role menu " + str(menuMsg.id) + " has been created!")
-        await self.bot.adminLog(ctx.message, {"Reaction Role Menu Created": "id: " + str(menu.msg.id) + "\ntype: " + type(menu).__name__ + "\nOptions: " + str(len(reactionRoles)) + "\n[Menu](" + menu.msg.jump_url + ")"})
+        await self.bot.adminLog(ctx.message, {"Reaction Role Menu Created": "id: " + str(menu.msg.id) + "\ntype: " + type(menu).__name__ + "\n" + str(len(reactionRoles)) + " Options: " + "".join(e.sendable for e in reactionRoles) + "\n[Menu](" + menu.msg.jump_url + ")"})
 
 
 def setup(bot):
