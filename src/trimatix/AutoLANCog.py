@@ -39,6 +39,7 @@ class AutoLANCog(commands.Cog):
                     await lanChannel.set_permissions(sharedRole, read_messages=True,
                                                         reason=ctx.author.name + " used the " + self.bot.command_prefix + "open-lan command")
                     await ctx.send("✅ <#" + lanChannel.id + "> is now visible to **" + sharedRole.name + "**!")
+                    await self.bot.adminLog(ctx.message, {"LAN channel made visible": "<#" + lanChannel.id + ">"})
                 else:
                     await ctx.send(":x: The lan channel is already open! <#" + lanChannel.id + ">")
 
@@ -67,14 +68,16 @@ class AutoLANCog(commands.Cog):
                     usersEdited = len(lanRole.members)
                     loadingTxts = ["Closing channel... " + ("⏳" if channelEdited else "✅"),
                                     "Unassigning role" + ((" from " + str(usersEdited) + " users... ⏳") if usersEdited else "... ✅"),
-                                    "Reseting signin menu... ⏳"]
+                                    "Resetting signin menu... ⏳"]
                     loadingMsg = await ctx.send("\n".join(loadingTxts))
+                    adminActions = {"Role menu reset": "id: " + str(signinMenu.msg.id) + "\ntype: " + type(signinMenu).__name__ + "\n[Menu](" + signinMenu.msg.jump_url + ")"}
 
                     if channelEdited:
                         await lanChannel.set_permissions(sharedRole, read_messages=False,
                                                             reason=ctx.author.name + " used the " + self.bot.command_prefix + "close-lan command")
                         loadingTxts[0] = loadingTxts[0][:-1] + "✅"
                         asyncio.ensure_future(loadingMsg.edit(content="\n".join(loadingTxts)))
+                        adminActions["LAN Channel Made Invisible"] = "<#" + lanChannel.id + ">"
                     membersFutures = set()
                     for member in lanRole.members:
                         membersFutures.add(asyncio.ensure_future(member.remove_roles(lanRole, reason=ctx.author.name + " used the " + self.bot.command_prefix + "close-lan command")))
@@ -86,7 +89,9 @@ class AutoLANCog(commands.Cog):
                         asyncio.wait(membersFutures)
                         loadingTxts[1] = loadingTxts[1][:-1] + "✅"
                         await loadingMsg.edit(content="\n".join(loadingTxts))
+                        adminActions["LAN Role Removed"] = "Users: " + str(usersEdited) + "\n<@&" + lanRole.id + ">"
                     await ctx.message.reply("Done!")
+                    await self.bot.adminLog(ctx.message, adminActions)
 
 
     @commands.command(name="set-lan-signin-menu", usage="set-lan-signin-menu <id>", help="Set the LAN signin menu to use with `open-lan` and `close-lan`.")
@@ -102,8 +107,10 @@ class AutoLANCog(commands.Cog):
                 if menuID not in self.bot.reactionMenus:
                     await ctx.send(":x: Unrecognised menu ID!")
                 else:
+                    menu = self.bot.reactionMenus[menuID]
                     db_gateway().update('guild_info', set_params={"lan_signin_menu_id": menuID}, where_params={"guild_id": ctx.guild.id})
-                    await ctx.send("✅ The LAN signin menu is now: " + self.bot.reactionMenus[menuID].msg.jump_url)
+                    await ctx.send("✅ The LAN signin menu is now: " + menu.msg.jump_url)
+                    await self.bot.adminLog(ctx.message, {"LAN signin menu set": "id: " + str(menuID) + "\ntype: " + type(menu).__name__ + "\n[Menu](" + menu.msg.jump_url + ")"})
 
 
     @commands.command(name="set-shared-role", usage="set-shared-role <role>",
@@ -121,8 +128,9 @@ class AutoLANCog(commands.Cog):
                 if role is None:
                     await ctx.send(":x: Unrecognised role!")
                 else:
-                    guildData = db_gateway().update('guild_info', set_params={"shared_role_id": roleID}, where_params={"guild_id": ctx.guild.id})
+                    db_gateway().update('guild_info', set_params={"shared_role_id": roleID}, where_params={"guild_id": ctx.guild.id})
                     await ctx.send("✅ The shared role is now **" + role.name + "**.")
+                    await self.bot.adminLog(ctx.message, {"Shared role set": "<@&" + str(roleID) + ">"})
 
 
     @commands.command(name="set-lan-role", usage="set-lan-role <role>",
@@ -142,6 +150,7 @@ class AutoLANCog(commands.Cog):
                 else:
                     db_gateway().update('guild_info', set_params={"lan_role_id": roleID}, where_params={"guild_id": ctx.guild.id})
                     await ctx.send("✅ The LAN role is now **" + role.name + "**.")
+                    await self.bot.adminLog(ctx.message, {"LAN role set": "<@&" + str(roleID) + ">"})
 
 
 def setup(bot):
