@@ -33,7 +33,7 @@ def generate_schema():
         query_string = """
         CREATE TABLE reaction_menus(
             message_id bigint NOT NULL,
-            menu jsonb,
+            menu jsonb
         );
         ALTER TABLE ONLY reaction_menus
         ADD CONSTRAINT menu_pkey PRIMARY KEY(message_id);
