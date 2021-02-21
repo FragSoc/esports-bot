@@ -3,6 +3,7 @@ from discord.ext.commands.context import Context
 from db_gateway import db_gateway
 from .client import EsportsBot
 import asyncio
+from . import lib
 
 
 class AutoLANCog(commands.Cog):
@@ -94,15 +95,14 @@ class AutoLANCog(commands.Cog):
         if not args:
             await ctx.send(":x: Please provide a menu ID to set!")
         else:
-            try: int(args)
-            except ValueError:
+            if not lib.stringTyping.strIsInt(args):
                 await ctx.send(":x: Invalid menu ID!\nTo get a menu ID, enable discord's developer mode, right click on the menu, and click 'copy ID'")
             else:
                 menuID = int(args)
                 if menuID not in self.bot.reactionMenus:
                     await ctx.send(":x: Unrecognised menu ID!")
                 else:
-                    guildData = db_gateway().update('guild_info', set_params={"lan_signin_menu_id": menuID}, where_params={"guild_id": ctx.guild.id})
+                    db_gateway().update('guild_info', set_params={"lan_signin_menu_id": menuID}, where_params={"guild_id": ctx.guild.id})
                     await ctx.send("✅ The LAN signin menu is now: " + self.bot.reactionMenus[menuID].msg.jump_url)
 
 
@@ -113,12 +113,10 @@ class AutoLANCog(commands.Cog):
         if not args:
             await ctx.send(":x: Please provide a role to set!")
         else:
-            roleID = args.lstrip("<&").rstrip(">")
-            try: int(roleID)
-            except ValueError:
+            if not (lib.stringTyping.strIsInt(args) or lib.stringTyping.strIsRoleMention(args)):
                 await ctx.send(":x: Invalid role! Please give your role as either a mention or an ID.")
             else:
-                roleID = int(args)
+                roleID = int(args.lstrip("<&").rstrip(">"))
                 role = ctx.guild.get_role(roleID)
                 if role is None:
                     await ctx.send(":x: Unrecognised role!")
@@ -134,17 +132,15 @@ class AutoLANCog(commands.Cog):
         if not args:
             await ctx.send(":x: Please provide a role to set!")
         else:
-            roleID = args.lstrip("<&").rstrip(">")
-            try: int(roleID)
-            except ValueError:
+            if not (lib.stringTyping.strIsInt(args) or lib.stringTyping.strIsRoleMention(args)):
                 await ctx.send(":x: Invalid role! Please give your role as either a mention or an ID.")
             else:
-                roleID = int(args)
+                roleID = int(args.lstrip("<&").rstrip(">"))
                 role = ctx.guild.get_role(roleID)
                 if role is None:
                     await ctx.send(":x: Unrecognised role!")
                 else:
-                    guildData = db_gateway().update('guild_info', set_params={"lan_role_id": roleID}, where_params={"guild_id": ctx.guild.id})
+                    db_gateway().update('guild_info', set_params={"lan_role_id": roleID}, where_params={"guild_id": ctx.guild.id})
                     await ctx.send("✅ The LAN role is now **" + role.name + "**.")
 
 
