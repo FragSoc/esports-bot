@@ -14,11 +14,8 @@ class MenusCog(commands.Cog):
     @commands.command(name="del-menu", usage="del-menu <id>", help="Remove the specified reaction menu. You can also just delete the message, if you have permissions.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_del_reaction_menu(self, ctx: Context, *, args: str):
-        """Force the expiry of the specified reaction menu message, regardless of reaction menu type.
-
-        :param discord.Message message: the discord message calling the command
-        :param str args: A string containing the message ID of an active reaction menu.
-        :param bool isDM: Whether or not the command is being called from a DM channel
+        """Unregister the specified reaction menu for interactions and delete the containing message.
+        This works regardless of the type of reaction menu.
         """
         msgID = int(args)
         if msgID in self.bot.reactionMenus:
@@ -35,6 +32,8 @@ class MenusCog(commands.Cog):
     @commands.command(name="del-role-menu-option", usage="del-role-menu-option <menu-id> <emoji>", help="Remove a role from a role menu.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.\nYour emoji must be an option in the menu.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_remove_role_menu_option(self, ctx: Context, *, args: str):
+        """Remove an option from a reaction role menu, by its emoji.
+        """
         argsSplit = args.split(" ")
         if len(argsSplit) < 2:
             await ctx.send(":x: Please provide a menu ID and an emoji!")
@@ -66,6 +65,8 @@ class MenusCog(commands.Cog):
     @commands.command(name="add-role-menu-option", usage="add-role-menu-option <menu-id> <emoji> <@role mention>", help="Add a role to a role menu.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.\nYour emoji must not be in the menu already.\nGive your role to grant/remove as a mention.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_add_role_menu_option(self, ctx: Context, *, args: str):
+        """Add a new option to a reaction role menu, by its emoji and role to grant/remove.
+        """
         argsSplit = args.split(" ")
         if len(argsSplit) < 3:
             await ctx.send(":x: Please provide a menu ID, an emoji, and a role mention!")
