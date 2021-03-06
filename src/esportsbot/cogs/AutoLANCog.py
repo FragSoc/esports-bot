@@ -1,5 +1,7 @@
+from asyncio import tasks
 from discord.ext import commands
 from discord.ext.commands.context import Context
+from discord import PartialMessage
 from ..db_gateway import db_gateway
 import asyncio
 from .. import lib
@@ -12,8 +14,10 @@ class AutoLANCog(commands.Cog):
 
 
     async def verifyLANSettings(self, ctx, guildData):
-        for att, name, cmd in ( (guildData["lan_signin_menu_id"],               "LAN signin menu",  "set-lan-signin-menu"),
-                                (None if guildData["lan_signin_menu_id"] in self.bot.reactionMenus else 1, "LAN signin menu", "set-lan-signin-menu"),
+        for att, name, cmd in ( (None if ("lan_signin_menu_id" not in guildData or \
+                                            guildData["lan_signin_menu_id"] is None or \
+                                            guildData["lan_signin_menu_id"] not in self.bot.reactionMenus) else 1,
+                                            "LAN signin menu", "set-lan-signin-menu"),
                                 (guildData["shared_role_id"],                   "shared role",      "set-shared-role"),
                                 (ctx.guild.get_role(guildData["shared_role_id"]), "shared role",    "set-shared-role"),
                                 (guildData["lan_role_id"],                      "LAN role",         "set-lan-role"),
@@ -27,34 +31,35 @@ class AutoLANCog(commands.Cog):
     
     @commands.command(name="open-lan", usage="open-lan", help="Reveal the LAN signin channel of the server.")
     @commands.has_permissions(administrator=True)
-    async def admin_cmd_open_lan(self, ctx: Context, *, args: str):
-        guildData = db_gateway().get('guild_info', params={"guild_id": ctx.guild.id})
+    async def admin_cmd_open_lan(self, ctx: Context):
+        guildData = db_gateway().get('guild_info', params={"guild_id": ctx.guild.id})[0]
         if await self.verifyLANSettings(ctx, guildData):
-            lanChannel = guildData["lan_signin_menu_id"].msg.channel
+            signinMenu = self.bot.reactionMenus[guildData["lan_signin_menu_id"]]
+            lanChannel = signinMenu.msg.channel
             if not lanChannel.permissions_for(ctx.guild.me).manage_permissions:
-                await ctx.send(":x: I don't have permission to edit the permissions in <#" + lanChannel.id + ">!")
+                await ctx.send(":x: I don't have permission to edit the permissions in <#" + str(lanChannel.id) + ">!")
             else:
                 sharedRole = ctx.guild.get_role(guildData["shared_role_id"])
                 if not lanChannel.overwrites_for(sharedRole).read_messages:
                     await lanChannel.set_permissions(sharedRole, read_messages=True,
                                                         reason=ctx.author.name + " used the " + self.bot.command_prefix + "open-lan command")
-                    await ctx.send("✅ <#" + lanChannel.id + "> is now visible to **" + sharedRole.name + "**!")
-                    await self.bot.adminLog(ctx.message, {"LAN channel made visible": "<#" + lanChannel.id + ">"})
+                    await ctx.send("✅ <#" + str(lanChannel.id) + "> is now visible to **" + sharedRole.name + "**!")
+                    await self.bot.adminLog(ctx.message, {"LAN channel made visible": "<#" + str(lanChannel.id) + ">"})
                 else:
-                    await ctx.send(":x: The lan channel is already open! <#" + lanChannel.id + ">")
+                    await ctx.send(":x: The lan channel is already open! <#" + str(lanChannel.id) + ">")
 
 
     @commands.command(name="close-lan", usage="close-lan",
                         help="Hide the LAN signin channel of the server, reset the signin menu, and remove the LAN role from users.")
     @commands.has_permissions(administrator=True)
-    async def admin_cmd_close_lan(self, ctx: Context, *, args: str):
-        guildData = db_gateway().get('guild_info', params={"guild_id": ctx.guild.id})
+    async def admin_cmd_close_lan(self, ctx: Context):
+        guildData = db_gateway().get('guild_info', params={"guild_id": ctx.guild.id})[0]
         if await self.verifyLANSettings(ctx, guildData):
             signinMenu = self.bot.reactionMenus[guildData["lan_signin_menu_id"]]
             lanChannel = signinMenu.msg.channel
             myPerms = lanChannel.permissions_for(ctx.guild.me)
             if not myPerms.manage_permissions:
-                await ctx.send(":x: I don't have permission to edit the permissions in <#" + lanChannel.id + ">!")
+                await ctx.send(":x: I don't have permission to edit the permissions in <#" + str(lanChannel.id) + ">!")
             elif not myPerms.manage_roles:
                 await ctx.send(":x: I don't have permission to assign roles!\nPlease give me the 'manage roles' permission.")
             else:
@@ -64,11 +69,19 @@ class AutoLANCog(commands.Cog):
                                     + "Please move it below my " + ctx.guild.self_role.name + " role.")
                 else:
                     sharedRole = ctx.guild.get_role(guildData["shared_role_id"])
-                    channelEdited = not lanChannel.overwrites_for(sharedRole).read_messages
+                    channelEdited = lanChannel.overwrites_for(sharedRole).read_messages
                     usersEdited = len(lanRole.members)
+                    if isinstance(signinMenu.msg, PartialMessage):
+                        signinMenu.msg = await signinMenu.msg.fetch()
+                    menuReset = len(signinMenu.msg.reactions) > 1
+
+                    if True not in [channelEdited, usersEdited, menuReset]:
+                        await ctx.message.reply("Nothing to do!\n*(<#" + str(signinMenu.msg.channel.id) + "> already invisible to " + sharedRole.name + ", no reactions on signin menu, no users with " + lanRole.name + " role)*")
+                        return
+
                     loadingTxts = ["Closing channel... " + ("⏳" if channelEdited else "✅"),
                                     "Unassigning role" + ((" from " + str(usersEdited) + " users... ⏳") if usersEdited else "... ✅"),
-                                    "Resetting signin menu... ⏳"]
+                                    "Resetting signin menu... " + ("⏳" if menuReset else "✅")]
                     loadingMsg = await ctx.send("\n".join(loadingTxts))
                     adminActions = {"Role menu reset": "id: " + str(signinMenu.msg.id) + "\ntype: " + type(signinMenu).__name__ + "\n[Menu](" + signinMenu.msg.jump_url + ")"}
 
@@ -77,19 +90,22 @@ class AutoLANCog(commands.Cog):
                                                             reason=ctx.author.name + " used the " + self.bot.command_prefix + "close-lan command")
                         loadingTxts[0] = loadingTxts[0][:-1] + "✅"
                         asyncio.ensure_future(loadingMsg.edit(content="\n".join(loadingTxts)))
-                        adminActions["LAN Channel Made Invisible"] = "<#" + lanChannel.id + ">"
+                        adminActions["LAN Channel Made Invisible"] = "<#" + str(lanChannel.id) + ">"
                     membersFutures = set()
                     for member in lanRole.members:
                         membersFutures.add(asyncio.ensure_future(member.remove_roles(lanRole, reason=ctx.author.name + " used the " + self.bot.command_prefix + "close-lan command")))
-                    await signinMenu.msg.clear_reactions()
-                    await signinMenu.updateMessage()
-                    loadingTxts[2] = loadingTxts[2][:-1] + "✅"
-                    await loadingMsg.edit(content="\n".join(loadingTxts))
+                    
+                    if menuReset:
+                        await signinMenu.msg.clear_reactions()
+                        await signinMenu.updateMessage()
+                        loadingTxts[2] = loadingTxts[2][:-1] + "✅"
+                        await loadingMsg.edit(content="\n".join(loadingTxts))
+
                     if usersEdited:
-                        asyncio.wait(membersFutures)
+                        await asyncio.wait(membersFutures)
                         loadingTxts[1] = loadingTxts[1][:-1] + "✅"
                         await loadingMsg.edit(content="\n".join(loadingTxts))
-                        adminActions["LAN Role Removed"] = "Users: " + str(usersEdited) + "\n<@&" + lanRole.id + ">"
+                        adminActions["LAN Role Removed"] = "Users: " + str(usersEdited) + "\n<@&" + str(lanRole.id) + ">"
                     await ctx.message.reply("Done!")
                     await self.bot.adminLog(ctx.message, adminActions)
 
@@ -123,7 +139,7 @@ class AutoLANCog(commands.Cog):
             if not (lib.stringTyping.strIsInt(args) or lib.stringTyping.strIsRoleMention(args)):
                 await ctx.send(":x: Invalid role! Please give your role as either a mention or an ID.")
             else:
-                roleID = int(args.lstrip("<&").rstrip(">"))
+                roleID = int(args.lstrip("<@&").rstrip(">"))
                 role = ctx.guild.get_role(roleID)
                 if role is None:
                     await ctx.send(":x: Unrecognised role!")
@@ -143,7 +159,7 @@ class AutoLANCog(commands.Cog):
             if not (lib.stringTyping.strIsInt(args) or lib.stringTyping.strIsRoleMention(args)):
                 await ctx.send(":x: Invalid role! Please give your role as either a mention or an ID.")
             else:
-                roleID = int(args.lstrip("<&").rstrip(">"))
+                roleID = int(args.lstrip("<@&").rstrip(">"))
                 role = ctx.guild.get_role(roleID)
                 if role is None:
                     await ctx.send(":x: Unrecognised role!")
