@@ -1,42 +1,30 @@
 # UoY Esport Bot Rewrite
+
 ## How to set up an instance of this bot
 
-Clone this repository locally:<br/>
+1. Clone this repository:
 ```console
-$ git clone https://github.com/Ryth-cs/Esports-Bot-Rewrite.git
+$ git clone https://github.com/FragSoc/Esports-Bot-Rewrite.git
 ```
 
-Go into the directory /src:
+2. Change into the repo directory:
 ```console
-$ cd Esports-Bot-Rewrite/src/
+$ cd Esports-Bot-Rewrite
 ```
 
-Create a .env file and edit it in Vim:
+3. Create a `secrets.env` file and edit it in your favourite text editor:
 ```console
-$ vim .env
+$ vim secrets.env
 ```
 
-Edit the below environment variables:
+4. Edit the below environment variables:
 ```console
-DISCORD_TOKEN = ''
-PG_HOST = ''
-PG_DATABASE = 'esportsbot' # Edit the startup script in /db_instance if you change this
-PG_USER = 'postgres' # Edit the startup script in /db_instance if you change this
-PG_PWD = ''
+DISCORD_TOKEN=
+TWITCH_CLIENT_ID=
+TWITCH_CLIENT_SECRET=
 ```
 
-Move to the main directory and edit the docker-compose.yml in Vim:
-```console
-$ cd ..
-$ vim docker-compose.yml
-```
-
-Change the POSTGRES_PASSWORD to your previous value:
-```console
-POSTGRES_PASSWORD = ''
-```
-
-Exit Vim and run docker-compose:
+5. Run docker-compose:
 ```console
 $ docker-compose up
 ```
