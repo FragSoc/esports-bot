@@ -6,14 +6,11 @@ from discord.utils import get
 from discord.ext import tasks, commands
 import os
 import discord
-load_dotenv()
 
 from trimatix import client as discordClient
 from trimatix import lib
 from trimatix.reactionMenus.reactionMenu import ReactionMenu
 
-
-TOKEN = os.getenv('DISCORD_TOKEN')
 
 client = discordClient.instance()
 client.remove_command('help')
@@ -167,17 +164,22 @@ async def initialsetup(ctx):
             'guild_id': ctx.author.guild.id})
         await ctx.channel.send("This server has now been initialised")
 
-# Generate Database Schema
-generate_schema()
 
-client.load_extension('cogs.VoicemasterCog')
-client.load_extension('cogs.DefaultRoleCog')
-client.load_extension('cogs.LogChannelCog')
-client.load_extension('cogs.AdminCog')
-client.load_extension('trimatix.MenusCog')
-if os.getenv('ENABLE_TWITTER') == "True":
-    client.load_extension('cogs.TwitterIntegrationCog')
-if os.getenv('ENABLE_TWITCH') == "True":
-    client.load_extension('cogs.TwitchIntegrationCog')
+def launch():
+    load_dotenv()
+    TOKEN = os.getenv('DISCORD_TOKEN')
 
-client.run(TOKEN)
+    # Generate Database Schema
+    generate_schema()
+
+    client.load_extension('cogs.VoicemasterCog')
+    client.load_extension('cogs.DefaultRoleCog')
+    client.load_extension('cogs.LogChannelCog')
+    client.load_extension('cogs.AdminCog')
+    client.load_extension('trimatix.MenusCog')
+    if os.getenv('ENABLE_TWITTER') == "True":
+        client.load_extension('cogs.TwitterIntegrationCog')
+    if os.getenv('ENABLE_TWITCH') == "True":
+        client.load_extension('cogs.TwitchIntegrationCog')
+
+    client.run(TOKEN)
