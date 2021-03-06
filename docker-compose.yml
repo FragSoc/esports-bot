@@ -1,26 +1,27 @@
 version: "3"
-   
+
 services:
   db:
     image: "postgres:latest"
     environment:
       - POSTGRES_PASSWORD=Pass2020!
-    ports: 
-      - 5432:5432
+    restart: unless-stopped
+    volumes:
+      - "db_data:/var/lib/postgresql/data"
+
   bot:
     build: .
-    command: python main.py
-    environment: 
-      - DISCORD_TOKEN=**
-      - PG_HOST=**
-      - PG_DATABASE=**
-      - PG_USER=postgres
-      - PG_PWD=Pass2020!
-      - TWITCH_CLIENT_ID=**
-      - TWITCH_CLIENT_SECRET=**
-      - ENABLE_TWITTER=False
-      - ENABLE_TWITCH=False
-    volumes:
-      - ./src/:/code
     depends_on:
       - db
+    env_file: secrets.env
+    environment:
+      - PG_HOST=db
+      - PG_DATABASE=esportsbot
+      - PG_USER=postgres
+      - PG_PWD=Pass2020!
+      - ENABLE_TWITTER=False
+      - ENABLE_TWITCH=False
+    restart: unless-stopped
+
+volumes:
+  db_data:

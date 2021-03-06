@@ -1,17 +1,12 @@
 from discord.ext import commands
 from db_gateway import db_gateway
 from base_functions import get_cleaned_id
+from base_functions import send_to_log_channel
 
 
 class DefaultRoleCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-    async def send_to_log_channel(self, guild_id, msg):
-        db_logging_call = db_gateway().get(
-            'guild_info', params={'guild_id': guild_id})
-        if db_logging_call and db_logging_call[0]['log_channel_id']:
-            await self.bot.get_channel(db_logging_call[0]['log_channel_id']).send(msg)
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -23,7 +18,7 @@ class DefaultRoleCog(commands.Cog):
                 'default_role_id': cleaned_role_id}, where_params={'guild_id': ctx.author.guild.id})
             await ctx.channel.send(f"Default role has been set to {cleaned_role_id}")
             default_role = ctx.author.guild.get_role(cleaned_role_id)
-            await self.send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has set the default role to {default_role.mention}")
+            await send_to_log_channel(self, ctx.author.guild.id, f"{ctx.author.mention} has set the default role to {default_role.mention}")
         else:
             await ctx.channel.send("You need to either @ a role or paste the ID")
 
@@ -48,7 +43,7 @@ class DefaultRoleCog(commands.Cog):
             db_gateway().update('guild_info', set_params={
                 'default_role_id': 'NULL'}, where_params={'guild_id': ctx.author.guild.id})
             await ctx.channel.send("Default role has been removed")
-            await self.send_to_log_channel(ctx.author.guild.id, f"{ctx.author.mention} has removed the default role")
+            await send_to_log_channel(self, ctx.author.guild.id, f"{ctx.author.mention} has removed the default role")
         else:
             await ctx.channel.send("Default role has not been set")
 
