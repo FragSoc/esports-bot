@@ -4,7 +4,6 @@ from base_functions import get_cleaned_id
 import requests
 import time
 import os
-import pprint
 
 
 class TwitchIntegrationCog(commands.Cog):

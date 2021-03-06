@@ -27,7 +27,8 @@ Todos:
         ✔ Create command to remove Twitch handles from the database (also remove all) @done(21-02-03 21:52)
         ☐ Allow you to edit the channel the alert is sent to
         ☐ Allow you to edit the message structure for the alert
-        ☐ Create command to display all the Twitch alerts for the server
+        ✔ Create command to display all the Twitch alerts for the server @done(21-02-03 22:31)
+        ☐ Edit the display alerts to show custom messages
         ✔ Update statuses on bot boot @done(21-02-02 21:25)
 
     Role Reaction:
