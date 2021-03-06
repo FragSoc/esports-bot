@@ -20,7 +20,7 @@ class TwitchIntegrationCog(commands.Cog):
         if twitch_handle is not None and announce_channel is not None:
             # Check if Twitch channel has already been added
             twitch_in_db = db_gateway().get('twitch_info', params={
-                'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle})
+                'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
             cleaned_channel_id = get_cleaned_id(
                 announce_channel)
             channel_mention = self.bot.get_channel(
@@ -45,12 +45,32 @@ class TwitchIntegrationCog(commands.Cog):
             await ctx.channel.send("You need to provide a Twitch handle and a channel")
 
     @commands.command()
+    async def edittwitch(self, ctx, twitch_handle=None, announce_channel=None):
+        if twitch_handle is not None and announce_channel is not None:
+            # Check if Twitch channel has already been added
+            twitch_in_db = db_gateway().get('twitch_info', params={
+                'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
+            cleaned_channel_id = get_cleaned_id(
+                announce_channel)
+            channel_mention = self.bot.get_channel(
+                cleaned_channel_id).mention
+            if twitch_in_db:
+                # Make DB edit
+                db_gateway().update('twitch_info', set_params={
+                    'channel_id': cleaned_channel_id}, where_params={'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
+                await ctx.channel.send(f"Changed the alerts for {twitch_handle} to {channel_mention}")
+            else:
+                await ctx.channel.send("The Twitch user mentioned is not configured in this server")
+        else:
+            await ctx.channel.send("You need to provide a Twitch handle and a channel")
+
+    @commands.command()
     async def removetwitch(self, ctx, twitch_handle=None):
         if twitch_handle is not None:
             # Entered a Twitter handle
             twitch_handle = twitch_handle.lower()
             handle_exists = db_gateway().get('twitch_info', params={
-                'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle})
+                'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
             if handle_exists:
                 # Handle exists
                 db_gateway().delete('twitch_info',
@@ -123,7 +143,7 @@ class TwitchIntegrationCog(commands.Cog):
                         if alert:
                             # Grab all channels to be alerted
                             all_channels = db_gateway().get('twitch_info', params={
-                                'twitch_handle': twitch_handle})
+                                'twitch_handle': twitch_handle.lower()})
                             for each in all_channels:
                                 # Send alert to specified channel to each['channel_id']
                                 await self.bot.get_channel(each['channel_id']).send(f"{twitch_handle} just went live!")

@@ -20,7 +20,7 @@ class TwitterIntegrationCog(commands.Cog):
         if twitter_handle is not None and announce_channel is not None:
             if (twitter_handle.replace('_', '')).isalnum():
                 twitter_in_db = db_gateway().get('twitter_info', params={
-                    'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle})
+                    'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle.lower()})
                 if not bool(twitter_in_db):
                     cleaned_channel_id = get_cleaned_id(announce_channel)
                     channel_mention = self.bot.get_channel(
@@ -43,7 +43,7 @@ class TwitterIntegrationCog(commands.Cog):
         if twitter_handle is not None:
             if (twitter_handle.replace('_', '')).isalnum():
                 twitter_in_db = db_gateway().get('twitter_info', params={
-                    'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle})
+                    'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle.lower()})
                 if bool(twitter_in_db):
                     db_gateway().delete('twitter_info', where_params={
                         'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle})
@@ -61,7 +61,7 @@ class TwitterIntegrationCog(commands.Cog):
         if twitter_handle is not None and announce_channel is not None:
             if (twitter_handle.replace('_', '')).isalnum():
                 twitter_in_db = db_gateway().get('twitter_info', params={
-                    'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle})
+                    'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle.lower()})
                 if bool(twitter_in_db):
                     # In DB
                     cleaned_channel_id = get_cleaned_id(announce_channel)
