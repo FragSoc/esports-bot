@@ -24,12 +24,11 @@ def strIsUnicodeEmoji(c: str) -> bool:
     :return: True if c contains exactly one character, and that character is a unicode emoji. False otherwise.
     :rtype: bool
     """
+    c = c.rstrip(VAR_SELECTOR)
     if c == "":
         return False
     if c in UNICODE_EMOJI[emojiLang]:
         return True
-    if len(c) == 2:
-        return c[1] == VAR_SELECTOR and c[0] in UNICODE_EMOJI[emojiLang]
     for e in c.split(ZWJ):
         if len(e) > 1 or e not in UNICODE_EMOJI[emojiLang]:
             return False

@@ -1,4 +1,4 @@
-from db_gateway import db_gateway
+from .db_gateway import db_gateway
 
 
 def generate_schema():

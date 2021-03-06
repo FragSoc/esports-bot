@@ -3,12 +3,12 @@ from discord import Intents, Embed, Message, Colour
 from .reactionMenus.reactionMenu import ReactionMenu
 from .reactionMenus import reactionRoleMenu
 from psycopg2.extras import Json
-from db_gateway import db_gateway
+from ..db_gateway import db_gateway
 from typing import Dict, Union
 from datetime import datetime
 
-from trimatix.reactionMenus import reactionMenu
-from trimatix.lib.exceptions import UnrecognisedReactionMenuMessage
+from .reactionMenus import reactionMenu
+from .lib.exceptions import UnrecognisedReactionMenuMessage
 
 
 class ReactionMenuDB(dict):
@@ -157,7 +157,11 @@ class EsportsBot(commands.Bot):
         """
         if not self.reactionMenus.initializing:
             raise RuntimeError("This bot's ReactionMenuDB has already been initialized.")
-        menusData = db_gateway().getall('reaction_menus')
+        try:
+            menusData = db_gateway().getall('reaction_menus')
+        except Exception as e:
+            print("failed to load menus from SQL",e)
+            raise e
         for menuData in menusData:
             msgID, menuDict = menuData['message_id'], menuData['menu']
             if 'type' in menuDict:

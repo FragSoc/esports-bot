@@ -1,6 +1,6 @@
 from discord.ext import commands
 from discord.ext.commands.context import Context
-from db_gateway import db_gateway
+from ..db_gateway import db_gateway
 from . import lib
 from .reactionMenus import reactionRoleMenu
 from .client import EsportsBot
@@ -223,7 +223,11 @@ class MenusCog(commands.Cog):
         await menu.updateMessage()
         self.bot.reactionMenus.add(menu)
         await ctx.send("Role menu " + str(menuMsg.id) + " has been created!")
-        await self.bot.adminLog(ctx.message, {"Reaction Role Menu Created": "id: " + str(menu.msg.id) + "\ntype: " + type(menu).__name__ + "\n" + str(len(reactionRoles)) + " Options: " + "".join(e.sendable for e in reactionRoles) + "\n[Menu](" + menu.msg.jump_url + ")"})
+        try:
+            await self.bot.adminLog(ctx.message, {"Reaction Role Menu Created": "id: " + str(menu.msg.id) + "\ntype: " + type(menu).__name__ + "\n" + str(len(reactionRoles)) + " Options: " + "".join(e.sendable for e in reactionRoles) + "\n[Menu](" + menu.msg.jump_url + ")"})
+        except Exception as e:
+            print(e)
+            raise e
 
 
 def setup(bot):

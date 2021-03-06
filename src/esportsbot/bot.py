@@ -1,15 +1,15 @@
 from dotenv import load_dotenv
-from base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
-from generate_schema import generate_schema
-from db_gateway import db_gateway
+from .base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
+from .generate_schema import generate_schema
+from .db_gateway import db_gateway
 from discord.utils import get
 from discord.ext import tasks, commands
 import os
 import discord
 
-from trimatix import client as discordClient
-from trimatix import lib
-from trimatix.reactionMenus.reactionMenu import ReactionMenu
+from .trimatix import client as discordClient
+from .trimatix import lib
+from .trimatix.reactionMenus.reactionMenu import ReactionMenu
 
 
 client = discordClient.instance()
@@ -172,14 +172,14 @@ def launch():
     # Generate Database Schema
     generate_schema()
 
-    client.load_extension('cogs.VoicemasterCog')
-    client.load_extension('cogs.DefaultRoleCog')
-    client.load_extension('cogs.LogChannelCog')
-    client.load_extension('cogs.AdminCog')
-    client.load_extension('trimatix.MenusCog')
+    client.load_extension('esportsbot.cogs.VoicemasterCog')
+    client.load_extension('esportsbot.cogs.DefaultRoleCog')
+    client.load_extension('esportsbot.cogs.LogChannelCog')
+    client.load_extension('esportsbot.cogs.AdminCog')
+    client.load_extension('esportsbot.trimatix.MenusCog')
     if os.getenv('ENABLE_TWITTER') == "True":
-        client.load_extension('cogs.TwitterIntegrationCog')
+        client.load_extension('esportsbot.cogs.TwitterIntegrationCog')
     if os.getenv('ENABLE_TWITCH') == "True":
-        client.load_extension('cogs.TwitchIntegrationCog')
+        client.load_extension('esportsbot.cogs.TwitchIntegrationCog')
 
     client.run(TOKEN)
