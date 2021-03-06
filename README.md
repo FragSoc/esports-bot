@@ -131,9 +131,9 @@ Set the server's LAN signin channel as invisible, remove the server's LAN role f
 ##### !set-lan-signin-menu {menu_id}
 Set the reaction menu to clear during `!close-menu`. This will also tell the bot which channel to set visibility for during `!open-lan`.
 
-##### !set-shared-role {&role or role_id}
+##### !set-shared-role {@role or role_id}
 Set the role to deny signin channel visiblity to during `!close-menu`.
 
-##### !set-lan-role {&role or role_id}
+##### !set-lan-role {@role or role_id}
 Set the role to remove from users during `!close-menu`.
 </details>
