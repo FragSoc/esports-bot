@@ -1,7 +1,7 @@
 from asyncio import tasks
 from discord.ext import commands
 from discord.ext.commands.context import Context
-from discord import PartialMessage
+from discord import PartialMessage, Forbidden
 from ..db_gateway import db_gateway
 import asyncio
 from .. import lib
@@ -71,9 +71,8 @@ class AutoLANCog(commands.Cog):
                     sharedRole = ctx.guild.get_role(guildData["shared_role_id"])
                     channelEdited = lanChannel.overwrites_for(sharedRole).read_messages
                     usersEdited = len(lanRole.members)
-                    if isinstance(signinMenu.msg, PartialMessage):
-                        signinMenu.msg = await signinMenu.msg.fetch()
-                    menuReset = len(signinMenu.msg.reactions) > 1
+                    # signinMenu.msg = await signinMenu.msg.channel.fetch_message(signinMenu.msg.id)
+                    menuReset = True # len(signinMenu.msg.reactions) > 1
 
                     if True not in [channelEdited, usersEdited, menuReset]:
                         await ctx.message.reply("Nothing to do!\n*(<#" + str(signinMenu.msg.channel.id) + "> already invisible to " + sharedRole.name + ", no reactions on signin menu, no users with " + lanRole.name + " role)*")
@@ -96,7 +95,6 @@ class AutoLANCog(commands.Cog):
                         membersFutures.add(asyncio.ensure_future(member.remove_roles(lanRole, reason=ctx.author.name + " used the " + self.bot.command_prefix + "close-lan command")))
                     
                     if menuReset:
-                        await signinMenu.msg.clear_reactions()
                         await signinMenu.updateMessage()
                         loadingTxts[2] = loadingTxts[2][:-1] + "✅"
                         await loadingMsg.edit(content="\n".join(loadingTxts))
