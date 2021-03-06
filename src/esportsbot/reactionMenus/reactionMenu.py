@@ -54,7 +54,7 @@ class ReactionMenuOption:
     :vartype removeHasArgs: bool
     """
 
-    def __init__(self, name: str, emoji: lib.emotes.Emote, addFunc : FunctionType = None, addArgs : Any = None,
+    def __init__(self, name: str, emoji: "lib.emotes.Emote", addFunc : FunctionType = None, addArgs : Any = None,
                     removeFunc : FunctionType = None, removeArgs : Any = None):
         """
         :param str name: The name of this option, as displayed in the menu embed.
@@ -179,7 +179,7 @@ class NonSaveableReactionMenuOption(ReactionMenuOption):
     Instead, inherit directly from ReactionMenuOption or another suitable subclass that is not marked as unsaveable.
     """
 
-    def __init__(self, name: str, emoji: lib.emotes.Emote, addFunc : FunctionType = None, addArgs : Any = None,
+    def __init__(self, name: str, emoji: "lib.emotes.Emote", addFunc : FunctionType = None, addArgs : Any = None,
                         removeFunc : FunctionType = None, removeArgs : Any = None):
         """
         :param str name: The name of this option, as displayed in the menu embed.
@@ -218,7 +218,7 @@ class DummyReactionMenuOption(ReactionMenuOption):
     A prime example is ReactionPollMenu, where adding and removing options need not have any functionality.
     """
 
-    def __init__(self, name: str, emoji: lib.emotes.Emote):
+    def __init__(self, name: str, emoji: "lib.emotes.Emote"):
         """
         :param str name: The name of this option, as displayed in the menu embed.
         :param lib.emotes.Emote emoji: The emoji that a user must react with to trigger this option
@@ -303,7 +303,7 @@ class ReactionMenu:
     :vartype targetRole: discord.Role
     """
 
-    def __init__(self, msg: Message, client: Client, options : Dict[lib.emotes.Emote, ReactionMenuOption] = None,
+    def __init__(self, msg: Message, client: Client, options : Dict["lib.emotes.Emote", ReactionMenuOption] = None,
                  titleTxt : str = "", desc : str = "", col : Colour = Colour.blue(),
                  footerTxt : str = "", img : str = "", thumb : str = "", icon : str = "",
                  authorName : str = "", targetMember : Member = None, targetRole : Role = None):
@@ -344,7 +344,7 @@ class ReactionMenu:
         self.targetRole = targetRole
 
 
-    def hasEmojiRegistered(self, emoji: lib.emotes.Emote) -> bool:
+    def hasEmojiRegistered(self, emoji: "lib.emotes.Emote") -> bool:
         """Decide whether or not the given emoji is an option in this menu
 
         :param lib.emotes.Emote emoji: The emoji to test for membership
@@ -354,7 +354,7 @@ class ReactionMenu:
         return emoji in self.options
 
 
-    async def reactionAdded(self, emoji: lib.emotes.Emote, member: Union[Member, User]):
+    async def reactionAdded(self, emoji: "lib.emotes.Emote", member: Union[Member, User]):
         """Invoke an option's behaviour when it is selected by a user.
         This method should be called during your discord client's on_reaction_add or on_raw_reaction_add event.
 
@@ -379,7 +379,7 @@ class ReactionMenu:
         return await self.options[emoji].add(member)
 
 
-    async def reactionRemoved(self, emoji: lib.emotes.Emote, member: Union[Member, User]):
+    async def reactionRemoved(self, emoji: "lib.emotes.Emote", member: Union[Member, User]):
         """Invoke an option's behaviour when it is deselected by a user.
         This method should be called during your discord client's on_reaction_remove or on_raw_reaction_remove event.
 

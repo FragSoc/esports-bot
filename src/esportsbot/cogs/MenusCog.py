@@ -1,9 +1,9 @@
 from discord.ext import commands
 from discord.ext.commands.context import Context
 from ..db_gateway import db_gateway
-from . import lib
-from .reactionMenus import reactionRoleMenu
-from .client import EsportsBot
+from .. import lib
+from ..lib.client import EsportsBot
+from ..reactionMenus import reactionRoleMenu
 
 
 class MenusCog(commands.Cog):

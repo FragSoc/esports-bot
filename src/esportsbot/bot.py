@@ -2,17 +2,13 @@ from dotenv import load_dotenv
 from .base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 from .generate_schema import generate_schema
 from .db_gateway import db_gateway
-from discord.utils import get
-from discord.ext import tasks, commands
+from discord.ext import commands
 import os
 import discord
-
-from .trimatix import client as discordClient
-from .trimatix import lib
-from .trimatix.reactionMenus.reactionMenu import ReactionMenu
+from . import lib
 
 
-client = discordClient.instance()
+client = lib.client.instance()
 client.remove_command('help')
 
 
@@ -176,7 +172,7 @@ def launch():
     client.load_extension('esportsbot.cogs.DefaultRoleCog')
     client.load_extension('esportsbot.cogs.LogChannelCog')
     client.load_extension('esportsbot.cogs.AdminCog')
-    client.load_extension('esportsbot.trimatix.MenusCog')
+    client.load_extension('esportsbot.cogs.MenusCog')
     if os.getenv('ENABLE_TWITTER') == "True":
         client.load_extension('esportsbot.cogs.TwitterIntegrationCog')
     if os.getenv('ENABLE_TWITCH') == "True":

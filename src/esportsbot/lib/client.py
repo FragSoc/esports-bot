@@ -1,14 +1,13 @@
 from discord.ext import commands
 from discord import Intents, Embed, Message, Colour
-from .reactionMenus.reactionMenu import ReactionMenu
-from .reactionMenus import reactionRoleMenu
+from ..reactionMenus.reactionMenu import ReactionMenu
 from psycopg2.extras import Json
 from ..db_gateway import db_gateway
 from typing import Dict, Union
 from datetime import datetime
 
-from .reactionMenus import reactionMenu
-from .lib.exceptions import UnrecognisedReactionMenuMessage
+from ..reactionMenus import reactionMenu
+from .exceptions import UnrecognisedReactionMenuMessage
 
 
 class ReactionMenuDB(dict):
