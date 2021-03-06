@@ -137,3 +137,51 @@ Set the role to deny signin channel visiblity to during `!close-menu`.
 ##### !set-lan-role {@role or role_id}
 Set the role to remove from users during `!close-menu`.
 </details>
+
+<details>
+<summary>Reaction Role Menus</summary>
+
+### Reaction Role Menus
+Esportsbot now includes a slightly stripped down version of the reaction menus implementation provided by [BASED](https://github.com/Trimatix/BASED).
+
+Making new types of reaction menus is easy - simply extend `reactionMenus.reactionMenu.ReactionMenu`.
+
+To register a menu instance for interaction, use `lib.client.reactionMenus.add(yourMenuInstance)`. For an example of this, see `cogs.MenusCog.admin_cmd_make_role_menu`.
+
+All saveable reaction menus are automatically added and removed from Esportsbot's PostgreSQL database, and will be loaded in again on bot startup. To register your `ReactionMenu` subclass as saveable, use the `reactionMenu.saveableMenu` class decorator. Saveable menus **MUST** provide complete `toDict` and `fromDict` implementations. For examples of this, see `reactionMenus.reactionRoleMenu`.
+
+`ReactionMenu`s store each option in the menu as an instance of a `reactionMenu.ReactionMenuOption` subclass - each `ReactionMenuOption` has its own individual behaviour for when reactions are added and removed. This already provides a huge amount of flexibility, but you can achieve even more with a custom `ReactionMenuOption` subclass. To make your `ReactionMenuOption` saveable, provide complete `toDict` and `fromDict` implementations. For an example of this, see `reactionMenus.reactionRoleMenu.ReactionRoleMenuOption`.
+
+##### !make-role-menu
+```
+!make-role-menu {title}
+{option1 emoji} {@option1 role}
+...    ...
+```
+Create a reaction role menu.
+
+Each option must be on its own new line, as an emoji, followed by a space, followed by a mention of the role to grant.
+
+The `title` is displayed at the top of the meny and is optional, to exclude your title simply give a new line.
+
+##### !add-role-menu-option {menu-id} {emoji} {@role mention}
+Add a role to a role menu.
+
+To get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.
+
+Your emoji must not be in the menu already, adding the same role more than once is allowed.
+
+Give your role to grant/remove as a mention.
+
+##### !del-role-menu-option {menu-id} {emoji}
+Remove a role from a role menu.
+
+To get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.
+
+Your emoji must be an option in the menu.
+
+##### !del-menu {id}
+Remove the specified reaction menu. You can also just delete the message, if you have permissions.
+
+To get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.
+</details>

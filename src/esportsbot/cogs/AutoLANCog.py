@@ -1,9 +1,9 @@
 from discord.ext import commands
 from discord.ext.commands.context import Context
-from db_gateway import db_gateway
-from .client import EsportsBot
+from ..db_gateway import db_gateway
 import asyncio
-from . import lib
+from .. import lib
+from ..lib.client import EsportsBot
 
 
 class AutoLANCog(commands.Cog):
@@ -155,3 +155,4 @@ class AutoLANCog(commands.Cog):
 
 def setup(bot):
     bot.add_cog(AutoLANCog(bot))
+    
