@@ -26,8 +26,8 @@ async def send_to_log_channel(guild_id, msg):
 @client.event
 async def on_ready():
     client.init()
-    print('Bot is now active')
-    await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="to my tears"))
+    print('BOT: Bot is now active')
+    await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="your commands"))
 
 
 @client.event
@@ -162,15 +162,17 @@ async def on_command_error(ctx: Context, exception: Exception):
         except (Forbidden, HTTPException):
             pass
         except NotFound:
-            raise ValueError("Invalid unknownCommandEmoji: " + client.unknownCommandEmoji.sendable)
+            raise ValueError("Invalid unknownCommandEmoji: " +
+                             client.unknownCommandEmoji.sendable)
     else:
         sourceStr = str(ctx.message.id)
         try:
             sourceStr += "/" + ctx.channel.name + "#" + str(ctx.channel.id) \
-                            + "/" + ctx.guild.name + "#" + str(ctx.guild.id)
+                + "/" + ctx.guild.name + "#" + str(ctx.guild.id)
         except AttributeError:
             sourceStr += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
-        print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught " + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
+        print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught " +
+                                      type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
 
 
 @client.command()
@@ -198,9 +200,9 @@ def launch():
     client.load_extension('esportsbot.cogs.LogChannelCog')
     client.load_extension('esportsbot.cogs.AdminCog')
     client.load_extension('esportsbot.cogs.MenusCog')
-    if os.getenv('ENABLE_TWITTER') == "True":
+    if os.getenv('ENABLE_TWITTER').lower() == 'true':
         client.load_extension('esportsbot.cogs.TwitterIntegrationCog')
-    if os.getenv('ENABLE_TWITCH') == "True":
+    if os.getenv('ENABLE_TWITCH').lower() == 'true':
         client.load_extension('esportsbot.cogs.TwitchIntegrationCog')
 
     client.run(TOKEN)
