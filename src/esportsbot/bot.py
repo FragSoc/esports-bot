@@ -3,9 +3,13 @@ from .base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 from .generate_schema import generate_schema
 from .db_gateway import db_gateway
 from discord.ext import commands
+from discord.ext.commands import CommandNotFound, MissingRequiredArgument
+from discord.ext.commands.context import Context
+from discord import NotFound, HTTPException, Forbidden
 import os
 import discord
 from . import lib
+from datetime import datetime
 
 
 client = lib.client.instance()
@@ -146,6 +150,27 @@ async def on_raw_bulk_message_delete(payload: discord.RawBulkMessageDeleteEvent)
     for msgID in payload.message_ids:
         if msgID in client.reactionMenus:
             client.reactionMenus.removeID(msgID)
+
+
+@client.event
+async def on_command_error(ctx: Context, exception: Exception):
+    if isinstance(exception, MissingRequiredArgument):
+        await ctx.message.reply("Arguments are required for this command! See `" + client.command_prefix + "help " + ctx.invoked_with + "` for more information.")
+    elif isinstance(exception, CommandNotFound):
+        try:
+            await ctx.message.add_reaction(client.unknownCommandEmoji.sendable)
+        except (Forbidden, HTTPException):
+            pass
+        except NotFound:
+            raise ValueError("Invalid unknownCommandEmoji: " + client.unknownCommandEmoji.sendable)
+    else:
+        sourceStr = str(ctx.message.id)
+        try:
+            sourceStr += "/" + ctx.channel.name + "#" + str(ctx.channel.id) \
+                            + "/" + ctx.guild.name + "#" + str(ctx.guild.id)
+        except AttributeError:
+            sourceStr += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
+        print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught " + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
 
 
 @client.command()
