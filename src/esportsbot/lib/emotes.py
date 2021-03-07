@@ -249,12 +249,12 @@ class Emote:
             return s
         if type(s) == dict:
             return Emote.fromDict(s, rejectInvalid=rejectInvalid)
-        if strIsUnicodeEmoji(s):
+        elif type(s) == str:
+            if strIsCustomEmoji(s):
+                return Emote(id=int(s[s[s.index(":") + 1:].index(":") + 3:-1]), rejectInvalid=rejectInvalid)
+            elif stringTyping.strIsInt(s):
+                return Emote(id=int(s), rejectInvalid=rejectInvalid)
             return Emote(unicode=s, rejectInvalid=rejectInvalid)
-        elif strIsCustomEmoji(s):
-            return Emote(id=int(s[s[s.index(":") + 1:].index(":") + 3:-1]), rejectInvalid=rejectInvalid)
-        elif stringTyping.strIsInt(s):
-            return Emote(id=int(s), rejectInvalid=rejectInvalid)
         else:
             raise TypeError("Expected s of type str, dict or Emote, got " + type(s).__name__)
 
