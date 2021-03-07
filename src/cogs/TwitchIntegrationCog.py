@@ -45,6 +45,60 @@ class TwitchIntegrationCog(commands.Cog):
             await ctx.channel.send("You need to provide a Twitch handle and a channel")
 
     @commands.command()
+    async def addcustomtwitch(self, ctx, twitch_handle=None, announce_channel=None, custom_message=None):
+        # await ctx.channel.send("TEST")
+        # placeholder_message = custom_message.format(
+        #     handle="TwitchHandle", game="Game/Genre", link="StreamLink")
+        # await ctx.channel.send(f"{twitch_handle} - {announce_channel} - {placeholder_message}")
+        if twitch_handle is not None and announce_channel is not None and custom_message is not None:
+            # Check if Twitch channel has already been added
+            twitch_in_db = db_gateway().get('twitch_info', params={
+                'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
+            cleaned_channel_id = get_cleaned_id(
+                announce_channel)
+            channel_mention = self.bot.get_channel(
+                cleaned_channel_id).mention
+            if not twitch_in_db:
+                # Check user exists
+                user_exists = bool(
+                    self.twitch_handler.request_user(twitch_handle))
+                if user_exists:
+                    # Get live status of the channel
+                    live_status = bool(self.twitch_handler.request_data(
+                        [twitch_handle]))
+                    # Insert Twitch channel into DB
+                    db_gateway().insert('twitch_info', params={
+                        'guild_id': ctx.author.guild.id, 'channel_id': cleaned_channel_id, 'twitch_handle': twitch_handle.lower(), 'currently_live': live_status, 'custom_message': custom_message})
+                    await ctx.channel.send(f"{twitch_handle} is valid and has been added, their notifications will be placed in {channel_mention}")
+                    sample_message = custom_message.format(
+                        handle="TwitchHandle", game="Game/Genre", link="StreamLink", title="Title")
+                    await ctx.channel.send(f"Sample custom message below\n {sample_message}")
+                else:
+                    await ctx.channel.send(f"{twitch_handle} is not a valid Twitch handle")
+            else:
+                await ctx.channel.send(f"{twitch_handle} is already configured to {channel_mention}")
+        else:
+            await ctx.channel.send("You need to provide a Twitch handle, text channel and custom message")
+
+    @commands.command()
+    async def editcustomtwitch(self, ctx, twitch_handle=None, custom_message=None):
+        if twitch_handle is not None and custom_message is not None:
+            # Check if Twitch channel has already been added
+            twitch_in_db = db_gateway().get('twitch_info', params={
+                'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
+            if twitch_in_db:
+                # Make DB edit
+                db_gateway().update('twitch_info', set_params={
+                    'custom_message': custom_message}, where_params={'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
+                sample_message = custom_message.format(
+                    handle="TwitchHandle", game="Game/Genre", link="StreamLink", title="Title")
+                await ctx.channel.send(f"Sample custom message below\n {sample_message}")
+            else:
+                await ctx.channel.send("That Twitch handle is not configured in this server")
+        else:
+            await ctx.channel.send("You need to provide a Twitch handle, text channel and custom message")
+
+    @commands.command()
     async def edittwitch(self, ctx, twitch_handle=None, announce_channel=None):
         if twitch_handle is not None and announce_channel is not None:
             # Check if Twitch channel has already been added
@@ -130,11 +184,13 @@ class TwitchIntegrationCog(commands.Cog):
             # Query Twitch to receive array of all live users
             returned_data = self.twitch_handler.request_data(
                 twitch_handle_arr)
-            live_users = list(
-                map(lambda x: x['user_name'].lower(), returned_data))
             # Loop through all users comparing them to the live list
             for twitch_handle in twitch_handle_arr:
-                if twitch_handle in live_users:
+                # if any(obj['user_name'].lower() == twitch_handle for obj in returned_data):
+                handle_live = (next(
+                    (obj for obj in returned_data if obj['user_name'].lower() == twitch_handle), False))
+                print(handle_live)
+                if handle_live:
                     # User is live
                     if not twitch_status_dict[f'{twitch_handle}']:
                         # User was not live before but now is
@@ -146,7 +202,9 @@ class TwitchIntegrationCog(commands.Cog):
                                 'twitch_handle': twitch_handle.lower()})
                             for each in all_channels:
                                 # Send alert to specified channel to each['channel_id']
-                                await self.bot.get_channel(each['channel_id']).send(f"{twitch_handle} just went live!")
+                                custom_message = each['custom_message'].format(
+                                    handle=handle_live['user_name'], game=handle_live['game_name'], link=f"https://twitch.tv/{handle_live['user_name']}", title=handle_live['title']) if each['custom_message'] != '' else f"{handle_live['user_name']} has just gone live with {handle_live['game_name']}, check them out here: https: // twitch.tv/{handle_live['user_name']}"
+                                await self.bot.get_channel(each['channel_id']).send(custom_message)
                 else:
                     # User is not live
                     db_gateway().update('twitch_info', set_params={
