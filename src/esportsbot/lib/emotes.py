@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 err_UnknownEmoji = "❓"
-# True to raise an UnrecognisedEmoji exception when requesting an unknown custom emoji
+# True to raise an UnrecognisedCustomEmoji exception when requesting an unknown custom emoji
 raiseUnkownEmojis = False
 logUnknownEmojis = True
 emojiLang = "en"
@@ -78,7 +78,7 @@ class Emote:
         :param str unicode: The unicode emoji that this object should represent.
         :param bool rejectInvalid: When true, an exception is guaranteed to raise if an invalid emoji is requested,
                                     regardless of raiseUnknownEmojis (Default False)
-        :raise exceptions.UnrecognisedEmoji: When rejectInvalid=True is present in kwargs, and a custom emoji
+        :raise exceptions.UnrecognisedCustomEmoji: When rejectInvalid=True is present in kwargs, and a custom emoji
                                                     is given that does not exist or the client cannot access.                                   
         """
 
@@ -100,7 +100,7 @@ class Emote:
             if logUnknownEmojis:
                 print("Unrecognised custom emoji ID in Emote constructor: " + str(self.id))
             if raiseUnkownEmojis or rejectInvalid:
-                raise exceptions.UnrecognisedEmoji("Unrecognised custom emoji ID in Emote constructor: " + str(self.id), self.id)
+                raise exceptions.UnrecognisedCustomEmoji("Unrecognised custom emoji ID in Emote constructor: " + str(self.id), self.id)
             self.sendable = err_UnknownEmoji
 
 
@@ -165,7 +165,7 @@ class Emote:
                                 a unicode emoji string (for unicode emojis)
         :param bool rejectInvalid: When true, an exception is guaranteed to raise if an invalid emoji is requested,
                                     regardless of raiseUnknownEmojis (Default False)
-        :raise exceptions.UnrecognisedEmoji: When rejectInvalid=True is present in kwargs, and a custom emoji
+        :raise exceptions.UnrecognisedCustomEmoji: When rejectInvalid=True is present in kwargs, and a custom emoji
                                                     is given that does not exist or the client cannot access.                                   
         :return: A new Emote object as described in emojiDict
         :rtype: Emote
@@ -186,7 +186,7 @@ class Emote:
 
         :param bool rejectInvalid: When true, an exception is guaranteed to raise if an invalid emoji is requested,
                                     regardless of raiseUnknownEmojis (Default False)
-        :raise exceptions.UnrecognisedEmoji: When rejectInvalid=True is present in kwargs, and a custom emoji
+        :raise exceptions.UnrecognisedCustomEmoji: When rejectInvalid=True is present in kwargs, and a custom emoji
                                                     is given that does not exist or the client cannot access.                                   
         :return: A Emote representing e
         :rtype: Emote
@@ -207,7 +207,7 @@ class Emote:
         :type e: Union[Emoji, PartialEmoji, str]
         :param bool rejectInvalid: When true, an exception is guaranteed to raise if an invalid emoji is requested,
                                     regardless of raiseUnknownEmojis (Default False)
-        :raise exceptions.UnrecognisedEmoji: When rejectInvalid=True is present in kwargs, and a custom emoji
+        :raise exceptions.UnrecognisedCustomEmoji: When rejectInvalid=True is present in kwargs, and a custom emoji
                                                     is given that does not exist or the client cannot access.                                   
         :return: A Emote representing e
         :rtype: Emote
@@ -220,7 +220,7 @@ class Emote:
             elif strIsCustomEmoji(e):
                 return Emote.fromStr(e, rejectInvalid=rejectInvalid)
             else:
-                raise ValueError("Given a string that does not match any emoji format: " + e)
+                raise exceptions.InvalidStringEmoji("Given a string that does not match any emoji format: " + e, e)
         if type(e) == PartialEmoji:
             return Emote.fromPartial(e, rejectInvalid=rejectInvalid)
         else:
@@ -240,7 +240,7 @@ class Emote:
                         the ID of a discord custom emoji.
         :param bool rejectInvalid: When true, an exception is guaranteed to raise if an invalid emoji is requested,
                                     regardless of raiseUnknownEmojis (Default False)
-        :raise exceptions.UnrecognisedEmoji: When rejectInvalid=True is present in kwargs, and a custom emoji
+        :raise exceptions.UnrecognisedCustomEmoji: When rejectInvalid=True is present in kwargs, and a custom emoji
                                                 is given that does not exist or the client cannot access.                                   
         :return: A Emote representing the given string emoji
         :rtype: Emote
@@ -250,11 +250,14 @@ class Emote:
         if type(s) == dict:
             return Emote.fromDict(s, rejectInvalid=rejectInvalid)
         elif type(s) == str:
-            if strIsCustomEmoji(s):
+            if strIsUnicodeEmoji(s):
+                return Emote(unicode=s, rejectInvalid=rejectInvalid)
+            elif strIsCustomEmoji(s):
                 return Emote(id=int(s[s[s.index(":") + 1:].index(":") + 3:-1]), rejectInvalid=rejectInvalid)
             elif stringTyping.strIsInt(s):
                 return Emote(id=int(s), rejectInvalid=rejectInvalid)
-            return Emote(unicode=s, rejectInvalid=rejectInvalid)
+            else:
+                raise exceptions.InvalidStringEmoji("Given a string that does not match any emoji format: " + s, s)
         else:
             raise TypeError("Expected s of type str, dict or Emote, got " + type(s).__name__)
 

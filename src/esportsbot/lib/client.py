@@ -190,10 +190,20 @@ class EsportsBot(commands.Bot):
         :param actions: A dictionary associating action types with action details. No key or value can be empty.
         :type actions: Dict[str, str]
         """
-        db_logging_call = db_gateway().get('guild_info', params={'guild_id': message.guild.id})
+        if message is None and "guildID" not in kwargs:
+            raise ValueError("Given None message and no guildID")
+        if message is None:
+            guildID = kwargs["guildID"]
+            del kwargs["guildID"]
+        else:
+            guildID = message.guild.id
+        db_logging_call = db_gateway().get('guild_info', params={'guild_id': guildID})
         if db_logging_call and db_logging_call[0]['log_channel_id']:
             if "embed" not in kwargs:
-                logEmbed = Embed(description=" | ".join((message.author.mention, "#" + message.channel.name, "[message](" + message.jump_url + ")")))
+                if message is None:
+                    logEmbed = Embed(description="Responsible user unknown. Check the server's audit log.")
+                else:
+                    logEmbed = Embed(description=" | ".join((message.author.mention, "#" + message.channel.name, "[message](" + message.jump_url + ")")))
                 logEmbed.set_author(icon_url=self.user.avatar_url_as(size=64), name="Admin Log")
                 logEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
                 logEmbed.colour = Colour.random()

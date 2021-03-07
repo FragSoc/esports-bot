@@ -137,7 +137,16 @@ async def on_raw_message_delete(payload: discord.RawMessageDeleteEvent):
     :param discord.RawMessageDeleteEvent payload: An event describing the message deleted.
     """
     if payload.message_id in client.reactionMenus:
-        client.reactionMenus.removeID(payload.message_id)
+        menu = client.reactionMenus[payload.message_id]
+        try:
+            client.reactionMenus.removeID(payload.message_id)
+        except KeyError:
+            pass
+        else:
+            await client.adminLog(None, {"Reaction menu deleted": "id: " + str(payload.message_id) \
+                                                + "\nchannel: <#" + str(menu.msg.channel.id) + ">"
+                                                + "\ntype: " + type(menu).__name__},
+                                    guildID=payload.guild_id)
 
 
 @client.event
@@ -149,7 +158,16 @@ async def on_raw_bulk_message_delete(payload: discord.RawBulkMessageDeleteEvent)
     """
     for msgID in payload.message_ids:
         if msgID in client.reactionMenus:
-            client.reactionMenus.removeID(msgID)
+            menu = client.reactionMenus[payload.message_id]
+            try:
+                client.reactionMenus.removeID(msgID)
+            except KeyError:
+                pass
+            else:
+                await client.adminLog(None, {"Reaction menu deleted": "id: " + str(payload.message_id) \
+                                                    + "\nchannel: <#" + str(menu.msg.channel.id) + ">"
+                                                    + "\ntype: " + type(menu).__name__},
+                                        guildID=payload.guild_id)
 
 
 @client.event
