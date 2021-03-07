@@ -116,3 +116,31 @@ Change the notify channel for the given Twitter handle
 ##### !getalltwitters
 List all the current Twitter handles configured in the server
 </details>
+
+<details>
+<summary>Twitch Integration</summary>
+
+### Twitch Integration
+
+##### !addtwitch {twitch_handle} {#channel or channel_id}
+Add a Twitch handle to notify in the specified channel when they go live
+
+##### !addcustomtwitch {twitch_handle} {#channel or channel_id} "{custom_message}"
+Add a Twitch handle to notify in the specified channel when they go live using the placeholders - handle, game, title and link
+
+##### !edittwitch {twitch_handle} {#channel or channel_id}
+Edit a configured Twitch handle to use a different channel
+
+##### !editcustomtwitch {twitch_handle} "{custom_message}"
+Edit a configured Twitch handle to display a custom message using the placeholders - handle, game, title and link
+
+##### !removetwitch {twitch_handle}
+Remove the specified twitch handle from alerting
+
+##### !removealltwitch 
+Remove all the Twitch alerts in the guild
+
+##### !getalltwitch
+List all the current Twitch handles configured in the server
+
+</details>

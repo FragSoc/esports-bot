@@ -149,7 +149,11 @@ class TwitchIntegrationCog(commands.Cog):
         for each in returned_val:
             channel_mention = self.bot.get_channel(
                 each['channel_id']).mention
-            all_handles += f"{each['twitch_handle']} is set to alert in {channel_mention}\n"
+            print(each['custom_message'])
+            custom_message = each['custom_message'] if each[
+                'custom_message'] is not None else "{handle} has just gone live with {game}, check them out here: {link}"
+            print(custom_message)
+            all_handles += f"{each['twitch_handle']} is set to alert in {channel_mention} - {custom_message}\n"
         await ctx.channel.send(all_handles)
 
     @tasks.loop(seconds=50)
@@ -203,7 +207,7 @@ class TwitchIntegrationCog(commands.Cog):
                             for each in all_channels:
                                 # Send alert to specified channel to each['channel_id']
                                 custom_message = each['custom_message'].format(
-                                    handle=handle_live['user_name'], game=handle_live['game_name'], link=f"https://twitch.tv/{handle_live['user_name']}", title=handle_live['title']) if each['custom_message'] != '' else f"{handle_live['user_name']} has just gone live with {handle_live['game_name']}, check them out here: https: // twitch.tv/{handle_live['user_name']}"
+                                    handle=handle_live['user_name'], game=handle_live['game_name'], link=f"https://twitch.tv/{handle_live['user_name']}", title=handle_live['title']) if each['custom_message'] is not None else f"{handle_live['user_name']} has just gone live with {handle_live['game_name']}, check them out here: https: // twitch.tv/{handle_live['user_name']}"
                                 await self.bot.get_channel(each['channel_id']).send(custom_message)
                 else:
                     # User is not live
