@@ -1,4 +1,4 @@
-from db_gateway import db_gateway
+from .db_gateway import db_gateway
 
 
 def generate_schema():
@@ -22,6 +22,21 @@ def generate_schema():
         );
         ALTER TABLE ONLY guild_info
         ADD CONSTRAINT loggingchannel_pkey PRIMARY KEY(guild_id);
+        """
+        db_gateway().pure_query(query_string)
+
+    # Does the reaction_menus table exist?
+    reaction_menus_exists = db_gateway().pure_return(
+        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'reaction_menus'")
+    if not reaction_menus_exists:
+        # Does not exist
+        query_string = """
+        CREATE TABLE reaction_menus(
+            message_id bigint NOT NULL,
+            menu jsonb
+        );
+        ALTER TABLE ONLY reaction_menus
+        ADD CONSTRAINT menu_pkey PRIMARY KEY(message_id);
         """
         db_gateway().pure_query(query_string)
 
