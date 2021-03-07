@@ -1,5 +1,5 @@
 from __future__ import annotations
-from emoji import UNICODE_EMOJI
+import emoji
 from . import client
 from . import exceptions, stringTyping
 
@@ -12,9 +12,7 @@ err_UnknownEmoji = "❓"
 # True to raise an UnrecognisedCustomEmoji exception when requesting an unknown custom emoji
 raiseUnkownEmojis = False
 logUnknownEmojis = True
-emojiLang = "en"
-ZWJ = "‍"
-VAR_SELECTOR = "️"
+MAX_EMOJI_LEN = 10
 
 
 def strIsUnicodeEmoji(c: str) -> bool:
@@ -24,15 +22,7 @@ def strIsUnicodeEmoji(c: str) -> bool:
     :return: True if c contains exactly one character, and that character is a unicode emoji. False otherwise.
     :rtype: bool
     """
-    c = c.rstrip(VAR_SELECTOR)
-    if c == "":
-        return False
-    if c in UNICODE_EMOJI[emojiLang]:
-        return True
-    for e in c.split(ZWJ):
-        if len(e) > 1 or e not in UNICODE_EMOJI[emojiLang]:
-            return False
-    return True
+    return len(c) <= MAX_EMOJI_LEN and emoji.emoji_count(c) == 1
 
 
 def strIsCustomEmoji(s: str) -> bool:
