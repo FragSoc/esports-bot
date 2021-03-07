@@ -241,7 +241,7 @@ class Emote:
         :param bool rejectInvalid: When true, an exception is guaranteed to raise if an invalid emoji is requested,
                                     regardless of raiseUnknownEmojis (Default False)
         :raise exceptions.UnrecognisedEmoji: When rejectInvalid=True is present in kwargs, and a custom emoji
-                                                    is given that does not exist or the client cannot access.                                   
+                                                is given that does not exist or the client cannot access.                                   
         :return: A Emote representing the given string emoji
         :rtype: Emote
         """

@@ -1,13 +1,15 @@
 from discord.ext import commands
-from discord import Intents, Embed, Message, Colour
+from discord import Intents, Embed, Message, Colour, NotFound, HTTPException, Forbidden
 from ..reactionMenus.reactionMenu import ReactionMenu
 from psycopg2.extras import Json
 from ..db_gateway import db_gateway
 from typing import Dict, Union
 from datetime import datetime
+import os
 
 from ..reactionMenus import reactionMenu
 from .exceptions import UnrecognisedReactionMenuMessage
+from .emotes import Emote
 
 
 class ReactionMenuDB(dict):
@@ -142,12 +144,13 @@ class EsportsBot(commands.Bot):
     :vartype reactionMenus: ReactionMenuDB
     """
 
-    def __init__(self, command_prefix: str, **options):
+    def __init__(self, command_prefix: str, unknownCommandEmoji: Emote, **options):
         """
         :param str command_prefix: The prefix to use for bot commands when evoking from discord.
         """
         super().__init__(command_prefix, **options)
         self.reactionMenus = ReactionMenuDB()
+        self.unknownCommandEmoji = unknownCommandEmoji
     
 
     def init(self):
@@ -176,6 +179,8 @@ class EsportsBot(commands.Bot):
                 print("no type for menu " + str(msgID))
 
         self.reactionMenus.initializing = False
+        if "UNKNOWN_COMMAND_EMOJI" in os.environ:
+            self.unknownCommandEmoji = Emote.fromStr(os.environ.get("UNKNOWN_COMMAND_EMOJI"))
 
     
     async def adminLog(self, message: Message, actions: Dict[str, str], *args, **kwargs):
@@ -203,8 +208,9 @@ _instance: EsportsBot = None
 def instance() -> EsportsBot:
     """Get the singular instance of the discord client.
     """
+    global _instance
     if _instance is None:
         intents = Intents.default()
         intents.members = True
-        instance = EsportsBot(command_prefix = '!', intents=intents)
-    return instance
+        _instance = EsportsBot('!', Emote.fromStr("⁉"), intents=intents)
+    return _instance
