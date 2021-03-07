@@ -26,8 +26,10 @@ TWITCH_CLIENT_SECRET=
 
 <details>
 <summary>Optional Variables</summary>
+
 - Provide your bot's command prefix as a string into `COMMAND_PREFIX` (default `!`)
-- Provide either a unicode emoji (string), or the ID of a custom emoji (int), into `UNKNOWN_COMMAND_EMOJI` to set the emoji which is reacted to messages calling unknown commands (default `⁉`)
+-  Provide either a unicode emoji (string), or the ID of a custom emoji (int), into `UNKNOWN_COMMAND_EMOJI` to set the emoji which is reacted to messages calling unknown commands (default `⁉`)
+
 </details>
 
 5. Run docker-compose:
