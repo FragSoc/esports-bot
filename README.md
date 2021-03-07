@@ -154,7 +154,7 @@ Esportsbot now includes a slightly stripped down version of the reaction menus i
 
 Making new types of reaction menus is easy - simply extend `reactionMenus.reactionMenu.ReactionMenu`.
 
-To register a menu instance for interaction, use `lib.client.reactionMenus.add(yourMenuInstance)`. For an example of this, see `cogs.MenusCog.admin_cmd_make_role_menu`.
+To register a menu instance for interaction, use `client.reactionMenus.add(yourMenuInstance)`. For an example of this, see `cogs.MenusCog.admin_cmd_make_role_menu`.
 
 All saveable reaction menus are automatically added and removed from Esportsbot's PostgreSQL database, and will be loaded in again on bot startup. To register your `ReactionMenu` subclass as saveable, use the `reactionMenu.saveableMenu` class decorator. Saveable menus **MUST** provide complete `toDict` and `fromDict` implementations. For examples of this, see `reactionMenus.reactionRoleMenu`.
 
