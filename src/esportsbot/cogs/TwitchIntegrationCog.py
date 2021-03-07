@@ -1,6 +1,6 @@
 from discord.ext import commands, tasks
-from db_gateway import db_gateway
-from base_functions import get_cleaned_id
+from ..db_gateway import db_gateway
+from ..base_functions import get_cleaned_id
 import requests
 import time
 import os

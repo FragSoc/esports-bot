@@ -1,4 +1,4 @@
-from db_gateway import db_gateway
+from .db_gateway import db_gateway
 
 
 async def send_to_log_channel(self, guild_id, msg):

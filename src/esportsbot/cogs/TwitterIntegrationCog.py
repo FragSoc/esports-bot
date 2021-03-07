@@ -1,6 +1,6 @@
 from discord.ext import tasks, commands
-from db_gateway import db_gateway
-from base_functions import get_cleaned_id
+from ..db_gateway import db_gateway
+from ..base_functions import get_cleaned_id
 import snscrape.modules.twitter as sntwitter
 import time
 
