@@ -1,4 +1,4 @@
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord import Intents, Embed, Message, Colour, NotFound, HTTPException, Forbidden
 from ..reactionMenus.reactionMenu import ReactionMenu
 from psycopg2.extras import Json
@@ -6,6 +6,8 @@ from ..db_gateway import db_gateway
 from typing import Dict, Union
 from datetime import datetime
 import os
+import signal
+import asyncio
 
 from ..reactionMenus import reactionMenu
 from .exceptions import UnrecognisedReactionMenuMessage
@@ -151,6 +153,24 @@ class EsportsBot(commands.Bot):
         super().__init__(command_prefix, **options)
         self.reactionMenus = ReactionMenuDB()
         self.unknownCommandEmoji = unknownCommandEmoji
+
+        signal.signal(signal.SIGINT, self.interruptReceived) # keyboard interrupt
+        signal.signal(signal.SIGTERM, self.interruptReceived) # graceful exit request
+
+
+    def interruptReceived(self, signum, frame):
+        """Shut down the bot gracefully.
+        This method is called automatically upon receipt of sigint/sigterm.
+        """
+        print("[EsportsBot] Interrupt received.")
+        asyncio.ensure_future(self.shutdown())
+
+
+    async def shutdown(self):
+        """Shut down the bot gracefully.
+        """
+        print("[EsportsBot] Shutting down...")
+        await self.logout()
     
 
     def init(self):
