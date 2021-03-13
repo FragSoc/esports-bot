@@ -182,7 +182,7 @@ async def initialsetup(ctx):
         await ctx.channel.send("This server is already set up")
     else:
         db_gateway().insert('guild_info', params={
-            'guild_id': ctx.author.guild.id})
+            'guild_id': ctx.author.guild.id, 'num_running_polls': 0})
         await ctx.channel.send("This server has now been initialised")
 
 
