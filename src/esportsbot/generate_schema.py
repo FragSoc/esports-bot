@@ -141,3 +141,29 @@ def generate_schema():
         ADD CONSTRAINT twitter_info_pkey PRIMARY KEY(id);
         """
         db_gateway().pure_query(query_string)
+
+    # Does the music_channels_info table exist?
+    music_channels_info_exists = db_gateway().pure_return(
+        "SELECT EXISTS( "
+        "SELECT FROM information_schema.tables "
+        "WHERE table_schema = 'public' "
+        "AND table_name = 'music_channels');")
+    if not music_channels_info_exists:
+        query_string = """
+        CREATE TABLE public.music_channels(
+            id bigint NOT NULL,
+            guild_id bigint NOT NULL,
+            channel_id bigint NOT NULL
+        );
+        ALTER TABLE public.music_channels ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+            SEQUENCE NAME public.music_channels_id_seq
+            START WITH 1
+            INCREMENT BY 1
+            NO MINVALUE 
+            NO MAXVALUE 
+            CACHE 1
+        );
+        ALTER TABLE ONLY public.music_channels
+        ADD CONSTRAINT music_channels_pkey PRIMARY KEY(id);
+        """
+        db_gateway().pure_query(query_string)
