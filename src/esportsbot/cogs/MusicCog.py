@@ -6,7 +6,7 @@ from youtubesearchpython import VideosSearch
 
 from discord import Message
 from discord.ext import commands
-from discord.ext.commands import Context, CommandNotFound, MissingRequiredArgument
+from discord.ext.commands import Context, CommandNotFound, MissingRequiredArgument, UserInputError
 
 from src.esportsbot.db_gateway import db_gateway
 
@@ -24,19 +24,19 @@ class MusicCog(commands.Cog):
     async def setmusicchannel(self, ctx: Context, given_channel_id=None):
         if given_channel_id is None:
             # No given channel id.. exit
-            raise MissingRequiredArgument("No id was given when setting the music channel id")
+            raise UserInputError(message="A channel id is a required argument")
 
         is_valid_channel_id = (len(given_channel_id) == 18) and given_channel_id.isdigit()
 
         if not is_valid_channel_id:
             # The channel id given is not valid.. exit
-            raise MissingRequiredArgument("The id given to set the music channel was not valid")
+            raise UserInputError(message="The id given was not a valid id")
 
         guild_text_channel_ids = [str(x.id) for x in ctx.guild.text_channels]
 
         if str(given_channel_id) not in guild_text_channel_ids:
             # The channel id given not for a text channel.. exit
-            raise MissingRequiredArgument("The id given to set the music channel was not a text channel")
+            raise UserInputError(message="The id given must be of a text channel")
 
         current_channel_for_guild = db_gateway().get('music_channels', params={
             'guild_id': ctx.author.guild.id})
