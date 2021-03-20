@@ -4,9 +4,9 @@ import youtube_dl
 import re
 from youtubesearchpython import VideosSearch
 
-from discord import Message
+from discord import Message, VoiceClient, FFmpegPCMAudio
 from discord.ext import commands
-from discord.ext.commands import Context, CommandNotFound, MissingRequiredArgument, UserInputError
+from discord.ext.commands import Context, UserInputError
 
 from src.esportsbot.db_gateway import db_gateway
 
@@ -18,6 +18,7 @@ class MusicCog(commands.Cog):
         self._bot = bot
         self._max_results = max_search_results
         self._song_location = 'songs\\'
+        self._currently_active = {}
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -63,29 +64,70 @@ class MusicCog(commands.Cog):
         else:
             await ctx.channel.send("Music channel has not been set")
 
-    async def find_song(self, message: Message):
-
-        if message.content.startswith(self._bot.command_prefix):
-            # Ignore commands
+    @commands.command()
+    async def removesong(self, ctx: Context, song_index=None):
+        music_channel_in_db = db_gateway().get('music_channels', params={'guild_id': ctx.guild.id})
+        if ctx.message.channel.id != music_channel_in_db[0].get('channel_id'):
+            # Message is not in the songs channel
             return
 
-        search = message.content
-        if self.__determine_url(search):
+        if not song_index.isdigit():
+            # Index is not a number
+            return
+
+        if not self._currently_active.get(ctx.guild.id):
+            # The bot is not currently active in that guild
+            return
+
+        if len(self._currently_active.get(ctx.guild.id).get('queue')) < int(song_index):
+            # Index out of bounds
+            return
+
+        self._currently_active[ctx.guild.id]['queue'].pop(int(song_index))
+
+    async def on_message_handle(self, message: Message):
+        if message.content.startswith(self._bot.command_prefix):
+            # Ignore commands, any MusicCog commands will get handled in the usual way
+            return
+
+        if not message.author.voice:
+            # User is not in a voice channel.. exit
+            return
+
+        if not self._currently_active.get(message.guild.id):
+            # We aren't in a voice channel in the given guild
+            voice_client = await message.author.voice.channel.connect()
+            self.__add_new_active_channel(message.guild.id, voice_client=voice_client,
+                                          channel_id=message.author.voice.channel.id)
+        else:
+            if self._currently_active.get(message.guild.id).get('channel_id') != message.author.voice.channel.id:
+                # The bot is already in a different channel
+                return
+
+        song_data = self.find_song(message.content)
+
+        self._currently_active[message.guild.id]['queue'].append(song_data)
+
+        if self._currently_active[message.guild.id]['stopped']:
+            self.__start_queue(message.guild.id)
+
+    def find_song(self, search_term) -> dict:
+        if self.__determine_url(search_term):
             # Currently only supports youtube links
             # Searching youtube with the video id gets the original video
             # Means we can have the same data is if it were searched for by name
-            search = message.content.split('v=')[-1]
+            search_term = search_term.split('v=')[-1]
 
-        youtube_results = self.__search_youtube(search)
+        youtube_results = self.__search_youtube(search_term)
 
         if len(youtube_results) > 0:
             self.__download_video(youtube_results[0])
 
-            await message.channel.send(youtube_results[0].get('link'))
+            return youtube_results[0]
         else:
-            await message.channel.send("Unable to find " + message.content)
+            return {}
 
-    def __search_youtube(self, message: str):
+    def __search_youtube(self, message: str) -> list:
         results = VideosSearch(message, limit=self._max_results).result().get('result')
 
         music_results = []
@@ -106,7 +148,7 @@ class MusicCog(commands.Cog):
 
         return sorted_results
 
-    def __clean_youtube_results(self, results):
+    def __clean_youtube_results(self, results) -> list:
         cleaned_data = []
 
         # Gets the data that is actually useful and discards the rest of the data
@@ -124,7 +166,7 @@ class MusicCog(commands.Cog):
 
         return cleaned_data
 
-    def __determine_url(self, string: str):
+    def __determine_url(self, string: str) -> bool:
         # This is for matching all urls
         # re_string = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+] |[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
         # As we only want to match actual youtube urls
@@ -150,6 +192,32 @@ class MusicCog(commands.Cog):
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             if not os.path.isfile(video_info.get('localfile')):
                 ydl.download([url])
+
+    def __add_new_active_channel(self, guild_id, channel_id=None, voice_client=None) -> bool:
+        if guild_id not in self._currently_active:
+            self._currently_active[guild_id] = {}
+            self._currently_active[guild_id]['channel_id'] = channel_id
+            self._currently_active[guild_id]['voice_client'] = voice_client
+            self._currently_active[guild_id]['queue'] = []
+            self._currently_active[guild_id]['stopped'] = True
+            return True
+        return False
+
+    def __remove_active_channel(self, guild_id) -> bool:
+        if guild_id in self._currently_active:
+            self._currently_active.pop(guild_id.guild)
+            return True
+        return False
+
+    def __start_queue(self, guild_id):
+        if len(self._currently_active.get(guild_id).get('queue')) < 1:
+            # Queue is empty
+            return
+
+        voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
+        song_file = self._currently_active.get(guild_id).get('queue')[0].get('localfile')
+        voice_client.play(FFmpegPCMAudio(song_file))
+        voice_client.volume = 100
 
 
 def setup(bot):
