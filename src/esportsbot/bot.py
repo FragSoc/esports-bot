@@ -173,6 +173,19 @@ async def on_command_error(ctx: Context, exception: Exception):
         print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught " + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
 
 
+@client.event
+async def on_message(message):
+    if message.author != message.guild.me:
+        # Ignore self messages
+        guild_id = message.guild.id
+        music_channel_in_db = db_gateway().get('music_channels', params={'guild_id': guild_id})
+        if message.channel.id == music_channel_in_db[0].get('channel_id'):
+            music_cog_instance = client.cogs.get('MusicCog')
+            await music_cog_instance.check_message(message)
+
+    await client.process_commands(message)
+
+
 @client.command()
 @commands.has_permissions(administrator=True)
 async def initialsetup(ctx):

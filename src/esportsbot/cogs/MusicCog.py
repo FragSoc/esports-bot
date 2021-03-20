@@ -57,6 +57,8 @@ class MusicCog(commands.Cog):
         else:
             await ctx.channel.send("Music channel has not been set")
 
+    async def check_message(self, message):
+        print(str(message))
 
 def setup(bot):
     bot.add_cog(MusicCog(bot))
