@@ -1,6 +1,7 @@
 import urllib.parse
 from bs4 import BeautifulSoup
 import re
+from youtubesearchpython import VideosSearch
 
 import requests
 from discord import Message
@@ -77,35 +78,25 @@ class MusicCog(commands.Cog):
             # Search for the string on youtube
             youtube_results = self.__search_youtube(message.content)
 
-    async def __search_youtube(self, message: str):
-        if 'lyric' not in message:
-            # Searching for lyrics avoids the music videos which have other audio
-            message += ' lyrics'
+    def __search_youtube(self, message: str):
+        results = VideosSearch(message, limit=self._max_results).result().get('result')
 
-        encoded_search = urllib.parse.quote(message)
-        YT_BASE = "https://youtube.com"
-        url = f"{YT_BASE}/results?search_query={encoded_search}"
-        search_response = BeautifulSoup(requests.get(url).text, "html.parser")
+        music_results = []
 
-        def parse_html(soup):
-            results = []
-            for video in soup.select(".yt-uix-tile-link"):
-                if video["href"].startswith("/watch?v="):
-                    video_info = {
-                        "title": video["title"],
-                        "link": video["href"],
-                        "id": video["href"][video["href"].index("=") + 1:]
-                    }
-                    results.append(video_info)
-            return results
+        # Get results that have words "lyric" or "audio" as it filters out music videos
+        for result in results:
+            title_lower = result.get('title').lower()
+            if 'lyric' in title_lower or 'audio' in title_lower:
+                music_results.append(result)
 
-        results = parse_html(search_response)
+        # Sort the list by view count
+        sorted_results = sorted(music_results,
+                                key=lambda k: int(k['viewCount']['text'].replace(' views', '').replace(',', '')),
+                                reverse=True)
 
-        if len(results) > self._max_results:
-            return results[:self._max_results]
-        return results
+        return sorted_results
 
-    async def __determine_url(self, string: str):
+    def __determine_url(self, string: str):
         re_string = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+] |[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
         found_urls = re.findall(re_string, string)
 
