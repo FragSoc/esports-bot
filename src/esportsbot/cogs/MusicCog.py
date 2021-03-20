@@ -66,17 +66,7 @@ class MusicCog(commands.Cog):
 
     @commands.command()
     async def removesong(self, ctx: Context, song_index=None):
-        music_channel_in_db = db_gateway().get('music_channels', params={'guild_id': ctx.guild.id})
-        if ctx.message.channel.id != music_channel_in_db[0].get('channel_id'):
-            # Message is not in the songs channel
-            return
-
-        if not song_index.isdigit():
-            # Index is not a number
-            return
-
-        if not self._currently_active.get(ctx.guild.id):
-            # The bot is not currently active in that guild
+        if not self.__check_valid_user_vc(ctx):
             return
 
         if len(self._currently_active.get(ctx.guild.id).get('queue')) < int(song_index):
@@ -84,6 +74,27 @@ class MusicCog(commands.Cog):
             return
 
         self._currently_active[ctx.guild.id]['queue'].pop(int(song_index))
+
+    @commands.command()
+    async def pausesong(self, ctx: Context):
+        if not self.__check_valid_user_vc(ctx):
+            return
+
+        self.__pause_song(ctx.guild.id)
+
+    @commands.command()
+    async def resumesong(self, ctx: Context):
+        if not self.__check_valid_user_vc(ctx):
+            return
+
+        self.__resume_song(ctx.guild.id)
+
+    @commands.command()
+    async def kickbot(self, ctx: Context):
+        if not self.__check_valid_user_vc(ctx):
+            return
+
+        await self.__remove_active_channel(ctx.guild.id)
 
     async def on_message_handle(self, message: Message):
         if message.content.startswith(self._bot.command_prefix):
@@ -203,9 +214,11 @@ class MusicCog(commands.Cog):
             return True
         return False
 
-    def __remove_active_channel(self, guild_id) -> bool:
+    async def __remove_active_channel(self, guild_id) -> bool:
         if guild_id in self._currently_active:
-            self._currently_active.pop(guild_id.guild)
+            voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
+            await voice_client.disconnect()
+            self._currently_active.pop(guild_id)
             return True
         return False
 
@@ -216,8 +229,37 @@ class MusicCog(commands.Cog):
 
         voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
         song_file = self._currently_active.get(guild_id).get('queue')[0].get('localfile')
+        self._currently_active[guild_id]['stopped'] = False
         voice_client.play(FFmpegPCMAudio(song_file))
         voice_client.volume = 100
+
+    def __pause_song(self, guild_id):
+        if not self._currently_active.get(guild_id).get('stopped'):
+            voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
+            voice_client.pause()
+            self._currently_active[guild_id]['stopped'] = True
+
+    def __resume_song(self, guild_id):
+        if self._currently_active.get(guild_id).get('stopped'):
+            voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
+            voice_client.resume()
+            self._currently_active[guild_id]['stopped'] = False
+
+    def __check_valid_user_vc(self, ctx: Context):
+        music_channel_in_db = db_gateway().get('music_channels', params={'guild_id': ctx.guild.id})
+        if ctx.message.channel.id != music_channel_in_db[0].get('channel_id'):
+            # Message is not in the songs channel
+            return False
+
+        if not ctx.author.voice:
+            # User is not in a voice channel
+            return False
+
+        if self._currently_active.get(ctx.guild.id).get('voice_channel') != ctx.author.voice.channel:
+            # The user is not in the same voice channel as the bot
+            return False
+
+        return True
 
 
 def setup(bot):
