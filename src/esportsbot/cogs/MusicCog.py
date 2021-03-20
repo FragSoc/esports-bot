@@ -47,12 +47,13 @@ class MusicCog(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def getmusicchannel(self, ctx, *args):
+    async def getmusicchannel(self, ctx):
         current_channel_for_guild = db_gateway().get('music_channels', params={
             'guild_id': ctx.author.guild.id})
 
-        if current_channel_for_guild[0]['default_role_id']:
-            await ctx.channel.send(f"Music channel is set to {current_channel_for_guild[0]['channel_id']}")
+        if current_channel_for_guild[0].get('channel_id'):
+            id_as_channel = [x for x in ctx.guild.channels if x.id == current_channel_for_guild[0].get('channel_id')][0]
+            await ctx.channel.send(f"Music channel is set to {id_as_channel.mention}")
         else:
             await ctx.channel.send("Music channel has not been set")
 
