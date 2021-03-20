@@ -179,10 +179,12 @@ async def on_message(message):
         # Ignore self messages
         guild_id = message.guild.id
         music_channel_in_db = db_gateway().get('music_channels', params={'guild_id': guild_id})
-        if message.channel.id == music_channel_in_db[0].get('channel_id'):
+        if len(music_channel_in_db) > 0 and message.channel.id == music_channel_in_db[0].get('channel_id'):
+            # The message was in a music channel and a song should be found
             music_cog_instance = client.cogs.get('MusicCog')
-            await music_cog_instance.check_message(message)
+            await music_cog_instance.on_message_handle(message)
 
+    # If message was command, perform the command
     await client.process_commands(message)
 
 
