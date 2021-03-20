@@ -69,12 +69,21 @@ class MusicCog(commands.Cog):
             # Ignore commands
             return
 
-        if self.__determine_url(message.content):
-            # Download the url directly...
-            return
+        search = message.content
+        if self.__determine_url(search):
+            # Currently only supports youtube links
+            # Searching youtube with the video id gets the original video
+            # Means we can have the same data is if it were searched for by name
+            search = message.content.split('v=')[-1]
+
+        youtube_results = self.__search_youtube(search)
+
+        if len(youtube_results) > 0:
+            self.__download_video(youtube_results[0])
+
+            await message.channel.send(youtube_results[0].get('link'))
         else:
-            # Search for the string on youtube
-            youtube_results = self.__search_youtube(message.content)
+            await message.channel.send("Unable to find " + message.content)
 
     def __search_youtube(self, message: str):
         results = VideosSearch(message, limit=self._max_results).result().get('result')
@@ -87,21 +96,60 @@ class MusicCog(commands.Cog):
             if 'lyric' in title_lower or 'audio' in title_lower:
                 music_results.append(result)
 
+        # Remove useless data
+        cleaned_results = self.__clean_youtube_results(music_results)
+
         # Sort the list by view count
-        sorted_results = sorted(music_results,
+        sorted_results = sorted(cleaned_results,
                                 key=lambda k: int(k['viewCount']['text'].replace(' views', '').replace(',', '')),
                                 reverse=True)
 
         return sorted_results
 
+    def __clean_youtube_results(self, results):
+        cleaned_data = []
+
+        # Gets the data that is actually useful and discards the rest of the data
+        for result in results:
+            new_result = {'title': result.get('title'),
+                          'duration': result.get('duration'),
+                          'thumbnail': result.get('thumbnails')[-1],
+                          'link': result.get('link'),
+                          'id': result.get('id'),
+                          'viewCount': result.get('viewCount')}
+            new_result['localfile'] = self._song_location + "" + new_result.get('title') + '-' + new_result.get('id') \
+                                      + '.mp3'
+
+            cleaned_data.append(new_result)
+
+        return cleaned_data
+
     def __determine_url(self, string: str):
-        re_string = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+] |[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+        # This is for matching all urls
+        # re_string = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+] |[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+        # As we only want to match actual youtube urls
+        re_string = r'(http[s]?://)?youtube.com/watch\?v='
         found_urls = re.findall(re_string, string)
 
         if len(found_urls) > 0:
             # url is present in the string
             return True
         return False
+
+    def __download_video(self, video_info):
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': self._song_location + '%(title)s-%(id)s.mp3',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+        }
+        url = video_info.get('link')
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            if not os.path.isfile(video_info.get('localfile')):
+                ydl.download([url])
 
 
 def setup(bot):
