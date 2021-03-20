@@ -1,3 +1,9 @@
+import urllib.parse
+from bs4 import BeautifulSoup
+import re
+
+import requests
+from discord import Message
 from discord.ext import commands
 from discord.ext.commands import Context
 
@@ -6,9 +12,10 @@ from src.esportsbot.db_gateway import db_gateway
 
 class MusicCog(commands.Cog):
 
-    def __init__(self, bot):
+    def __init__(self, bot, max_search_results=100):
         print("Loaded music module")
         self._bot = bot
+        self._max_results = max_search_results
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -57,8 +64,56 @@ class MusicCog(commands.Cog):
         else:
             await ctx.channel.send("Music channel has not been set")
 
-    async def check_message(self, message):
-        print(str(message))
+    async def find_song(self, message: Message):
+
+        if message.content.startswith(self._bot.command_prefix):
+            # Ignore commands
+            return
+
+        if self.__determine_url(message.content):
+            # Download the url directly...
+            return
+        else:
+            # Search for the string on youtube
+            youtube_results = self.__search_youtube(message.content)
+
+    async def __search_youtube(self, message: str):
+        if 'lyric' not in message:
+            # Searching for lyrics avoids the music videos which have other audio
+            message += ' lyrics'
+
+        encoded_search = urllib.parse.quote(message)
+        YT_BASE = "https://youtube.com"
+        url = f"{YT_BASE}/results?search_query={encoded_search}"
+        search_response = BeautifulSoup(requests.get(url).text, "html.parser")
+
+        def parse_html(soup):
+            results = []
+            for video in soup.select(".yt-uix-tile-link"):
+                if video["href"].startswith("/watch?v="):
+                    video_info = {
+                        "title": video["title"],
+                        "link": video["href"],
+                        "id": video["href"][video["href"].index("=") + 1:]
+                    }
+                    results.append(video_info)
+            return results
+
+        results = parse_html(search_response)
+
+        if len(results) > self._max_results:
+            return results[:self._max_results]
+        return results
+
+    async def __determine_url(self, string: str):
+        re_string = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+] |[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+        found_urls = re.findall(re_string, string)
+
+        if len(found_urls) > 0:
+            # url is present in the string
+            return True
+        return False
+
 
 def setup(bot):
     bot.add_cog(MusicCog(bot))
