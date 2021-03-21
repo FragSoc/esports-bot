@@ -1,11 +1,13 @@
+import asyncio
 import os
+import time
 
 import youtube_dl
 import re
 from youtubesearchpython import VideosSearch
 
 from discord import Message, VoiceClient, FFmpegPCMAudio
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord.ext.commands import Context, UserInputError
 
 from src.esportsbot.db_gateway import db_gateway
@@ -19,6 +21,10 @@ class MusicCog(commands.Cog):
         self._max_results = max_search_results
         self._song_location = 'songs\\'
         self._currently_active = {}
+        self._marked_channels = {}
+
+        self.check_active_channels.start()
+        self.check_marked_channels.start()
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -96,6 +102,17 @@ class MusicCog(commands.Cog):
 
         await self.__remove_active_channel(ctx.guild.id)
 
+    @commands.command()
+    async def skip(self, ctx: Context):
+        pass
+
+    @commands.command()
+    async def listqueue(self, ctx: Context):
+        if not self.__check_valid_user_vc(ctx):
+            return
+
+        await ctx.channel.send(str(self._currently_active.get(ctx.guild.id).get('queue')))
+
     async def on_message_handle(self, message: Message):
         if message.content.startswith(self._bot.command_prefix):
             # Ignore commands, any MusicCog commands will get handled in the usual way
@@ -115,12 +132,24 @@ class MusicCog(commands.Cog):
                 # The bot is already in a different channel
                 return
 
+        if message.guild.id in self._marked_channels:
+            # Remove the channel from marked channels as it is no longer inactive
+            self._marked_channels.pop(message.guild.id)
+
         song_data = self.find_song(message.content)
 
         self._currently_active[message.guild.id]['queue'].append(song_data)
 
-        if self._currently_active[message.guild.id]['stopped']:
+        if not self._currently_active.get(message.guild.id).get('voice_client').is_playing():
             self.__start_queue(message.guild.id)
+
+    async def __remove_active_channel(self, guild_id) -> bool:
+        if guild_id in self._currently_active:
+            voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
+            await voice_client.disconnect()
+            self._currently_active.pop(guild_id)
+            return True
+        return False
 
     def find_song(self, search_term) -> dict:
         if self.__determine_url(search_term):
@@ -165,29 +194,17 @@ class MusicCog(commands.Cog):
         # Gets the data that is actually useful and discards the rest of the data
         for result in results:
             new_result = {'title': result.get('title'),
-                          'duration': result.get('duration'),
                           'thumbnail': result.get('thumbnails')[-1],
                           'link': result.get('link'),
                           'id': result.get('id'),
-                          'viewCount': result.get('viewCount')}
+                          'viewCount': result.get('viewCount')
+                          }
             new_result['localfile'] = self._song_location + "" + new_result.get('title') + '-' + new_result.get('id') \
                                       + '.mp3'
 
             cleaned_data.append(new_result)
 
         return cleaned_data
-
-    def __determine_url(self, string: str) -> bool:
-        # This is for matching all urls
-        # re_string = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+] |[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-        # As we only want to match actual youtube urls
-        re_string = r'(http[s]?://)?youtube.com/watch\?v='
-        found_urls = re.findall(re_string, string)
-
-        if len(found_urls) > 0:
-            # url is present in the string
-            return True
-        return False
 
     def __download_video(self, video_info):
         ydl_opts = {
@@ -210,15 +227,6 @@ class MusicCog(commands.Cog):
             self._currently_active[guild_id]['channel_id'] = channel_id
             self._currently_active[guild_id]['voice_client'] = voice_client
             self._currently_active[guild_id]['queue'] = []
-            self._currently_active[guild_id]['stopped'] = True
-            return True
-        return False
-
-    async def __remove_active_channel(self, guild_id) -> bool:
-        if guild_id in self._currently_active:
-            voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
-            await voice_client.disconnect()
-            self._currently_active.pop(guild_id)
             return True
         return False
 
@@ -229,21 +237,18 @@ class MusicCog(commands.Cog):
 
         voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
         song_file = self._currently_active.get(guild_id).get('queue')[0].get('localfile')
-        self._currently_active[guild_id]['stopped'] = False
         voice_client.play(FFmpegPCMAudio(song_file))
         voice_client.volume = 100
 
     def __pause_song(self, guild_id):
-        if not self._currently_active.get(guild_id).get('stopped'):
+        if self._currently_active.get(guild_id).get('voice_client').is_playing():
             voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
             voice_client.pause()
-            self._currently_active[guild_id]['stopped'] = True
 
     def __resume_song(self, guild_id):
-        if self._currently_active.get(guild_id).get('stopped'):
+        if not self._currently_active.get(guild_id).get('voice_client').is_playing():
             voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
             voice_client.resume()
-            self._currently_active[guild_id]['stopped'] = False
 
     def __check_valid_user_vc(self, ctx: Context):
         music_channel_in_db = db_gateway().get('music_channels', params={'guild_id': ctx.guild.id})
@@ -255,11 +260,47 @@ class MusicCog(commands.Cog):
             # User is not in a voice channel
             return False
 
-        if self._currently_active.get(ctx.guild.id).get('voice_channel') != ctx.author.voice.channel:
+        if self._currently_active.get(ctx.guild.id).get('channel_id') != ctx.author.voice.channel.id:
             # The user is not in the same voice channel as the bot
             return False
 
         return True
+
+    def __determine_url(self, string: str) -> bool:
+        # This is for matching all urls
+        # re_string = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+] |[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+        # As we only want to match actual youtube urls
+        re_string = r'(http[s]?://)?youtube.com/watch\?v='
+        found_urls = re.findall(re_string, string)
+
+        if len(found_urls) > 0:
+            # url is present in the string
+            return True
+        return False
+
+    @tasks.loop(seconds=1)
+    async def check_active_channels(self):
+        active_copy = self._currently_active.copy()
+        for guild_id in active_copy.keys():
+            if not self._currently_active.get(guild_id).get('voice_client').is_playing():
+                self.check_next_song(guild_id)
+
+    @tasks.loop(seconds=60)
+    async def check_marked_channels(self):
+        marked_copy = self._marked_channels.copy()
+        for guild_id in marked_copy.keys():
+            guild_time = self._marked_channels.get(guild_id)
+            if time.time() - guild_time >= 60 * 5:
+                asyncio.create_task(self.__remove_active_channel(guild_id))
+                self._marked_channels.pop(guild_id)
+
+    def check_next_song(self, guild_id):
+        if len(self._currently_active.get(guild_id).get('queue')) == 1:
+            self._currently_active.get(guild_id).get('queue').pop(0)
+            self._marked_channels[guild_id] = time.time()
+        elif len(self._currently_active.get(guild_id).get('queue')) > 1:
+            self._currently_active.get(guild_id).get('queue').pop(0)
+            self.__start_queue(guild_id)
 
 
 def setup(bot):
