@@ -144,16 +144,16 @@ def generate_schema():
 
     # Does the music_channels_info table exist?
     music_channels_info_exists = db_gateway().pure_return(
-        "SELECT EXISTS( "
-        "SELECT FROM information_schema.tables "
-        "WHERE table_schema = 'public' "
-        "AND table_name = 'music_channels');")
+        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'music_channels'")
     if not music_channels_info_exists:
+        print('no music')
         query_string = """
         CREATE TABLE public.music_channels(
             id bigint NOT NULL,
             guild_id bigint NOT NULL,
-            channel_id bigint NOT NULL
+            channel_id bigint NOT NULL,
+            queue_message_id bigint,
+            preview_message_id bigint
         );
         ALTER TABLE public.music_channels ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
             SEQUENCE NAME public.music_channels_id_seq
