@@ -104,7 +104,15 @@ class MusicCog(commands.Cog):
 
     @commands.command()
     async def skip(self, ctx: Context):
-        pass
+        if not self.__check_valid_user_vc(ctx):
+            return
+
+        if len(self._currently_active.get(ctx.guild.id).get('queue')) == 1:
+            # Skipping when only one song in the queue will just kick the bot
+            await self.__remove_active_channel(ctx.guild.id)
+            return
+
+        self.check_next_song(ctx.guild.id)
 
     @commands.command()
     async def listqueue(self, ctx: Context):
@@ -236,6 +244,10 @@ class MusicCog(commands.Cog):
             return
 
         voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
+
+        if voice_client.is_playing():
+            voice_client.stop()
+
         song_file = self._currently_active.get(guild_id).get('queue')[0].get('localfile')
         voice_client.play(FFmpegPCMAudio(song_file))
         voice_client.volume = 100
