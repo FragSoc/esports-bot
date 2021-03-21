@@ -330,6 +330,9 @@ class MusicCog(commands.Cog):
             self._currently_active.get(guild_id).get('queue').pop(0)
             self.__start_queue(guild_id)
 
+    def make_queue_list(self, guild_id):
+        pass
+
 
 def setup(bot):
     bot.add_cog(MusicCog(bot))
