@@ -84,6 +84,7 @@ class MusicCog(commands.Cog):
     @commands.command()
     async def pausesong(self, ctx: Context):
         if not self.__check_valid_user_vc(ctx):
+            # Checks if the user is in a valid voice channel
             return
 
         self.__pause_song(ctx.guild.id)
@@ -91,6 +92,7 @@ class MusicCog(commands.Cog):
     @commands.command()
     async def resumesong(self, ctx: Context):
         if not self.__check_valid_user_vc(ctx):
+            # Checks if the user is in a valid voice channel
             return
 
         self.__resume_song(ctx.guild.id)
@@ -98,6 +100,7 @@ class MusicCog(commands.Cog):
     @commands.command()
     async def kickbot(self, ctx: Context):
         if not self.__check_valid_user_vc(ctx):
+            # Checks if the user is in a valid voice channel
             return
 
         await self.__remove_active_channel(ctx.guild.id)
@@ -105,6 +108,7 @@ class MusicCog(commands.Cog):
     @commands.command()
     async def skip(self, ctx: Context):
         if not self.__check_valid_user_vc(ctx):
+            # Checks if the user is in a valid voice channel
             return
 
         if len(self._currently_active.get(ctx.guild.id).get('queue')) == 1:
@@ -117,6 +121,7 @@ class MusicCog(commands.Cog):
     @commands.command()
     async def listqueue(self, ctx: Context):
         if not self.__check_valid_user_vc(ctx):
+            # Checks if the user is in a valid voice channel
             return
 
         await ctx.channel.send(str(self._currently_active.get(ctx.guild.id).get('queue')))
@@ -149,6 +154,7 @@ class MusicCog(commands.Cog):
         self._currently_active[message.guild.id]['queue'].append(song_data)
 
         if not self._currently_active.get(message.guild.id).get('voice_client').is_playing():
+            # If we are not currently playing, start playing
             self.__start_queue(message.guild.id)
 
     async def __remove_active_channel(self, guild_id) -> bool:
@@ -205,7 +211,8 @@ class MusicCog(commands.Cog):
                           'thumbnail': result.get('thumbnails')[-1],
                           'link': result.get('link'),
                           'id': result.get('id'),
-                          'viewCount': result.get('viewCount')
+                          'viewCount': result.get('viewCount'),
+                          'duration': result.get('duration')
                           }
             new_result['localfile'] = self._song_location + "" + new_result.get('title') + '-' + new_result.get('id') \
                                       + '.mp3'
@@ -246,6 +253,7 @@ class MusicCog(commands.Cog):
         voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
 
         if voice_client.is_playing():
+            # Stop the bot if it is playing
             voice_client.stop()
 
         song_file = self._currently_active.get(guild_id).get('queue')[0].get('localfile')
@@ -254,11 +262,13 @@ class MusicCog(commands.Cog):
 
     def __pause_song(self, guild_id):
         if self._currently_active.get(guild_id).get('voice_client').is_playing():
+            # Can't pause if the bot isn't playing
             voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
             voice_client.pause()
 
     def __resume_song(self, guild_id):
-        if not self._currently_active.get(guild_id).get('voice_client').is_playing():
+        if not self._currently_active.get(guild_id).get('voice_client').is_paused():
+            # Can't resume if the bot isn't paused
             voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
             voice_client.resume()
 
@@ -292,25 +302,31 @@ class MusicCog(commands.Cog):
 
     @tasks.loop(seconds=1)
     async def check_active_channels(self):
+        # Create a copy to avoid concurrent changes to _currently_active
         active_copy = self._currently_active.copy()
         for guild_id in active_copy.keys():
             if not self._currently_active.get(guild_id).get('voice_client').is_playing():
+                # Check any voice_clients that are no longer playing
                 self.check_next_song(guild_id)
 
     @tasks.loop(seconds=60)
     async def check_marked_channels(self):
+        # Create a copy to avoid concurrent changes to _marked_channels
         marked_copy = self._marked_channels.copy()
         for guild_id in marked_copy.keys():
             guild_time = self._marked_channels.get(guild_id)
             if time.time() - guild_time >= 60 * 5:
+                # If the time since inactivity has been more than 5 minutes leave the channel
                 asyncio.create_task(self.__remove_active_channel(guild_id))
                 self._marked_channels.pop(guild_id)
 
     def check_next_song(self, guild_id):
         if len(self._currently_active.get(guild_id).get('queue')) == 1:
+            # The queue will be empty so will be marked as inactive
             self._currently_active.get(guild_id).get('queue').pop(0)
             self._marked_channels[guild_id] = time.time()
         elif len(self._currently_active.get(guild_id).get('queue')) > 1:
+            # The queue is not empty, play the next song
             self._currently_active.get(guild_id).get('queue').pop(0)
             self.__start_queue(guild_id)
 
