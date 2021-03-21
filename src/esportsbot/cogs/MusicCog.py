@@ -6,7 +6,7 @@ import youtube_dl
 import re
 from youtubesearchpython import VideosSearch
 
-from discord import Message, VoiceClient, FFmpegPCMAudio
+from discord import Message, VoiceClient, FFmpegPCMAudio, TextChannel, Embed, Colour
 from discord.ext import commands, tasks
 from discord.ext.commands import Context, UserInputError
 
@@ -26,9 +26,23 @@ class MusicCog(commands.Cog):
         self.check_active_channels.start()
         self.check_marked_channels.start()
 
+        self._empty_queue_message = "**__Queue list:__**\n" \
+                                    "Join a VoiceChannel and search a song by name or YouTube url.\n"
+
+        self._no_current_song_message = Embed(title="No song currently playing",
+                                              colour=Colour(0xd462fd),
+                                              footer="Use the prefix ! for commands"
+                                              )
+
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def setmusicchannel(self, ctx: Context, given_channel_id=None):
+    async def setmusicchannel(self, ctx: Context, args=None, given_channel_id=None):
+
+        if given_channel_id is None and args is not None:
+            # No args was given, but a channel id was given
+            given_channel_id = args
+            args = None
+
         if given_channel_id is None:
             # No given channel id.. exit
             raise UserInputError(message="A channel id is a required argument")
@@ -52,11 +66,14 @@ class MusicCog(commands.Cog):
             # There is already a channel set.. update
             db_gateway().update('music_channels', set_params={
                 'channel_id': given_channel_id}, where_params={'guild_id': ctx.author.guild.id})
+            await self.__setup_channel(ctx, int(given_channel_id), args)
             return
 
         # Validation checks complete
         db_gateway().insert('music_channels', params={
-            'guild_id': ctx.author.guild.id, 'channel_id': given_channel_id})
+            'channel_id': int(given_channel_id), 'guild_id': int(ctx.author.guild.id)})
+
+        await self.__setup_channel(ctx, int(given_channel_id), args)
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -75,11 +92,13 @@ class MusicCog(commands.Cog):
         if not self.__check_valid_user_vc(ctx):
             return
 
-        if len(self._currently_active.get(ctx.guild.id).get('queue')) < int(song_index):
+        if len(self._currently_active.get(ctx.guild.id).get('queue')) < (int(song_index) - 1):
             # Index out of bounds
             return
 
-        self._currently_active[ctx.guild.id]['queue'].pop(int(song_index))
+        self._currently_active[ctx.guild.id]['queue'].pop(int(song_index) - 1)
+        await self.__update_channel_messages(ctx.guild.id)
+        await ctx.message.delete()
 
     @commands.command()
     async def pausesong(self, ctx: Context):
@@ -88,6 +107,7 @@ class MusicCog(commands.Cog):
             return
 
         self.__pause_song(ctx.guild.id)
+        await ctx.message.delete()
 
     @commands.command()
     async def resumesong(self, ctx: Context):
@@ -96,6 +116,7 @@ class MusicCog(commands.Cog):
             return
 
         self.__resume_song(ctx.guild.id)
+        await ctx.message.delete()
 
     @commands.command()
     async def kickbot(self, ctx: Context):
@@ -104,9 +125,10 @@ class MusicCog(commands.Cog):
             return
 
         await self.__remove_active_channel(ctx.guild.id)
+        await ctx.message.delete()
 
     @commands.command()
-    async def skip(self, ctx: Context):
+    async def skipsong(self, ctx: Context):
         if not self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
             return
@@ -116,7 +138,8 @@ class MusicCog(commands.Cog):
             await self.__remove_active_channel(ctx.guild.id)
             return
 
-        self.__check_next_song(ctx.guild.id)
+        await self.__check_next_song(ctx.guild.id)
+        await ctx.message.delete()
 
     @commands.command()
     async def listqueue(self, ctx: Context):
@@ -151,13 +174,39 @@ class MusicCog(commands.Cog):
             # Remove the channel from marked channels as it is no longer inactive
             self._marked_channels.pop(message.guild.id)
 
-        song_data = self.find_song(message.content)
+        song_data = await self.find_song(message.content)
 
         self._currently_active[message.guild.id]['queue'].append(song_data)
 
         if not self._currently_active.get(message.guild.id).get('voice_client').is_playing():
             # If we are not currently playing, start playing
             self.__start_queue(message.guild.id)
+
+        await self.__update_channel_messages(message.guild.id)
+
+        await message.delete()
+
+    async def __setup_channel(self, ctx: Context, channel_id, arg):
+        channel_instance: TextChannel = [x for x in ctx.guild.text_channels if x.id == channel_id][0]
+        channel_messages = await channel_instance.history().flatten()
+        if len(channel_messages) > 0:
+            if arg is None:
+                await ctx.channel.send(
+                    "The channel is not empty, if you want to clear the channel for use, use !setmusicchannel -c <id>")
+            elif arg == '-c':
+                for message in channel_messages:
+                    await message.delete()
+
+        default_queue_message = await channel_instance.send(self._empty_queue_message)
+        default_preview_message = await channel_instance.send(embed=self._no_current_song_message)
+
+        print()
+
+        db_gateway().update('music_channels', set_params={'queue_message_id': int(default_queue_message.id)},
+                            where_params={'guild_id': ctx.author.guild.id})
+
+        db_gateway().update('music_channels', set_params={'preview_message_id': int(default_preview_message.id)},
+                            where_params={'guild_id': ctx.author.guild.id})
 
     async def __remove_active_channel(self, guild_id) -> bool:
         if guild_id in self._currently_active:
@@ -167,7 +216,55 @@ class MusicCog(commands.Cog):
             return True
         return False
 
-    def find_song(self, search_term) -> dict:
+    async def __update_channel_messages(self, guild_id):
+
+        current_guild_instance = [x for x in self._bot.guilds if x.id == guild_id][0]
+
+        guild_db_data = db_gateway().get('music_channels', params={'guild_id': guild_id})[0]
+        queue_message_id = guild_db_data.get('queue_message_id')
+        preview_message_id = guild_db_data.get('preview_message_id')
+
+        queue_message = self.__update_queue_message(guild_id)
+        preview_message = self.__update_preview_message(guild_id)
+
+        music_channel_id = guild_db_data.get('channel_id')
+        music_channel_instance = [x for x in current_guild_instance.text_channels if x.id == music_channel_id][0]
+
+        queue_message_instance: Message = [x for x in await music_channel_instance.history().flatten()
+                                           if x.id == queue_message_id][0]
+        preview_message_instance: Message = [x for x in await music_channel_instance.history().flatten()
+                                             if x.id == preview_message_id][0]
+
+        await queue_message_instance.edit(content=queue_message)
+        await preview_message_instance.edit(embed=preview_message)
+
+    async def __check_next_song(self, guild_id):
+        if len(self._currently_active.get(guild_id).get('queue')) == 1:
+            # The queue will be empty so will be marked as inactive
+            self._currently_active.get(guild_id).get('queue').pop(0)
+            self._marked_channels[guild_id] = time.time()
+        elif len(self._currently_active.get(guild_id).get('queue')) > 1:
+            # The queue is not empty, play the next song
+            self._currently_active.get(guild_id).get('queue').pop(0)
+            self.__start_queue(guild_id)
+        await self.__update_channel_messages(guild_id)
+
+    async def __download_video(self, video_info):
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': self._song_location + '%(title)s-%(id)s.mp3',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+        }
+        url = video_info.get('link')
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            if not os.path.isfile(video_info.get('localfile')):
+                ydl.download([url])
+
+    async def find_song(self, search_term) -> dict:
         if self.__determine_url(search_term):
             # Currently only supports youtube links
             # Searching youtube with the video id gets the original video
@@ -177,11 +274,32 @@ class MusicCog(commands.Cog):
         youtube_results = self.__search_youtube(search_term)
 
         if len(youtube_results) > 0:
-            self.__download_video(youtube_results[0])
+            await self.__download_video(youtube_results[0])
 
             return youtube_results[0]
         else:
             return {}
+
+    @tasks.loop(seconds=1)
+    async def check_active_channels(self):
+        # Create a copy to avoid concurrent changes to _currently_active
+        active_copy = self._currently_active.copy()
+        for guild_id in active_copy.keys():
+            if not self._currently_active.get(guild_id).get('voice_client').is_playing() \
+                    and not self._currently_active.get(guild_id).get('voice_client').is_paused():
+                # Check any voice_clients that are no longer playing but that aren't just paused
+                await self.__check_next_song(guild_id)
+
+    @tasks.loop(seconds=60)
+    async def check_marked_channels(self):
+        # Create a copy to avoid concurrent changes to _marked_channels
+        marked_copy = self._marked_channels.copy()
+        for guild_id in marked_copy.keys():
+            guild_time = self._marked_channels.get(guild_id)
+            if time.time() - guild_time >= 60 * 5:
+                # If the time since inactivity has been more than 5 minutes leave the channel
+                asyncio.create_task(self.__remove_active_channel(guild_id))
+                self._marked_channels.pop(guild_id)
 
     def __search_youtube(self, message: str) -> list:
         results = VideosSearch(message, limit=self._max_results).result().get('result')
@@ -227,21 +345,6 @@ class MusicCog(commands.Cog):
             cleaned_data.append(new_result)
 
         return cleaned_data
-
-    def __download_video(self, video_info):
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': self._song_location + '%(title)s-%(id)s.mp3',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-        }
-        url = video_info.get('link')
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            if not os.path.isfile(video_info.get('localfile')):
-                ydl.download([url])
 
     def __add_new_active_channel(self, guild_id, channel_id=None, voice_client=None) -> bool:
         if guild_id not in self._currently_active:
@@ -295,38 +398,28 @@ class MusicCog(commands.Cog):
 
         return True
 
-    @tasks.loop(seconds=1)
-    async def check_active_channels(self):
-        # Create a copy to avoid concurrent changes to _currently_active
-        active_copy = self._currently_active.copy()
-        for guild_id in active_copy.keys():
-            if not self._currently_active.get(guild_id).get('voice_client').is_playing() \
-                    and not self._currently_active.get(guild_id).get('voice_client').is_paused():
-                # Check any voice_clients that are no longer playing but that aren't just paused
-                self.__check_next_song(guild_id)
+    def __update_queue_message(self, guild_id):
+        if len(self._currently_active.get(guild_id).get('queue')) == 0:
+            updated_queue_message = self._empty_queue_message
+        else:
+            updated_queue_message = self.__make_queue_list(guild_id)
 
-    @tasks.loop(seconds=60)
-    async def check_marked_channels(self):
-        # Create a copy to avoid concurrent changes to _marked_channels
-        marked_copy = self._marked_channels.copy()
-        for guild_id in marked_copy.keys():
-            guild_time = self._marked_channels.get(guild_id)
-            if time.time() - guild_time >= 60 * 5:
-                # If the time since inactivity has been more than 5 minutes leave the channel
-                asyncio.create_task(self.__remove_active_channel(guild_id))
-                self._marked_channels.pop(guild_id)
+        return updated_queue_message
 
-    def __check_next_song(self, guild_id):
-        if len(self._currently_active.get(guild_id).get('queue')) == 1:
-            # The queue will be empty so will be marked as inactive
-            self._currently_active.get(guild_id).get('queue').pop(0)
-            self._marked_channels[guild_id] = time.time()
-        elif len(self._currently_active.get(guild_id).get('queue')) > 1:
-            # The queue is not empty, play the next song
-            self._currently_active.get(guild_id).get('queue').pop(0)
-            self.__start_queue(guild_id)
+    def __update_preview_message(self, guild_id):
+        if len(self._currently_active.get(guild_id).get('queue')) == 0:
+            updated_preview_message = self._no_current_song_message
+        else:
+            current_song = self._currently_active.get(guild_id).get('queue')[0]
+            updated_preview_message = Embed(title="Currently Playing: " + current_song.get('title'),
+                                            colour=Colour(0xd462fd), url=current_song.get('link'),
+                                            video=current_song.get('link'))
+            updated_preview_message.set_image(url=current_song.get('thumbnail').get('url'))
+
+        return updated_preview_message
 
     def __make_queue_list(self, guild_id):
+        queue_string = self._empty_queue_message
         if len(self._currently_active.get(guild_id).get('queue')) > 30:
             # The queue is too long to display
             first_part = self._currently_active.get(guild_id).get('queue')[:10]
@@ -335,13 +428,11 @@ class MusicCog(commands.Cog):
             first_string = self.__song_list_to_string(first_part)
             last_string = self.__song_list_to_string(last_part)
 
-            queue_string = first_string + ".\n.\n.\n" + last_string
+            queue_string += first_string + ".\n.\n.\n" + last_string
         else:
-            queue_string = self.__song_list_to_string(self._currently_active.get(guild_id).get('queue'))
+            queue_string += self.__song_list_to_string(self._currently_active.get(guild_id).get('queue'))
 
         return queue_string
-
-    # TODO: Make a channel format
 
     def __song_list_to_string(self, songs):
         string = ""
