@@ -13,6 +13,25 @@ from discord.ext.commands import Context, UserInputError
 from src.esportsbot.db_gateway import db_gateway
 
 
+class EmbedColours:
+
+    @staticmethod
+    def green():
+        return Colour(0x1f8b4c)
+
+    @staticmethod
+    def orange():
+        return Colour(0xe67e22)
+
+    @staticmethod
+    def red():
+        return Colour(0xe74c3c)
+
+    @staticmethod
+    def music():
+        return Colour(0xd462fd)
+
+
 class MusicCog(commands.Cog):
 
     def __init__(self, bot, max_search_results=100):
@@ -30,7 +49,7 @@ class MusicCog(commands.Cog):
                                     "Join a VoiceChannel and search a song by name or YouTube url.\n"
 
         self._no_current_song_message = Embed(title="No song currently playing",
-                                              colour=Colour(0xd462fd),
+                                              colour=EmbedColours.music(),
                                               footer="Use the prefix ! for commands"
                                               )
 
@@ -45,18 +64,24 @@ class MusicCog(commands.Cog):
 
         if given_channel_id is None:
             # No given channel id.. exit
+            message = Embed(title="A channel id is a required argument", colour=EmbedColours.red())
+            await self.__send_timed_message(ctx.channel, message, timer=30)
             raise UserInputError(message="A channel id is a required argument")
 
         is_valid_channel_id = (len(given_channel_id) == 18) and given_channel_id.isdigit()
 
         if not is_valid_channel_id:
             # The channel id given is not valid.. exit
+            message = Embed(title="The id given was not a valid id", colour=EmbedColours.red())
+            await self.__send_timed_message(ctx.channel, message, timer=30)
             raise UserInputError(message="The id given was not a valid id")
 
         guild_text_channel_ids = [str(x.id) for x in ctx.guild.text_channels]
 
         if str(given_channel_id) not in guild_text_channel_ids:
             # The channel id given not for a text channel.. exit
+            message = Embed(title="The id given must be of a text channel", colour=EmbedColours.red())
+            await self.__send_timed_message(ctx.channel, message, timer=30)
             raise UserInputError(message="The id given must be of a text channel")
 
         current_channel_for_guild = db_gateway().get('music_channels', params={
@@ -66,12 +91,10 @@ class MusicCog(commands.Cog):
             # There is already a channel set.. update
             db_gateway().update('music_channels', set_params={
                 'channel_id': given_channel_id}, where_params={'guild_id': ctx.author.guild.id})
-            await self.__setup_channel(ctx, int(given_channel_id), args)
-            return
-
-        # Validation checks complete
-        db_gateway().insert('music_channels', params={
-            'channel_id': int(given_channel_id), 'guild_id': int(ctx.author.guild.id)})
+        else:
+            # No channel for guild.. insert
+            db_gateway().insert('music_channels', params={
+                'channel_id': int(given_channel_id), 'guild_id': int(ctx.author.guild.id)})
 
         await self.__setup_channel(ctx, int(given_channel_id), args)
 
@@ -90,15 +113,20 @@ class MusicCog(commands.Cog):
     @commands.command()
     async def removesong(self, ctx: Context, song_index=None):
         if not self.__check_valid_user_vc(ctx):
+            message = Embed(title="You are not in the voice channel with the bot", colour=EmbedColours.orange())
+            await self.__send_timed_message(ctx.channel, message)
             return
 
         if len(self._currently_active.get(ctx.guild.id).get('queue')) < (int(song_index) - 1):
-            # Index out of bounds
+            message = Embed(title=f"There is no song at position {song_index} in the queue", colour=EmbedColours.orange())
+            await self.__send_timed_message(ctx.channel, message)
             return
 
         self._currently_active[ctx.guild.id]['queue'].pop(int(song_index) - 1)
         await self.__update_channel_messages(ctx.guild.id)
         await ctx.message.delete()
+        message = Embed(title=f"Removed song at position {song_index} in the queue", colour=EmbedColours.green())
+        await self.__send_timed_message(ctx.channel, message)
 
     @commands.command()
     async def pausesong(self, ctx: Context):
@@ -108,6 +136,8 @@ class MusicCog(commands.Cog):
 
         self.__pause_song(ctx.guild.id)
         await ctx.message.delete()
+        message = Embed(title="Song Paused", colour=EmbedColours.music())
+        await self.__send_timed_message(ctx.channel, message, timer=20)
 
     @commands.command()
     async def resumesong(self, ctx: Context):
@@ -117,6 +147,8 @@ class MusicCog(commands.Cog):
 
         self.__resume_song(ctx.guild.id)
         await ctx.message.delete()
+        message = Embed(title="Song Resumed", colour=EmbedColours.music())
+        await self.__send_timed_message(ctx.channel, message, timer=20)
 
     @commands.command()
     async def kickbot(self, ctx: Context):
@@ -126,6 +158,8 @@ class MusicCog(commands.Cog):
 
         await self.__remove_active_channel(ctx.guild.id)
         await ctx.message.delete()
+        message = Embed(title="I have left the Voice Channel", colour=EmbedColours.music())
+        await self.__send_timed_message(ctx.channel, message, timer=20)
 
     @commands.command()
     async def skipsong(self, ctx: Context):
@@ -140,6 +174,8 @@ class MusicCog(commands.Cog):
 
         await self.__check_next_song(ctx.guild.id)
         await ctx.message.delete()
+        message = Embed(title="Song Skipped!", colour=EmbedColours.music())
+        await self.__send_timed_message(ctx.channel, message)
 
     @commands.command()
     async def listqueue(self, ctx: Context):
@@ -158,6 +194,8 @@ class MusicCog(commands.Cog):
 
         if not message.author.voice:
             # User is not in a voice channel.. exit
+            send = Embed(title="You must be in a voice channel to add a song", colour=EmbedColours.orange())
+            await self.__send_timed_message(message.channel, send, timer=20)
             return
 
         if not self._currently_active.get(message.guild.id):
@@ -167,7 +205,8 @@ class MusicCog(commands.Cog):
                                           channel_id=message.author.voice.channel.id)
         else:
             if self._currently_active.get(message.guild.id).get('channel_id') != message.author.voice.channel.id:
-                # The bot is already in a different channel
+                send = Embed(title="I am already in another voice channel in this server", colour=EmbedColours.orange())
+                await self.__send_timed_message(message.channel, send, timer=20)
                 return
 
         if message.guild.id in self._marked_channels:
@@ -185,6 +224,22 @@ class MusicCog(commands.Cog):
         await self.__update_channel_messages(message.guild.id)
 
         await message.delete()
+
+    async def find_song(self, search_term) -> dict:
+        if self.__determine_url(search_term):
+            # Currently only supports youtube links
+            # Searching youtube with the video id gets the original video
+            # Means we can have the same data is if it were searched for by name
+            search_term = search_term.split('v=')[-1]
+
+        youtube_results = self.__search_youtube(search_term)
+
+        if len(youtube_results) > 0:
+            await self.__download_video(youtube_results[0])
+
+            return youtube_results[0]
+        else:
+            return {}
 
     async def __setup_channel(self, ctx: Context, channel_id, arg):
         channel_instance: TextChannel = [x for x in ctx.guild.text_channels if x.id == channel_id][0]
@@ -264,21 +319,12 @@ class MusicCog(commands.Cog):
             if not os.path.isfile(video_info.get('localfile')):
                 ydl.download([url])
 
-    async def find_song(self, search_term) -> dict:
-        if self.__determine_url(search_term):
-            # Currently only supports youtube links
-            # Searching youtube with the video id gets the original video
-            # Means we can have the same data is if it were searched for by name
-            search_term = search_term.split('v=')[-1]
-
-        youtube_results = self.__search_youtube(search_term)
-
-        if len(youtube_results) > 0:
-            await self.__download_video(youtube_results[0])
-
-            return youtube_results[0]
+    async def __send_timed_message(self, channel, message, timer=15, is_embed=True):
+        if is_embed:
+            timed_message = await channel.send(embed=message)
         else:
-            return {}
+            timed_message = await channel.send(message)
+        await timed_message.delete(delay=timer)
 
     @tasks.loop(seconds=1)
     async def check_active_channels(self):
