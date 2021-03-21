@@ -192,6 +192,10 @@ class MusicCog(commands.Cog):
             if 'lyric' in title_lower or 'audio' in title_lower:
                 music_results.append(result)
 
+        if len(music_results) == 0:
+            # If the song doesn't have a lyric video just use a generic search
+            music_results = results
+
         # Remove useless data
         cleaned_results = self.__clean_youtube_results(music_results)
 
@@ -331,7 +335,10 @@ class MusicCog(commands.Cog):
             self.__start_queue(guild_id)
 
     def make_queue_list(self, guild_id):
+        # TODO: Format the queue into a list
         pass
+
+    # TODO: Make a channel format
 
 
 def setup(bot):
