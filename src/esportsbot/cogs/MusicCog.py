@@ -116,7 +116,7 @@ class MusicCog(commands.Cog):
             await self.__remove_active_channel(ctx.guild.id)
             return
 
-        self.check_next_song(ctx.guild.id)
+        self.__check_next_song(ctx.guild.id)
 
     @commands.command()
     async def listqueue(self, ctx: Context):
@@ -124,7 +124,9 @@ class MusicCog(commands.Cog):
             # Checks if the user is in a valid voice channel
             return
 
-        await ctx.channel.send(str(self._currently_active.get(ctx.guild.id).get('queue')))
+        queue_string = self.__make_queue_list(ctx.guild.id)
+
+        await ctx.channel.send(queue_string)
 
     async def on_message_handle(self, message: Message):
         if message.content.startswith(self._bot.command_prefix):
@@ -218,7 +220,8 @@ class MusicCog(commands.Cog):
                           'viewCount': result.get('viewCount'),
                           'duration': result.get('duration')
                           }
-            new_result['localfile'] = self._song_location + "" + new_result.get('title') + '-' + new_result.get('id') \
+            formatted_title = new_result.get('title').replace('/', '_')
+            new_result['localfile'] = self._song_location + "" + formatted_title + '-' + new_result.get('id') \
                                       + '.mp3'
 
             cleaned_data.append(new_result)
@@ -271,8 +274,8 @@ class MusicCog(commands.Cog):
             voice_client.pause()
 
     def __resume_song(self, guild_id):
-        if not self._currently_active.get(guild_id).get('voice_client').is_paused():
-            # Can't resume if the bot isn't paused
+        if self._currently_active.get(guild_id).get('voice_client').is_paused():
+            # Onl able to resume if currently paused
             voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
             voice_client.resume()
 
@@ -292,26 +295,15 @@ class MusicCog(commands.Cog):
 
         return True
 
-    def __determine_url(self, string: str) -> bool:
-        # This is for matching all urls
-        # re_string = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+] |[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-        # As we only want to match actual youtube urls
-        re_string = r'(http[s]?://)?youtube.com/watch\?v='
-        found_urls = re.findall(re_string, string)
-
-        if len(found_urls) > 0:
-            # url is present in the string
-            return True
-        return False
-
     @tasks.loop(seconds=1)
     async def check_active_channels(self):
         # Create a copy to avoid concurrent changes to _currently_active
         active_copy = self._currently_active.copy()
         for guild_id in active_copy.keys():
-            if not self._currently_active.get(guild_id).get('voice_client').is_playing():
-                # Check any voice_clients that are no longer playing
-                self.check_next_song(guild_id)
+            if not self._currently_active.get(guild_id).get('voice_client').is_playing() \
+                    and not self._currently_active.get(guild_id).get('voice_client').is_paused():
+                # Check any voice_clients that are no longer playing but that aren't just paused
+                self.__check_next_song(guild_id)
 
     @tasks.loop(seconds=60)
     async def check_marked_channels(self):
@@ -324,7 +316,7 @@ class MusicCog(commands.Cog):
                 asyncio.create_task(self.__remove_active_channel(guild_id))
                 self._marked_channels.pop(guild_id)
 
-    def check_next_song(self, guild_id):
+    def __check_next_song(self, guild_id):
         if len(self._currently_active.get(guild_id).get('queue')) == 1:
             # The queue will be empty so will be marked as inactive
             self._currently_active.get(guild_id).get('queue').pop(0)
@@ -334,11 +326,43 @@ class MusicCog(commands.Cog):
             self._currently_active.get(guild_id).get('queue').pop(0)
             self.__start_queue(guild_id)
 
-    def make_queue_list(self, guild_id):
-        # TODO: Format the queue into a list
-        pass
+    def __make_queue_list(self, guild_id):
+        if len(self._currently_active.get(guild_id).get('queue')) > 30:
+            # The queue is too long to display
+            first_part = self._currently_active.get(guild_id).get('queue')[:10]
+            last_part = self._currently_active.get(guild_id).get('queue')[-10:]
+
+            first_string = self.__song_list_to_string(first_part)
+            last_string = self.__song_list_to_string(last_part)
+
+            queue_string = first_string + ".\n.\n.\n" + last_string
+        else:
+            queue_string = self.__song_list_to_string(self._currently_active.get(guild_id).get('queue'))
+
+        return queue_string
 
     # TODO: Make a channel format
+
+    def __song_list_to_string(self, songs):
+        string = ""
+        for x in range(len(songs)):
+            index = x + 1
+            item = songs[x]
+            string += f"{index}. {item.get('title')} - {item.get('duration')} \n"
+
+        return string
+
+    def __determine_url(self, string: str) -> bool:
+        # This is for matching all urls
+        # re_string = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+] |[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+        # As we only want to match actual youtube urls
+        re_string = r'(http[s]?://)?youtube.com/watch\?v='
+        found_urls = re.findall(re_string, string)
+
+        if len(found_urls) > 0:
+            # url is present in the string
+            return True
+        return False
 
 
 def setup(bot):
