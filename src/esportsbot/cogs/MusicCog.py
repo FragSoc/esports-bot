@@ -38,7 +38,7 @@ class MusicCog(commands.Cog):
         print("Loaded music module")
         self._bot = bot
         self._max_results = max_search_results
-        self._song_location = 'songs\\'
+        self._song_location = 'songs' + os.pathsep
         self._currently_active = {}
         self._marked_channels = {}
 
