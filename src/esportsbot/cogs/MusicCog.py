@@ -111,6 +111,19 @@ class MusicCog(commands.Cog):
             await ctx.channel.send("Music channel has not been set")
 
     @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def resetmusicchannel(self, ctx):
+        current_channel_for_guild = db_gateway().get('music_channels', params={
+            'guild_id': ctx.author.guild.id})
+
+        if current_channel_for_guild[0].get('channel_id'):
+            await self.__setup_channel(ctx, arg='-c', channel_id=current_channel_for_guild[0].get('channel_id'))
+            message = "Successfully reset the music channel"
+            await self.__send_timed_message(ctx.channel, message, timer=20, is_embed=False)
+        else:
+            await ctx.channel.send("Music channel has not been set")
+
+    @commands.command()
     async def removesong(self, ctx: Context, song_index=None):
         if not self.__check_valid_user_vc(ctx):
             message = Embed(title="You are not in the voice channel with the bot", colour=EmbedColours.orange())
