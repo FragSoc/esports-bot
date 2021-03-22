@@ -1,0 +1,14 @@
+---
+
+language: minimal
+
+services:
+  - docker
+  - git
+
+script:
+  - docker build -t fragsoc/esports-bot .
+
+deploy:
+  provider: script
+  script: bash docker-push.sh
