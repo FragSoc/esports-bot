@@ -1,6 +1,7 @@
 import asyncio
 import os
 import time
+from urllib.parse import quote
 
 import youtube_dl
 import re
@@ -38,7 +39,7 @@ class MusicCog(commands.Cog):
         print("Loaded music module")
         self._bot = bot
         self._max_results = max_search_results
-        self._song_location = 'songs' + os.pathsep
+        self._song_location = 'songs' + os.path.sep
         self._currently_active = {}
         self._marked_channels = {}
 
@@ -131,7 +132,8 @@ class MusicCog(commands.Cog):
             return
 
         if len(self._currently_active.get(ctx.guild.id).get('queue')) < (int(song_index) - 1):
-            message = Embed(title=f"There is no song at position {song_index} in the queue", colour=EmbedColours.orange())
+            message = Embed(title=f"There is no song at position {song_index} in the queue",
+                            colour=EmbedColours.orange())
             await self.__send_timed_message(ctx.channel, message)
             return
 
@@ -183,6 +185,7 @@ class MusicCog(commands.Cog):
         if len(self._currently_active.get(ctx.guild.id).get('queue')) == 1:
             # Skipping when only one song in the queue will just kick the bot
             await self.__remove_active_channel(ctx.guild.id)
+            await ctx.message.delete()
             return
 
         await self.__check_next_song(ctx.guild.id)
@@ -200,6 +203,26 @@ class MusicCog(commands.Cog):
 
         await ctx.channel.send(queue_string)
 
+    @commands.command()
+    async def clearqueue(self, ctx: Context):
+        if not self.__check_valid_user_vc(ctx):
+            # Checks if the user is in a valid voice channel
+            return
+
+        if self._currently_active.get(ctx.guild.id).get('voice_client').is_playing():
+            # If currently in a song, set the queue to what is currently playing
+            self._currently_active.get(ctx.guild.id)['queue'] = [
+                self._currently_active.get(ctx.guild.id).get('queue').pop(0)]
+        else:
+            # Else empty the queue and start the inactivity timer
+            self._currently_active.get(ctx.guild.id)['queue'] = [None]
+            await self.__check_next_song(ctx.guild.id)
+
+        await self.__update_channel_messages(ctx.guild.id)
+        await ctx.message.delete()
+        message = Embed(title="Queue Cleared!", colour=EmbedColours.music())
+        await self.__send_timed_message(ctx.channel, message)
+
     async def on_message_handle(self, message: Message):
         if message.content.startswith(self._bot.command_prefix):
             # Ignore commands, any MusicCog commands will get handled in the usual way
@@ -208,7 +231,8 @@ class MusicCog(commands.Cog):
         if not message.author.voice:
             # User is not in a voice channel.. exit
             send = Embed(title="You must be in a voice channel to add a song", colour=EmbedColours.orange())
-            await self.__send_timed_message(message.channel, send, timer=20)
+            await message.delete()
+            await self.__send_timed_message(message.channel, send, timer=10)
             return
 
         if not self._currently_active.get(message.guild.id):
@@ -219,7 +243,8 @@ class MusicCog(commands.Cog):
         else:
             if self._currently_active.get(message.guild.id).get('channel_id') != message.author.voice.channel.id:
                 send = Embed(title="I am already in another voice channel in this server", colour=EmbedColours.orange())
-                await self.__send_timed_message(message.channel, send, timer=20)
+                await message.delete()
+                await self.__send_timed_message(message.channel, send, timer=10)
                 return
 
         if message.guild.id in self._marked_channels:
@@ -246,6 +271,12 @@ class MusicCog(commands.Cog):
             search_term = search_term.split('v=')[-1]
 
         youtube_results = self.__search_youtube(search_term)
+
+        top_result = youtube_results[-1]
+        music_result = youtube_results[0]
+
+        music_result['thumbnail'] = top_result['thumbnail']
+        music_result['title'] = top_result['title']
 
         if len(youtube_results) > 0:
             await self.__download_video(youtube_results[0])
@@ -280,6 +311,8 @@ class MusicCog(commands.Cog):
         if guild_id in self._currently_active:
             voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
             await voice_client.disconnect()
+            self._currently_active.get(guild_id)['queue'] = [None]
+            await self.__check_next_song(guild_id)
             self._currently_active.pop(guild_id)
             return True
         return False
@@ -320,7 +353,7 @@ class MusicCog(commands.Cog):
     async def __download_video(self, video_info):
         ydl_opts = {
             'format': 'bestaudio/best',
-            'outtmpl': self._song_location + '%(title)s-%(id)s.mp3',
+            'outtmpl': video_info.get('localfile'),
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
@@ -361,7 +394,13 @@ class MusicCog(commands.Cog):
                 self._marked_channels.pop(guild_id)
 
     def __search_youtube(self, message: str) -> list:
+        start = time.time()
         results = VideosSearch(message, limit=self._max_results).result().get('result')
+
+        # Sort the list by view count
+        top_results = sorted(results,
+                             key=lambda k: int(re.sub(r'view(s)?', '', k['viewCount']['text']).replace(',', '')),
+                             reverse=True)
 
         music_results = []
 
@@ -375,15 +414,16 @@ class MusicCog(commands.Cog):
             # If the song doesn't have a lyric video just use a generic search
             music_results = results
 
+        music_results.append(top_results[0])
+
         # Remove useless data
         cleaned_results = self.__clean_youtube_results(music_results)
 
-        # Sort the list by view count
-        sorted_results = sorted(cleaned_results,
-                                key=lambda k: int(k['viewCount']['text'].replace(' views', '').replace(',', '')),
-                                reverse=True)
+        end = time.time()
 
-        return sorted_results
+        print("Time taken: " + str(end - start))
+
+        return cleaned_results
 
     def __clean_youtube_results(self, results) -> list:
         cleaned_data = []
@@ -397,9 +437,10 @@ class MusicCog(commands.Cog):
                           'viewCount': result.get('viewCount'),
                           'duration': result.get('duration')
                           }
-            formatted_title = new_result.get('title').replace('/', '_')
-            new_result['localfile'] = self._song_location + "" + formatted_title + '-' + new_result.get('id') \
-                                      + '.mp3'
+            # formatted_title = new_result.get('title').replace('/', '_').replace('|', '_')
+            # new_result['localfile'] = self._song_location + "" + formatted_title + '-' + new_result.get('id') \
+            new_result['localfile'] = self._song_location + re.sub(r'\W+', '', new_result.get('title')) + \
+                                      f"{new_result.get('id')}.mp3"
 
             cleaned_data.append(new_result)
 
