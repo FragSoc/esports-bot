@@ -347,6 +347,9 @@ class MusicCog(commands.Cog):
                     and not self._currently_active.get(guild_id).get('voice_client').is_paused():
                 # Check any voice_clients that are no longer playing but that aren't just paused
                 await self.__check_next_song(guild_id)
+            elif self.__check_empty_vc(guild_id):
+                asyncio.create_task(self.__remove_active_channel(guild_id))
+                self._marked_channels.pop(guild_id)
 
     @tasks.loop(seconds=60)
     async def check_marked_channels(self):
@@ -362,7 +365,7 @@ class MusicCog(commands.Cog):
                 asyncio.create_task(self.__remove_active_channel(guild_id))
                 self._marked_channels.pop(guild_id)
 
-    async def __check_empty_vc(self, guild_id):
+    def __check_empty_vc(self, guild_id):
         voice_client = self._currently_active.get(guild_id).get('voice_client')
         voice_channel = voice_client.channel
 
@@ -390,10 +393,11 @@ class MusicCog(commands.Cog):
         if voice_client.is_playing():
             # Stop the bot if it is playing
             voice_client.stop()
-        print(self._currently_active.get(guild_id).get('queue'))
+
         song = self._currently_active.get(guild_id).get('queue')[0]
         before = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
-        voice_client.play(FFmpegOpusAudio(song.get('stream'), before_options=before, bitrate=int(song.get('bitrate'))))
+        voice_client.play(FFmpegOpusAudio(song.get('stream'), before_options=before,
+                                          bitrate=int(song.get('bitrate'))+10))
         voice_client.volume = 100
 
     def __pause_song(self, guild_id):
@@ -438,6 +442,7 @@ class MusicCog(commands.Cog):
             updated_preview_message = self._no_current_song_message
         else:
             current_song = self._currently_active.get(guild_id).get('queue')[0]
+            print(current_song.get('thumbnail'))
             updated_preview_message = Embed(title="Currently Playing: " + current_song.get('title'),
                                             colour=Colour(0xd462fd), url=current_song.get('link'),
                                             video=current_song.get('link'))
@@ -556,9 +561,9 @@ class MusicCog(commands.Cog):
 
     def __get_thumbnail(self, thumbnails):
         # Sort by thumbnail size
-        sorted_thumbnails = list(sorted(thumbnails, key=lambda k: int(k.get('height'))))
+        sorted_thumbnails = list(sorted(thumbnails, key=lambda k: int(k.get('height')), reverse=True))
 
-        return sorted_thumbnails[0]
+        return sorted_thumbnails[0].get('url')
 
     def __is_url(self, string):
         # Match desktop, mobile and playlist links
@@ -567,7 +572,7 @@ class MusicCog(commands.Cog):
 
         re_string = "(" + re_desktop + ") | (" + re_mobile + ")"
 
-        if len(re.findall(re_string, string)) > 0:
+        if re.search(re_desktop, string) or re.search(re_mobile, string):
             return True
         return False
 
@@ -586,7 +591,8 @@ class MusicCog(commands.Cog):
 
             await self.__update_channel_messages(guild_id)
             return True
-        except:
+        except Exception as e:
+            print("There was an error while adding to the queue: \n" + str(e))
             return False
 
     def __download_video_info(self, link, download=False):
