@@ -1,3 +1,4 @@
+import grequests
 import asyncio
 import os
 import time
@@ -12,6 +13,15 @@ from discord.ext.commands import Context, UserInputError
 
 from src.esportsbot.db_gateway import db_gateway
 
+import googleapiclient.discovery
+from urllib.parse import parse_qs, urlparse
+
+from bs4 import BeautifulSoup as bs
+
+from random import shuffle
+
+# TODO: Add limiters for uptime
+# TODO: Allow multiline requests
 
 class EmbedColours:
 
@@ -57,6 +67,8 @@ class MusicCog(commands.Cog):
         self._no_current_song_message.set_footer(text="Definitely not made by fuxticks#1809")
         # Bitrate quality 0->2 inclusive, 0 is best, 2 is worst
         self._bitrate_quality = 0
+
+        self._API_KEY = os.getenv('GOOGLE_API')
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -233,6 +245,24 @@ class MusicCog(commands.Cog):
         message = Embed(title="Queue Cleared!", colour=EmbedColours.music())
         await self.__send_timed_message(ctx.channel, message)
 
+    @commands.command()
+    async def shufflequeue(self, ctx: Context):
+        if not self.__check_valid_user_vc(ctx):
+            # Checks if the user is in a valid voice channel
+            return
+
+        if not len(self._currently_active.get(ctx.guild.id).get('queue')) > 2:
+            # Nothing to shuffle
+            return
+
+        current_top = self._currently_active.get(ctx.guild.id).get('queue').pop(0)
+        shuffle(self._currently_active.get(ctx.guild.id)['queue'])
+        self._currently_active.get(ctx.guild.id).get('queue').insert(0, current_top)
+
+        message = Embed(title="Queue shuffled!", colour=EmbedColours.green())
+        await self.__send_timed_message(ctx.channel, message, timer=10)
+        await ctx.message.delete()
+
     async def on_message_handle(self, message: Message):
         if message.content.startswith(self._bot.command_prefix):
             # Ignore commands, any MusicCog commands will get handled in the usual way
@@ -325,11 +355,12 @@ class MusicCog(commands.Cog):
             # The queue will be empty so will be marked as inactive
             self._currently_active.get(guild_id).get('queue').pop(0)
             self._marked_channels[guild_id] = time.time()
+            await self.__update_channel_messages(guild_id)
         elif len(self._currently_active.get(guild_id).get('queue')) > 1:
             # The queue is not empty, play the next song
             self._currently_active.get(guild_id).get('queue').pop(0)
             self.__start_queue(guild_id)
-        await self.__update_channel_messages(guild_id)
+            await self.__update_channel_messages(guild_id)
 
     async def __send_timed_message(self, channel, message, timer=15, is_embed=True):
         if is_embed:
@@ -380,6 +411,7 @@ class MusicCog(commands.Cog):
             self._currently_active[guild_id]['channel_id'] = channel_id
             self._currently_active[guild_id]['voice_client'] = voice_client
             self._currently_active[guild_id]['queue'] = []
+            self._currently_active[guild_id]['current_song'] = None
             return True
         return False
 
@@ -395,9 +427,15 @@ class MusicCog(commands.Cog):
             voice_client.stop()
 
         song = self._currently_active.get(guild_id).get('queue')[0]
+
+        song_data = self.__download_video_info(song.get('link'), download=False)
+        song_formatted = self.__format_download_data(song_data)
+
+        self._currently_active.get(guild_id)['current_song'] = song_formatted
+
         before = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
-        voice_client.play(FFmpegOpusAudio(song.get('stream'), before_options=before,
-                                          bitrate=int(song.get('bitrate'))+10))
+        voice_client.play(FFmpegOpusAudio(song_formatted.get('stream'), before_options=before,
+                                          bitrate=int(song_formatted.get('bitrate')) + 10))
         voice_client.volume = 100
 
     def __pause_song(self, guild_id):
@@ -436,13 +474,11 @@ class MusicCog(commands.Cog):
 
         return updated_queue_message
 
-    # TODO: Update this
     def __update_preview_message(self, guild_id):
         if len(self._currently_active.get(guild_id).get('queue')) == 0:
             updated_preview_message = self._no_current_song_message
         else:
-            current_song = self._currently_active.get(guild_id).get('queue')[0]
-            print(current_song.get('thumbnail'))
+            current_song = self._currently_active.get(guild_id).get('current_song')
             updated_preview_message = Embed(title="Currently Playing: " + current_song.get('title'),
                                             colour=Colour(0xd462fd), url=current_song.get('link'),
                                             video=current_song.get('link'))
@@ -471,16 +507,20 @@ class MusicCog(commands.Cog):
         for x in range(len(songs)):
             index = x + 1
             item = songs[x]
-            string += f"{index}. {item.get('title')} - {item.get('length')} \n"
+            # string += f"{index}. {item.get('title')} - {item.get('length')} \n"
+            string += f"{index}. {item.get('title')}\n"
 
         return string
 
     async def process_song_request(self, message, request):
         message_type = self.__determine_message_type(request)
 
-        download_data = self.__download_song(request, message_type)
-
-        success = await self.__add_to_queue(message.guild.id, download_data)
+        if message_type == 1:
+            song_info = self.__get_playlist_info_from_links([message.content])
+            success = await self.__add_to_queue(message.guild.id, song_info)
+        else:
+            songs_found = self.__find_song(request, message_type)
+            success = await self.__add_to_queue(message.guild.id, songs_found)
 
         if success:
             feedback = Embed(title="Added request to queue!", colour=EmbedColours.music())
@@ -492,17 +532,56 @@ class MusicCog(commands.Cog):
 
         return success
 
-    def __download_song(self, message, message_type):
+    def __find_song(self, message, message_type):
         if message_type == 0:
-            playlist_info = self.__download_video_info(message)
-            playlist_data = self.__format_playlist_data(playlist_info)
-            return playlist_data
-        elif message_type == 1:
-            song_info = self.__download_video_info(message)
-            song_data = self.__format_download_data(song_info)
-            return song_data
+            links = self.__find_playlist_songs(message)
+            return self.__get_playlist_info_from_links(links)
         else:
             return self.__find_query(message)
+
+    def __find_playlist_songs(self, playlist_link):
+        query = parse_qs(urlparse(playlist_link).query, keep_blank_values=True)
+        playlist_id = query["list"][0]
+        youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=self._API_KEY)
+
+        request = youtube.playlistItems().list(
+            part="snippet",
+            playlistId=playlist_id,
+            maxResults=50
+        )
+        response = request.execute()
+
+        playlist_items = []
+        while request is not None:
+            response = request.execute()
+            playlist_items += response["items"]
+            request = youtube.playlistItems().list_next(request, response)
+
+        playlist_links = [f'https://www.youtube.com/watch?v={t["snippet"]["resourceId"]["videoId"]}'
+                          for t in playlist_items]
+
+        return playlist_links
+
+    def __get_playlist_info_from_links(self, links):
+
+        # Grequest exception handler
+        def exception_handler(request, exception):
+            print(str(request) + ' failed with exception: ' + str(exception))
+
+        request = (grequests.get(url) for url in links)
+        response = grequests.map(request, exception_handler=exception_handler)
+
+        info = []
+
+        for x in range(len(links)):
+            soup = bs(response[x].text, 'lxml')
+            all_alternate = soup.find_all('link', attrs={"rel": "alternate"})
+            for item in all_alternate:
+                if item.get('title'):
+                    info.append({'link': links[x], 'title': item.get('title')})
+                    break
+
+        return info
 
     def __find_query(self, message):
         # Finds the required data for
@@ -511,15 +590,12 @@ class MusicCog(commands.Cog):
         top_hit = search_info[-1]
         best_audio_hit = search_info[0]
 
-        song_info = self.__download_video_info(best_audio_hit.get('link'))
-        song_data = self.__format_download_data(song_info)
+        # Usually has a better thumbnail than the lyrics
+        best_audio_hit['thumbnail'] = top_hit['thumbnail']
+        # Better title to display
+        best_audio_hit['title'] = top_hit['title']
 
-        song_data['thumbnail'] = top_hit.get('thumbnail')
-        # TODO: Maybe remove this
-        # Not sure to keep this, but will redirect the user to the official music video instead of the lyric video
-        song_data['link'] = top_hit.get('link')
-
-        return song_data
+        return best_audio_hit
 
     def __determine_message_type(self, message) -> int:
         if self.__is_url(message):
