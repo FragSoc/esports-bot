@@ -4,18 +4,30 @@ language: minimal
 
 services:
   - docker
-before_install:
-  - sudo apt-get update
-  - sudo apt-get install -y git
-
-# branches:
-#   only:
-#     - develop
-#     - master
 
 script:
   - docker build -t fragsoc/esports-bot .
 
-deploy:
-  provider: script
-  script: bash docker-push.sh
+stages:
+  - develop
+  - production
+  
+jobs:
+  include:
+  - stage : develop
+    env:
+     - DOCKER_TAG=develop
+    deploy:
+      provider: script
+      script: bash docker-push.sh
+      on:
+       branch: develop
+
+  - stage: master
+    env:
+     - DOCKER_TAG=master
+    deploy:
+      provider: script
+      script: bash docker-push.sh
+      on:
+       branch: master
