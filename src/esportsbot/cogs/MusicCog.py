@@ -52,6 +52,9 @@ class MusicCog(commands.Cog):
                                               colour=EmbedColours.music(),
                                               footer="Use the prefix ! for commands"
                                               )
+        self._no_current_song_message.set_image(
+            url="http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png")
+        self._no_current_song_message.set_footer(text="Definitely not made by fuxticks#1809")
         # Bitrate quality 0->2 inclusive, 0 is best, 2 is worst
         self._bitrate_quality = 0
 
@@ -191,13 +194,19 @@ class MusicCog(commands.Cog):
 
         await self.__check_next_song(ctx.guild.id)
         await ctx.message.delete()
-        message = Embed(title="Song Skipped!", colour=EmbedColours.music())
+        message = Embed(title="Song Skipped!", colour=EmbedColours.music(), time=5)
         await self.__send_timed_message(ctx.channel, message)
 
     @commands.command()
     async def listqueue(self, ctx: Context):
-        if not self.__check_valid_user_vc(ctx):
+        # if not self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
+        #    return
+
+        # We don't want the song channel to be filled with the queue as it already shows it
+        music_channel_in_db = db_gateway().get('music_channels', params={'guild_id': ctx.guild.id})
+        if ctx.message.channel.id == music_channel_in_db[0].get('channel_id'):
+            # Message is in the songs channel
             return
 
         queue_string = self.__make_queue_list(ctx.guild.id)
@@ -457,7 +466,7 @@ class MusicCog(commands.Cog):
         for x in range(len(songs)):
             index = x + 1
             item = songs[x]
-            string += f"{index}. {item.get('title')} - {item.get('duration')} \n"
+            string += f"{index}. {item.get('title')} - {item.get('length')} \n"
 
         return string
 
@@ -607,7 +616,7 @@ class MusicCog(commands.Cog):
                           'link': result.get('link'),
                           'id': result.get('id'),
                           'viewCount': result.get('viewCount'),
-                          'duration': result.get('duration')
+                          'length': result.get('duration')
                           }
             # formatted_title = new_result.get('title').replace('/', '_').replace('|', '_')
             # new_result['localfile'] = self._song_location + "" + formatted_title + '-' + new_result.get('id') \
