@@ -1,13 +1,12 @@
 import asyncio
 import os
 import time
-from urllib.parse import quote
 
 import youtube_dl
 import re
 from youtubesearchpython import VideosSearch
 
-from discord import Message, VoiceClient, FFmpegPCMAudio, TextChannel, Embed, Colour
+from discord import Message, VoiceClient, TextChannel, Embed, Colour, FFmpegOpusAudio
 from discord.ext import commands, tasks
 from discord.ext.commands import Context, UserInputError
 
@@ -53,6 +52,8 @@ class MusicCog(commands.Cog):
                                               colour=EmbedColours.music(),
                                               footer="Use the prefix ! for commands"
                                               )
+        # Bitrate quality 0->2 inclusive, 0 is best, 2 is worst
+        self._bitrate_quality = 0
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -247,43 +248,14 @@ class MusicCog(commands.Cog):
                 await self.__send_timed_message(message.channel, send, timer=10)
                 return
 
-        if message.guild.id in self._marked_channels:
-            # Remove the channel from marked channels as it is no longer inactive
-            self._marked_channels.pop(message.guild.id)
+        success = await self.process_song_request(message, message.content)
 
-        song_data = await self.find_song(message.content)
-
-        self._currently_active[message.guild.id]['queue'].append(song_data)
-
-        if not self._currently_active.get(message.guild.id).get('voice_client').is_playing():
-            # If we are not currently playing, start playing
-            self.__start_queue(message.guild.id)
-
-        await self.__update_channel_messages(message.guild.id)
+        if success:
+            if message.guild.id in self._marked_channels:
+                # Remove the channel from marked channels as it is no longer inactive
+                self._marked_channels.pop(message.guild.id)
 
         await message.delete()
-
-    async def find_song(self, search_term) -> dict:
-        if self.__determine_url(search_term):
-            # Currently only supports youtube links
-            # Searching youtube with the video id gets the original video
-            # Means we can have the same data is if it were searched for by name
-            search_term = search_term.split('v=')[-1]
-
-        youtube_results = self.__search_youtube(search_term)
-
-        top_result = youtube_results[-1]
-        music_result = youtube_results[0]
-
-        music_result['thumbnail'] = top_result['thumbnail']
-        music_result['title'] = top_result['title']
-
-        if len(youtube_results) > 0:
-            await self.__download_video(youtube_results[0])
-
-            return youtube_results[0]
-        else:
-            return {}
 
     async def __setup_channel(self, ctx: Context, channel_id, arg):
         channel_instance: TextChannel = [x for x in ctx.guild.text_channels if x.id == channel_id][0]
@@ -350,21 +322,6 @@ class MusicCog(commands.Cog):
             self.__start_queue(guild_id)
         await self.__update_channel_messages(guild_id)
 
-    async def __download_video(self, video_info):
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': video_info.get('localfile'),
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-        }
-        url = video_info.get('link')
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            if not os.path.isfile(video_info.get('localfile')):
-                ydl.download([url])
-
     async def __send_timed_message(self, channel, message, timer=15, is_embed=True):
         if is_embed:
             timed_message = await channel.send(embed=message)
@@ -388,63 +345,22 @@ class MusicCog(commands.Cog):
         marked_copy = self._marked_channels.copy()
         for guild_id in marked_copy.keys():
             guild_time = self._marked_channels.get(guild_id)
-            if time.time() - guild_time >= 60 * 5:
+            if time.time() - guild_time >= 60 * 2:
                 # If the time since inactivity has been more than 5 minutes leave the channel
                 asyncio.create_task(self.__remove_active_channel(guild_id))
                 self._marked_channels.pop(guild_id)
+            elif self.__check_empty_vc(guild_id):
+                asyncio.create_task(self.__remove_active_channel(guild_id))
+                self._marked_channels.pop(guild_id)
 
-    def __search_youtube(self, message: str) -> list:
-        start = time.time()
-        results = VideosSearch(message, limit=self._max_results).result().get('result')
+    async def __check_empty_vc(self, guild_id):
+        voice_client = self._currently_active.get(guild_id).get('voice_client')
+        voice_channel = voice_client.channel
 
-        # Sort the list by view count
-        top_results = sorted(results,
-                             key=lambda k: int(re.sub(r'view(s)?', '', k['viewCount']['text']).replace(',', '')),
-                             reverse=True)
-
-        music_results = []
-
-        # Get results that have words "lyric" or "audio" as it filters out music videos
-        for result in results:
-            title_lower = result.get('title').lower()
-            if 'lyric' in title_lower or 'audio' in title_lower:
-                music_results.append(result)
-
-        if len(music_results) == 0:
-            # If the song doesn't have a lyric video just use a generic search
-            music_results = results
-
-        music_results.append(top_results[0])
-
-        # Remove useless data
-        cleaned_results = self.__clean_youtube_results(music_results)
-
-        end = time.time()
-
-        print("Time taken: " + str(end - start))
-
-        return cleaned_results
-
-    def __clean_youtube_results(self, results) -> list:
-        cleaned_data = []
-
-        # Gets the data that is actually useful and discards the rest of the data
-        for result in results:
-            new_result = {'title': result.get('title'),
-                          'thumbnail': result.get('thumbnails')[-1],
-                          'link': result.get('link'),
-                          'id': result.get('id'),
-                          'viewCount': result.get('viewCount'),
-                          'duration': result.get('duration')
-                          }
-            # formatted_title = new_result.get('title').replace('/', '_').replace('|', '_')
-            # new_result['localfile'] = self._song_location + "" + formatted_title + '-' + new_result.get('id') \
-            new_result['localfile'] = self._song_location + re.sub(r'\W+', '', new_result.get('title')) + \
-                                      f"{new_result.get('id')}.mp3"
-
-            cleaned_data.append(new_result)
-
-        return cleaned_data
+        if len(voice_channel.members) == 1:
+            return True
+        else:
+            return False
 
     def __add_new_active_channel(self, guild_id, channel_id=None, voice_client=None) -> bool:
         if guild_id not in self._currently_active:
@@ -465,9 +381,10 @@ class MusicCog(commands.Cog):
         if voice_client.is_playing():
             # Stop the bot if it is playing
             voice_client.stop()
-
-        song_file = self._currently_active.get(guild_id).get('queue')[0].get('localfile')
-        voice_client.play(FFmpegPCMAudio(song_file))
+        print(self._currently_active.get(guild_id).get('queue'))
+        song = self._currently_active.get(guild_id).get('queue')[0]
+        before = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+        voice_client.play(FFmpegOpusAudio(song.get('stream'), before_options=before, bitrate=int(song.get('bitrate'))))
         voice_client.volume = 100
 
     def __pause_song(self, guild_id):
@@ -506,6 +423,7 @@ class MusicCog(commands.Cog):
 
         return updated_queue_message
 
+    # TODO: Update this
     def __update_preview_message(self, guild_id):
         if len(self._currently_active.get(guild_id).get('queue')) == 0:
             updated_preview_message = self._no_current_song_message
@@ -514,7 +432,7 @@ class MusicCog(commands.Cog):
             updated_preview_message = Embed(title="Currently Playing: " + current_song.get('title'),
                                             colour=Colour(0xd462fd), url=current_song.get('link'),
                                             video=current_song.get('link'))
-            updated_preview_message.set_image(url=current_song.get('thumbnail').get('url'))
+            updated_preview_message.set_image(url=current_song.get('thumbnail'))
 
         return updated_preview_message
 
@@ -543,17 +461,195 @@ class MusicCog(commands.Cog):
 
         return string
 
-    def __determine_url(self, string: str) -> bool:
-        # This is for matching all urls
-        # re_string = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+] |[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-        # As we only want to match actual youtube urls
-        re_string = r'(http[s]?://)?youtube.com/watch\?v='
-        found_urls = re.findall(re_string, string)
+    async def process_song_request(self, message, request):
+        message_type = self.__determine_message_type(request)
 
-        if len(found_urls) > 0:
-            # url is present in the string
+        download_data = self.__download_song(request, message_type)
+
+        success = await self.__add_to_queue(message.guild.id, download_data)
+
+        if success:
+            feedback = Embed(title="Added request to queue!", colour=EmbedColours.music())
+            await self.__send_timed_message(message.channel, feedback, timer=5, is_embed=True)
+        else:
+            feedback = Embed(title="An error occurred while adding your request to the queue",
+                             colour=EmbedColours.orange())
+            await self.__send_timed_message(message.channel, feedback, timer=10, is_embed=True)
+
+        return success
+
+    def __download_song(self, message, message_type):
+        if message_type == 0:
+            playlist_info = self.__download_video_info(message)
+            playlist_data = self.__format_playlist_data(playlist_info)
+            return playlist_data
+        elif message_type == 1:
+            song_info = self.__download_video_info(message)
+            song_data = self.__format_download_data(song_info)
+            return song_data
+        else:
+            return self.__find_query(message)
+
+    def __find_query(self, message):
+        # Finds the required data for
+        search_info = self.__search_youtube(message)
+
+        top_hit = search_info[-1]
+        best_audio_hit = search_info[0]
+
+        song_info = self.__download_video_info(best_audio_hit.get('link'))
+        song_data = self.__format_download_data(song_info)
+
+        song_data['thumbnail'] = top_hit.get('thumbnail')
+        # TODO: Maybe remove this
+        # Not sure to keep this, but will redirect the user to the official music video instead of the lyric video
+        song_data['link'] = top_hit.get('link')
+
+        return song_data
+
+    def __determine_message_type(self, message) -> int:
+        if self.__is_url(message):
+            if re.search(r'(playlist)', message):
+                return 0
+            else:
+                return 1
+        else:
+            return 2
+
+    def __format_playlist_data(self, playlist_data):
+        entries = playlist_data.get('entries')
+        formatted_entries = []
+        for entry in entries:
+            formatted_entries.append(self.__format_download_data(entry))
+        return formatted_entries
+
+    def __format_download_data(self, download_data):
+        # Returns the parts of the data that is actually needed
+        stream, rate = self.__get_opus_stream(download_data.get('formats'))
+        useful_data = {'title': download_data.get('title'), 'id': download_data.get('id'),
+                       'link': download_data.get('webpage_url'), 'length': download_data.get('duration'),
+                       'stream': stream,
+                       'bitrate': rate,
+                       'thumbnail': self.__get_thumbnail(download_data.get('thumbnails')),
+                       'filename': download_data.get('filename')}
+        return useful_data
+
+    def __get_opus_stream(self, formats):
+        # Limit the codecs to just opus, as that is required for streaming audio
+        opus_formats = [x for x in formats if x.get('acodec') == 'opus']
+
+        # Sort the formats from highest br to lowest
+        sorted_opus = list(sorted(opus_formats, key=lambda k: float(k.get('abr')), reverse=True))
+
+        chosen_stream = sorted_opus[self._bitrate_quality]
+
+        return chosen_stream.get('url'), chosen_stream.get('abr')
+
+    def __get_thumbnail(self, thumbnails):
+        # Sort by thumbnail size
+        sorted_thumbnails = list(sorted(thumbnails, key=lambda k: int(k.get('height'))))
+
+        return sorted_thumbnails[0]
+
+    def __is_url(self, string):
+        # Match desktop, mobile and playlist links
+        re_desktop = r'(http[s]?://)?youtube.com/(watch\?v)|(playlist\?list)='
+        re_mobile = r'(http[s]?://)?youtu.be/([a-zA-Z]|[0-9])+'
+
+        re_string = "(" + re_desktop + ") | (" + re_mobile + ")"
+
+        if len(re.findall(re_string, string)) > 0:
             return True
         return False
+
+    async def __add_to_queue(self, guild_id, song):
+        try:
+            if isinstance(song, list):
+                for item in song:
+                    self._currently_active.get(guild_id).get('queue').append(item)
+            else:
+                self._currently_active.get(guild_id).get('queue').append(song)
+            # self._currently_active.get(guild_id).get('queue').extend(song)
+
+            if not self._currently_active.get(guild_id).get('voice_client').is_playing():
+                # If we are not currently playing, start playing
+                self.__start_queue(guild_id)
+
+            await self.__update_channel_messages(guild_id)
+            return True
+        except:
+            return False
+
+    def __download_video_info(self, link, download=False):
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': self._song_location + '%(title)s-%(id)s.mp3',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+        }
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(link, download=download)
+            file = ydl.prepare_filename(info)
+            info['filename'] = file
+
+        return info
+
+    def __clean_youtube_results(self, results) -> list:
+        cleaned_data = []
+
+        # Gets the data that is actually useful and discards the rest of the data
+        for result in results:
+            new_result = {'title': result.get('title'),
+                          'thumbnail': result.get('thumbnails')[-1].get('url'),
+                          'link': result.get('link'),
+                          'id': result.get('id'),
+                          'viewCount': result.get('viewCount'),
+                          'duration': result.get('duration')
+                          }
+            # formatted_title = new_result.get('title').replace('/', '_').replace('|', '_')
+            # new_result['localfile'] = self._song_location + "" + formatted_title + '-' + new_result.get('id') \
+            new_result['localfile'] = self._song_location + re.sub(r'\W+', '', new_result.get('title')) + \
+                                      f"{new_result.get('id')}.mp3"
+
+            cleaned_data.append(new_result)
+
+        return cleaned_data
+
+    def __search_youtube(self, message: str) -> list:
+        start = time.time()
+        results = VideosSearch(message, limit=self._max_results).result().get('result')
+
+        # Sort the list by view count
+        top_results = sorted(results,
+                             key=lambda k: int(re.sub(r'view(s)?', '', k['viewCount']['text']).replace(',', '')),
+                             reverse=True)
+
+        music_results = []
+
+        # Get results that have words "lyric" or "audio" as it filters out music videos
+        for result in results:
+            title_lower = result.get('title').lower()
+            if 'lyric' in title_lower or 'audio' in title_lower:
+                music_results.append(result)
+
+        if len(music_results) == 0:
+            # If the song doesn't have a lyric video just use a generic search
+            music_results = results
+
+        # Add the top result regardless if it uses the words lyrics or audio
+        music_results.append(top_results[0])
+
+        # Remove useless data
+        cleaned_results = self.__clean_youtube_results(music_results)
+
+        end = time.time()
+
+        print("Time taken to query youtube: " + str(end - start))
+
+        return cleaned_results
 
 
 def setup(bot):
