@@ -4,7 +4,14 @@ language: minimal
 
 services:
   - docker
-  - git
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -y git
+
+# branches:
+#   only:
+#     - develop
+#     - master
 
 script:
   - docker build -t fragsoc/esports-bot .
