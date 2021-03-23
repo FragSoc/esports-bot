@@ -52,8 +52,7 @@ class MusicCog(commands.Cog):
         self._currently_active = {}
         self._marked_channels = {}
 
-        self.check_active_channels.start()
-        self.check_marked_channels.start()
+        self.__check_loops_alive()
 
         self._empty_queue_message = "**__Queue list:__**\n" \
                                     "Join a VoiceChannel and search a song by name or YouTube url.\n"
@@ -287,6 +286,8 @@ class MusicCog(commands.Cog):
                 await self.__send_timed_message(message.channel, send, timer=10)
                 return
 
+        self.__check_loops_alive()
+
         success = await self.process_song_request(message, message.content)
 
         if success:
@@ -295,6 +296,12 @@ class MusicCog(commands.Cog):
                 self._marked_channels.pop(message.guild.id)
 
         await message.delete()
+
+    def __check_loops_alive(self):
+        if not self.check_active_channels.is_running():
+            self.check_active_channels.start()
+        if not self.check_marked_channels.is_running():
+            self.check_marked_channels.start()
 
     async def __setup_channel(self, ctx: Context, channel_id, arg):
         channel_instance: TextChannel = [x for x in ctx.guild.text_channels if x.id == channel_id][0]
@@ -382,6 +389,10 @@ class MusicCog(commands.Cog):
                 asyncio.create_task(self.__remove_active_channel(guild_id))
                 self._marked_channels.pop(guild_id)
 
+        if len(active_copy.keys()) == 0:
+            # Stop the task when no channels to check
+            self.check_active_channels.stop()
+
     @tasks.loop(seconds=60)
     async def check_marked_channels(self):
         # Create a copy to avoid concurrent changes to _marked_channels
@@ -395,6 +406,9 @@ class MusicCog(commands.Cog):
             elif self.__check_empty_vc(guild_id):
                 asyncio.create_task(self.__remove_active_channel(guild_id))
                 self._marked_channels.pop(guild_id)
+
+        if len(marked_copy.keys()) == 0:
+            self.check_marked_channels.stop()
 
     def __check_empty_vc(self, guild_id):
         voice_client = self._currently_active.get(guild_id).get('voice_client')
