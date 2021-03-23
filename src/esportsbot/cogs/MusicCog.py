@@ -19,9 +19,12 @@ from urllib.parse import parse_qs, urlparse
 from bs4 import BeautifulSoup as bs
 
 from random import shuffle
+from collections import defaultdict
 
 # TODO: Add limiters for uptime
 # TODO: Allow multiline requests
+# TODO: Code commenting and cleanup
+
 
 class EmbedColours:
 
@@ -63,11 +66,16 @@ class MusicCog(commands.Cog):
                                               )
         self._no_current_song_message.set_image(
             url="http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png")
-        self._no_current_song_message.set_footer(text="Definitely not made by fuxticks#1809")
+        self._no_current_song_message.set_footer(text="Definitely not made by fuxticks#1809 on discord")
         # Bitrate quality 0->2 inclusive, 0 is best, 2 is worst
         self._bitrate_quality = 0
 
-        self._API_KEY = os.getenv('GOOGLE_API')
+        self._API_KEY = os.getenv('GOOGLE_API_PERSONAL')
+
+        self._time_allocation = defaultdict(lambda: {'last_time': time.time(), 'used_time': self._allowed_time})
+        # Seconds of song (time / day) / server
+        # Currently 2 hours of playtime for each server per day
+        self._allowed_time = 7200
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -303,6 +311,21 @@ class MusicCog(commands.Cog):
         if not self.check_marked_channels.is_running():
             self.check_marked_channels.start()
 
+    def __create_time_remaining_field(self, guild_id, embed):
+        guild_time = self._time_allocation[guild_id]
+        remain_time = guild_time.get('used_time')
+        seconds_remain = str(remain_time % 60)
+        if len(seconds_remain) == 1:
+            seconds_remain += '0'
+
+        allowed_time = self._allowed_time
+        seconds_allowed = str(self._allowed_time % 60)
+        if len(seconds_allowed) == 1:
+            seconds_allowed += '0'
+        embed.add_field(name=f"Minutes Remaining Today: {remain_time // 60}:{seconds_remain} / "
+                             f"{allowed_time // 60}:{seconds_allowed}",
+                        value="Blame Ryan :upside_down:")
+
     async def __setup_channel(self, ctx: Context, channel_id, arg):
         channel_instance: TextChannel = [x for x in ctx.guild.text_channels if x.id == channel_id][0]
         channel_messages = await channel_instance.history().flatten()
@@ -314,10 +337,12 @@ class MusicCog(commands.Cog):
                 for message in channel_messages:
                     await message.delete()
 
-        default_queue_message = await channel_instance.send(self._empty_queue_message)
-        default_preview_message = await channel_instance.send(embed=self._no_current_song_message)
+        temp_default = self._no_current_song_message
+        self.__create_time_remaining_field(ctx.guild.id, temp_default)
 
-        print()
+
+        default_queue_message = await channel_instance.send(self._empty_queue_message)
+        default_preview_message = await channel_instance.send(embed=temp_default)
 
         db_gateway().update('music_channels', set_params={'queue_message_id': int(default_queue_message.id)},
                             where_params={'guild_id': ctx.author.guild.id})
@@ -445,12 +470,26 @@ class MusicCog(commands.Cog):
         song_data = self.__download_video_info(song.get('link'), download=False)
         song_formatted = self.__format_download_data(song_data)
 
+        # Check if the allowed time for the day is used up
+        length = song_formatted.get('length')
+
+        # Has to be done separately as to ensure defaultdict creates it if not present
+        guild_time = self._time_allocation[guild_id]
+        guild_time['used_time'] = self._time_allocation.get(guild_id)['used_time'] - length
+
+        if self._time_allocation.get(guild_id).get('used_time') < 0:
+            self.__remove_active_channel(guild_id)
+            self._time_allocation.get(guild_id)['used_time'] = 0
+            return False
+
         self._currently_active.get(guild_id)['current_song'] = song_formatted
 
         before = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
         voice_client.play(FFmpegOpusAudio(song_formatted.get('stream'), before_options=before,
                                           bitrate=int(song_formatted.get('bitrate')) + 10))
         voice_client.volume = 100
+
+        return True
 
     def __pause_song(self, guild_id):
         if self._currently_active.get(guild_id).get('voice_client').is_playing():
@@ -497,6 +536,8 @@ class MusicCog(commands.Cog):
                                             colour=Colour(0xd462fd), url=current_song.get('link'),
                                             video=current_song.get('link'))
             updated_preview_message.set_image(url=current_song.get('thumbnail'))
+
+        self.__create_time_remaining_field(guild_id, updated_preview_message)
 
         return updated_preview_message
 
