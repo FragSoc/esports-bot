@@ -21,7 +21,6 @@ from bs4 import BeautifulSoup as bs
 from random import shuffle
 from collections import defaultdict
 
-# TODO: Allow multiline requests
 # TODO: Code commenting and cleanup
 
 
@@ -296,9 +295,13 @@ class MusicCog(commands.Cog):
 
         self.__check_loops_alive()
 
-        success = await self.process_song_request(message, message.content)
+        split_message = message.content.split("\n")
+        total_success = True
 
-        if success:
+        for line in split_message:
+            total_success = total_success and await self.process_song_request(message, line)
+
+        if total_success:
             if message.guild.id in self._marked_channels:
                 # Remove the channel from marked channels as it is no longer inactive
                 self._marked_channels.pop(message.guild.id)
@@ -574,11 +577,13 @@ class MusicCog(commands.Cog):
         return string
 
     async def process_song_request(self, message, request):
+        # 0 is playlist, 1 is url, 2 is string
         message_type = self.__determine_message_type(request)
 
-        if message_type == 1:
-            song_info = self.__get_playlist_info_from_links([message.content])
-            success = await self.__add_to_queue(message.guild.id, song_info)
+        if message_type == 0:
+            playlist_links = self.__find_playlist_songs(request)
+            playlist_info = self.__get_playlist_info_from_links(playlist_links)
+            success = await self.__add_to_queue(message.guild.id, playlist_info)
         else:
             songs_found = self.__find_song(request, message_type)
             success = await self.__add_to_queue(message.guild.id, songs_found)
@@ -594,8 +599,8 @@ class MusicCog(commands.Cog):
         return success
 
     def __find_song(self, message, message_type):
-        if message_type == 0:
-            links = self.__find_playlist_songs(message)
+        if message_type == 1:
+            links = [message]
             return self.__get_playlist_info_from_links(links)
         else:
             return self.__find_query(message)

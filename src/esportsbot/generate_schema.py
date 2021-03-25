@@ -146,7 +146,6 @@ def generate_schema():
     music_channels_info_exists = db_gateway().pure_return(
         "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'music_channels'")
     if not music_channels_info_exists:
-        print('no music')
         query_string = """
         CREATE TABLE public.music_channels(
             id bigint NOT NULL,
