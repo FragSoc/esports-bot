@@ -21,7 +21,6 @@ from bs4 import BeautifulSoup as bs
 from random import shuffle
 from collections import defaultdict
 
-# TODO: Add limiters for uptime
 # TODO: Allow multiline requests
 # TODO: Code commenting and cleanup
 
@@ -72,7 +71,8 @@ class MusicCog(commands.Cog):
 
         self._API_KEY = os.getenv('GOOGLE_API_PERSONAL')
 
-        self._time_allocation = defaultdict(lambda: {'last_time': time.time(), 'used_time': self._allowed_time})
+        #self._time_allocation = defaultdict(lambda: {'last_time': time.time(), 'used_time': self._allowed_time})
+        self._time_allocation = defaultdict(lambda: self._allowed_time)
         # Seconds of song (time / day) / server
         # Currently 2 hours of playtime for each server per day
         self._allowed_time = 7200
@@ -310,11 +310,13 @@ class MusicCog(commands.Cog):
             self.check_active_channels.start()
         if not self.check_marked_channels.is_running():
             self.check_marked_channels.start()
+        if not self.reset_music_allowance.is_running():
+            self.reset_music_allowance.start()
 
     def __create_time_remaining_field(self, guild_id, embed):
         guild_time = self._time_allocation[guild_id]
-        remain_time = guild_time.get('used_time')
-        seconds_remain = str(remain_time % 60)
+        # remain_time = guild_time.get('used_time')
+        seconds_remain = str(guild_time % 60)
         if len(seconds_remain) == 1:
             seconds_remain += '0'
 
@@ -322,7 +324,7 @@ class MusicCog(commands.Cog):
         seconds_allowed = str(self._allowed_time % 60)
         if len(seconds_allowed) == 1:
             seconds_allowed += '0'
-        embed.add_field(name=f"Minutes Remaining Today: {remain_time // 60}:{seconds_remain} / "
+        embed.add_field(name=f"Minutes Remaining Today: {guild_time // 60}:{seconds_remain} / "
                              f"{allowed_time // 60}:{seconds_allowed}",
                         value="Blame Ryan :upside_down:")
 
@@ -435,6 +437,10 @@ class MusicCog(commands.Cog):
         if len(marked_copy.keys()) == 0:
             self.check_marked_channels.stop()
 
+    @tasks.loop(hours=24)
+    async def reset_music_allowance(self):
+        self._time_allocation = defaultdict(lambda: self._allowed_time)
+
     def __check_empty_vc(self, guild_id):
         voice_client = self._currently_active.get(guild_id).get('voice_client')
         voice_channel = voice_client.channel
@@ -474,12 +480,12 @@ class MusicCog(commands.Cog):
         length = song_formatted.get('length')
 
         # Has to be done separately as to ensure defaultdict creates it if not present
-        guild_time = self._time_allocation[guild_id]
-        guild_time['used_time'] = self._time_allocation.get(guild_id)['used_time'] - length
+        self._time_allocation[guild_id] = self._time_allocation[guild_id] - length
+        #guild_time['used_time'] = self._time_allocation.get(guild_id)['used_time'] - length
 
-        if self._time_allocation.get(guild_id).get('used_time') < 0:
+        if self._time_allocation[guild_id] < 0:
             self.__remove_active_channel(guild_id)
-            self._time_allocation.get(guild_id)['used_time'] = 0
+            self._time_allocation[guild_id] = 0
             return False
 
         self._currently_active.get(guild_id)['current_song'] = song_formatted
