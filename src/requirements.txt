@@ -5,7 +5,6 @@ emoji
 git+git://github.com/JustAnotherArchivist/snscrape.git#egg=snscrape
 lxml
 beautifulsoup4
-grequests
 google-api-python-client
 youtube-dl
 youtube-search-python
