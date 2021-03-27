@@ -18,7 +18,7 @@ from ..lib.client import EsportsBot
 import googleapiclient.discovery
 from urllib.parse import parse_qs, urlparse
 
-from bs4 import BeautifulSoup as bs
+import html
 
 from random import shuffle
 from collections import defaultdict
@@ -674,11 +674,10 @@ class MusicCog(commands.Cog):
         :return: A dict with link and title keys.
         """
         resp = requests.get(url)
-        soup = bs(resp.text, 'lxml')
-        all_alternate = soup.find_all('link', attrs={"rel": "alternate"})
-        for item in all_alternate:
-            if item.get('title'):
-                return {'link': url, 'title': item.get('title')}
+        text = resp.text
+        page_title = text[text.find('<title>') + 7:text.find('</title>')]
+        formatted_title = html.unescape(page_title).replace(' - YouTube', '')
+        return formatted_title
 
     def __check_loops_alive(self):
         """
