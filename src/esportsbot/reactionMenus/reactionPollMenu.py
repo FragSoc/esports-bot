@@ -7,6 +7,9 @@ from datetime import datetime
 from typing import Dict, Union, TYPE_CHECKING
 
 
+BALLOT_BOX_IMAGE = "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/ballot-box-with-ballot_1f5f3.png"
+
+
 def makePollBar(name: str, numVotes: int, maxNameLength: int, maxVotes: int, maxBarLength: int) -> str:
     """Make a bar for a poll results bar chart, for the statistics of a given poll option.
 
@@ -120,42 +123,47 @@ async def printAndExpirePollResults(msgID : int):
         await reaction.remove(menu.msg.guild.me)
     
 
-class InlineReactionPollMenu(reactionMenu):
-    """A saveable inline reaction menu taking a vote from its participants on a selection of option strings.
-    On menu expiry, the menu's TimedTask should call printAndExpirePollResults. This edits to menu embed to provide a summary and bar chart of the votes submitted to the poll.
+class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
+    """A non-saveable inline reaction menu taking a vote from its participants on a selection of option strings.
+    On menu expiry, printAndExpirePollResults should be called to edit to menu embed, providing a summary and bar chart of
+    the votes submitted to the poll.
     The poll options have no functionality, all vote counting takes place after menu expiry.
-    TODO: change pollOptions from dict[Emote, ReactionMenuOption] to dict[Emote, str] which is used to spawn DummyReactionMenuOptions
 
-    :var multipleChoice: Whether to accept votes for multiple options from the same user, or to restrict users to one option vote per poll.
+    :var multipleChoice: Whether to accept votes for multiple options from the same user, or to restrict users to one option
+                            vote per poll.
     :vartype multipleChoice: bool
-    :var owningBasedUser: The bbUser who started the poll
-    :vartype owningBasedUser: bbUser
     """
-    def __init__(self, msg : Message, pollOptions : dict, timeout : timedTask.TimedTask, pollStarter : Union[User, Member] = None,
-            multipleChoice : bool = False, titleTxt : str = "", desc : str = "", col : Colour = Colour.blue(), footerTxt : str = "",
-            img : str = "", thumb : str = "", icon : str = "", authorName : str = "", targetMember : Member = None,
-            targetRole : Role = None, owningBasedUser : basedUser.BasedUser = None):
+    def __init__(self, msg: Message, pollOptions: Dict[lib.emotes.Emote: str], timeoutSeconds: int,
+                    pollStarter : Union[User, Member] = None, multipleChoice : bool = False, titleTxt : str = "",
+                    desc : str = "", col : Colour = Colour.blue(), footerTxt : str = "",
+                    img : str = "", thumb : str = "", icon : str = None, authorName : str = "",
+                    targetMember : Member = None, targetRole : Role = None):
         """
         :param discord.Message msg: the message where this menu is embedded
-        :param options: A dictionary storing all of the poll options. Poll option behaviour functions are not called. TODO: Add reactionAdded/Removed overloads that just return and dont check anything
-        :type options: dict[lib.emotes.Emote, ReactionMenuOption]
-        :param TimedTask timeout: The TimedTask responsible for expiring this menu
-        :param discord.Member pollStarter: The user who started the poll, for printing in the menu embed. Optional. (Default None)
-        :param bool multipleChoice: Whether to accept votes for multiple options from the same user, or to restrict users to one option vote per poll.
+        :param options: A dictionary of Emote: str, defining all of the poll options
+        :type options: dict[lib.emotes.Emote, str]
+        :param int timeoutSeconds: The number of seconds until the poll ends
+        :param discord.Member pollStarter: The user who started the poll, for printing in the menu embed.
+                                            Optional. (Default None)
+        :param bool multipleChoice: Whether to accept votes for multiple options from the same user, or to restrict users to
+                                    one option vote per poll.
         :param str titleTxt: The content of the embed title (Default "")
         :param str desc: he content of the embed description; appears at the top below the title (Default "")
         :param discord.Colour col: The colour of the embed's side strip (Default None)
-        :param str footerTxt: Secondary description appearing in darker font at the bottom of the embed (Default time until menu expiry if timeout is not None, "" otherwise)
+        :param str footerTxt: Secondary description appearing in darker font at the bottom of the embed
+                                (Default time until menu expiry)
         :param str img: URL to a large icon appearing as the content of the embed, left aligned like a field (Default "")
         :param str thumb: URL to a larger image appearing to the right of the title (Default "")
-        :param str icon: URL to a smaller image to the left of authorName. AuthorName is required for this to be displayed. (Default "")
-        :param str authorName: Secondary, smaller title for the embed (Default "Poll")
-        :param discord.Member targetMember: The only discord.Member that is able to interact with this menu. All other reactions are ignored (Default None)
-        :param discord.Role targetRole: In order to interact with this menu, users must possess this role. All other reactions are ignored (Default None)
-        :param bbUser owningBasedUser: The bbUser who started the poll. Used for resetting whether or not a user can make a new poll (Default None)
+        :param str icon: URL to a smaller image to the left of authorName. AuthorName is required for this to be displayed.
+                        (Default empty)
+        :param str authorName: Secondary, smaller title for the embed. icon is required for this to be displayed.
+                                (Default "Poll")
+        :param discord.Member targetMember: The only discord.Member that is able to interact with this menu.
+                                            All other reactions are ignored (Default None)
+        :param discord.Role targetRole: In order to interact with this menu, users must possess this role.
+                                        All other reactions are ignored (Default None)
         """
         self.multipleChoice = multipleChoice
-        self.owningBasedUser = owningBasedUser
 
         if pollStarter is not None and authorName == "":
             authorName = str(pollStarter) + " started a poll!"
@@ -166,77 +174,34 @@ class InlineReactionPollMenu(reactionMenu):
             if pollStarter is not None:
                 icon = str(pollStarter.avatar_url_as(size=64))
         else:
-            icon = icon if icon else "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/ballot-box-with-ballot_1f5f3.png"
+            icon = icon if icon else BALLOT_BOX_IMAGE
 
         if desc == "":
             desc = "React to this message to vote!"
         else:
             desc = "*" + desc + "*"
 
-        super(ReactionPollMenu, self).__init__(msg, options=pollOptions, titleTxt=titleTxt, desc=desc, col=col, footerTxt=footerTxt, img=img, thumb=thumb, icon=icon, authorName=authorName, timeout=timeout, targetMember=targetMember, targetRole=targetRole)
-        self.saveable = True
+        pollOptions = {e: reactionMenu.DummyReactionMenuOption(n, e) for e, n in pollOptions.items()}
+
+        super().__init__(msg, options=pollOptions, titleTxt=titleTxt, desc=desc, col=col, footerTxt=footerTxt, img=img,
+                            thumb=thumb, icon=icon, authorName=authorName, timeoutSeconds=timeoutSeconds,
+                            targetMember=targetMember, targetRole=targetRole)
 
 
     def getMenuEmbed(self) -> Embed:
-        """Generate the discord.Embed representing the reaction menu, and that
-        should be embedded into the menu's message.
-        Contains a short description of the menu, its options, the poll starter (if given), whether it accepts multiple choice votes, and its expiry time.
+        """Generate the discord.Embed representing the reaction menu, and that should be embedded into the menu's message.
+        Contains a short description of the menu, its options, the poll starter (if given),
+        whether it accepts multiple choice votes, and its expiry time.
 
         :return: A discord.Embed representing the menu and its options
         :rtype: discord.Embed 
         """
-        baseEmbed = super(ReactionPollMenu, self).getMenuEmbed()
+        baseEmbed = super().getMenuEmbed()
         if self.multipleChoice:
-            baseEmbed.add_field(name="This is a multiple choice poll!", value="Voting for more than one option is allowed.", inline=False)
+            baseEmbed.add_field(name="This is a multiple choice poll!", value="Voting for more than one option is allowed.",
+                                inline=False)
         else:
-            baseEmbed.add_field(name="This is a single choice poll!", value="If you vote for more than one option, only one will be counted.", inline=False)
+            baseEmbed.add_field(name="This is a single choice poll!",
+                                value="If you vote for more than one option, only one will be counted.", inline=False)
 
         return baseEmbed
-
-    
-    def toDict(self, **kwargs) -> dict:
-        """Serialize this menu to dictionary format for saving.
-
-        :return: A dictionary containing all information needed to recreate this menu
-        :rtype: dict
-        """
-        baseDict = super(ReactionPollMenu, self).toDict(**kwargs)
-        baseDict["multipleChoice"] = self.multipleChoice
-        baseDict["owningBasedUser"] = self.owningBasedUser.id
-        return baseDict
-    
-
-    @classmethod
-    def fromDict(cls, rmDict : dict, **kwargs) -> ReactionPollMenu:
-        """Reconstruct a ReactionPollMenu object from its dictionary-serialized representation - the opposite of ReactionPollMenu.toDict
-
-        :param dict rmDict: A dictionary containing all information needed to recreate the desired ReactionPollMenu
-        :return: A new ReactionPollMenu object as described in rmDict
-        :rtype: ReactionPollMenu
-        """
-        if "msg" not in kwargs:
-            raise NameError("Required kwarg not given: msg")
-        msg = kwargs["msg"]
-
-        options = {}
-        for emojiName in rmDict["options"]:
-            emoji = lib.emotes.Emote.fromStr(emojiName, rejectInvalid=True)
-            options[emoji] = reactionMenu.DummyReactionMenuOption(rmDict["options"][emojiName], emoji)
-
-        timeoutTT = None
-        if "timeout" in rmDict:
-            expiryTime = datetime.utcfromtimestamp(rmDict["timeout"])
-            botState.reactionMenusTTDB.scheduleTask(timedTask.TimedTask(expiryTime=expiryTime, expiryFunction=printAndExpirePollResults, expiryFunctionArgs=msg.id))
-
-        return ReactionPollMenu(msg, options, timeoutTT, multipleChoice=rmDict["multipleChoice"] if "multipleChoice" in rmDict else False,
-                                    titleTxt=rmDict["titleTxt"] if "titleTxt" in rmDict else "",
-                                    desc=rmDict["desc"] if "desc" in rmDict else "",
-                                    col=Colour.from_rgb(rmDict["col"][0], rmDict["col"][1], rmDict["col"][2]) if "col" in rmDict else Colour.blue(),
-                                    footerTxt=rmDict["footerTxt"] if "footerTxt" in rmDict else "",
-                                    img=rmDict["img"] if "img" in rmDict else "",
-                                    thumb=rmDict["thumb"] if "thumb" in rmDict else "",
-                                    icon=rmDict["icon"] if "icon" in rmDict else "",
-                                    authorName=rmDict["authorName"] if "authorName" in rmDict else "",
-                                    targetMember=msg.guild.get_member(rmDict["targetMember"]) if "targetMember" in rmDict else None,
-                                    targetRole=msg.guild.get_role(rmDict["targetRole"]) if "targetRole" in rmDict else None,
-                                    owningBasedUser=botState.usersDB.getUser(rmDict["owningBasedUser"]) if "owningBasedUser" in rmDict and botState.usersDB.userIDExists(rmDict["owningBasedUser"]) else None)
