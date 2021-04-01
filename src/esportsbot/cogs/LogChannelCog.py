@@ -19,8 +19,7 @@ class LogChannelCog(commands.Cog):
             if log_channel_exists[0]['log_channel_id'] != cleaned_channel_id:
                 db_gateway().update('guild_info', set_params={
                     'log_channel_id': cleaned_channel_id}, where_params={'guild_id': ctx.author.guild.id})
-                mention_log_channel = self.bot.get_channel(
-                    cleaned_channel_id).mention
+                mention_log_channel = "<#" + str(cleaned_channel_id) + ">"
                 await ctx.channel.send(f"Logging channel has been set to {mention_log_channel}")
                 await send_to_log_channel(self, ctx.author.guild.id, f"{ctx.author.mention} has set this channel as the logging channel")
             else:
@@ -28,8 +27,7 @@ class LogChannelCog(commands.Cog):
         else:
             db_gateway().insert('guild_info', params={
                 'guild_id': ctx.author.guild.id, 'log_channel_id': cleaned_channel_id})
-            mention_log_channel = self.bot.get_channel(
-                cleaned_channel_id).mention
+            mention_log_channel = "<#" + str(cleaned_channel_id) + ">"
             await ctx.channel.send(f"Logging channel has been set to {mention_log_channel}")
             await send_to_log_channel(self, ctx.author.guild.id, f"{ctx.author.mention} has set this channel as the logging channel")
 
@@ -40,8 +38,8 @@ class LogChannelCog(commands.Cog):
             'guild_info', params={'guild_id': ctx.author.guild.id})
 
         if log_channel_exists[0]['log_channel_id']:
-            mention_log_channel = self.bot.get_channel(
-                log_channel_exists[0]['log_channel_id']).mention
+            mention_log_channel = "<#" + \
+                str(log_channel_exists[0]['log_channel_id']) + ">"
             await ctx.channel.send(f"Logging channel is set to {mention_log_channel}")
         else:
             await ctx.channel.send("Logging channel has not been set")

@@ -23,15 +23,14 @@ class TwitterIntegrationCog(commands.Cog):
                     'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle.lower()})
                 if not bool(twitter_in_db):
                     cleaned_channel_id = get_cleaned_id(announce_channel)
-                    channel_mention = self.bot.get_channel(
-                        cleaned_channel_id).mention
+                    channel_mention = "<#" + str(cleaned_channel_id) + ">"
                     previous_tweet_id = self.get_tweets(
                         twitter_handle)[0]['id']
                     db_gateway().insert('twitter_info', params={
                         'guild_id': ctx.author.guild.id, 'channel_id': cleaned_channel_id, 'twitter_handle': twitter_handle.lower(), 'previous_tweet_id': previous_tweet_id})
                     await ctx.channel.send(f"{twitter_handle} is valid and has been added, their Tweets will be placed in {channel_mention}")
                 else:
-                    await ctx.channel.send(f"{twitter_handle} is already configured to output to {self.bot.get_channel(int(twitter_in_db['channel_id'])).mention}")
+                    await ctx.channel.send(f"{twitter_handle} is already configured to output to <#{str(twitter_in_db['channel_id'])}>")
             else:
                 await ctx.channel.send("You need to provide a correct Twitter handle")
         else:
@@ -65,8 +64,7 @@ class TwitterIntegrationCog(commands.Cog):
                 if bool(twitter_in_db):
                     # In DB
                     cleaned_channel_id = get_cleaned_id(announce_channel)
-                    channel_mention = self.bot.get_channel(
-                        cleaned_channel_id).mention
+                    channel_mention = "<#" + str(cleaned_channel_id) + ">"
                     db_gateway().update('twitter_info', set_params={'channel_id': cleaned_channel_id}, where_params={
                         'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle.lower()})
                     await ctx.channel.send(f"{twitter_handle} has been updated and will now notify in {channel_mention}")
@@ -86,7 +84,8 @@ class TwitterIntegrationCog(commands.Cog):
         if all_guild_twitters:
             all_twitters_str = str()
             for twitter in all_guild_twitters:
-                all_twitters_str += f"{twitter['twitter_handle']} is set to notify in {self.bot.get_channel(twitter['channel_id']).mention}\n"
+                all_twitters_str += f"{twitter['twitter_handle']} is set to notify in <#{str(twitter['channel_id'])}>\n"
+
             await ctx.channel.send(f"Current Twitters set in this server:\n{all_twitters_str}")
         else:
             await ctx.channel.send("No Twitters have currently been set in this server")

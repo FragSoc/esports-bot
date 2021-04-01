@@ -162,8 +162,8 @@ async def on_command_error(ctx: Context, exception: Exception):
         except (Forbidden, HTTPException):
             pass
         except NotFound:
-            raise ValueError("Invalid unknownCommandEmoji: " +
-                             client.unknownCommandEmoji.sendable)
+            raise ValueError("Invalid unknownCommandEmoji: "
+                             + client.unknownCommandEmoji.sendable)
     else:
         sourceStr = str(ctx.message.id)
         try:
@@ -171,8 +171,8 @@ async def on_command_error(ctx: Context, exception: Exception):
                 + "/" + ctx.guild.name + "#" + str(ctx.guild.id)
         except AttributeError:
             sourceStr += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
-        print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught " +
-                                      type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
+        print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught "
+                                      + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
 
 
 @client.command()

@@ -1,7 +1,9 @@
 from discord.ext import commands, tasks
-from db_gateway import db_gateway
-from base_functions import get_cleaned_id
+from ..db_gateway import db_gateway
+from ..base_functions import get_cleaned_id
 import requests
+import aiohttp
+import asyncio
 import time
 import os
 
@@ -23,8 +25,7 @@ class TwitchIntegrationCog(commands.Cog):
                 'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
             cleaned_channel_id = get_cleaned_id(
                 announce_channel)
-            channel_mention = self.bot.get_channel(
-                cleaned_channel_id).mention
+            channel_mention = "<#" + str(cleaned_channel_id) + ">"
             if not twitch_in_db:
                 # Check user exists
                 user_exists = bool(
@@ -46,18 +47,13 @@ class TwitchIntegrationCog(commands.Cog):
 
     @commands.command()
     async def addcustomtwitch(self, ctx, twitch_handle=None, announce_channel=None, custom_message=None):
-        # await ctx.channel.send("TEST")
-        # placeholder_message = custom_message.format(
-        #     handle="TwitchHandle", game="Game/Genre", link="StreamLink")
-        # await ctx.channel.send(f"{twitch_handle} - {announce_channel} - {placeholder_message}")
-        if twitch_handle is not None and announce_channel is not None and custom_message is not None:
+        if None not in (twitch_handle, announce_channel, custom_message):
             # Check if Twitch channel has already been added
             twitch_in_db = db_gateway().get('twitch_info', params={
                 'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
             cleaned_channel_id = get_cleaned_id(
                 announce_channel)
-            channel_mention = self.bot.get_channel(
-                cleaned_channel_id).mention
+            channel_mention = "<#" + str(cleaned_channel_id) + ">"
             if not twitch_in_db:
                 # Check user exists
                 user_exists = bool(
@@ -106,8 +102,7 @@ class TwitchIntegrationCog(commands.Cog):
                 'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
             cleaned_channel_id = get_cleaned_id(
                 announce_channel)
-            channel_mention = self.bot.get_channel(
-                cleaned_channel_id).mention
+            channel_mention = "<#" + str(cleaned_channel_id) + ">"
             if twitch_in_db:
                 # Make DB edit
                 db_gateway().update('twitch_info', set_params={
@@ -147,8 +142,7 @@ class TwitchIntegrationCog(commands.Cog):
             'guild_id': ctx.author.guild.id})
         all_handles = "** **\n__**Twitch Alerts**__\n"
         for each in returned_val:
-            channel_mention = self.bot.get_channel(
-                each['channel_id']).mention
+            channel_mention = "<#" + str(each['channel_id']) + ">"
             all_handles += f"{each['twitch_handle']} is set to alert in {channel_mention}\n"
         await ctx.channel.send(all_handles)
 
@@ -172,8 +166,8 @@ class TwitchIntegrationCog(commands.Cog):
             'SELECT DISTINCT twitch_handle FROM "twitch_info"')
         if all_twitch_handles:
             # Create list of all twitch handles in the database
-            twitch_handle_arr = list(
-                map(lambda x: x['twitch_handle'], all_twitch_handles))
+            twitch_handle_arr = list(x['twitch_handle']
+                                     for x in all_twitch_handles)
             # Create dict consisting of twitch handles and live statuses
             twitch_status_dict = dict()
             all_twitch_statuses = db_gateway().pure_return(
@@ -203,7 +197,7 @@ class TwitchIntegrationCog(commands.Cog):
                             for each in all_channels:
                                 # Send alert to specified channel to each['channel_id']
                                 custom_message = each['custom_message'].format(
-                                    handle=handle_live['user_name'], game=handle_live['game_name'], link=f"https://twitch.tv/{handle_live['user_name']}", title=handle_live['title']) if each['custom_message'] != '' else f"{handle_live['user_name']} has just gone live with {handle_live['game_name']}, check them out here: https: // twitch.tv/{handle_live['user_name']}"
+                                    handle=handle_live['user_name'], game=handle_live['game_name'], link=f"https://twitch.tv/{handle_live['user_name']}", title=handle_live['title']) if each['custom_message'] != '' else f"{handle_live['user_name']} has just gone live with {handle_live['game_name']}, check them out here: https://twitch.tv/{handle_live['user_name']}"
                                 await self.bot.get_channel(each['channel_id']).send(custom_message)
                 else:
                     # User is not live
