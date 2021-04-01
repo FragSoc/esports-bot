@@ -217,5 +217,7 @@ def launch():
         client.load_extension('esportsbot.cogs.TwitterIntegrationCog')
     if os.getenv('ENABLE_TWITCH') == "True":
         client.load_extension('esportsbot.cogs.TwitchIntegrationCog')
+    if os.getenv('ENABLE_MUSIC') == 'TRUE':
+        client.load_extension('esportsbot.cogs.MusicCog')
 
     client.run(TOKEN)

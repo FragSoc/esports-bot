@@ -12,6 +12,7 @@ from discord import Message, VoiceClient, TextChannel, Embed, Colour, FFmpegOpus
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
 
+from ..base_functions import get_cleaned_id
 from ..db_gateway import db_gateway
 from ..lib.client import EsportsBot
 
@@ -68,7 +69,7 @@ class MusicCog(commands.Cog):
         # Bitrate quality 0->2 inclusive, 0 is best, 2 is worst
         self._bitrate_quality = 0
 
-        self._API_KEY = os.getenv('GOOGLE_API_PERSONAL')
+        self._API_KEY = os.getenv('GOOGLE_API')
 
         self._time_allocation = defaultdict(lambda: self._allowed_time)
         # Seconds of song (time / day) / server
@@ -97,7 +98,9 @@ class MusicCog(commands.Cog):
             await self.__send_timed_message(ctx.channel, message, timer=30)
             return
 
-        is_valid_channel_id = (len(given_channel_id) == 18) and given_channel_id.isdigit()
+        cleaned_channel_id = get_cleaned_id(given_channel_id)
+
+        is_valid_channel_id = (len(cleaned_channel_id) == 18) and cleaned_channel_id.isdigit()
 
         if not is_valid_channel_id:
             # The channel id given is not valid.. exit
@@ -492,7 +495,8 @@ class MusicCog(commands.Cog):
             elif isinstance(song, dict):
                 self._currently_active.get(guild_id).get('queue').append(song)
             else:
-                song_info = self.__get_basic_song_information(song)
+                title = self.__get_basic_song_information(song)
+                song_info = {'title': title, 'link': song}
                 self._currently_active.get(guild_id).get('queue').append(song_info)
 
             if not self._currently_active.get(guild_id).get('voice_client').is_playing():
