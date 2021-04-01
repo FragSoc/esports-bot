@@ -305,7 +305,7 @@ class ReactionMenu:
 
     def __init__(self, msg: Message, client: Client, options : Dict["lib.emotes.Emote", ReactionMenuOption] = None,
                  titleTxt : str = "", desc : str = "", col : Colour = Colour.blue(),
-                 footerTxt : str = "", img : str = "", thumb : str = "", icon : str = "",
+                 footerTxt : str = "", img : str = "", thumb : str = "", icon : str = None,
                  authorName : str = "", targetMember : Member = None, targetRole : Role = None):
         """
         :param discord.Message msg: the message where this menu is embedded
@@ -338,7 +338,7 @@ class ReactionMenu:
         self.footerTxt = footerTxt
         self.img = img
         self.thumb = thumb
-        self.icon = icon
+        self.icon = lib.discordUtil.EMPTY_IMAGE if icon is None and authorName else icon
         self.authorName = authorName
         self.targetMember = targetMember
         self.targetRole = targetRole
@@ -537,7 +537,7 @@ class InlineReactionMenu(ReactionMenu):
                  options: Dict[lib.emotes.Emote, ReactionMenuOption] = None,
                  returnTriggers: List[ReactionMenuOption] = [], titleTxt: str = "", desc: str = "",
                  col: Colour = Colour.blue(), footerTxt: str = "", img: str = "", thumb: str = "",
-                 icon: str = "", authorName: str = ""):
+                 icon: str = None, authorName: str = ""):
         """
         :param returnTriggers: A list of options which, when selected, trigger the expiry of the menu.
         :type returnTriggers: List[ReactionMenuOption]
