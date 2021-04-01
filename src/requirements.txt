@@ -7,3 +7,4 @@ lxml
 google-api-python-client
 youtube-dl
 youtube-search-python
+PyNaCl
