@@ -8,7 +8,7 @@ from typing import Dict, Union, TYPE_CHECKING
 
 
 def makePollBar(name: str, numVotes: int, maxNameLength: int, maxVotes: int, maxBarLength: int) -> str:
-    """Make a bar for a poll results bar chart for a the statistics of a given poll option.
+    """Make a bar for a poll results bar chart, for the statistics of a given poll option.
 
     :param str name: The name of the poll option
     :param int numVotes: The number of votes that the option received
@@ -120,8 +120,8 @@ async def printAndExpirePollResults(msgID : int):
         await reaction.remove(menu.msg.guild.me)
     
 
-class ReactionPollMenu(reactionMenu.ReactionMenu):
-    """A saveable reaction menu taking a vote from its participants on a selection of option strings.
+class InlineReactionPollMenu(reactionMenu):
+    """A saveable inline reaction menu taking a vote from its participants on a selection of option strings.
     On menu expiry, the menu's TimedTask should call printAndExpirePollResults. This edits to menu embed to provide a summary and bar chart of the votes submitted to the poll.
     The poll options have no functionality, all vote counting takes place after menu expiry.
     TODO: change pollOptions from dict[Emote, ReactionMenuOption] to dict[Emote, str] which is used to spawn DummyReactionMenuOptions
