@@ -581,9 +581,8 @@ class InlineReactionMenu(ReactionMenu):
         try:
             await lib.client.instance().wait_for("raw_reaction_add",
                                                     check=self.reactionClosesMenu, timeout=self.timeoutSeconds)
-            currentEmbed = self.msg.embeds[0]
-            currentEmbed.set_footer(text="This menu has now expired.")
-            await self.msg.edit(embed=currentEmbed)
+            self.msg.embeds[0].set_footer(text="This menu has now expired.")
+            await self.msg.edit(embed=self.msg.embeds[0])
         except asyncio.TimeoutError:
             await self.msg.edit(content="This menu has now expired. Please try the command again.")
             return []
