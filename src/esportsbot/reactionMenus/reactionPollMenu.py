@@ -30,15 +30,16 @@ def makePollBar(name: str, numVotes: int, maxNameLength: int, maxVotes: int, max
             + ("🏆" if winner else "") + " +" + str(numVotes) + " Vote" + ("" if numVotes == 1 else "s")
 
 
-async def printAndExpirePollResults(msgID : int):
+async def showPollResults(menu: InlineReactionPollMenu):
     """Menu expiring method specific to ReactionPollMenus. Count the reactions on the menu, selecting only one per user
     in the case of single-choice mode polls, and replace the menu embed content with a bar chart summarising
     the results of the poll.
+    
+    This method has been adapted for inline menus, and will not work correctly for passive style menus.
 
-    :param int msgID: The id of the discord message containing the menu to expire
+    :param InlineReactionPollMenu menu: The poll menu to print results into
     """
     client = lib.client.instance()
-    menu = client.reactionMenus[msgID]
 
     # Update message cache for latest reactions
     menu.msg = await menu.msg.channel.fetch_message(menu.msg.id)
@@ -46,13 +47,6 @@ async def printAndExpirePollResults(msgID : int):
     results = {option: [] for option in menu.options.values()}
     # The character length of longest option name, for table formatting purposes
     maxOptionLen = max(len(option.name) for option in menu.options.values())
-
-    # Allow the creation of another poll
-    runningPolls = db_gateway().get("guild_info", {"guild_id": menu.msg.guild.id})[0]["num_running_polls"]
-    db_gateway().update("guild_info", {"num_running_polls", runningPolls - 1}, {"guild_id", menu.msg.guild.id})
-    # Unregister this reaction menu
-    if msgID in client.reactionMenus:
-        del client.reactionMenus[msgID]
 
     # Collect votes
     for reaction in menu.msg.reactions:
@@ -64,7 +58,7 @@ async def printAndExpirePollResults(msgID : int):
         
         # Validate emotes
         if currentEmoji is None:
-            print("[reactionPollMenu.printAndExpirePollResults] Failed to fetch Emote for reaction: " + str(reaction))
+            print("[reactionPollMenu.showPollResults] Failed to fetch Emote for reaction: " + str(reaction))
             pollEmbed = menu.msg.embeds[0]
             pollEmbed.set_footer(text="This poll has ended.")
             await menu.msg.edit(content="An error occured when calculating the results of this poll. " \
@@ -125,7 +119,7 @@ async def printAndExpirePollResults(msgID : int):
 
 class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
     """A non-saveable inline reaction menu taking a vote from its participants on a selection of option strings.
-    On menu expiry, printAndExpirePollResults should be called to edit to menu embed, providing a summary and bar chart of
+    On menu expiry, showPollResults should be called to edit to menu embed, providing a summary and bar chart of
     the votes submitted to the poll.
     The poll options have no functionality, all vote counting takes place after menu expiry.
 
