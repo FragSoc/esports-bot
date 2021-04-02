@@ -1,7 +1,6 @@
 from __future__ import annotations
 from emoji import UNICODE_EMOJI
-from . import client
-from . import exceptions, stringTyping
+from . import client, exceptions, stringTyping
 
 from typing import Union, TYPE_CHECKING
 if TYPE_CHECKING:
