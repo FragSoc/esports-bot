@@ -177,9 +177,9 @@ class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
 
         pollOptions = {e: reactionMenu.DummyReactionMenuOption(n, e) for e, n in pollOptions.items()}
 
-        super().__init__(msg, options=pollOptions, titleTxt=titleTxt, desc=desc, col=col, footerTxt=footerTxt, img=img,
-                            thumb=thumb, icon=icon, authorName=authorName, timeoutSeconds=timeoutSeconds,
-                            targetMember=targetMember, targetRole=targetRole)
+        super().__init__(msg, targetMember, timeoutSeconds,
+                            options=pollOptions, titleTxt=titleTxt, desc=desc, col=col, footerTxt=footerTxt, img=img,
+                            thumb=thumb, icon=icon, authorName=authorName)
 
 
     def getMenuEmbed(self) -> Embed:
