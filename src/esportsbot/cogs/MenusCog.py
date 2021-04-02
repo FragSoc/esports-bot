@@ -5,6 +5,7 @@ from .. import lib
 from ..lib.client import EsportsBot
 from ..reactionMenus import reactionRoleMenu, reactionPollMenu
 from datetime import timedelta
+import traceback
 
 
 MAX_POLLS_PER_GUILD = 5
@@ -257,8 +258,8 @@ class MenusCog(commands.Cog):
         - minutes        : The number of minutes that the poll should run for. Must be at least one, or unspecified.
         - seconds        : The number of seconds that the poll should run for. Must be at least one, or unspecified.
         """
-        currentPollsNum = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})[0]['num_running_polls']
-        if currentPollsNum > MAX_POLLS_PER_GUILD:
+        currentPollsNum = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})[0]['num_running_polls'] - 1
+        if currentPollsNum >= MAX_POLLS_PER_GUILD:
             await ctx.message.reply("This server already has " + str(currentPollsNum) \
                                     + " polls running! Please wait for one to finish before starting another.")
             return
@@ -348,19 +349,20 @@ class MenusCog(commands.Cog):
 
         menuMsg = await ctx.send("‎")
 
-        menu = reactionPollMenu.InlineReactionPollMenu(menuMsg, pollOptions, timeoutTD.total_seconds,
+        menu = reactionPollMenu.InlineReactionPollMenu(menuMsg, pollOptions, timeoutTD.total_seconds(),
                                                         pollStarter=ctx.author, multipleChoice=multipleChoice,
-                                                        desc=pollSubject)
+                                                        desc=pollSubject, footerTxt="This poll will end in " \
+                                                            + lib.timeUtil.td_format_noYM(timeoutTD) + ".")
 
         # Update guild polls counter
         runningPolls = db_gateway().get("guild_info", {"guild_id": ctx.guild.id})[0]["num_running_polls"]
-        db_gateway().update("guild_info", {"num_running_polls", runningPolls + 1}, {"guild_id", ctx.guild.id})
+        db_gateway().update("guild_info", {"num_running_polls": runningPolls + 1}, {"guild_id": ctx.guild.id})
 
         await menu.doMenu()
 
         # Allow the creation of another poll
         runningPolls = db_gateway().get("guild_info", {"guild_id": ctx.guild.id})[0]["num_running_polls"]
-        db_gateway().update("guild_info", {"num_running_polls", runningPolls - 1}, {"guild_id", ctx.guild.id})
+        db_gateway().update("guild_info", {"num_running_polls": runningPolls - 1}, {"guild_id": ctx.guild.id})
 
         await reactionPollMenu.showPollResults(menu)
 
