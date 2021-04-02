@@ -533,7 +533,7 @@ class InlineReactionMenu(ReactionMenu):
     :vartype timeoutSeconds: int
     """
 
-    def __init__(self, msg: Message, targetMember: Union[Member, User], timeoutSeconds: int,
+    def __init__(self, client: Client, msg: Message, targetMember: Union[Member, User], timeoutSeconds: int,
                  options: Dict["lib.emotes.Emote", ReactionMenuOption] = None,
                  returnTriggers: List[ReactionMenuOption] = [], titleTxt: str = "", desc: str = "",
                  col: Colour = Colour.blue(), footerTxt: str = "", img: str = "", thumb: str = "",
@@ -545,7 +545,7 @@ class InlineReactionMenu(ReactionMenu):
         """
         if footerTxt == "":
             footerTxt = "This menu will expire in " + str(timeoutSeconds) + " seconds."
-        super().__init__(msg, targetMember=targetMember, options=options, titleTxt=titleTxt, desc=desc, col=col,
+        super().__init__(msg, client, targetMember=targetMember, options=options, titleTxt=titleTxt, desc=desc, col=col,
                             footerTxt=footerTxt, img=img, thumb=thumb, icon=icon, authorName=authorName)
         self.returnTriggers = returnTriggers
         self.timeoutSeconds = timeoutSeconds
@@ -560,9 +560,8 @@ class InlineReactionMenu(ReactionMenu):
         :rtype: bool
         """
         try:
-            return (reactPL.message_id == self.msg.id and reactPL.user_id == self.targetMember.id) and \
-                    (not self.returnTriggers or \
-                        lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True) in self.returnTriggers)
+            return reactPL.message_id == self.msg.id and reactPL.user_id == self.targetMember.id and \
+                    lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True) in self.returnTriggers
         except lib.exceptions.UnrecognisedEmoji:
             return False
 

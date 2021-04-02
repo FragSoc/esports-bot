@@ -1,10 +1,8 @@
 from __future__ import annotations
 from . import reactionMenu
 from .. import lib
-from ..db_gateway import db_gateway
-from discord import Colour, Emoji, PartialEmoji, Message, Embed, User, Member, Role
-from datetime import datetime
-from typing import Dict, Union, TYPE_CHECKING
+from discord import Colour, Message, Embed, User, Member
+from typing import Dict, Union
 
 
 BALLOT_BOX_IMAGE = "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/ballot-box-with-ballot_1f5f3.png"
@@ -102,16 +100,19 @@ async def showPollResults(menu: InlineReactionPollMenu):
     except ValueError:
         pollEmbed.add_field(name="Results", value="No votes received!", inline=False)
     else:
-        # Construct results chart
-        maxBarLength = 10
-        resultsStr = "```\n" \
-            + "\n".join(makePollBar(option.name, len(results[option]), maxOptionLen, maxCount, maxBarLength) \
-                        for option in results) \
-            + "```"
+        if maxCount > 0:
+            # Construct results chart
+            maxBarLength = 10
+            resultsStr = "```\n" \
+                + "\n".join(makePollBar(option.name, len(results[option]), maxOptionLen, maxCount, maxBarLength) \
+                            for option in results) \
+                + "```"
 
-        pollEmbed.add_field(name="Results", value=resultsStr, inline=False)
+            pollEmbed.add_field(name="Results", value=resultsStr, inline=False)
+        else:
+            pollEmbed.add_field(name="Results", value="No votes received!", inline=False)
 
-    await menu.msg.edit(embed=pollEmbed)
+    await menu.msg.edit(content="Poll complete!", embed=pollEmbed)
 
     for reaction in menu.msg.reactions:
         await reaction.remove(menu.msg.guild.me)
@@ -130,8 +131,7 @@ class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
     def __init__(self, msg: Message, pollOptions: Dict[lib.emotes.Emote: str], timeoutSeconds: int,
                     pollStarter : Union[User, Member] = None, multipleChoice : bool = False, titleTxt : str = "",
                     desc : str = "", col : Colour = Colour.blue(), footerTxt : str = "",
-                    img : str = "", thumb : str = "", icon : str = None, authorName : str = "",
-                    targetMember : Member = None, targetRole : Role = None):
+                    img : str = "", thumb : str = "", icon : str = None, authorName : str = ""):
         """
         :param discord.Message msg: the message where this menu is embedded
         :param options: A dictionary of Emote: str, defining all of the poll options
@@ -152,10 +152,6 @@ class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
                         (Default empty)
         :param str authorName: Secondary, smaller title for the embed. icon is required for this to be displayed.
                                 (Default "Poll")
-        :param discord.Member targetMember: The only discord.Member that is able to interact with this menu.
-                                            All other reactions are ignored (Default None)
-        :param discord.Role targetRole: In order to interact with this menu, users must possess this role.
-                                        All other reactions are ignored (Default None)
         """
         self.multipleChoice = multipleChoice
 
@@ -177,7 +173,7 @@ class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
 
         pollOptions = {e: reactionMenu.DummyReactionMenuOption(n, e) for e, n in pollOptions.items()}
 
-        super().__init__(msg, targetMember, timeoutSeconds,
+        super().__init__(lib.client.instance(), msg, pollStarter, timeoutSeconds,
                             options=pollOptions, titleTxt=titleTxt, desc=desc, col=col, footerTxt=footerTxt, img=img,
                             thumb=thumb, icon=icon, authorName=authorName)
 
