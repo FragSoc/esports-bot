@@ -3,7 +3,13 @@ from discord.ext.commands.context import Context
 from ..db_gateway import db_gateway
 from .. import lib
 from ..lib.client import EsportsBot
-from ..reactionMenus import reactionRoleMenu
+from ..reactionMenus import reactionRoleMenu, reactionPollMenu
+from datetime import timedelta
+
+
+MAX_POLLS_PER_GUILD = 5
+MAX_POLL_TIMEOUT = timedelta(days=31)
+DEFAULT_POLL_TIMEOUT = timedelta(minutes=5)
 
 
 class MenusCog(commands.Cog):
@@ -228,6 +234,135 @@ class MenusCog(commands.Cog):
         except Exception as e:
             print(e)
             raise e
+
+    
+    @commands.command(name="poll", usage="poll <subject>\n<option1 emoji> <option1 name>\n...    ...\n<optional args>", help="Start a reaction-based poll. Each option must be on its own new line, as an emoji, followed by a space, followed by the option name. The `subject` is the question that users answer in the poll and is optional, to exclude your subject simply give a new line.\n\n__Optional Arguments__\nOptional arguments should be given by `name=value`, with each arg on a new line.\n- Give `multiplechoice=no` to only allow one vote per person (default: yes).\n- Give the length of the poll, with each time division on a new line. Acceptable time divisions are: `seconds`, `minutes`, `hours`, `days`. (default: minutes=5)")
+    async def cmd_poll(self, ctx: Context, *, args: str):
+        """Run a reaction-based poll, allowing users to choose between several named options.
+        Users may not create more than one poll at a time, anywhere.
+        Option reactions must be either unicode, or custom to the server where the poll is being created.
+
+        args must contain a poll subject (question) and new line, followed by a newline-separated list of emoji-option pairs, where each pair is separated with a space.
+        For example: 'Which one?\n0️⃣ option a\n1️⃣ my second option\n2️⃣ three' will produce three options:
+        - 'option a'         which participants vote for by adding the 0️⃣ reaction
+        - 'my second option' which participants vote for by adding the 1️⃣ reaction
+        - 'three'            which participants vote for by adding the 2️⃣ reaction
+        and the subject of the poll is 'Which one?'
+        The poll subject is optional. To not provide a subject, simply begin args with a new line.
+
+        args may also optionally contain the following keyword arguments, given as argname=value
+        - multiplechoice : Whether or not to allow participants to vote for multiple poll options. Must be true or false.
+        - days           : The number of days that the poll should run for. Must be at least one, or unspecified.
+        - hours          : The number of hours that the poll should run for. Must be at least one, or unspecified.
+        - minutes        : The number of minutes that the poll should run for. Must be at least one, or unspecified.
+        - seconds        : The number of seconds that the poll should run for. Must be at least one, or unspecified.
+        """
+        currentPollsNum = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})[0]['num_running_polls']
+        if currentPollsNum > MAX_POLLS_PER_GUILD:
+            await ctx.message.reply("This server already has " + str(currentPollsNum) \
+                                    + " polls running! Please wait for one to finish before starting another.")
+            return
+
+        pollOptions = {}
+        kwArgs = {}
+
+        argsSplit = args.split("\n")
+        if len(argsSplit) < 2:
+            await ctx.message.reply(":x: Invalid arguments! Please provide your poll subject, followed by a new line, " \
+                                    + "then a new line-separated series of poll options.\nFor more info, see `" \
+                                    + self.bot.command_prefix + "help poll`")
+            return
+        pollSubject = argsSplit[0]
+        argPos = 0
+        for arg in argsSplit[1:]:
+            if arg == "":
+                continue
+            arg = arg.strip()
+            argSplit = arg.split(" ")
+            argPos += 1
+            try:
+                optionName, dumbReact = arg[arg.index(" ")+1:], lib.emotes.Emote.fromStr(argSplit[0], rejectInvalid=True)
+            except (ValueError, IndexError):
+                for kwArg in ["days=", "hours=", "seconds=", "minutes=", "multiplechoice="]:
+                    if arg.lower().startswith(kwArg):
+                        kwArgs[kwArg[:-1]] = arg[len(kwArg):]
+                        break
+            except lib.exceptions.UnrecognisedEmoji:
+                await ctx.message.reply(":x: I don't know your " + str(argPos) + lib.stringTyping.getNumExtension(argPos) \
+                                        + " emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
+                return
+            else:
+                if dumbReact.sendable == "None":
+                    await ctx.message.reply(":x: I don't know your " + str(argPos) + lib.stringTyping.getNumExtension(argPos) \
+                                                + " emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
+                    return
+                if dumbReact is None:
+                    await ctx.message.reply(":x: Invalid emoji: " + argSplit[1])
+                    return
+                elif dumbReact.isID:
+                    localEmoji = False
+                    for localEmoji in ctx.guild.emojis:
+                        if localEmoji.id == dumbReact.id:
+                            localEmoji = True
+                            break
+                    if not localEmoji:
+                        await ctx.message.reply(":x: I don't know your " + str(argPos) + lib.stringTyping.getNumExtension(argPos) \
+                                                + " emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
+                        return
+
+                if dumbReact in pollOptions:
+                    await ctx.message.reply(":x: Cannot use the same emoji for two options!")
+                    return
+
+                pollOptions[dumbReact] = optionName
+
+        if len(pollOptions) == 0:
+            await ctx.message.reply(":x: You need to give some options to vote on!\nFor more info, see `" \
+                                    + self.bot.command_prefix + "help poll`")
+            return
+        
+        timeoutDict = {}
+
+        for timeName in ["days", "hours", "minutes", "seconds"]:
+            if timeName in kwArgs:
+                if not lib.stringTyping.strIsInt(kwArgs[timeName]) or int(kwArgs[timeName]) < 1:
+                    await ctx.message.reply(":x: Invalid number of " + timeName + " before timeout!")
+                    return
+
+                timeoutDict[timeName] = int(kwArgs[timeName])
+
+        multipleChoice = True
+        if "multiplechoice" in kwArgs:
+            if kwArgs["multiplechoice"].lower() in ["off", "no", "false", "single", "one"]:
+                multipleChoice = False
+            elif kwArgs["multiplechoice"].lower() not in ["on", "yes", "true", "multiple", "many"]:
+                await ctx.message.reply("Invalid `multiplechoice` setting: '" + kwArgs["multiplechoice"] \
+                                        + "'\nPlease use either `multiplechoice=yes` or `multiplechoice=no`")
+                return
+
+        timeoutTD = lib.timeUtil.timeDeltaFromDict(timeoutDict if timeoutDict else DEFAULT_POLL_TIMEOUT)
+        if timeoutTD > MAX_POLL_TIMEOUT:
+            await ctx.message.reply(":x: Invalid poll length! The maximum poll lenght is **" \
+                                    + lib.timeUtil.td_format_noYM(MAX_POLL_TIMEOUT) + ".**")
+            return
+
+        menuMsg = await ctx.send("‎")
+
+        menu = reactionPollMenu.InlineReactionPollMenu(menuMsg, pollOptions, timeoutTD.total_seconds,
+                                                        pollStarter=ctx.author, multipleChoice=multipleChoice,
+                                                        desc=pollSubject)
+
+        # Update guild polls counter
+        runningPolls = db_gateway().get("guild_info", {"guild_id": ctx.guild.id})[0]["num_running_polls"]
+        db_gateway().update("guild_info", {"num_running_polls", runningPolls + 1}, {"guild_id", ctx.guild.id})
+
+        await menu.doMenu()
+
+        # Allow the creation of another poll
+        runningPolls = db_gateway().get("guild_info", {"guild_id": ctx.guild.id})[0]["num_running_polls"]
+        db_gateway().update("guild_info", {"num_running_polls", runningPolls - 1}, {"guild_id", ctx.guild.id})
+
+        await reactionPollMenu.showPollResults(menu)
 
 
 def setup(bot):
