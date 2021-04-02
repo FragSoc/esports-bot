@@ -534,7 +534,7 @@ class InlineReactionMenu(ReactionMenu):
     """
 
     def __init__(self, msg: Message, targetMember: Union[Member, User], timeoutSeconds: int,
-                 options: Dict[lib.emotes.Emote, ReactionMenuOption] = None,
+                 options: Dict["lib.emotes.Emote", ReactionMenuOption] = None,
                  returnTriggers: List[ReactionMenuOption] = [], titleTxt: str = "", desc: str = "",
                  col: Colour = Colour.blue(), footerTxt: str = "", img: str = "", thumb: str = "",
                  icon: str = None, authorName: str = ""):
@@ -567,7 +567,7 @@ class InlineReactionMenu(ReactionMenu):
             return False
 
 
-    async def doMenu(self) -> List[lib.emotes.Emote]:
+    async def doMenu(self) -> List["lib.emotes.Emote"]:
         """Coroutine that executes the menu.
 
         Once execution returns to the calling thread, doMenu will have returned a list of emojis that
