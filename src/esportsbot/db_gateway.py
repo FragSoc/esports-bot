@@ -1,6 +1,7 @@
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import os
+import traceback
 
 
 class db_connection():
@@ -63,6 +64,7 @@ class db_gateway():
             db.close()
             return True
         except Exception as err:
+            traceback.print_exc()
             raise RuntimeError('Error occurred using INSERT') from err
 
     def get(self, table, params):
@@ -77,6 +79,7 @@ class db_gateway():
             db.close()
             return returned_data
         except Exception as err:
+            traceback.print_exc()
             raise RuntimeError('Error occurred using SELECT') from err
 
     def getall(self, table):
@@ -89,6 +92,7 @@ class db_gateway():
             db.close()
             return returned_data
         except Exception as err:
+            traceback.print_exc()
             raise RuntimeError('Error occurred using SELECT ALL') from err
 
     def update(self, table, set_params, where_params):
@@ -101,6 +105,7 @@ class db_gateway():
             db.close()
             return True
         except Exception as err:
+            traceback.print_exc()
             raise RuntimeError('Error occurred using UPDATE') from err
 
     def delete(self, table, where_params):
@@ -114,6 +119,7 @@ class db_gateway():
             return True
             # return query_string
         except Exception as err:
+            traceback.print_exc()
             raise RuntimeError('Error occurred using DELETE') from err
 
     def pure_return(self, sql_query, database=None):
@@ -125,6 +131,7 @@ class db_gateway():
             db.close()
             return returned_data
         except Exception as err:
+            traceback.print_exc()
             raise RuntimeError('Error occurred using PURE') from err
 
     def pure_query(self, sql_query, database=None):
@@ -136,4 +143,5 @@ class db_gateway():
             db.close()
             return returned_data
         except Exception as err:
+            traceback.print_exc()
             raise RuntimeError('Error occurred using PURE') from err
