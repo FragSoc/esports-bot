@@ -1,1 +1,2 @@
-from . import emotes, client, discordUtil, exceptions, stringTyping, timeUtil
+from . import client
+from . import emotes, discordUtil, exceptions, stringTyping, timeUtil
