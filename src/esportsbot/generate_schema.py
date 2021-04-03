@@ -34,7 +34,7 @@ def generate_schema():
         # Does not exist
         query_string = """
         CREATE TABLE pingable_roles(
-            guild_id bigint NOT NULL
+            guild_id bigint NOT NULL,
             role_id bigint NOT NULL,
             on_cooldown boolean NOT NULL,
             last_ping float NOT NULL,
