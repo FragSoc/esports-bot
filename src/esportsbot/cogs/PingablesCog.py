@@ -14,6 +14,7 @@ class PingablesCog(commands.Cog):
         self.bot: "EsportsBot" = bot
 
     @commands.command(name="add-pingable-role", usage="add-pingable-role <@role>")
+    @commands.has_permissions(administrator=True)
     async def cmd_add_pingable_role(self, ctx: Context, *, args: str):
         if len(ctx.message.role_mentions) != 1:
             await ctx.message.reply("please mention one role")
@@ -31,9 +32,11 @@ class PingablesCog(commands.Cog):
                 if not role.mentionable:
                     await role.edit(mentionable=True, colour=discord.Colour.green(), reason="setting up new pingable role")
                 await ctx.message.reply("pingable role setup complete!")
+                await self.bot.adminLog(ctx.message, {"New !pingme Role Registered", role.mention})
 
 
     @commands.command(name="reset-role-ping-cooldown", usage="reset-role-ping-cooldown <@role>")
+    @commands.has_permissions(administrator=True)
     async def cmd_reset_role_ping_cooldown(self, ctx: Context, *, args: str):
         if len(ctx.message.role_mentions) != 1:
             await ctx.message.reply("please mention one role")
@@ -50,6 +53,7 @@ class PingablesCog(commands.Cog):
                 if not role.mentionable:
                     await role.edit(mentionable=True, colour=discord.Colour.green(), reason="manual cooldown reset by user " + str(ctx.author.name) + "#" + str(ctx.author.id))
                 await ctx.message.reply("role has been made pingable again!")
+                await self.bot.adminLog(ctx.message, {"Ping Cooldown Manually Reset For !pingme Role", role.mention})
 
 
 
