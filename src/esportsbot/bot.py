@@ -193,16 +193,6 @@ async def initialsetup(ctx):
         await ctx.channel.send("This server has now been initialised")
 
 
-async def rolePingCooldown(role: discord.Role, cooldownSeconds: int):
-    await asyncio.sleep(cooldownSeconds)
-    db = db_gateway()
-    roleData = db.get("pingable_roles", {"role_id": role.id})
-    if roleData and roleData["on_cooldown"]:
-        db.update('pingable_roles', set_params={'on_cooldown': False}, where_params={'role_id': role.id})
-    if role.guild.get_role(role.id) is not None:
-        await role.edit(mentionable=True, colour=discord.Colour.green(), reason="role ping cooldown complete")
-
-
 @client.event
 async def on_message(message: discord.Message):
     if message.guild is not None and message.role_mentions:
@@ -214,8 +204,10 @@ async def on_message(message: discord.Message):
                 roleData = db.get('pingable_roles', params={'role_id': role.id})
                 if roleData and not roleData[0]["on_cooldown"]:
                     roleUpdateTasks.add(asyncio.create_task(role.edit(mentionable=False, colour=discord.Colour.red(), reason="placing pingable role on ping cooldown")))
-                    db.update('pingable_roles', set_params={'on_cooldown': True}, where_params={'role_id': role.id})
-                    roleUpdateTasks.add(asyncio.create_task(rolePingCooldown(role, guildInfo[0]["role_ping_cooldown_seconds"])))
+                    db.update('pingable_roles', where_params={'role_id': role.id},
+                                set_params={'on_cooldown': True, "last_ping": datetime.now().timestamp(),
+                                            "ping_count": roleData["ping_count"] + 1, "monthly_ping_count": roleData["monthly_ping_count"] + 1})
+                    roleUpdateTasks.add(asyncio.create_task(client.rolePingCooldown(role, guildInfo[0]["role_ping_cooldown_seconds"])))
             if roleUpdateTasks:
                 await asyncio.wait(roleUpdateTasks)
                 for task in roleUpdateTasks:
