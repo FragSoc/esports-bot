@@ -5,7 +5,6 @@ from .. import lib
 from ..lib.client import EsportsBot
 from ..reactionMenus import reactionRoleMenu, reactionPollMenu
 from datetime import timedelta
-import traceback
 
 
 MAX_POLLS_PER_GUILD = 5
@@ -343,13 +342,13 @@ class MenusCog(commands.Cog):
 
         timeoutTD = lib.timeUtil.timeDeltaFromDict(timeoutDict if timeoutDict else DEFAULT_POLL_TIMEOUT)
         if timeoutTD > MAX_POLL_TIMEOUT:
-            await ctx.message.reply(":x: Invalid poll length! The maximum poll lenght is **" \
+            await ctx.message.reply(":x: Invalid poll length! The maximum poll length is **" \
                                     + lib.timeUtil.td_format_noYM(MAX_POLL_TIMEOUT) + ".**")
             return
 
         menuMsg = await ctx.send("‎")
 
-        menu = reactionPollMenu.InlineReactionPollMenu(menuMsg, pollOptions, timeoutTD.total_seconds(),
+        menu = reactionPollMenu.InlineReactionPollMenu(menuMsg, pollOptions, int(timeoutTD.total_seconds()),
                                                         pollStarter=ctx.author, multipleChoice=multipleChoice,
                                                         desc=pollSubject, footerTxt="This poll will end in " \
                                                             + lib.timeUtil.td_format_noYM(timeoutTD) + ".")
