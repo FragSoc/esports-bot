@@ -6,6 +6,9 @@ from ..db_gateway import db_gateway
 from ..lib.client import EsportsBot
 
 
+DEFAULT_PINGABLE_COLOUR = 0x15e012 # green
+
+
 class PingablesCog(commands.Cog):
     def __init__(self, bot: "EsportsBot"):
         self.bot: "EsportsBot" = bot
@@ -21,12 +24,15 @@ class PingablesCog(commands.Cog):
             if roleData:
                 await ctx.message.reply("that role is already pingable!")
             else:
-                db.insert("pingable_roles", {"role_id": role.id, "on_cooldown": False})
+                db.insert("pingable_roles", {"role_id": role.id, "on_cooldown": False,
+                                            "last_ping": -1, "ping_count": 0, "monthly_ping_count": 0,
+                                            "creator_id": ctx.author.id, "colour": DEFAULT_PINGABLE_COLOUR})
+                db.insert("guild_pingables", {"guild_id": ctx.guild.id, "role_id": role.id})
                 if not role.mentionable:
                     await role.edit(mentionable=True, colour=discord.Colour.green(), reason="setting up new pingable role")
                 await ctx.message.reply("pingable role setup complete!")
 
-    
+
     @commands.command(name="reset-role-ping-cooldown", usage="reset-role-ping-cooldown <@role>")
     async def cmd_reset_role_ping_cooldown(self, ctx: Context, *, args: str):
         if len(ctx.message.role_mentions) != 1:
