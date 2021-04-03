@@ -137,7 +137,7 @@ class EsportsBot(commands.Bot):
                                 description="The number of times each !pingme role was pinged last month:")
             baseEmbed.colour = Colour.random()
             baseEmbed.set_thumbnail(url=self.user.avatar_url_as(size=128))
-            baseEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y))
+            baseEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y"))
             for guildData in db.getall("guild_info"):
                 db = db_gateway()
                 pingableRoles = db.get("guild_pingables", {guildData["guild_id"]})
