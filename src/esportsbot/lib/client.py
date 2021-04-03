@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import os
 import signal
 import asyncio
+import traceback
 
 from .exceptions import UnrecognisedReactionMenuMessage
 from .emotes import Emote
@@ -54,10 +55,10 @@ class EsportsBot(commands.Bot):
         await asyncio.sleep(cooldownSeconds)
         db = db_gateway()
         roleData = db.get("pingable_roles", {"role_id": role.id})
-        if roleData and roleData["on_cooldown"]:
+        if roleData and roleData[0]["on_cooldown"]:
             db.update('pingable_roles', set_params={'on_cooldown': False}, where_params={'role_id': role.id})
         if role.guild.get_role(role.id) is not None:
-            await role.edit(mentionable=True, colour=roleData["colour"], reason="role ping cooldown complete")
+            await role.edit(mentionable=True, colour=roleData[0]["colour"], reason="role ping cooldown complete")
     
 
     async def init(self):
@@ -100,7 +101,7 @@ class EsportsBot(commands.Bot):
             else:
                 guildPingCooldown = timedelta(seconds=guildData["role_ping_cooldown_seconds"])
                 for roleIDData in db.get("guild_pingables", {"guild_id": guildData["guild_id"]}):
-                    role = self.get_role(roleIDData["role_id"])
+                    role = guild.get_role(roleIDData["role_id"])
                     if role is None:
                         print("[Esportsbot.init] Unknown pingable role id in guild_pingables table. Removing from the table: role #" \
                                 + str(roleIDData["role_id"]) + " in guild #" + str(guildData["guild_id"]))
@@ -115,8 +116,8 @@ class EsportsBot(commands.Bot):
                                     + " in guild #" + str(guildData["guild_id"]))
                             db.delete("guild_pingables", {"guild_id": guildData["guild_id"], "role_id": roleIDData["role_id"]})
                         else:
-                            remainingCooldown = max(0, int((datetime.fromtimestamp(roleData["last_ping"]) + guildPingCooldown - now).total_seconds()))
-                            roleUpdateTasks.add(asyncio.create_task(rolePingCooldown(role, remainingCooldown)))
+                            remainingCooldown = max(0, int((datetime.fromtimestamp(roleData[0]["last_ping"]) + guildPingCooldown - now).total_seconds()))
+                            roleUpdateTasks.add(asyncio.create_task(self.rolePingCooldown(role, remainingCooldown)))
 
         if roleUpdateTasks:
             await asyncio.wait(roleUpdateTasks)
