@@ -15,7 +15,7 @@ import asyncio
 from typing import Set
 
 
-DEFAULT_ROLE_PING_COOLDOWN = timedelta(seconds=5)
+DEFAULT_ROLE_PING_COOLDOWN = timedelta(hours=5)
 client = lib.client.instance()
 client.remove_command('help')
 
@@ -203,10 +203,10 @@ async def on_message(message: discord.Message):
             for role in message.role_mentions:
                 roleData = db.get('pingable_roles', params={'role_id': role.id})
                 if roleData and not roleData[0]["on_cooldown"]:
-                    roleUpdateTasks.add(asyncio.create_task(role.edit(mentionable=False, colour=discord.Colour.red(), reason="placing pingable role on ping cooldown")))
+                    roleUpdateTasks.add(asyncio.create_task(role.edit(mentionable=False, colour=discord.Colour.darker_grey(), reason="placing pingable role on ping cooldown")))
                     db.update('pingable_roles', where_params={'role_id': role.id},
                                 set_params={'on_cooldown': True, "last_ping": datetime.now().timestamp(),
-                                            "ping_count": roleData["ping_count"] + 1, "monthly_ping_count": roleData["monthly_ping_count"] + 1})
+                                            "ping_count": roleData[0]["ping_count"] + 1, "monthly_ping_count": roleData[0]["monthly_ping_count"] + 1})
                     roleUpdateTasks.add(asyncio.create_task(client.rolePingCooldown(role, guildInfo[0]["role_ping_cooldown_seconds"])))
             if roleUpdateTasks:
                 await asyncio.wait(roleUpdateTasks)
