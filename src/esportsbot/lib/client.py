@@ -1,5 +1,5 @@
 from discord.ext import commands, tasks
-from discord import Intents, Embed, Message, Colour
+from discord import Intents, Embed, Message, Colour, Role
 from ..reactionMenus.reactionMenuDB import ReactionMenuDB
 from ..reactionMenus import reactionMenu
 from ..db_gateway import db_gateway
@@ -47,7 +47,7 @@ class EsportsBot(commands.Bot):
         await self.logout()
 
 
-    async def rolePingCooldown(self, role: discord.Role, cooldownSeconds: int):
+    async def rolePingCooldown(self, role: Role, cooldownSeconds: int):
         """wait cooldownSeconds seconds, then set role back to pingable.
         role must be registered in the pingable_roles table.
         """
