@@ -43,7 +43,7 @@ def generate_schema():
             colour hex NOT NULL
         );
         ALTER TABLE ONLY pingable_roles
-        ADD CONSTRAINT roleid_pkey PRIMARY KEY(role_id);
+            ADD CONSTRAINT roleid_pkey PRIMARY KEY(role_id);
         """
         db_gateway().pure_query(query_string)
 
@@ -57,9 +57,10 @@ def generate_schema():
             guild_id bigint NOT NULL,
             role_id bigint NOT NULL
         );
-        ALTER TABLE ONLY guild_info
-        ADD CONSTRAINT guildid_pkey FOREIGN KEY(guild_id);
-        ADD CONSTRAINT roleid_pkey FOREIGN KEY(role_id);
+        ALTER TABLE ONLY guild_pingables
+            ADD CONSTRAINT guildid_pkey FOREIGN KEY(guild_id) REFERENCES guild_info (guild_id);
+        ALTER TABLE ONLY guild_pingables
+            ADD CONSTRAINT roleid_pkey FOREIGN KEY(role_id) REFERENCES pingable_roles (role_id);
         """
         db_gateway().pure_query(query_string)
 
@@ -74,7 +75,7 @@ def generate_schema():
             menu jsonb
         );
         ALTER TABLE ONLY reaction_menus
-        ADD CONSTRAINT menu_pkey PRIMARY KEY(message_id);
+            ADD CONSTRAINT menu_pkey PRIMARY KEY(message_id);
         """
         db_gateway().pure_query(query_string)
 
