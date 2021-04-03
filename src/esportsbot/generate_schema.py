@@ -19,10 +19,26 @@ def generate_schema():
             guild_id bigint NOT NULL,
             log_channel_id bigint,
             default_role_id bigint,
-            num_running_polls int NOT NULL
+            num_running_polls int NOT NULL,
+            role_ping_cooldown_seconds bigint NOT NULL
         );
         ALTER TABLE ONLY guild_info
         ADD CONSTRAINT loggingchannel_pkey PRIMARY KEY(guild_id);
+        """
+        db_gateway().pure_query(query_string)
+
+    # Does the pingable_roles table exist?
+    pingable_roles_exists = db_gateway().pure_return(
+        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'pingable_roles'")
+    if not pingable_roles_exists:
+        # Does not exist
+        query_string = """
+        CREATE TABLE pingable_roles(
+            role_id bigint NOT NULL,
+            on_cooldown boolean NOT NULL
+        );
+        ALTER TABLE ONLY pingable_roles
+        ADD CONSTRAINT roleid_pkey PRIMARY KEY(role_id);
         """
         db_gateway().pure_query(query_string)
 
