@@ -40,7 +40,7 @@ def generate_schema():
             ping_count int NOT NULL,
             monthly_ping_count int NOT NULL,
             creator_id bigint NOT NULL,
-            colour hex NOT NULL
+            colour int NOT NULL
         );
         ALTER TABLE ONLY pingable_roles
             ADD CONSTRAINT roleid_pkey PRIMARY KEY(role_id);
