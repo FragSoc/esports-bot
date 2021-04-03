@@ -1,3 +1,4 @@
+import traceback
 from dotenv import load_dotenv
 from .base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 from .generate_schema import generate_schema
@@ -9,9 +10,12 @@ from discord import NotFound, HTTPException, Forbidden
 import os
 import discord
 from . import lib
-from datetime import datetime
+from datetime import datetime, timedelta
+import asyncio
+from typing import Set
 
 
+DEFAULT_ROLE_PING_COOLDOWN = timedelta(hours=5)
 client = lib.client.instance()
 client.remove_command('help')
 
@@ -173,6 +177,7 @@ async def on_command_error(ctx: Context, exception: Exception):
             sourceStr += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
         print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught "
                                       + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
+        traceback.print_exception(type(exception), exception, exception.__traceback__)
 
 
 @client.command()
@@ -184,8 +189,34 @@ async def initialsetup(ctx):
         await ctx.channel.send("This server is already set up")
     else:
         db_gateway().insert('guild_info', params={
-            'guild_id': ctx.author.guild.id, 'num_running_polls': 0})
+            'guild_id': ctx.author.guild.id, 'num_running_polls': 0, 'role_ping_cooldown_seconds': int(DEFAULT_ROLE_PING_COOLDOWN.total_seconds())})
         await ctx.channel.send("This server has now been initialised")
+
+
+async def rolePingCooldown(role: discord.Role, cooldownSeconds: int):
+    await asyncio.sleep(cooldownSeconds)
+    await role.edit(mentionable=True, colour=discord.Colour.green(), reason="role ping cooldown complete")
+
+
+@client.event
+async def on_message(message: discord.Message):
+    if message.guild is not None and message.role_mentions:
+        db = db_gateway()
+        guildInfo = db.get('guild_info', params={'guild_id': message.guild.id})
+        if guildInfo:
+            roleUpdateTasks = set()
+            for role in message.role_mentions:
+                roleData = db.get('pingable_roles', params={'role_id': role.id})
+                if roleData and not roleData[0]["on_cooldown"]:
+                    roleUpdateTasks.add(asyncio.create_task(role.edit(mentionable=False, colour=discord.Colour.red(), reason="placing pingable role on ping cooldown")))
+                    db.update('pingable_roles', set_params={'on_cooldown': True}, where_params={'role_id': role.id})
+                    roleUpdateTasks.add(asyncio.create_task(rolePingCooldown(role, guildInfo[0]["role_ping_cooldown_seconds"])))
+            if roleUpdateTasks:
+                await asyncio.wait(roleUpdateTasks)
+                for task in roleUpdateTasks:
+                    if e := task.exception():
+                        traceback.print_exception(type(e), e, e.__traceback__)
+    await client.process_commands(message)
 
 
 def launch():
@@ -200,6 +231,7 @@ def launch():
     client.load_extension('esportsbot.cogs.LogChannelCog')
     client.load_extension('esportsbot.cogs.AdminCog')
     client.load_extension('esportsbot.cogs.MenusCog')
+    client.load_extension('esportsbot.cogs.PingablesCog')
     if os.getenv('ENABLE_TWITTER').lower() == 'true':
         client.load_extension('esportsbot.cogs.TwitterIntegrationCog')
     if os.getenv('ENABLE_TWITCH').lower() == 'true':
