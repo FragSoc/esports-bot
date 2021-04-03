@@ -149,7 +149,7 @@ class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
         :param str img: URL to a large icon appearing as the content of the embed, left aligned like a field (Default "")
         :param str thumb: URL to a larger image appearing to the right of the title (Default "")
         :param str icon: URL to a smaller image to the left of authorName. AuthorName is required for this to be displayed.
-                        (Default empty)
+                        (Default author profile picture)
         :param str authorName: Secondary, smaller title for the embed. icon is required for this to be displayed.
                                 (Default "Poll")
         """
@@ -160,9 +160,8 @@ class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
         else:
             authorName = authorName if authorName else "Poll"
 
-        if icon == "":
-            if pollStarter is not None:
-                icon = str(pollStarter.avatar_url_as(size=64))
+        if icon is None and pollStarter is not None:
+            icon = str(pollStarter.avatar_url_as(size=64))
         else:
             icon = icon if icon else BALLOT_BOX_IMAGE
 
