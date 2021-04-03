@@ -21,7 +21,7 @@ from urllib.parse import parse_qs, urlparse
 
 import html
 
-from random import shuffle
+from random import shuffle, uniform
 from collections import defaultdict
 
 
@@ -75,6 +75,8 @@ class MusicCog(commands.Cog):
         # Seconds of song (time / day) / server
         # Currently 2 hours of playtime for each server per day
         self._allowed_time = 7200
+
+        self._youtube_last_pinged = 0
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -495,7 +497,7 @@ class MusicCog(commands.Cog):
             elif isinstance(song, dict):
                 self._currently_active.get(guild_id).get('queue').append(song)
             else:
-                title = self.__get_basic_song_information(song)
+                title = await self.__get_basic_song_information(song)
                 song_info = {'title': title, 'link': song}
                 self._currently_active.get(guild_id).get('queue').append(song_info)
 
@@ -671,16 +673,33 @@ class MusicCog(commands.Cog):
             generator = executor.map(self.__get_basic_song_information, links)
             return generator
 
-    def __get_basic_song_information(self, url):
+    async def __get_basic_song_information(self, url):
         """
         Download the title for a given url.
         :param url: The url to find the title of.
         :return: A dict with link and title keys.
         """
-        resp = requests.get(url)
+
+        # Using a random user agent means there is less chance of being blocked by google
+        user_agents = ['Mozilla/5.0 CK={} (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
+                       'Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1',
+                       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                       + 'Chrome/74.0.3729.169 Safari/537.36',
+                       'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)',
+                       'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1',
+                       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                       + 'Chrome/74.0.3729.157 Safari/537.36']
+        shuffle(user_agents)
+        # Wait some random time if its been less than 2 seconds since last ping
+        if self._youtube_last_pinged - time.time() < 2:
+            await asyncio.sleep(float(2) + uniform(0.1, 2.1))
+        headers = {'User-Agent': user_agents[0], 'Referer': 'https://www.google.co.uk/'}
+
+        resp = requests.get(url, headers=headers)
         text = resp.text
         page_title = text[text.find('<title>') + 7:text.find('</title>')]
         formatted_title = html.unescape(page_title).replace(' - YouTube', '')
+        self._youtube_last_pinged = time.time()
         return formatted_title
 
     def __check_loops_alive(self):
