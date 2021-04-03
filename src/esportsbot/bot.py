@@ -15,7 +15,7 @@ import asyncio
 from typing import Set
 
 
-DEFAULT_ROLE_PING_COOLDOWN = timedelta(hours=5)
+DEFAULT_ROLE_PING_COOLDOWN = timedelta(seconds=5)
 client = lib.client.instance()
 client.remove_command('help')
 
@@ -195,6 +195,7 @@ async def initialsetup(ctx):
 
 async def rolePingCooldown(role: discord.Role, cooldownSeconds: int):
     await asyncio.sleep(cooldownSeconds)
+    db_gateway().update('pingable_roles', set_params={'on_cooldown': False}, where_params={'role_id': role.id})
     await role.edit(mentionable=True, colour=discord.Colour.green(), reason="role ping cooldown complete")
 
 
