@@ -16,7 +16,7 @@ class PingablesCog(commands.Cog):
     def __init__(self, bot: "EsportsBot"):
         self.bot: "EsportsBot" = bot
 
-    @commands.command(name="add-pingable-role", usage="add-pingable-role <@role>")
+    @commands.command(name="add-pingable-role", usage="add-pingable-role <@role>", help="Convert an existing role into a !pingme role")
     @commands.has_permissions(administrator=True)
     async def cmd_add_pingable_role(self, ctx: Context, *, args: str):
         if len(ctx.message.role_mentions) != 1:
@@ -38,7 +38,7 @@ class PingablesCog(commands.Cog):
                 await self.bot.adminLog(ctx.message, {"New !pingme Role Registered", role.mention})
 
 
-    @commands.command(name="reset-role-ping-cooldown", usage="reset-role-ping-cooldown <@role>")
+    @commands.command(name="reset-role-ping-cooldown", usage="reset-role-ping-cooldown <@role>", help="Reset the pinging cooldown for a !pingme role, making it pingable again instantly")
     @commands.has_permissions(administrator=True)
     async def cmd_reset_role_ping_cooldown(self, ctx: Context, *, args: str):
         if len(ctx.message.role_mentions) != 1:
@@ -59,7 +59,7 @@ class PingablesCog(commands.Cog):
                 await self.bot.adminLog(ctx.message, {"Ping Cooldown Manually Reset For !pingme Role", role.mention})
 
 
-    @commands.command(name="set-role-ping-cooldown", usage="set-role-ping-cooldown [seconds=seconds] [minutes=minutes] [hours=hours] [days=days]")
+    @commands.command(name="set-role-ping-cooldown", usage="set-role-ping-cooldown [seconds=seconds] [minutes=minutes] [hours=hours] [days=days]", help="Set the cooldown between !pingme role pings")
     @commands.has_permissions(administrator=True)
     async def cmd_set_role_ping_cooldown(self, ctx: Context, *, args: str):
         if not args:
@@ -94,6 +94,19 @@ class PingablesCog(commands.Cog):
         await self.bot.adminLog(ctx.message, {"Cooldown For !pingme Role Pings Updated": lib.timeUtil.td_format_noYM(timeoutTD)})
 
 
+    @commands.group(name="pingme")
+    async def pingme(self, ctx):
+        if ctx.invoked_subcommand is None:
+            await ctx.message.reply('Invalid sub command passed...')
+        # await ctx.message.reply("No subcommand given")
+
+    @pingme.command(name="create", help="Start a poll for the creation of a new !pingme role")
+    async def pingme_create(self, ctx):
+        await ctx.message.reply("creating")
+
+    @pingme.command(name="for", usage="pingme for <role name or alias>", help="Get yourself a !pingme role, to be notified about events and games.")
+    async def pingme_for(self, ctx):
+        await ctx.message.reply("for")
 
 
 def setup(bot):
