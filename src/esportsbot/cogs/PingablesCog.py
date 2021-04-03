@@ -59,7 +59,7 @@ class PingablesCog(commands.Cog):
                 await self.bot.adminLog(ctx.message, {"Ping Cooldown Manually Reset For !pingme Role", role.mention})
 
 
-    @commands.command(name="set-role-ping-cooldown", usage="reset-role-ping-cooldown [seconds=seconds] [minutes=minutes] [hours=hours] [days=days]")
+    @commands.command(name="set-role-ping-cooldown", usage="set-role-ping-cooldown [seconds=seconds] [minutes=minutes] [hours=hours] [days=days]")
     @commands.has_permissions(administrator=True)
     async def cmd_set_role_ping_cooldown(self, ctx: Context, *, args: str):
         if not args:
