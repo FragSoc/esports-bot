@@ -220,6 +220,15 @@ async def on_message(message: discord.Message):
     await client.process_commands(message)
 
 
+@client.event
+async def on_guild_role_delete(role: discord.Role):
+    db = db_gateway()
+    if db.get("pingable_roles", {"role_id": role.id}):
+        db.delete("pingable_roles", {"role_id": role.id})
+    if db.get("guild_pingables", {"guild_id": role.guild.id, "role_id": role.id}):
+        db.delete("guild_pingables", {"guild_id": role.guild.id, "role_id": role.id})
+
+
 def launch():
     load_dotenv()
     TOKEN = os.getenv('DISCORD_TOKEN')
