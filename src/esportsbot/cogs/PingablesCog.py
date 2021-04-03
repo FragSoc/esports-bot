@@ -4,9 +4,12 @@ from discord.ext.commands.context import Context
 from discord.ext.commands.context import Context
 from ..db_gateway import db_gateway
 from ..lib.client import EsportsBot
+from .. import lib
+from datetime import timedelta
 
 
 DEFAULT_PINGABLE_COLOUR = 0x15e012 # green
+MAX_ROLE_PING_TIMEOUT = timedelta(days=30)
 
 
 class PingablesCog(commands.Cog):
@@ -54,6 +57,41 @@ class PingablesCog(commands.Cog):
                     await role.edit(mentionable=True, colour=discord.Colour.green(), reason="manual cooldown reset by user " + str(ctx.author.name) + "#" + str(ctx.author.id))
                 await ctx.message.reply("role has been made pingable again!")
                 await self.bot.adminLog(ctx.message, {"Ping Cooldown Manually Reset For !pingme Role", role.mention})
+
+
+    @commands.command(name="set-role-ping-cooldown", usage="reset-role-ping-cooldown [seconds=seconds] [minutes=minutes] [hours=hours] [days=days]")
+    @commands.has_permissions(administrator=True)
+    async def cmd_set_role_ping_cooldown(self, ctx: Context, *, args: str):
+        if not args:
+            await ctx.message.reply(":x: Please give the new cooldown!")
+            return
+
+        argsSplit = args.split(" ")
+        kwArgs = {}
+        for arg in argsSplit:
+            arg = arg.strip().lower()
+            for kwArg in ["days=", "hours=", "seconds=", "minutes="]:
+                if arg.startswith(kwArg):
+                    kwArgs[kwArg[:-1]] = arg[len(kwArg):]
+                    break
+        
+        timeoutDict = {}
+        for timeName in ["days", "hours", "minutes", "seconds"]:
+            if timeName in kwArgs:
+                if not lib.stringTyping.strIsInt(kwArgs[timeName]) or int(kwArgs[timeName]) < 1:
+                    await ctx.message.reply(":x: Invalid number of " + timeName + "!")
+                    return
+
+                timeoutDict[timeName] = int(kwArgs[timeName])
+        
+        timeoutTD = lib.timeUtil.timeDeltaFromDict(timeoutDict)
+        if timeoutTD > MAX_ROLE_PING_TIMEOUT:
+            await ctx.message.reply(":x: The maximum ping cooldown is " + lib.timeUtil.td_format_noYM(MAX_ROLE_PING_TIMEOUT))
+            return
+        
+        db_gateway().update("guild_info", {"role_ping_cooldown_seconds": int(timeoutTD.total_seconds())}, {"guild_id": ctx.guild.id})
+        await ctx.message.reply("Cooldown for !pingme roles now updated to " + lib.timeUtil.td_format_noYM(timeoutTD) + "!")
+        await self.bot.adminLog(ctx.message, {"Cooldown For !pingme Role Pings Updated": lib.timeUtil.td_format_noYM(timeoutTD)})
 
 
 
