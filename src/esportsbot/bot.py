@@ -29,7 +29,7 @@ async def send_to_log_channel(guild_id, msg):
 
 @client.event
 async def on_ready():
-    client.init()
+    await client.init()
     print('BOT: Bot is now active')
     await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="your commands"))
 

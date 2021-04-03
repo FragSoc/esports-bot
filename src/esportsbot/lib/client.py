@@ -60,7 +60,7 @@ class EsportsBot(commands.Bot):
             await role.edit(mentionable=True, colour=roleData["colour"], reason="role ping cooldown complete")
     
 
-    def init(self):
+    async def init(self):
         """Load in all of the reaction menus registered in SQL.
         This must be called upon bot.on_ready
         """
