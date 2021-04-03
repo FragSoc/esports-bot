@@ -96,28 +96,18 @@ class EsportsBot(commands.Bot):
         for guildData in db.getall("guild_info"):
             guild = self.get_guild(guildData["guild_id"])
             if guild is None:
-                print("[Esportsbot.init] Unknown guild id in guild_info table. Removing from the table: #" + str(guildData["guild_id"]))
-                db.delete("guild_info", {"guild_id": guildData["guild_id"]})
+                print("[Esportsbot.init] Unknown guild id in guild_info table: #" + str(guildData["guild_id"]))
             else:
                 guildPingCooldown = timedelta(seconds=guildData["role_ping_cooldown_seconds"])
-                for roleIDData in db.get("guild_pingables", {"guild_id": guildData["guild_id"]}):
-                    role = guild.get_role(roleIDData["role_id"])
+                for roleData in db.get("pingable_roles", {"guild_id": guildData["guild_id"]}):
+                    role = guild.get_role(roleData["role_id"])
                     if role is None:
-                        print("[Esportsbot.init] Unknown pingable role id in guild_pingables table. Removing from the table: role #" \
-                                + str(roleIDData["role_id"]) + " in guild #" + str(guildData["guild_id"]))
-                        db.delete("guild_pingables", {"guild_id": guildData["guild_id"], "role_id": roleIDData["role_id"]})
-                        if db.get("pingable_roles", {"role_id": roleIDData["role_id"]}):
-                            db.delete("pingable_roles", {"role_id": roleIDData["role_id"]})
+                        print("[Esportsbot.init] Unknown pingable role id in pingable_roles table. Removing from the table: role #" \
+                                + str(roleData["role_id"]) + " in guild #" + str(guildData["guild_id"]))
+                        db.delete("pingable_roles", {"role_id": roleData["role_id"]})
                     else:
-                        roleData = db.get("pingable_roles", {"role_id": role.id})
-                        if not roleData:
-                            print("[Esportsbot.init] Role registered in guild_pingables table, but not in pingable_roles table." \
-                                    + " Removing from the table: role #" + str(roleIDData["role_id"]) \
-                                    + " in guild #" + str(guildData["guild_id"]))
-                            db.delete("guild_pingables", {"guild_id": guildData["guild_id"], "role_id": roleIDData["role_id"]})
-                        else:
-                            remainingCooldown = max(0, int((datetime.fromtimestamp(roleData[0]["last_ping"]) + guildPingCooldown - now).total_seconds()))
-                            roleUpdateTasks.add(asyncio.create_task(self.rolePingCooldown(role, remainingCooldown)))
+                        remainingCooldown = max(0, int((datetime.fromtimestamp(roleData[0]["last_ping"]) + guildPingCooldown - now).total_seconds()))
+                        roleUpdateTasks.add(asyncio.create_task(self.rolePingCooldown(role, remainingCooldown)))
 
         if roleUpdateTasks:
             await asyncio.wait(roleUpdateTasks)
@@ -139,36 +129,26 @@ class EsportsBot(commands.Bot):
             baseEmbed.colour = Colour.random()
             baseEmbed.set_thumbnail(url=self.user.avatar_url_as(size=128))
             baseEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y"))
+            db = db_gateway()
             for guildData in db.getall("guild_info"):
-                db = db_gateway()
-                pingableRoles = db.get("guild_pingables", {guildData["guild_id"]})
+                pingableRoles = db.get("pingable_roles", {guildData["guild_id"]})
                 if pingableRoles:
                     guild = self.get_guild(guildData["guild_id"])
                     if guild is None:
-                        print("[Esportsbot.monthlyPingablesReport] Unknown guild id in guild_info table. Removing from the table: #" + str(guildData["guild_id"]))
-                        db.delete("guild_info", {"guild_id": guildData["guild_id"]})
+                        print("[Esportsbot.monthlyPingablesReport] Unknown guild id in guild_info table: #" + str(guildData["guild_id"]))
                     elif guildData["log_channel_id"] is not None:
                         reportEmbed = baseEmbed.copy()
                         rolesAdded = False
-                        for roleIDData in pingableRoles:
-                            roleData = db.get("pingable_roles", {"role_id": roleIDData["role_id"]})
-                            if roleData:
-                                print("[Esportsbot.monthlyPingablesReport] Role registered in guild_pingables table, but not in pingable_roles table." \
-                                        + " Removing from the table: role #" + str(roleIDData["role_id"]) \
-                                        + " in guild #" + str(guildData["guild_id"]))
-                                db.delete("guild_pingables", {"guild_id": guildData["guild_id"], "role_id": roleIDData["role_id"]})
+                        for roleData in pingableRoles:
+                            role = guild.get_role(roleData["role_id"])
+                            if role is None:
+                                print("[Esportsbot.monthlyPingablesReport] Unknown pingable role id in pingable_roles table. Removing from the table: role #" \
+                                        + str(roleData["role_id"]) + " in guild #" + str(guildData["guild_id"]))
+                                db.delete("pingable_roles", {"role_id": roleData["role_id"]})
                             else:
-                                role = guild.get_role(roleData["role_id"])
-                                if role is None:
-                                    print("[Esportsbot.monthlyPingablesReport] Unknown pingable role id in guild_pingables table. Removing from the table: role #" \
-                                            + str(roleIDData["role_id"]) + " in guild #" + str(guildData["guild_id"]))
-                                    db.delete("guild_pingables", {"guild_id": guildData["guild_id"], "role_id": roleIDData["role_id"]})
-                                    if db.get("pingable_roles", {"role_id": roleIDData["role_id"]}):
-                                        db.delete("pingable_roles", {"role_id": roleIDData["role_id"]})
-                                else:
-                                    reportEmbed.add_field(name=role.name, value=role.mention + "\n" + str(roleData["monthly_ping_count"]) + " pings")
-                                    db.update("pingable_roles", {"monthly_ping_count": 0}, {"role_id": role.id})
-                                    rolesAdded = True
+                                reportEmbed.add_field(name=role.name, value=role.mention + "\n" + str(roleData["monthly_ping_count"]) + " pings")
+                                db.update("pingable_roles", {"monthly_ping_count": 0}, {"role_id": role.id})
+                                rolesAdded = True
                         if rolesAdded:
                             loggingTasks.add(asyncio.create_task(guild.get_channel(guildData['log_channel_id']).send(embed=reportEmbed)))
 

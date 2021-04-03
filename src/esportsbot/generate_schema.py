@@ -34,6 +34,7 @@ def generate_schema():
         # Does not exist
         query_string = """
         CREATE TABLE pingable_roles(
+            guild_id bigint NOT NULL
             role_id bigint NOT NULL,
             on_cooldown boolean NOT NULL,
             last_ping float NOT NULL,
@@ -44,23 +45,8 @@ def generate_schema():
         );
         ALTER TABLE ONLY pingable_roles
             ADD CONSTRAINT roleid_pkey PRIMARY KEY(role_id);
-        """
-        db_gateway().pure_query(query_string)
-
-    # Does the guild_pingables table exist?
-    guild_pingables_exists = db_gateway().pure_return(
-        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'guild_pingables'")
-    if not guild_pingables_exists:
-        # Does not exist
-        query_string = """
-        CREATE TABLE guild_pingables(
-            guild_id bigint NOT NULL,
-            role_id bigint NOT NULL
-        );
-        ALTER TABLE ONLY guild_pingables
-            ADD CONSTRAINT guildid_pkey FOREIGN KEY(guild_id) REFERENCES guild_info (guild_id);
-        ALTER TABLE ONLY guild_pingables
-            ADD CONSTRAINT roleid_pkey FOREIGN KEY(role_id) REFERENCES pingable_roles (role_id);
+        ALTER TABLE ONLY pingable_roles
+            ADD CONSTRAINT guildid_fkey FOREIGN KEY(guild_id) REFERENCES guild_info (guild_id);
         """
         db_gateway().pure_query(query_string)
 
