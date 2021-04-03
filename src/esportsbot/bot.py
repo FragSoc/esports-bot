@@ -195,8 +195,12 @@ async def initialsetup(ctx):
 
 async def rolePingCooldown(role: discord.Role, cooldownSeconds: int):
     await asyncio.sleep(cooldownSeconds)
-    db_gateway().update('pingable_roles', set_params={'on_cooldown': False}, where_params={'role_id': role.id})
-    await role.edit(mentionable=True, colour=discord.Colour.green(), reason="role ping cooldown complete")
+    db = db_gateway()
+    roleData = db.get("pingable_roles", {"role_id": role.id})
+    if roleData and roleData["on_cooldown"]:
+        db.update('pingable_roles', set_params={'on_cooldown': False}, where_params={'role_id': role.id})
+    if role.guild.get_role(role.id) is not None:
+        await role.edit(mentionable=True, colour=discord.Colour.green(), reason="role ping cooldown complete")
 
 
 @client.event
