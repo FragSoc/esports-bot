@@ -46,6 +46,7 @@ class PingablesCog(commands.Cog):
             role = ctx.message.role_mentions[0]
             db = db_gateway()
             roleData = db.get("pingable_roles", {"role_id": role.id})
+            print("LEN",len(roleData))
             if not roleData:
                 await ctx.message.reply("that role is not pingable!")
             elif not roleData[0]["on_cooldown"]:
