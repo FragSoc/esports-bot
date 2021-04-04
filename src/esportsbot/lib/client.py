@@ -106,7 +106,7 @@ class EsportsBot(commands.Bot):
                                 + str(roleData["role_id"]) + " in guild #" + str(guildData["guild_id"]))
                         db.delete("pingable_roles", {"role_id": roleData["role_id"]})
                     else:
-                        remainingCooldown = max(0, int((datetime.fromtimestamp(roleData[0]["last_ping"]) + guildPingCooldown - now).total_seconds()))
+                        remainingCooldown = max(0, int((datetime.fromtimestamp(roleData["last_ping"]) + guildPingCooldown - now).total_seconds()))
                         roleUpdateTasks.add(asyncio.create_task(self.rolePingCooldown(role, remainingCooldown)))
 
         if roleUpdateTasks:
