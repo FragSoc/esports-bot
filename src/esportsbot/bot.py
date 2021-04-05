@@ -231,6 +231,7 @@ async def on_guild_role_delete(role: discord.Role):
     db = db_gateway()
     if db.get("pingable_roles", {"role_id": role.id}):
         db.delete("pingable_roles", {"role_id": role.id})
+        await client.adminLog(message, {"!pingme Role Deleted": "Role: " + role.mention + "\nName: " + role.name + "\nDeleting user unknown, please see the server's audit log."})
 
 
 def launch():
