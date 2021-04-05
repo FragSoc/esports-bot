@@ -46,7 +46,6 @@ class PingablesCog(commands.Cog):
             role = ctx.message.role_mentions[0]
             db = db_gateway()
             roleData = db.get("pingable_roles", {"role_id": role.id})
-            print("LEN",len(roleData))
             if not roleData:
                 await ctx.message.reply("that role is not pingable!")
             elif not roleData[0]["on_cooldown"]:
@@ -55,8 +54,8 @@ class PingablesCog(commands.Cog):
                 db.update("pingable_roles", {"on_cooldown": False}, {"role_id": role.id})
                 if not role.mentionable:
                     await role.edit(mentionable=True, colour=discord.Colour.green(), reason="manual cooldown reset by user " + str(ctx.author.name) + "#" + str(ctx.author.id))
-                await ctx.message.reply("role has been made pingable again!")
-                await self.bot.adminLog(ctx.message, {"Ping Cooldown Manually Reset For !pingme Role", role.mention})
+                await ctx.message.reply("The " + role.name + " role is now pingable again!")
+                await self.bot.adminLog(ctx.message, {"Ping Cooldown Manually Reset For !pingme Role": role.mention})
 
 
     @commands.command(name="set-role-ping-cooldown", usage="set-role-ping-cooldown [seconds=seconds] [minutes=minutes] [hours=hours] [days=days]", help="Set the cooldown between !pingme role pings")
