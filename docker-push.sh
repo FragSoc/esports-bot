@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
 docker tag fragsoc/esports-bot fragsoc/esports-bot:${DOCKER_TAG}
-docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
 docker push fragsoc/esports-bot
