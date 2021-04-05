@@ -108,7 +108,7 @@ class EsportsBot(commands.Bot):
                     else:
                         remainingCooldown = max(0, int((datetime.fromtimestamp(roleData["last_ping"]) + guildPingCooldown - now).total_seconds()))
                         roleUpdateTasks.add(asyncio.create_task(self.rolePingCooldown(role, remainingCooldown)))
-
+        print('[EsportsBot.init] Bot is now active')
         if roleUpdateTasks:
             await asyncio.wait(roleUpdateTasks)
             for task in roleUpdateTasks:
