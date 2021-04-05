@@ -297,5 +297,19 @@ class PingablesCog(commands.Cog):
                     await ctx.message.reply("✅ You got the " + role.name + " role!")
 
 
+    @pingme.command(name="clear", usage="pingme clear", help="Unsubscribe from all !pingme roles, if you have any.") 
+    async def pingme_for(self, ctx: Context, *, args: str):
+        db = db_gateway()
+        rolesToRemove = []
+        for role in ctx.author.roles:
+            if db.get("pingable_roles", {"role_id": role.id}):
+                rolesToRemove.add(role)
+        if rolesToRemove:
+            await ctx.author.remove_roles(*rolesToRemove, reason="User unsubscribed from !pingme role via command")
+            await ctx.message.reply("✅ You unsubscribed from " + str(len(rolesToRemove)) + " roles!")
+        else:
+            await ctx.message.reply(":x: You are not subsribed to any `!pingme` roles!")
+
+
 def setup(bot):
     bot.add_cog(PingablesCog(bot))
