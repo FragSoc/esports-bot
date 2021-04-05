@@ -30,7 +30,6 @@ async def send_to_log_channel(guild_id, msg):
 @client.event
 async def on_ready():
     await client.init()
-    print('BOT: Bot is now active')
     await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="your commands"))
 
 
@@ -204,12 +203,13 @@ async def on_message(message: discord.Message):
             for role in message.role_mentions:
                 roleData = db.get('pingable_roles', params={'role_id': role.id})
                 if roleData and not roleData[0]["on_cooldown"]:
-                    print("it worked")
                     roleUpdateTasks.add(asyncio.create_task(role.edit(mentionable=False, colour=discord.Colour.darker_grey(), reason="placing pingable role on ping cooldown")))
-                    db.update('pingable_roles', where_params={'role_id': role.id},
-                                set_params={'on_cooldown': True, "last_ping": datetime.now().timestamp(),
-                                            "ping_count": roleData[0]["ping_count"] + 1, "monthly_ping_count": roleData[0]["monthly_ping_count"] + 1})
+                    db.update('pingable_roles', {'on_cooldown': True}, {'role_id': role.id})
+                    db.update('pingable_roles', {"last_ping": datetime.now().timestamp()}, {'role_id': role.id})
+                    db.update('pingable_roles', {"ping_count": roleData[0]["ping_count"] + 1}, {'role_id': role.id})
+                    db.update('pingable_roles', {"monthly_ping_count": roleData[0]["monthly_ping_count"] + 1}, {'role_id': role.id})
                     roleUpdateTasks.add(asyncio.create_task(client.rolePingCooldown(role, guildInfo[0]["role_ping_cooldown_seconds"])))
+                    roleUpdateTasks.add(asyncio.create_task(client.adminLog(message, {"!pingme Role Pinged": "Role: " + role.mention + "\nUser: " + message.author.mention})))
         await client.process_commands(message)
         if roleUpdateTasks:
             await asyncio.wait(roleUpdateTasks)
