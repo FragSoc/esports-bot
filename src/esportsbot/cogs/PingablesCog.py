@@ -1,4 +1,5 @@
 import discord
+import asyncio
 from discord.ext import commands
 from discord.ext.commands.context import Context
 from discord.ext.commands.context import Context
@@ -6,10 +7,19 @@ from ..db_gateway import db_gateway
 from ..lib.client import EsportsBot
 from .. import lib
 from datetime import timedelta
+from ..reactionMenus import reactionPollMenu
 
 
 DEFAULT_PINGABLE_COLOUR = 0x15e012 # green
 MAX_ROLE_PING_TIMEOUT = timedelta(days=30)
+MAX_PINGME_CREATE_POLL_LENGTH = timedelta(days=30)
+MAX_PINGME_CREATE_THRESHOLD = 100
+
+
+async def changePingablePrefix(prefix: str, guild: discord.Guild, roleID: int, roleName: str):
+    role = guild.get_role(roleID)
+    if role:
+        await role.edit(name=prefix + roleName.title(), reason="pingme role prefix updated via admin command")
 
 
 class PingablesCog(commands.Cog):
@@ -57,7 +67,7 @@ class PingablesCog(commands.Cog):
                 await ctx.message.reply("that role is not pingable!")
             else:
                 db.delete("pingable_roles", {"role_id": role.id})
-                await ctx.message.reply("The role is no longer registered for `!pingme`!")
+                await ctx.message.reply("✅ Role successfully unregistered for `!pingme`.")
                 await self.bot.adminLog(ctx.message, {"!pingme Role Unregistered", "Role: " + role.mention})
 
 
@@ -134,14 +144,138 @@ class PingablesCog(commands.Cog):
         await self.bot.adminLog(ctx.message, {"Cooldown For !pingme Role Pings Updated": lib.timeUtil.td_format_noYM(timeoutTD)})
 
 
+    @commands.command(name="set-pingme-create-threshold", usage="set-pingme-create-threshold <num_votes>", help="Set minimum number of votes required to create a new role during !pingme create")
+    @commands.has_permissions(administrator=True)
+    async def cmd_set_pingme_create_threshold(self, ctx: Context, *, args: str):
+        if not args:
+            await ctx.message.reply(":x: Please give the new threshold!")
+        elif not lib.stringTyping.strIsInt(args):
+            await ctx.message.reply(":x: Invalid threshold! It must be a number.")
+        elif int(args) < 1 or int(args) > MAX_PINGME_CREATE_THRESHOLD:
+            await ctx.message.reply(":x: Invalid threshold! It must be between 1 and " + str(MAX_PINGME_CREATE_THRESHOLD) + ", inclusive.")
+        else:
+            db_gateway().update("guild_info", {"pingme_create_threshold": int(args)}, {"guild_id": ctx.guild.id})
+            await ctx.message.reply("✅ Minimum votes for `!pingme create` successfully updated to " + args + " users.")
+            await self.bot.adminLog(ctx.message, {"Votes Required For !pingme create Updated": "Minimum votes for new roles: " + args})
+
+
+    @commands.command(name="set-pingme-create-poll-length", usage="set-pingme-create-poll-length [seconds=seconds] [minutes=minutes] [hours=hours] [days=days]", help="Set the amount of time which !pingme create polls run for")
+    @commands.has_permissions(administrator=True)
+    async def cmd_set_pingme_create_poll_length(self, ctx: Context, *, args: str):
+        if not args:
+            await ctx.message.reply(":x: Please give the new cooldown!")
+            return
+
+        argsSplit = args.split(" ")
+        kwArgs = {}
+        for arg in argsSplit:
+            arg = arg.strip().lower()
+            for kwArg in ["days=", "hours=", "seconds=", "minutes="]:
+                if arg.startswith(kwArg):
+                    kwArgs[kwArg[:-1]] = arg[len(kwArg):]
+                    break
+        
+        timeoutDict = {}
+        for timeName in ["days", "hours", "minutes", "seconds"]:
+            if timeName in kwArgs:
+                if not lib.stringTyping.strIsInt(kwArgs[timeName]) or int(kwArgs[timeName]) < 1:
+                    await ctx.message.reply(":x: Invalid number of " + timeName + "!")
+                    return
+
+                timeoutDict[timeName] = int(kwArgs[timeName])
+        
+        timeoutTD = lib.timeUtil.timeDeltaFromDict(timeoutDict)
+        if timeoutTD > MAX_PINGME_CREATE_POLL_LENGTH:
+            await ctx.message.reply(":x: The maximum `!pingme create` poll length is " + lib.timeUtil.td_format_noYM(MAX_ROLE_PING_TIMEOUT))
+            return
+        
+        db_gateway().update("guild_info", {"pingme_create_poll_length_seconds": int(timeoutTD.total_seconds())}, {"guild_id": ctx.guild.id})
+        await ctx.message.reply("✅ Poll length for `!pingme create` successfully updated to " + lib.timeUtil.td_format_noYM(timeoutTD) + ".")
+        await self.bot.adminLog(ctx.message, {"Poll length For !pingme create Pings Updated": lib.timeUtil.td_format_noYM(timeoutTD)})
+
+
+    @commands.command(name="set-pingme-role-emoji", usage="set-pingme-role-emoji <emoji>", help="Set the emoji which appears before the names of !pingme roles. Must be a built in emoji, not custom.")
+    @commands.has_permissions(administrator=True)
+    async def cmd_set_pingme_role_emoji(self, ctx: Context, *, args: str):
+        if not args:
+            await ctx.message.reply(":x: Please give the new emoji!")
+        elif not lib.emotes.strIsUnicodeEmoji(args):
+            await ctx.message.reply(":x: Invalid emoji! Make sure it's a built in one rather than custom.")
+        else:
+            db = db_gateway()
+            db.update("guild_info", {"pingme_role_emoji": args}, {"guild_id": ctx.guild.id})
+            rolesData = db.get("pingable_roles", {"guild_id": ctx.guild.id})
+            if rolesData:
+                progressMsg = await ctx.send("Renaming " + str(len(rolesData)) + " roles... ⏳")
+                renamerTasks = set()
+                for roleData in rolesData:
+                    renamerTasks.add(changePingablePrefix(args, ctx.guild, roleData["role_id"], roleData["name"]))
+                
+                await asyncio.wait(renamerTasks)
+                await progressMsg.edit(content="Renaming " + str(len(rolesData)) + " roles... ✅")
+
+            await ctx.message.reply("Emoji prefix for `!pingme create` roles now updated to \" + args + "!")
+            await self.bot.adminLog(ctx.message, {"Emoji Prefix For !pingme roles Updated": "New emoji: \" + args})
+
+
+    @commands.command(name="remove-pingme-role-emoji", usage="remove-pingme-role-emoji <emoji>", help="Remove the emoji which appears before the names of !pingme roles.")
+    @commands.has_permissions(administrator=True)
+    async def cmd_remove_pingme_role_emoji(self, ctx: Context, *, args: str):
+        db = db_gateway()
+        guildData = db.get("guild_info", {"guild_id": ctx.guild.id})
+        if guildData["pingme_role_emoji"] is None:
+            await ctx.message.reply(":x: There is no `!pingme` role emoji set!")
+        else:
+            db.update("guild_info", {"pingme_role_emoji": None}, {"guild_id": ctx.guild.id})
+            rolesData = db.get("pingable_roles", {"guild_id": ctx.guild.id})
+            if rolesData:
+                progressMsg = await ctx.send("Renaming " + str(len(rolesData)) + " roles... ⏳")
+                renamerTasks = set()
+                for roleData in rolesData:
+                    renamerTasks.add(changePingablePrefix("", ctx.guild, roleData["role_id"], roleData["name"]))
+                
+                await asyncio.wait(renamerTasks)
+                await progressMsg.edit(content="Renaming " + str(len(rolesData)) + " roles... ✅")
+
+            await ctx.message.reply("Emoji prefix for `!pingme create` roles has been removed!")
+            await self.bot.adminLog(ctx.message, {"Emoji Prefix For !pingme roles Removed": "‎"})
+
+
     @commands.group(name="pingme", invoke_without_command=True)
     async def pingme(self, ctx: Context, *, args: str):
-        await ctx.message.reply('Invalid sub command passed...')
-        # await ctx.message.reply("No subcommand given")
+        pass
+
 
     @pingme.command(name="create", help="Start a poll for the creation of a new !pingme role")
     async def pingme_create(self, ctx: Context, *, args: str):
-        await ctx.message.reply("creating")
+        if not args:
+            await ctx.message.reply(":x: Please give the name of your new role!")
+        else:
+            db =  db_gateway()
+            roleData = db.get("pingable_roles", {"name": args.lower()})
+            if roleData and roleData[0]["guild_id"] == ctx.guild.id:
+                await ctx.message.reply(":x: A `!pingme` role already exists with that name!")
+            else:
+                pollMsg = await ctx.send("‎")
+                guildData = db.get("guild_info", {"guild_id": ctx.guild.id})[0]
+                requiredVotes = guildData["pingme_create_threshold"]
+                rolePoll = reactionPollMenu.InlineSingleOptionPollMenu(pollMsg, guildData["pingme_create_poll_length_seconds"], requiredVotes,
+                                                                        pollStarter=ctx.author, authorName=ctx.author.display_name + " wants to make a new !pingme role!",
+                                                                        desc="Name: " + args + "\nRequired votes: " + str(requiredVotes) + "\n\nReact if you want the role to be created!",
+                                                                        footerTxt="This menu will expire in " + lib.timeUtil.td_format_noYM(timedelta(seconds=guildData["pingme_create_poll_length_seconds"])) + ".")
+                await rolePoll.doMenu()
+                if rolePoll.yesesReceived >= requiredVotes:
+                    roleName = (guildData["pingme_role_emoji"] + args.title()) if guildData["pingme_role_emoji"] else args.title()
+                    newRole = await ctx.guild.create_role(name=roleName, colour=DEFAULT_PINGABLE_COLOUR, mentionable=True, reason="New !pingme role creation requested via poll")
+                    db.insert("pingable_roles", {"name": args.lower(), "guild_id": ctx.guild.id, "role_id": newRole.id,
+                                                "on_cooldown": False, "last_ping": -1, "ping_count": 0,
+                                                "monthly_ping_count": 0, "creator_id": ctx.author.id, "colour": DEFAULT_PINGABLE_COLOUR})
+                    await ctx.message.reply("✅ The role has been created! Get it with `!pingme for " + args.lower() + "`")
+                    await self.bot.adminLog(pollMsg, {"New !pingme Role Created": "Role: " + newRole.mention + "\nName: " + args})
+                else:
+                    await pollMsg.reply(ctx.author.mention + " The role has not been created, as the poll did not receive enough votes.")
+                await pollMsg.edit(content="This poll has now ended.", embed=rolePoll.getMenuEmbed())
+
 
     @pingme.command(name="for", usage="pingme for <role name or alias>", help="Get yourself a !pingme role, to be notified about events and games.")
     async def pingme_for(self, ctx: Context, *, args: str):

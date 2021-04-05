@@ -194,3 +194,72 @@ class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
                                 value="If you vote for more than one option, only one will be counted.", inline=False)
 
         return baseEmbed
+
+
+class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
+    """A poll menu which automatically ends if the required number of votes are met.
+    """
+    def __init__(self, msg: Message, timeoutSeconds: int, requiredVotes: int,
+                    pollStarter : Union[User, Member] = None, titleTxt : str = "", desc : str = "",
+                    col : Colour = Colour.blue(), footerTxt : str = "", img : str = "", thumb : str = "",
+                    icon : str = None, authorName : str = ""):
+        """
+        :param discord.Message msg: the message where this menu is embedded
+        :param int timeoutSeconds: The number of seconds until the poll ends
+        :param int requiredVotes: If this many users vote yes, the poll ends immediately
+        :param discord.Member pollStarter: The user who started the poll, for printing in the menu embed.
+                                            Optional. (Default None)
+        :param str titleTxt: The content of the embed title (Default "")
+        :param str desc: he content of the embed description; appears at the top below the title (Default "")
+        :param discord.Colour col: The colour of the embed's side strip (Default None)
+        :param str footerTxt: Secondary description appearing in darker font at the bottom of the embed
+                                (Default time until menu expiry)
+        :param str img: URL to a large icon appearing as the content of the embed, left aligned like a field (Default "")
+        :param str thumb: URL to a larger image appearing to the right of the title (Default "")
+        :param str icon: URL to a smaller image to the left of authorName. AuthorName is required for this to be displayed.
+                        (Default author profile picture)
+        :param str authorName: Secondary, smaller title for the embed. icon is required for this to be displayed.
+                                (Default "Poll")
+        """
+        if pollStarter is not None and authorName == "":
+            authorName = str(pollStarter) + " started a poll!"
+        else:
+            authorName = authorName if authorName else "Poll"
+
+        if icon is None and pollStarter is not None:
+            icon = str(pollStarter.avatar_url_as(size=64))
+        else:
+            icon = icon if icon else BALLOT_BOX_IMAGE
+
+        if desc == "":
+            desc = "React to this message to vote!\nRequired votes: " + str(requiredVotes)
+        else:
+            desc = "*" + desc + "*"
+
+        self.yesOption = reactionMenu.DummyReactionMenuOption("Yes!", lib.emotes.Emote(unicode="👍"))
+        self.yesesReceived = 0
+        self.requiredVotes = requiredVotes
+        pollOptions = {self.yesOption.emoji: self.yesOption}
+
+        super().__init__(lib.client.instance(), msg, pollStarter, timeoutSeconds,
+                            options=pollOptions, titleTxt=titleTxt, desc=desc, col=col, footerTxt=footerTxt, img=img,
+                            thumb=thumb, icon=icon, authorName=authorName)
+
+
+    def reactionClosesMenu(self, reactPL: RawReactionActionEvent) -> bool:
+        """Decide whether a reaction should trigger the expiry of the menu.
+        The reaction should be given in the form of a RawReactionActionEvent payload, from a discord.on_raw_reaction_add event
+
+        :param discord.RawReactionActionEvent reactPL: The raw payload representing the reaction addition
+        :return: True if the reaction should close the menu. I.e, a returnTrigger emoji was added by the targetMember.
+        :rtype: bool
+        """
+        try:
+            if reactPL.message_id == self.msg.id and reactPL.user_id == self.targetMember.id and \
+                    lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True) == self.yesOption.emoji:
+                self.yesesReceived += 1
+                return self.yesesReceived >= self.requiredVotes
+            return False
+                    
+        except lib.exceptions.UnrecognisedEmoji:
+            return False

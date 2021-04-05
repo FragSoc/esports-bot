@@ -16,8 +16,15 @@ from typing import Set
 
 
 DEFAULT_ROLE_PING_COOLDOWN = timedelta(hours=5)
+DEFAULT_PINGME_CREATE_POLL_LENGTH = timedelta(hours=1)
+DEFAULT_PINGME_CREATE_THRESHOLD = 6
 client = lib.client.instance()
 client.remove_command('help')
+
+
+def make_guild_init_data(guild: discord.Guild) -> dict:
+    return {'guild_id': guild.id, 'num_running_polls': 0, 'role_ping_cooldown_seconds': int(DEFAULT_ROLE_PING_COOLDOWN.total_seconds()),
+            "pingme_create_threshold": DEFAULT_PINGME_CREATE_THRESHOLD, "pingme_create_poll_length_seconds": int(DEFAULT_PINGME_CREATE_POLL_LENGTH.total_seconds())}
 
 
 async def send_to_log_channel(guild_id, msg):
@@ -36,7 +43,7 @@ async def on_ready():
 @client.event
 async def on_guild_join(guild):
     print(f"Joined the guild: {guild.name}")
-    db_gateway().insert('guild_info', params={'guild_id': guild.id})
+    db_gateway().insert('guild_info', params=make_guild_init_data(guild))
 
 
 @client.event
@@ -187,8 +194,7 @@ async def initialsetup(ctx):
     if already_in_db:
         await ctx.channel.send("This server is already set up")
     else:
-        db_gateway().insert('guild_info', params={
-            'guild_id': ctx.author.guild.id, 'num_running_polls': 0, 'role_ping_cooldown_seconds': int(DEFAULT_ROLE_PING_COOLDOWN.total_seconds())})
+        db_gateway().insert('guild_info', make_guild_init_data(ctx.guild))
         await ctx.channel.send("This server has now been initialised")
 
 
