@@ -252,4 +252,7 @@ On command use, a poll will be created. If a minimum number of votes is reached,
 ##### !pingme for {name}
 User command adding or removing the `!pingme` role with the given name to/from the user.
 
+##### !pingme clear
+User command removing all `!pingme` roles from the user.
+
 </details>
