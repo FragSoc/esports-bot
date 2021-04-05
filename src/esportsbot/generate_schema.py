@@ -34,6 +34,7 @@ def generate_schema():
         # Does not exist
         query_string = """
         CREATE TABLE pingable_roles(
+            name text NOT NULL,
             guild_id bigint NOT NULL,
             role_id bigint NOT NULL,
             on_cooldown boolean NOT NULL,
@@ -43,6 +44,7 @@ def generate_schema():
             creator_id bigint NOT NULL,
             colour int NOT NULL
         );
+        
         ALTER TABLE ONLY pingable_roles
             ADD CONSTRAINT roleid_pkey PRIMARY KEY(role_id);
         ALTER TABLE ONLY pingable_roles
