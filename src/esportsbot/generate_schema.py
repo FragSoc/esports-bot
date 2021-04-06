@@ -39,7 +39,9 @@ def generate_schema():
             signin_menu_id bigint NOT NULL
         );
         ALTER TABLE ONLY event_categories
-        ADD CONSTRAINT eventname_pkey PRIMARY KEY(guild_id, event_name);
+            ADD CONSTRAINT eventname_pkey PRIMARY KEY(guild_id, event_name);
+        ALTER TABLE ONLY event_categories
+            ADD CONSTRAINT guildid_fkey FOREIGN KEY(guild_id) REFERENCES guild_info(guild_id);
         """
         db_gateway().pure_query(query_string)
 

@@ -10,6 +10,7 @@ import os
 import discord
 from . import lib
 from datetime import datetime
+import traceback
 
 
 client = lib.client.instance()
@@ -189,6 +190,7 @@ async def on_command_error(ctx: Context, exception: Exception):
         except AttributeError:
             sourceStr += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
         print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught " + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
+        traceback.print_exception(type(exception), exception, exception.__traceback__)
 
 
 @client.command()
@@ -216,7 +218,7 @@ def launch():
     client.load_extension('esportsbot.cogs.LogChannelCog')
     client.load_extension('esportsbot.cogs.AdminCog')
     client.load_extension('esportsbot.cogs.MenusCog')
-    client.load_extension('esportsbot.cogs.AutoLANCog')
+    client.load_extension('esportsbot.cogs.EventCategoriesCog')
     if os.getenv('ENABLE_TWITTER') == "True":
         client.load_extension('esportsbot.cogs.TwitterIntegrationCog')
     if os.getenv('ENABLE_TWITCH') == "True":
