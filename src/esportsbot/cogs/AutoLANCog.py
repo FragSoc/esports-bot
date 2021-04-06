@@ -13,122 +13,137 @@ class AutoLANCog(commands.Cog):
         self.bot: "EsportsBot" = bot
 
 
-    async def verifyLANSettings(self, ctx, guildData):
-        for att, name, cmd in ( (None if ("lan_signin_menu_id" not in guildData or \
-                                            guildData["lan_signin_menu_id"] is None or \
-                                            guildData["lan_signin_menu_id"] not in self.bot.reactionMenus) else 1,
-                                            "LAN signin menu", "set-lan-signin-menu"),
-                                (guildData["shared_role_id"],                   "shared role",      "set-shared-role"),
-                                (ctx.guild.get_role(guildData["shared_role_id"]), "shared role",    "set-shared-role"),
-                                (guildData["lan_role_id"],                      "LAN role",         "set-lan-role"),
-                                (ctx.guild.get_role(guildData["lan_role_id"]),  "LAN role",         "set-lan-role")):
-            if att is None:
-                await ctx.send(":x: No " + name + " has been set for this server, or it no longer exists!\n" \
-                                + "Use the `" + self.bot.command_prefix + cmd + "` command to set one.")
-                return False
-        return True
+    async def getGuildEventSettings(self, ctx, eventName):
+        db = db_gateway()
+        guildData = db.get("guild_info", params={"guild_id": ctx.guild.id})[0]
+        if not guildData["shared_role_id"]:
+            await ctx.message.reply(f":x: No shared role has been set for this server! Use the `{self.bot.command_prefix}set-shared-role` command to set one.")
+        else:
+            eventData = db.get("event_channels", params={"guild_id": ctx.guild.id, "event_name": eventName})[0]
+            if not eventData:
+                if not (allEvents := db.get("event_channels", params={"guild_id": ctx.guild.id})):
+                    await ctx.message.reply(":x: This server doesn't have any event categories registered!")
+                else:
+                    await ctx.message.reply(":x: Unrecognised event. The following events exist in this server: " + ", ".join(e["event_name"].title() for e in allEvents))
+            else:
+                return (guildData, eventData)
+        return ()
 
     
-    @commands.command(name="open-lan", usage="open-lan", help="Reveal the LAN signin channel of the server.")
+    @commands.command(name="open-event", usage="open-event <event name>", help="Reveal the signin channel for the named event channel.")
     @commands.has_permissions(administrator=True)
-    async def admin_cmd_open_lan(self, ctx: Context):
-        guildData = db_gateway().get('guild_info', params={"guild_id": ctx.guild.id})[0]
-        if await self.verifyLANSettings(ctx, guildData):
-            signinMenu = self.bot.reactionMenus[guildData["lan_signin_menu_id"]]
-            lanChannel = signinMenu.msg.channel
-            if not lanChannel.permissions_for(ctx.guild.me).manage_permissions:
-                await ctx.send(":x: I don't have permission to edit the permissions in <#" + str(lanChannel.id) + ">!")
+    async def admin_cmd_open_event(self, ctx: Context, *, args):
+        if not args:
+            await ctx.message.reply(":x: Please give the name of the event you'd like to open!")
+        elif allData := await self.getGuildEventSettings(ctx, args.lower()):
+            guildData, eventData = allData
+            eventName = args.lower()
+            signinMenu = self.bot.reactionMenus[eventData["signin_menu_id"]]
+            eventChannel = signinMenu.msg.channel
+            if not eventChannel.permissions_for(ctx.guild.me).manage_permissions:
+                await ctx.send(":x: I don't have permission to edit the permissions in <#" + str(eventChannel.id) + ">!")
             else:
                 sharedRole = ctx.guild.get_role(guildData["shared_role_id"])
-                if not lanChannel.overwrites_for(sharedRole).read_messages:
-                    await lanChannel.set_permissions(sharedRole, read_messages=True,
-                                                        reason=ctx.author.name + " used the " + self.bot.command_prefix + "open-lan command")
-                    await ctx.send("✅ <#" + str(lanChannel.id) + "> is now visible to **" + sharedRole.name + "**!")
-                    await self.bot.adminLog(ctx.message, {"LAN channel made visible": "<#" + str(lanChannel.id) + ">"})
+                if not eventChannel.overwrites_for(sharedRole).read_messages:
+                    await eventChannel.set_permissions(sharedRole, read_messages=True,
+                                                    reason=ctx.author.name + f" opened the {eventName} event via the {self.bot.command_prefix}open-event command")
+                    await ctx.send("✅ <#" + str(eventChannel.id) + "> is now visible to **" + sharedRole.name + "**!")
+                    await self.bot.adminLog(ctx.message, {"Event signin channel made visible": "<#" + str(eventChannel.id) + ">"})
                 else:
-                    await ctx.send(":x: The lan channel is already open! <#" + str(lanChannel.id) + ">")
+                    await ctx.send(f":x: The {eventName} signin channel is already open! <#{eventChannel.id!s}>")
 
 
-    @commands.command(name="close-lan", usage="close-lan",
-                        help="Hide the LAN signin channel of the server, reset the signin menu, and remove the LAN role from users.")
+    @commands.command(name="close-event", usage="close-event <event name>",
+                        help="Hide the signin channel for the named event, reset the signin menu, and remove the event's role from users.")
     @commands.has_permissions(administrator=True)
-    async def admin_cmd_close_lan(self, ctx: Context):
-        guildData = db_gateway().get('guild_info', params={"guild_id": ctx.guild.id})[0]
-        if await self.verifyLANSettings(ctx, guildData):
-            signinMenu = self.bot.reactionMenus[guildData["lan_signin_menu_id"]]
-            lanChannel = signinMenu.msg.channel
-            myPerms = lanChannel.permissions_for(ctx.guild.me)
+    async def admin_cmd_close_event(self, ctx: Context, *, args):
+        if not args:
+            await ctx.message.reply(":x: Please give the name of the event you'd like to open!")
+        elif allData := await self.getGuildEventSettings(ctx, args.lower()):
+            guildData, eventData = allData
+            signinMenu = self.bot.reactionMenus[eventData["signin_menu_id"]]
+            eventChannel = signinMenu.msg.channel
+            myPerms = eventChannel.permissions_for(ctx.guild.me)
             if not myPerms.manage_permissions:
-                await ctx.send(":x: I don't have permission to edit the permissions in <#" + str(lanChannel.id) + ">!")
+                await ctx.send(f":x: I don't have permission to edit the permissions in <#{eventChannel.id!s}>!")
             elif not myPerms.manage_roles:
                 await ctx.send(":x: I don't have permission to assign roles!\nPlease give me the 'manage roles' permission.")
             else:
-                lanRole = ctx.guild.get_role(guildData["lan_role_id"])
-                if lanRole.position >= ctx.guild.self_role.position:
-                    await ctx.send(":x: I don't have permission to unassign the **" + lanRole.name + "** role!\n" \
-                                    + "Please move it below my " + ctx.guild.self_role.name + " role.")
+                eventRole = ctx.guild.get_role(eventData["role_id"])
+                if eventRole.position >= ctx.guild.self_role.position:
+                    await ctx.send(f":x: I don't have permission to unassign the **{eventRole.name}** role!\n" \
+                                    + f"Please move it below my {ctx.guild.self_role.name} role.")
                 else:
+                    eventName = args.lower()
                     sharedRole = ctx.guild.get_role(guildData["shared_role_id"])
-                    channelEdited = lanChannel.overwrites_for(sharedRole).read_messages
-                    usersEdited = len(lanRole.members)
+                    channelEdited = eventChannel.overwrites_for(sharedRole).read_messages
+                    usersEdited = len(eventRole.members)
                     # signinMenu.msg = await signinMenu.msg.channel.fetch_message(signinMenu.msg.id)
                     menuReset = True # len(signinMenu.msg.reactions) > 1
 
-                    if True not in [channelEdited, usersEdited, menuReset]:
-                        await ctx.message.reply("Nothing to do!\n*(<#" + str(signinMenu.msg.channel.id) + "> already invisible to " + sharedRole.name + ", no reactions on signin menu, no users with " + lanRole.name + " role)*")
-                        return
+                    if True not in (channelEdited, usersEdited, menuReset):
+                        await ctx.message.reply(f"Nothing to do!\n*(<#{signinMenu.msg.channel.id!s}> already invisible to {sharedRole.name}, no reactions on signin menu, no users with {eventRole.name} role)*")
+                    else:
+                        loadingTxts = ("Closing channel... " + ("⏳" if channelEdited else "✅"),
+                                        "Unassigning role" + ((" from " + str(usersEdited) + " users... ⏳") if usersEdited else "... ✅"),
+                                        "Resetting signin menu... " + ("⏳" if menuReset else "✅"))
+                        loadingMsg = await ctx.send("\n".join(loadingTxts))
+                        adminActions = {"Event Closed": f"Event name: {eventName}",
+                                        "Role menu reset": f"id: {signinMenu.msg.id!s}\ntype: {type(signinMenu).__name__}\n[Menu]({signinMenu.msg.jump_url})"}
 
-                    loadingTxts = ["Closing channel... " + ("⏳" if channelEdited else "✅"),
-                                    "Unassigning role" + ((" from " + str(usersEdited) + " users... ⏳") if usersEdited else "... ✅"),
-                                    "Resetting signin menu... " + ("⏳" if menuReset else "✅")]
-                    loadingMsg = await ctx.send("\n".join(loadingTxts))
-                    adminActions = {"Role menu reset": "id: " + str(signinMenu.msg.id) + "\ntype: " + type(signinMenu).__name__ + "\n[Menu](" + signinMenu.msg.jump_url + ")"}
+                        if channelEdited:
+                            await eventChannel.set_permissions(sharedRole, read_messages=False,
+                                                                reason=f"{ctx.author.name} closed the {eventName} event via {self.bot.command_prefix}close-event command")
+                            loadingTxts[0] = loadingTxts[0][:-1] + "✅"
+                            asyncio.create_task(loadingMsg.edit(content="\n".join(loadingTxts)))
+                            adminActions["Event Channel Made Invisible"] = f"<#{eventChannel.id!s}>"
+                        membersFutures = set()
+                        for member in eventRole.members:
+                            membersFutures.add(asyncio.create_task(member.remove_roles(eventRole, reason=f"{ctx.author.name} closed the {eventName} event via {self.bot.command_prefix}close-event command")))
+                        
+                        if menuReset:
+                            await signinMenu.updateMessage()
+                            loadingTxts[2] = loadingTxts[2][:-1] + "✅"
+                            await loadingMsg.edit(content="\n".join(loadingTxts))
 
-                    if channelEdited:
-                        await lanChannel.set_permissions(sharedRole, read_messages=False,
-                                                            reason=ctx.author.name + " used the " + self.bot.command_prefix + "close-lan command")
-                        loadingTxts[0] = loadingTxts[0][:-1] + "✅"
-                        asyncio.ensure_future(loadingMsg.edit(content="\n".join(loadingTxts)))
-                        adminActions["LAN Channel Made Invisible"] = "<#" + str(lanChannel.id) + ">"
-                    membersFutures = set()
-                    for member in lanRole.members:
-                        membersFutures.add(asyncio.ensure_future(member.remove_roles(lanRole, reason=ctx.author.name + " used the " + self.bot.command_prefix + "close-lan command")))
-                    
-                    if menuReset:
-                        await signinMenu.updateMessage()
-                        loadingTxts[2] = loadingTxts[2][:-1] + "✅"
-                        await loadingMsg.edit(content="\n".join(loadingTxts))
-
-                    if usersEdited:
-                        await asyncio.wait(membersFutures)
-                        loadingTxts[1] = loadingTxts[1][:-1] + "✅"
-                        await loadingMsg.edit(content="\n".join(loadingTxts))
-                        adminActions["LAN Role Removed"] = "Users: " + str(usersEdited) + "\n<@&" + str(lanRole.id) + ">"
-                    await ctx.message.reply("Done!")
-                    await self.bot.adminLog(ctx.message, adminActions)
+                        if usersEdited:
+                            await asyncio.wait(membersFutures)
+                            loadingTxts[1] = loadingTxts[1][:-1] + "✅"
+                            await loadingMsg.edit(content="\n".join(loadingTxts))
+                            adminActions["Event Role Removed"] = f"Users: {usersEdited!s}\n<@&{eventRole.id!s}>"
+                        await ctx.message.reply("Done!")
+                        await self.bot.adminLog(ctx.message, adminActions)
 
 
-    @commands.command(name="set-lan-signin-menu", usage="set-lan-signin-menu <id>", help="Set the LAN signin menu to use with `open-lan` and `close-lan`.")
+    @commands.command(name="set-event-signin-menu", usage="set-event-signin-menu <id> <event name>",
+                        help="Change the event signin menu to use with `open-event` and `close-event`.")
     @commands.has_permissions(administrator=True)
-    async def admin_cmd_set_lan_signin_menu(self, ctx: Context, *, args: str):
-        if not args:
-            await ctx.send(":x: Please provide a menu ID to set!")
+    async def admin_cmd_set_event_signin_menu(self, ctx: Context, *, args: str):
+        if len(args.split(" ") < 2):
+            await ctx.send(":x: Please provide a menu ID and event name!")
         else:
-            if not lib.stringTyping.strIsInt(args):
+            menuID = args.split(" ")[0]
+            if not lib.stringTyping.strIsInt(menuID):
                 await ctx.send(":x: Invalid menu ID!\nTo get a menu ID, enable discord's developer mode, right click on the menu, and click 'copy ID'")
+            elif int(menuID) not in self.bot.reactionMenus:
+                await ctx.send(f":x: Unrecognised menu ID: {menuID}")
             else:
-                menuID = int(args)
-                if menuID not in self.bot.reactionMenus:
-                    await ctx.send(":x: Unrecognised menu ID!")
+                eventName = args[len(menuID)+1:].lower()
+                db = db_gateway()
+                if not db.get("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName}):
+                    if not (allEvents := db.get("event_channels", params={"guild_id": ctx.guild.id})):
+                        await ctx.message.reply(":x: This server doesn't have any event categories registered!")
+                    else:
+                        await ctx.message.reply(":x: Unrecognised event. The following events exist in this server: " + ", ".join(e["event_name"].title() for e in allEvents))
                 else:
-                    menu = self.bot.reactionMenus[menuID]
-                    db_gateway().update('guild_info', set_params={"lan_signin_menu_id": menuID}, where_params={"guild_id": ctx.guild.id})
-                    await ctx.send("✅ The LAN signin menu is now: " + menu.msg.jump_url)
-                    await self.bot.adminLog(ctx.message, {"LAN signin menu set": "id: " + str(menuID) + "\ntype: " + type(menu).__name__ + "\n[Menu](" + menu.msg.jump_url + ")"})
+                    menu = self.bot.reactionMenus[int(menuID)]
+                    db.update('event_channels', set_params={"signin_menu_id": menu.msg.id}, where_params={"guild_id": ctx.guild.id, "event_name": eventName})
+                    await ctx.send(f"✅ The {eventName} event signin menu is now: {menu.msg.jump_url}")
+                    await self.bot.adminLog(ctx.message, {"Event signin menu updated": f"Event name: {eventName}\nMenu id: {menuID}\ntype: {type(menu).__name__}\n[Menu]({menu.msg.jump_url})"})
 
 
     @commands.command(name="set-shared-role", usage="set-shared-role <role>",
-                        help="Set the role to admit/deny into the LAN signin menu. This should NOT be the same as your LAN role. Role can be given as either a mention or an ID.")
+                        help="Change the role to admit/deny into *all* event signin menus. This should NOT be the same as any event role. Role can be given as either a mention or an ID.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_set_shared_role(self, ctx: Context, *, args: str):
         if not args:
@@ -143,28 +158,37 @@ class AutoLANCog(commands.Cog):
                     await ctx.send(":x: Unrecognised role!")
                 else:
                     db_gateway().update('guild_info', set_params={"shared_role_id": roleID}, where_params={"guild_id": ctx.guild.id})
-                    await ctx.send("✅ The shared role is now **" + role.name + "**.")
-                    await self.bot.adminLog(ctx.message, {"Shared role set": "<@&" + str(roleID) + ">"})
+                    await ctx.send(f"✅ The shared role is now **{role.name}**.")
+                    await self.bot.adminLog(ctx.message, {"Shared role set": "<@&{roleID!s}>"})
 
 
-    @commands.command(name="set-lan-role", usage="set-lan-role <role>",
-                        help="Set the role to remove during `close-lan`. This should NOT be the same as your shared role. Role can be given as either a mention or an ID.")
+    @commands.command(name="set-event-role", usage="set-event-role <role> <event name>",
+                        help="Change the role to remove during `close-event`. This should NOT be the same as your shared role. Role can be given as either a mention or an ID.")
     @commands.has_permissions(administrator=True)
-    async def admin_cmd_set_lan_role(self, ctx: Context, *, args: str):
-        if not args:
+    async def admin_cmd_set_event_role(self, ctx: Context, *, args: str):
+        if len(args.split(" ") < 2):
             await ctx.send(":x: Please provide a role to set!")
         else:
-            if not (lib.stringTyping.strIsInt(args) or lib.stringTyping.strIsRoleMention(args)):
-                await ctx.send(":x: Invalid role! Please give your role as either a mention or an ID.")
+            roleStr = args.split(" ")[0]
+            if not (lib.stringTyping.strIsInt(roleStr) or lib.stringTyping.strIsRoleMention(roleStr)):
+                await ctx.send(f":x: Invalid role: {roleStr} Please give your role as either a mention or an ID.")
             else:
-                roleID = int(args.lstrip("<@&").rstrip(">"))
+                roleID = int(roleStr.lstrip("<@&").rstrip(">"))
                 role = ctx.guild.get_role(roleID)
                 if role is None:
                     await ctx.send(":x: Unrecognised role!")
                 else:
-                    db_gateway().update('guild_info', set_params={"lan_role_id": roleID}, where_params={"guild_id": ctx.guild.id})
-                    await ctx.send("✅ The LAN role is now **" + role.name + "**.")
-                    await self.bot.adminLog(ctx.message, {"LAN role set": "<@&" + str(roleID) + ">"})
+                    eventName = args[len(roleStr)+1:].lower()
+                    db = db_gateway()
+                    if not db.get("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName}):
+                        if not (allEvents := db.get("event_channels", params={"guild_id": ctx.guild.id})):
+                            await ctx.message.reply(":x: This server doesn't have any event categories registered!")
+                        else:
+                            await ctx.message.reply(":x: Unrecognised event. The following events exist in this server: " + ", ".join(e["event_name"].title() for e in allEvents))
+                    else:
+                        db.update('event_categories', set_params={"role_id": roleID}, where_params={"guild_id": ctx.guild.id, "event_name": eventName})
+                        await ctx.send(f"✅ The {eventName} event role is now **{role.name}**.")
+                        await self.bot.adminLog(ctx.message, {"Event role set": f"<@&{roleID!s}>"})
 
 
 def setup(bot):
