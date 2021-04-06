@@ -298,7 +298,7 @@ class PingablesCog(commands.Cog):
 
 
     @pingme.command(name="clear", usage="pingme clear", help="Unsubscribe from all !pingme roles, if you have any.") 
-    async def pingme_for(self, ctx: Context, *, args: str):
+    async def pingme_clear(self, ctx: Context, *, args: str):
         db = db_gateway()
         rolesToRemove = []
         for role in ctx.author.roles:
