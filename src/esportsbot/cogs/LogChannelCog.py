@@ -44,8 +44,7 @@ class LogChannelCog(commands.Cog):
         log_channel_exists = db_gateway().get(
             'guild_info', params={'guild_id': ctx.author.guild.id})
 
-        channel_id = log_channel_exists[0]['log_channel_id']
-        if channel_id:
+        if (channel_id := log_channel_exists[0]['log_channel_id']) is not None:
             await ctx.channel.send(self.STRINGS["channel_get"].format(channel_id=channel_id))
         else:
             await ctx.channel.send(self.STRINGS["channel_get_notfound"])
