@@ -130,6 +130,40 @@ List all the current Twitter handles configured in the server
 </details>
 
 <details>
+<summary>Event Channel Management</summary>
+
+### Event Category Management
+Each server can have any number of named event categories, each with a registered signin role menu granting an event specific role.
+
+##### !open-event {event_name}
+Set the event's signin channel as visible to the server's shared role.
+
+##### !close-event {event_name}
+Set the event's signin channel as invisible, remove the event's role from all users, and reset the event's signin menu.
+
+##### !register-event-category {menu_id} {@role or role_id} {event_name}
+Register an existing category and role as an event category, allowing you to use `!open-event` and `!close-event` with it.
+
+##### !create-event-category {event_name}
+Create a new event category with a signin menu, general text and voice channels, and an event role. This category will automatically be registered for use with `open-event` and `!close-event`
+
+##### !unregister-event-category {event_name}
+Unregister an event category and role, without deleting them from the server.
+
+##### !delete-event-category {event_name}
+Delete an event category from the server, including the category, channels and role. You will be asked for confirmation first.
+
+##### !set-event-signin-menu {menu_id} {event_name}
+Change the reaction menu to clear during `!close-event`. This will also tell the bot which channel to set visibility for during `!open-event`.
+
+##### !set-shared-role {@role or role_id}
+Change the role to deny signin channel visiblity to during `!close-event`. All users should have ths role.
+
+##### !set-event-role {@role or role_id} {event_name}
+Change the role to remove from users during `!close-event`.
+</details>
+
+<details>
 <summary>Twitch Integration</summary>
 
 ### Twitch Integration
@@ -165,7 +199,7 @@ Esportsbot now includes a slightly stripped down version of the reaction menus i
 
 Making new types of reaction menus is easy - simply extend `reactionMenus.reactionMenu.ReactionMenu`.
 
-To register a menu instance for interaction, use `lib.client.reactionMenus.add(yourMenuInstance)`. For an example of this, see `cogs.MenusCog.admin_cmd_make_role_menu`.
+To register a menu instance for interaction, use `client.reactionMenus.add(yourMenuInstance)`. For an example of this, see `cogs.MenusCog.admin_cmd_make_role_menu`.
 
 All saveable reaction menus are automatically added and removed from Esportsbot's PostgreSQL database, and will be loaded in again on bot startup. To register your `ReactionMenu` subclass as saveable, use the `reactionMenu.saveableMenu` class decorator. Saveable menus **MUST** provide complete `toDict` and `fromDict` implementations. For examples of this, see `reactionMenus.reactionRoleMenu`.
 

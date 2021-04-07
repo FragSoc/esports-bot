@@ -10,6 +10,7 @@ import os
 import discord
 from . import lib
 from datetime import datetime
+import traceback
 
 
 client = lib.client.instance()
@@ -137,7 +138,16 @@ async def on_raw_message_delete(payload: discord.RawMessageDeleteEvent):
     :param discord.RawMessageDeleteEvent payload: An event describing the message deleted.
     """
     if payload.message_id in client.reactionMenus:
-        client.reactionMenus.removeID(payload.message_id)
+        menu = client.reactionMenus[payload.message_id]
+        try:
+            client.reactionMenus.removeID(payload.message_id)
+        except KeyError:
+            pass
+        else:
+            await client.adminLog(None, {"Reaction menu deleted": "id: " + str(payload.message_id) \
+                                                + "\nchannel: <#" + str(menu.msg.channel.id) + ">"
+                                                + "\ntype: " + type(menu).__name__},
+                                    guildID=payload.guild_id)
 
 
 @client.event
@@ -149,7 +159,16 @@ async def on_raw_bulk_message_delete(payload: discord.RawBulkMessageDeleteEvent)
     """
     for msgID in payload.message_ids:
         if msgID in client.reactionMenus:
-            client.reactionMenus.removeID(msgID)
+            menu = client.reactionMenus[payload.message_id]
+            try:
+                client.reactionMenus.removeID(msgID)
+            except KeyError:
+                pass
+            else:
+                await client.adminLog(None, {"Reaction menu deleted": "id: " + str(payload.message_id) \
+                                                    + "\nchannel: <#" + str(menu.msg.channel.id) + ">"
+                                                    + "\ntype: " + type(menu).__name__},
+                                        guildID=payload.guild_id)
 
 
 @client.event
@@ -171,8 +190,9 @@ async def on_command_error(ctx: Context, exception: Exception):
                 + "/" + ctx.guild.name + "#" + str(ctx.guild.id)
         except AttributeError:
             sourceStr += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
-        print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught "
-                                      + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
+            
+        print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught " + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
+        traceback.print_exception(type(exception), exception, exception.__traceback__)
 
 
 @client.command()
@@ -200,6 +220,7 @@ def launch():
     client.load_extension('esportsbot.cogs.LogChannelCog')
     client.load_extension('esportsbot.cogs.AdminCog')
     client.load_extension('esportsbot.cogs.MenusCog')
+    client.load_extension('esportsbot.cogs.EventCategoriesCog')
     if os.getenv('ENABLE_TWITTER').lower() == 'true':
         client.load_extension('esportsbot.cogs.TwitterIntegrationCog')
     if os.getenv('ENABLE_TWITCH').lower() == 'true':
