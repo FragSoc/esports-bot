@@ -26,7 +26,7 @@ def strIsUnicodeEmoji(c: str) -> bool:
     return len(c) <= MAX_EMOJI_LEN and emoji.emoji_count(c) == 1
 
 
-def strIsCustomEmoji(s: str) -> bool:
+def strIsCustomEmoji(c: str) -> bool:
     """Decide whether the given string matches the formatting of a discord custom emoji,
     being <:NAME:ID> where NAME is the name of the emoji, and ID is the integer ID.
 
@@ -34,13 +34,13 @@ def strIsCustomEmoji(s: str) -> bool:
     :return: True if s 'looks like' a discord custom emoji, matching their structure. False otherwise.
     :rtype: bool
     """
-    if s.startswith("<") and s.endswith(">"):
+    if c.startswith("<") and c.endswith(">"):
         try:
-            first = s.index(":")
-            second = first + s[first + 1:].index(":") + 1
+            first = c.index(":")
+            second = first + c[first + 1:].index(":") + 1
         except ValueError:
             return False
-        return stringTyping.strIsInt(s[second + 1:-1])
+        return stringTyping.strIsInt(c[second + 1:-1])
     return False
 
 
