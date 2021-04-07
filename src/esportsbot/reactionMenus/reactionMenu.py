@@ -1,8 +1,7 @@
 import inspect
 from discord import Embed, Colour, NotFound, HTTPException, Forbidden, Member, User, Message, Role, RawReactionActionEvent, Client
-from discord.reaction import Reaction
 from .. import lib
-from abc import abstractclassmethod, abstractmethod
+from abc import abstractmethod
 from typing import Union, Dict, List, Any
 import asyncio
 from types import FunctionType
@@ -160,7 +159,8 @@ class ReactionMenuOption:
         return {"name": self.name, "emoji": self.emoji.toDict(**kwargs)}
 
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def fromDict(cls, data: dict, **kwargs) -> "ReactionMenuOption":
         """Deserialize a dictionary representation of a reaction menu option into a functioning ReactionMenuOption object.
         This is undefined for the base ReactionMenuOption class.
@@ -305,7 +305,7 @@ class ReactionMenu:
 
     def __init__(self, msg: Message, client: Client, options : Dict["lib.emotes.Emote", ReactionMenuOption] = None,
                  titleTxt : str = "", desc : str = "", col : Colour = Colour.blue(),
-                 footerTxt : str = "", img : str = "", thumb : str = "", icon : str = "",
+                 footerTxt : str = "", img : str = "", thumb : str = "", icon : str = None,
                  authorName : str = "", targetMember : Member = None, targetRole : Role = None):
         """
         :param discord.Message msg: the message where this menu is embedded
@@ -338,7 +338,7 @@ class ReactionMenu:
         self.footerTxt = footerTxt
         self.img = img
         self.thumb = thumb
-        self.icon = icon
+        self.icon = lib.discordUtil.EMPTY_IMAGE if icon is None and authorName else icon
         self.authorName = authorName
         self.targetMember = targetMember
         self.targetRole = targetRole
@@ -504,7 +504,8 @@ class ReactionMenu:
         return data
 
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def fromDict(cls, data: dict, **kwargs) -> "ReactionMenu":
         """Deserialize a dictionary representation of a reaction menu into a functioning ReactionMenu object.
         This is undefined for the base ReactionMenu class.
@@ -515,6 +516,84 @@ class ReactionMenu:
         :raise NotImplementedError: When calling on a non-saveable menu option type, such as the base ReactionMenu
         """
         raise NotImplementedError("Attempted to fromDict an unserializable menu type: " + cls.__name__)
+
+
+class InlineReactionMenu(ReactionMenu):
+    """An in-place menu solution.
+    
+    InlineReactionMenus do not need to be recorded in the reactionMenusDB, but instead have a
+    doMenu coroutine which should be awaited. Once execution returns, doMenu will return a list containing all of the
+    currently selected options.
+    
+    This menu style is only available for use by single users - hence the requirement for targetMember.
+    returnTriggers is given as a kwarg, but if no returnTriggers are given, then the menu will only expire due ot timeout.
+
+    :var returnTriggers: A list of options which, when selected, trigger the expiry of the menu.
+    :vartype returnTriggers: List[ReactionMenuOption]
+    :var timeoutSeconds: The number of seconds that this menu should last before timing out
+    :vartype timeoutSeconds: int
+    """
+
+    def __init__(self, client: Client, msg: Message, targetMember: Union[Member, User], timeoutSeconds: int,
+                 options: Dict["lib.emotes.Emote", ReactionMenuOption] = None,
+                 returnTriggers: List[ReactionMenuOption] = [], titleTxt: str = "", desc: str = "",
+                 col: Colour = Colour.blue(), footerTxt: str = "", img: str = "", thumb: str = "",
+                 icon: str = None, authorName: str = ""):
+        """
+        :param returnTriggers: A list of options which, when selected, trigger the expiry of the menu.
+        :type returnTriggers: List[ReactionMenuOption]
+        :param int timeoutSeconds: The number of seconds that this menu should last before timing out
+        """
+        if footerTxt == "":
+            footerTxt = "This menu will expire in " + str(timeoutSeconds) + " seconds."
+        super().__init__(msg, client, targetMember=targetMember, options=options, titleTxt=titleTxt, desc=desc, col=col,
+                            footerTxt=footerTxt, img=img, thumb=thumb, icon=icon, authorName=authorName)
+        self.returnTriggers = returnTriggers
+        self.timeoutSeconds = timeoutSeconds
+
+
+    def reactionClosesMenu(self, reactPL: RawReactionActionEvent) -> bool:
+        """Decide whether a reaction should trigger the expiry of the menu.
+        The reaction should be given in the form of a RawReactionActionEvent payload, from a discord.on_raw_reaction_add event
+
+        :param discord.RawReactionActionEvent reactPL: The raw payload representing the reaction addition
+        :return: True if the reaction should close the menu. I.e, a returnTrigger emoji was added by the targetMember.
+        :rtype: bool
+        """
+        try:
+            return reactPL.message_id == self.msg.id and reactPL.user_id == self.targetMember.id and \
+                    lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True) in self.returnTriggers
+        except lib.exceptions.UnrecognisedCustomEmoji:
+            return False
+
+
+    async def doMenu(self) -> List["lib.emotes.Emote"]:
+        """Coroutine that executes the menu.
+
+        Once execution returns to the calling thread, doMenu will have returned a list of emojis that
+        are currently selected by the targetMember. If your option behaviour removes any reactions,
+        these will not be present in the returned list.
+
+        :return: A list of emojis with which targetMember has reacted to the member with, at the time of expiry.
+        :rtype: List[lib.emotes.Emote]
+        """
+        await self.updateMessage()
+        try:
+            await lib.client.instance().wait_for("raw_reaction_add",
+                                                    check=self.reactionClosesMenu, timeout=self.timeoutSeconds)
+            self.msg.embeds[0].set_footer(text="This menu has now expired.")
+            await self.msg.edit(embed=self.msg.embeds[0])
+        except asyncio.TimeoutError:
+            await self.msg.edit(content="This menu has now expired. Please try the command again.")
+            return []
+        else:
+            self.msg = await self.msg.channel.fetch_message(self.msg.id)
+            results = []
+            for react in self.msg.reactions:
+                currentEmote = lib.emotes.Emote.fromReaction(react.emoji)
+                if self.targetMember in await react.users().flatten() and currentEmote in self.options:
+                    results.append(react)
+            return results
 
 
 saveableMenuTypeNames: Dict[type, str] = {}

@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from . import lib
 from .base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 from .generate_schema import generate_schema
 from .db_gateway import db_gateway
@@ -8,13 +9,20 @@ from discord.ext.commands.context import Context
 from discord import NotFound, HTTPException, Forbidden
 import os
 import discord
-from . import lib
-from datetime import datetime
-import traceback
+from datetime import datetime, timedelta
+import asyncio
 
 
+DEFAULT_ROLE_PING_COOLDOWN = timedelta(hours=5)
+DEFAULT_PINGME_CREATE_POLL_LENGTH = timedelta(hours=1)
+DEFAULT_PINGME_CREATE_THRESHOLD = 6
 client = lib.client.instance()
 client.remove_command('help')
+
+
+def make_guild_init_data(guild: discord.Guild) -> dict:
+    return {'guild_id': guild.id, 'num_running_polls': 0, 'role_ping_cooldown_seconds': int(DEFAULT_ROLE_PING_COOLDOWN.total_seconds()),
+            "pingme_create_threshold": DEFAULT_PINGME_CREATE_THRESHOLD, "pingme_create_poll_length_seconds": int(DEFAULT_PINGME_CREATE_POLL_LENGTH.total_seconds())}
 
 
 async def send_to_log_channel(guild_id, msg):
@@ -26,15 +34,14 @@ async def send_to_log_channel(guild_id, msg):
 
 @client.event
 async def on_ready():
-    client.init()
-    print('BOT: Bot is now active')
+    await client.init()
     await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="your commands"))
 
 
 @client.event
 async def on_guild_join(guild):
     print(f"Joined the guild: {guild.name}")
-    db_gateway().insert('guild_info', params={'guild_id': guild.id})
+    db_gateway().insert('guild_info', params=make_guild_init_data(guild))
 
 
 @client.event
@@ -190,9 +197,9 @@ async def on_command_error(ctx: Context, exception: Exception):
                 + "/" + ctx.guild.name + "#" + str(ctx.guild.id)
         except AttributeError:
             sourceStr += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
-            
-        print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught " + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
-        traceback.print_exception(type(exception), exception, exception.__traceback__)
+        print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught "
+                                      + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
+        lib.exceptions.print_exception_trace(exception)
 
 
 @client.command()
@@ -203,9 +210,36 @@ async def initialsetup(ctx):
     if already_in_db:
         await ctx.channel.send("This server is already set up")
     else:
-        db_gateway().insert('guild_info', params={
-            'guild_id': ctx.author.guild.id})
+        db_gateway().insert('guild_info', make_guild_init_data(ctx.guild))
         await ctx.channel.send("This server has now been initialised")
+
+
+@client.event
+async def on_message(message: discord.Message):
+    if message.guild is not None and message.role_mentions:
+        roleUpdateTasks = client.handleRoleMentions(message)
+        await client.process_commands(message)
+        if roleUpdateTasks:
+            await asyncio.wait(roleUpdateTasks)
+            for task in roleUpdateTasks:
+                if e := task.exception():
+                    lib.exceptions.print_exception_trace(e)
+    else:
+        await client.process_commands(message)
+
+
+@client.event
+async def on_guild_role_delete(role: discord.Role):
+    db = db_gateway()
+    if db.get("pingable_roles", {"role_id": role.id}):
+        db.delete("pingable_roles", {"role_id": role.id})
+        logEmbed = discord.Embed()
+        logEmbed.set_author(icon_url=client.user.avatar_url_as(size=64), name="Admin Log")
+        logEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
+        logEmbed.colour = discord.Colour.random()
+        for aTitle, aDesc in {"!pingme Role Deleted": "Role: " + role.mention + "\nName: " + role.name + "\nDeleting user unknown, please see the server's audit log."}.items():
+            logEmbed.add_field(name=str(aTitle), value=str(aDesc), inline=False)
+        await client.adminLog(None, embed=logEmbed)
 
 
 def launch():
@@ -220,6 +254,7 @@ def launch():
     client.load_extension('esportsbot.cogs.LogChannelCog')
     client.load_extension('esportsbot.cogs.AdminCog')
     client.load_extension('esportsbot.cogs.MenusCog')
+    client.load_extension('esportsbot.cogs.PingablesCog')
     client.load_extension('esportsbot.cogs.EventCategoriesCog')
     if os.getenv('ENABLE_TWITTER').lower() == 'true':
         client.load_extension('esportsbot.cogs.TwitterIntegrationCog')
