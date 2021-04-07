@@ -317,7 +317,7 @@ class PingablesCog(commands.Cog):
         rolesToRemove = []
         for role in ctx.author.roles:
             if db.get("pingable_roles", {"role_id": role.id}):
-                rolesToRemove.add(role)
+                rolesToRemove.append(role)
         if rolesToRemove:
             await ctx.author.remove_roles(*rolesToRemove, reason="User unsubscribed from !pingme role via command")
             await ctx.message.reply("✅ You unsubscribed from " + str(len(rolesToRemove)) + " roles!")
