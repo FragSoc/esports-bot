@@ -323,22 +323,35 @@ class EventCategoriesCog(commands.Cog):
                 else:
                     await ctx.message.reply(":x: Unrecognised event. The following events exist in this server: " + ", ".join(e["event_name"].title() for e in allEvents))
             else:
-                deletionReason = f"Event category '{eventName}' deletion requested via {self.bot.command_prefix}delete-event-category command"
                 signinMenuID = eventData[0]["signin_menu_id"]
-                eventRole = ctx.guild.get_role(eventData[0]["role_id"])
                 eventCategory = self.bot.reactionMenus[signinMenuID].msg.channel.category
-                self.bot.reactionMenus.removeID(signinMenuID)
                 numChannels = len(eventCategory.channels)
-                deletionTasks = set()
-                if eventRole:
-                    deletionTasks.add(asyncio.create_task(eventRole.delete(reason=deletionReason)))
-                for currentCategory in eventCategory.channels:
-                    deletionTasks.add(asyncio.create_task(currentCategory.delete(reason=deletionReason)))
-                deletionTasks.add(asyncio.create_task(eventCategory.delete(reason=deletionReason)))
-                await asyncio.wait(deletionTasks)
-                db.delete("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName})
-                await ctx.message.reply(f"✅ {eventName.title()} event category successfuly deleted.")
-                await self.bot.adminLog(ctx.message, {"Event Category Deleted": f"Event name: {eventName.title()}\nChannels deleted: {numChannels!s}\nRole deleted: #{eventData['role_id']!s}"})
+                eventRole = ctx.guild.get_role(eventData[0]["role_id"])
+                confirmMsg = await ctx.message.reply(f"React within 60 seconds: Are you sure you want to delete the '{eventName}' category" + (f", the {eventRole.name} role," if eventRole else "")" and the {numChannels!s} event channels?")
+                asyncio.create_task(confirmMsg.add_reaction('👍'))
+                asyncio.create_task(confirmMsg.add_reaction('👎'))
+                def confirmCheck(data: RawReactionActionEvent) -> bool:
+                    return data.message_id == confirmMsg.id and data.user_id == ctx.author.id and (data.emoji.is_unicode_emoji and data.emoji.name in ['👍', '👎'])
+
+                try:
+                    confirmResult = (await self.bot.wait_for("raw_reaction_add", check=confirmCheck, timeout=60)).emoji
+                except asyncio.TimeoutError:
+                    await confirmMsg.reply("Out of time, please try the command again.")
+                elif confirmResult.name == "👎":
+                    await ctx.send("Event category deletion cancelled.")
+                else:
+                    deletionReason = f"Event category '{eventName}' deletion requested via {self.bot.command_prefix}delete-event-category command"
+                    self.bot.reactionMenus.removeID(signinMenuID)
+                    deletionTasks = set()
+                    if eventRole:
+                        deletionTasks.add(asyncio.create_task(eventRole.delete(reason=deletionReason)))
+                    for currentCategory in eventCategory.channels:
+                        deletionTasks.add(asyncio.create_task(currentCategory.delete(reason=deletionReason)))
+                    deletionTasks.add(asyncio.create_task(eventCategory.delete(reason=deletionReason)))
+                    await asyncio.wait(deletionTasks)
+                    db.delete("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName})
+                    await ctx.message.reply(f"✅ {eventName.title()} event category successfuly deleted.")
+                    await self.bot.adminLog(ctx.message, {"Event Category Deleted": f"Event name: {eventName.title()}\nChannels deleted: {numChannels!s}\nRole deleted: #{eventData['role_id']!s}"})
 
 
 def setup(bot):
