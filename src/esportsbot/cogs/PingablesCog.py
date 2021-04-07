@@ -31,7 +31,7 @@ class PingablesCog(commands.Cog):
         pass
 
 
-    @pingme.command(name="regsiter", usage="pingme register <@role> <name>", help="Convert an existing role into a !pingme role")
+    @pingme.command(name="register", usage="pingme register <@role> <name>", help="Convert an existing role into a !pingme role")
     @commands.has_permissions(administrator=True)
     async def cmd_add_pingable_role(self, ctx: Context, *, args: str):
         argsSplit = args.split(" ")
