@@ -1,7 +1,7 @@
 from __future__ import annotations
 from . import reactionMenu
 from .. import lib
-from discord import Colour, Message, Embed, User, Member
+from discord import Colour, Message, Embed, User, Member, RawReactionActionEvent
 from typing import Dict, Union
 
 
