@@ -121,7 +121,8 @@ def generate_schema():
             guild_id bigint NOT NULL,
             channel_id bigint NOT NULL,
             twitch_handle character varying NOT NULL,
-            currently_live boolean NOT NULL
+            currently_live boolean NOT NULL,
+            custom_message character varying
         );
         ALTER TABLE public.twitch_info ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY(
             SEQUENCE NAME public.twitch_info_id_seq
@@ -136,10 +137,10 @@ def generate_schema():
         """
         db_gateway().pure_query(query_string)
 
-    # Does the twitch_info table exist?
-    twitch_info_exists = db_gateway().pure_return(
+    # Does the twitter_info table exist?
+    twitter_info_exists = db_gateway().pure_return(
         "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'twitter_info'")
-    if not twitch_info_exists:
+    if not twitter_info_exists:
         # Does not exist
         query_string = """
         CREATE TABLE public.twitter_info(

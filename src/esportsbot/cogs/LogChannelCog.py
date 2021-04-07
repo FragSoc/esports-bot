@@ -1,12 +1,13 @@
+import toml
 from discord.ext import commands
 from ..db_gateway import db_gateway
 from ..base_functions import get_cleaned_id
 from ..base_functions import send_to_log_channel
 
-
 class LogChannelCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.STRINGS = toml.load("../user_strings.toml")["logging"]
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -19,19 +20,23 @@ class LogChannelCog(commands.Cog):
             if log_channel_exists[0]['log_channel_id'] != cleaned_channel_id:
                 db_gateway().update('guild_info', set_params={
                     'log_channel_id': cleaned_channel_id}, where_params={'guild_id': ctx.author.guild.id})
-                mention_log_channel = self.bot.get_channel(
-                    cleaned_channel_id).mention
-                await ctx.channel.send(f"Logging channel has been set to {mention_log_channel}")
-                await send_to_log_channel(self, ctx.author.guild.id, f"{ctx.author.mention} has set this channel as the logging channel")
+                await ctx.channel.send(self.STRINGS["channel_set"].format(channel_id=cleaned_channel_id))
+                await send_to_log_channel(
+                    self, 
+                    ctx.author.guild.id, 
+                    self.STRINGS["channel_set_notify_in_channel"].format(author_mention=ctx.author.mention),
+                )
             else:
-                await ctx.channel.send("Logging channel already set to this channel")
+                await ctx.channel.send(self.STRINGS["channel_set_already"])
         else:
             db_gateway().insert('guild_info', params={
                 'guild_id': ctx.author.guild.id, 'log_channel_id': cleaned_channel_id})
-            mention_log_channel = self.bot.get_channel(
-                cleaned_channel_id).mention
-            await ctx.channel.send(f"Logging channel has been set to {mention_log_channel}")
-            await send_to_log_channel(self, ctx.author.guild.id, f"{ctx.author.mention} has set this channel as the logging channel")
+            await ctx.channel.send(self.STRINGS["channel_set"].format(channel_id=cleaned_channel_id))
+            await send_to_log_channel(
+                self, 
+                ctx.author.guild.id, 
+                self.STRINGS["channel_set_notify_in_channel"].format(author_mention=ctx.author.mention),
+            )
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -39,12 +44,10 @@ class LogChannelCog(commands.Cog):
         log_channel_exists = db_gateway().get(
             'guild_info', params={'guild_id': ctx.author.guild.id})
 
-        if log_channel_exists[0]['log_channel_id']:
-            mention_log_channel = self.bot.get_channel(
-                log_channel_exists[0]['log_channel_id']).mention
-            await ctx.channel.send(f"Logging channel is set to {mention_log_channel}")
+        if (channel_id := log_channel_exists[0]['log_channel_id']) is not None:
+            await ctx.channel.send(self.STRINGS["channel_get"].format(channel_id=channel_id))
         else:
-            await ctx.channel.send("Logging channel has not been set")
+            await ctx.channel.send(self.STRINGS["channel_get_notfound"])
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -55,9 +58,9 @@ class LogChannelCog(commands.Cog):
         if log_channel_exists[0]['log_channel_id']:
             db_gateway().update('guild_info', set_params={
                 'log_channel_id': 'NULL'}, where_params={'guild_id': ctx.author.guild.id})
-            await ctx.channel.send("Log channel has been removed")
+            await ctx.channel.send(self.STRINGS["channel_removed"])
         else:
-            await ctx.channel.send("Log channel has not been set")
+            await ctx.channel.send(self.STRINGS["channel_get_notfound"])
 
 
 def setup(bot):

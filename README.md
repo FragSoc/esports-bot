@@ -1,5 +1,9 @@
 # UoY Esport Bot Rewrite
 
+<a href="https://travis-ci.com/FragSoc/esports-bot"><img src="https://img.shields.io/travis/com/fragsoc/esports-bot?style=flat-square" /></a>
+<a href="https://hub.docker.com/r/fragsoc/esports-bot"><img src="https://img.shields.io/docker/pulls/fragsoc/esports-bot?style=flat-square" /></a>
+<a href="https://github.com/FragSoc/esports-bot"><img src="https://img.shields.io/github/license/fragsoc/esports-bot?style=flat-square" /></a>
+
 ## How to set up an instance of this bot
 
 1. Clone this repository:
@@ -157,6 +161,34 @@ Change the role to deny signin channel visiblity to during `!close-event`. All u
 
 ##### !set-event-role {@role or role_id} {event_name}
 Change the role to remove from users during `!close-event`.
+</details>
+
+<details>
+<summary>Twitch Integration</summary>
+
+### Twitch Integration
+
+##### !addtwitch {twitch_handle} {#channel or channel_id}
+Add a Twitch handle to notify in the specified channel when they go live
+
+##### !addcustomtwitch {twitch_handle} {#channel or channel_id} "{custom_message}"
+Add a Twitch handle to notify in the specified channel when they go live using the placeholders - handle, game, title and link
+
+##### !edittwitch {twitch_handle} {#channel or channel_id}
+Edit a configured Twitch handle to use a different channel
+
+##### !editcustomtwitch {twitch_handle} "{custom_message}"
+Edit a configured Twitch handle to display a custom message using the placeholders - handle, game, title and link
+
+##### !removetwitch {twitch_handle}
+Remove the specified twitch handle from alerting
+
+##### !removealltwitch 
+Remove all the Twitch alerts in the guild
+
+##### !getalltwitch
+List all the current Twitch handles configured in the server
+
 </details>
 
 <details>
