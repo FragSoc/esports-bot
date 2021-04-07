@@ -127,7 +127,7 @@ class EventCategoriesCog(commands.Cog):
                         help="Change the event signin menu to use with `open-event` and `close-event`.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_set_event_signin_menu(self, ctx: Context, *, args: str):
-        if len(args.split(" ") < 2):
+        if len(args.split(" ")) < 2:
             await ctx.send(":x: Please provide a menu ID and event name!")
         else:
             menuID = args.split(" ")[0]
@@ -174,7 +174,7 @@ class EventCategoriesCog(commands.Cog):
                         help="Change the role to remove during `close-event`. This should NOT be the same as your shared role. Role can be given as either a mention or an ID.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_set_event_role(self, ctx: Context, *, args: str):
-        if len(args.split(" ") < 2):
+        if len(args.split(" ")) < 2:
             await ctx.send(":x: Please provide a role to set!")
         else:
             roleStr = args.split(" ")[0]
