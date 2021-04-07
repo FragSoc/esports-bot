@@ -128,7 +128,7 @@ List all the current Twitter handles configured in the server
 <details>
 <summary>Event Channel Management</summary>
 
-### Event Channel Management
+### Event Category Management
 Each server can have any number of named event categories, each with a registered signin role menu granting an event specific role.
 
 ##### !open-event {event_name}
