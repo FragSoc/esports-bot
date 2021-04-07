@@ -214,6 +214,9 @@ While the role takes its requested colour (default green), it is pingable by any
 
 Every month, a report of the use of all pingable roles will be sent to the servers logging channel, if one is set.
 
+##### !pingme list
+User command listing out all available `!pingme` roles
+
 ##### !pingme register {@role mention} {name}
 Admin command registering an existing role for use with `!pingme`.
 
