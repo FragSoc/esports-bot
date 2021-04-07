@@ -1,3 +1,5 @@
+import traceback
+
 class UnrecognisedEmoji(Exception):
     """Exception raised when creating an Emote instance, but the client could not match an emoji to the given ID.
 
@@ -29,3 +31,10 @@ class UnrecognisedReactionMenuMessage(Exception):
         self.channel = channel
         self.msg = msg
         super().__init__("Failed to fetch message for reaction menu: guild " + str(guild) + " channel " + str(channel) + " message " + str(msg))
+
+
+def print_exception_trace(e: Exception):
+    """Prints the trace for an exception into stdout.
+    Great for debugging errors that are swallowed by the event loop.
+    """
+    traceback.print_exception(type(e), e, e.__traceback__)

@@ -214,8 +214,8 @@ class PingablesCog(commands.Cog):
                 await asyncio.wait(renamerTasks)
                 await progressMsg.edit(content="Renaming " + str(len(rolesData)) + " roles... ✅")
 
-            await ctx.message.reply("Emoji prefix for `!pingme create` roles now updated to \" + args + "!")
-            await self.bot.adminLog(ctx.message, {"Emoji Prefix For !pingme roles Updated": "New emoji: \" + args})
+            await ctx.message.reply("Emoji prefix for `!pingme create` roles now updated to " + args + "!")
+            await self.bot.adminLog(ctx.message, {"Emoji Prefix For !pingme roles Updated": "New emoji: " + args})
 
 
     @commands.command(name="remove-pingme-role-emoji", usage="remove-pingme-role-emoji <emoji>", help="Remove the emoji which appears before the names of !pingme roles.")

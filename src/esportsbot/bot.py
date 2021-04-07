@@ -1,5 +1,5 @@
-import traceback
 from dotenv import load_dotenv
+from . import lib
 from .base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 from .generate_schema import generate_schema
 from .db_gateway import db_gateway
@@ -9,7 +9,6 @@ from discord.ext.commands.context import Context
 from discord import NotFound, HTTPException, Forbidden
 import os
 import discord
-from . import lib
 from datetime import datetime, timedelta
 import asyncio
 from typing import Set
@@ -183,7 +182,7 @@ async def on_command_error(ctx: Context, exception: Exception):
             sourceStr += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
         print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught "
                                       + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
-        traceback.print_exception(type(exception), exception, exception.__traceback__)
+        lib.exceptions.print_exception_trace(exception)
 
 
 @client.command()
@@ -221,7 +220,7 @@ async def on_message(message: discord.Message):
             await asyncio.wait(roleUpdateTasks)
             for task in roleUpdateTasks:
                 if e := task.exception():
-                    traceback.print_exception(type(e), e, e.__traceback__)
+                    lib.exceptions.print_exception_trace(e)
     else:
         await client.process_commands(message)
 
@@ -231,7 +230,13 @@ async def on_guild_role_delete(role: discord.Role):
     db = db_gateway()
     if db.get("pingable_roles", {"role_id": role.id}):
         db.delete("pingable_roles", {"role_id": role.id})
-        await client.adminLog(message, {"!pingme Role Deleted": "Role: " + role.mention + "\nName: " + role.name + "\nDeleting user unknown, please see the server's audit log."})
+        logEmbed = discord.Embed()
+        logEmbed.set_author(icon_url=client.user.avatar_url_as(size=64), name="Admin Log")
+        logEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
+        logEmbed.colour = discord.Colour.random()
+        for aTitle, aDesc in {"!pingme Role Deleted": "Role: " + role.mention + "\nName: " + role.name + "\nDeleting user unknown, please see the server's audit log."}.items():
+            logEmbed.add_field(name=str(aTitle), value=str(aDesc), inline=False)
+        await client.adminLog(None, embed=logEmbed)
 
 
 def launch():

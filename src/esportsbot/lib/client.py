@@ -3,12 +3,12 @@ from discord import Intents, Embed, Message, Colour, Role
 from ..reactionMenus.reactionMenuDB import ReactionMenuDB
 from ..reactionMenus import reactionMenu
 from ..db_gateway import db_gateway
+from . import exceptions
 from typing import Dict
 from datetime import datetime, timedelta
 import os
 import signal
 import asyncio
-import traceback
 
 from .exceptions import UnrecognisedReactionMenuMessage
 from .emotes import Emote
@@ -113,7 +113,7 @@ class EsportsBot(commands.Bot):
             await asyncio.wait(roleUpdateTasks)
             for task in roleUpdateTasks:
                 if e := task.exception():
-                    traceback.print_exception(type(e), e, e.__traceback__)
+                    exceptions.print_exception_trace(e)
 
     
     @tasks.loop(hours=24)
@@ -156,7 +156,7 @@ class EsportsBot(commands.Bot):
                 await asyncio.wait(loggingTasks)
                 for task in loggingTasks:
                     if e := task.exception():
-                        traceback.print_exception(type(e), e, e.__traceback__)
+                        exceptions.print_exception_trace(e)
                         
 
 
