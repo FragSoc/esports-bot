@@ -1,0 +1,33 @@
+---
+
+language: minimal
+
+services:
+  - docker
+
+script:
+  - docker build -t fragsoc/esports-bot .
+
+stages:
+  - develop
+  - production
+  
+jobs:
+  include:
+  - stage : develop
+    env:
+     - DOCKER_TAG=develop
+    deploy:
+      provider: script
+      script: bash docker-push.sh
+      on:
+       branch: develop
+
+  - stage: master
+    env:
+     - DOCKER_TAG=master
+    deploy:
+      provider: script
+      script: bash docker-push.sh
+      on:
+       branch: master
