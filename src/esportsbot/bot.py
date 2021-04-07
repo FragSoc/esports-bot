@@ -199,20 +199,7 @@ async def initialsetup(ctx):
 @client.event
 async def on_message(message: discord.Message):
     if message.guild is not None and message.role_mentions:
-        db = db_gateway()
-        guildInfo = db.get('guild_info', params={'guild_id': message.guild.id})
-        roleUpdateTasks = set()
-        if guildInfo:
-            for role in message.role_mentions:
-                roleData = db.get('pingable_roles', params={'role_id': role.id})
-                if roleData and not roleData[0]["on_cooldown"]:
-                    roleUpdateTasks.add(asyncio.create_task(role.edit(mentionable=False, colour=discord.Colour.darker_grey(), reason="placing pingable role on ping cooldown")))
-                    db.update('pingable_roles', {'on_cooldown': True}, {'role_id': role.id})
-                    db.update('pingable_roles', {"last_ping": datetime.now().timestamp()}, {'role_id': role.id})
-                    db.update('pingable_roles', {"ping_count": roleData[0]["ping_count"] + 1}, {'role_id': role.id})
-                    db.update('pingable_roles', {"monthly_ping_count": roleData[0]["monthly_ping_count"] + 1}, {'role_id': role.id})
-                    roleUpdateTasks.add(asyncio.create_task(client.rolePingCooldown(role, guildInfo[0]["role_ping_cooldown_seconds"])))
-                    roleUpdateTasks.add(asyncio.create_task(client.adminLog(message, {"!pingme Role Pinged": "Role: " + role.mention + "\nUser: " + message.author.mention})))
+        roleUpdateTasks = client.handleRoleMentions(message)
         await client.process_commands(message)
         if roleUpdateTasks:
             await asyncio.wait(roleUpdateTasks)

@@ -4,7 +4,7 @@ from ..reactionMenus.reactionMenuDB import ReactionMenuDB
 from ..reactionMenus import reactionMenu
 from ..db_gateway import db_gateway
 from . import exceptions
-from typing import Dict
+from typing import Dict, Set
 from datetime import datetime, timedelta
 import os
 import signal
@@ -181,6 +181,32 @@ class EsportsBot(commands.Bot):
                     logEmbed.add_field(name=str(aTitle), value=str(aDesc), inline=False)
                 kwargs["embed"] = logEmbed
             await self.get_channel(db_logging_call[0]['log_channel_id']).send(*args, **kwargs)
+
+
+    def handleRoleMentions(self, message: Message) -> Set[asyncio.Task]:
+        """Handle !pingme behaviour for the given message.
+        Places mentioned roles on cooldown if they are not already on cooldown.
+        Returns a set of ping cooldown tasks that should be awaited and error handled.
+
+        :param Message message: The message containing the role mentions to handle
+        :return: A potentially empty set of already scheduled tasks handling role ping cooldown
+        :rtype: Set[asyncio.Task]
+        """
+        db = db_gateway()
+        guildInfo = db.get('guild_info', params={'guild_id': message.guild.id})
+        roleUpdateTasks = set()
+        if guildInfo:
+            for role in message.role_mentions:
+                roleData = db.get('pingable_roles', params={'role_id': role.id})
+                if roleData and not roleData[0]["on_cooldown"]:
+                    roleUpdateTasks.add(asyncio.create_task(role.edit(mentionable=False, colour=Colour.darker_grey(), reason="placing pingable role on ping cooldown")))
+                    db.update('pingable_roles', {'on_cooldown': True}, {'role_id': role.id})
+                    db.update('pingable_roles', {"last_ping": datetime.now().timestamp()}, {'role_id': role.id})
+                    db.update('pingable_roles', {"ping_count": roleData[0]["ping_count"] + 1}, {'role_id': role.id})
+                    db.update('pingable_roles', {"monthly_ping_count": roleData[0]["monthly_ping_count"] + 1}, {'role_id': role.id})
+                    roleUpdateTasks.add(asyncio.create_task(self.rolePingCooldown(role, guildInfo[0]["role_ping_cooldown_seconds"])))
+                    roleUpdateTasks.add(asyncio.create_task(self.adminLog(message, {"!pingme Role Pinged": "Role: " + role.mention + "\nUser: " + message.author.mention})))
+        return roleUpdateTasks
 
 
 _instance: EsportsBot = None
