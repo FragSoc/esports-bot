@@ -2,7 +2,6 @@ import discord
 import asyncio
 from discord.ext import commands
 from discord.ext.commands.context import Context
-from discord.ext.commands.context import Context
 from ..db_gateway import db_gateway
 from ..lib.client import EsportsBot
 from .. import lib
