@@ -228,7 +228,7 @@ class EventCategoriesCog(commands.Cog):
                             await ctx.message.reply(f":x: An event category with the name '{eventName.title()}' already exists!")
                         else:
                             menu = self.bot.reactionMenus[int(menuIDStr)]
-                            db.insert('event_categories', set_params={"guild_id": ctx.guild.id, "event_name": eventName, "role_id": roleID, "signin_menu_id": menu.msg.id})
+                            db.insert('event_categories', {"guild_id": ctx.guild.id, "event_name": eventName, "role_id": roleID, "signin_menu_id": menu.msg.id})
                             await ctx.send(f"✅ Event category '{eventName.title()}' registered successfuly!")
                             await self.bot.adminLog(ctx.message, {"Existing Event Category Registered": f"Event name: {eventName.title()}\nMenu id: {menuIDStr}\nRole: <@&{roleID!s}>\n[Menu]({menu.msg.jump_url})"})
                         
