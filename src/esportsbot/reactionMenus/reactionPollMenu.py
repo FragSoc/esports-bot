@@ -134,8 +134,8 @@ class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
                     img : str = "", thumb : str = "", icon : str = None, authorName : str = ""):
         """
         :param discord.Message msg: the message where this menu is embedded
-        :param options: A dictionary of Emote: str, defining all of the poll options
-        :type options: dict[lib.emotes.Emote, str]
+        :param pollOptions: A dictionary of Emote: str, defining all of the poll options
+        :type pollOptions: dict[lib.emotes.Emote, str]
         :param int timeoutSeconds: The number of seconds until the poll ends
         :param discord.Member pollStarter: The user who started the poll, for printing in the menu embed.
                                             Optional. (Default None)
