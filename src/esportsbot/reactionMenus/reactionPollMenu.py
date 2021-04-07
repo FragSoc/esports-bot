@@ -13,7 +13,7 @@ def makePollBar(name: str, numVotes: int, maxNameLength: int, maxVotes: int, max
 
     :param str name: The name of the poll option
     :param int numVotes: The number of votes that the option received
-    :param int maxNameLenth: The length of the longest option name in the poll
+    :param int maxNameLength: The length of the longest option name in the poll
     :param int maxVotes: The number of votes received by the winning option
     :param int maxBarLength: The maximum length a bar may be
     :return: A string containing the name of the option, followed by a number of = characters proportional to the number of
