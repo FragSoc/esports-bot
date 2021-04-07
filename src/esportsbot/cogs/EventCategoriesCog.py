@@ -27,9 +27,9 @@ class EventCategoriesCog(commands.Cog):
         if not guildData["shared_role_id"]:
             await ctx.message.reply(f":x: No shared role has been set for this server! Use the `{self.bot.command_prefix}set-shared-role` command to set one.")
         else:
-            eventData = db.get("event_channels", params={"guild_id": ctx.guild.id, "event_name": eventName})[0]
+            eventData = db.get("event_categories", params={"guild_id": ctx.guild.id, "event_name": eventName})[0]
             if not eventData:
-                if not (allEvents := db.get("event_channels", params={"guild_id": ctx.guild.id})):
+                if not (allEvents := db.get("event_categories", params={"guild_id": ctx.guild.id})):
                     await ctx.message.reply(":x: This server doesn't have any event categories registered!")
                 else:
                     await ctx.message.reply(":x: Unrecognised event. The following events exist in this server: " + ", ".join(e["event_name"].title() for e in allEvents))
@@ -92,9 +92,9 @@ class EventCategoriesCog(commands.Cog):
                     if True not in (channelEdited, usersEdited, menuReset):
                         await ctx.message.reply(f"Nothing to do!\n*(<#{signinMenu.msg.channel.id!s}> already invisible to {sharedRole.name}, no reactions on signin menu, no users with {eventRole.name} role)*")
                     else:
-                        loadingTxts = ("Closing channel... " + ("⏳" if channelEdited else "✅"),
+                        loadingTxts = ["Closing channel... " + ("⏳" if channelEdited else "✅"),
                                         "Unassigning role" + ((" from " + str(usersEdited) + " users... ⏳") if usersEdited else "... ✅"),
-                                        "Resetting signin menu... " + ("⏳" if menuReset else "✅"))
+                                        "Resetting signin menu... " + ("⏳" if menuReset else "✅")]
                         loadingMsg = await ctx.send("\n".join(loadingTxts))
                         adminActions = {"Event Closed": f"Event name: {eventName.title()}",
                                         "Role menu reset": f"id: {signinMenu.msg.id!s}\ntype: {type(signinMenu).__name__}\n[Menu]({signinMenu.msg.jump_url})"}
@@ -139,13 +139,13 @@ class EventCategoriesCog(commands.Cog):
                 eventName = args[len(menuID)+1:].lower()
                 db = db_gateway()
                 if not db.get("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName}):
-                    if not (allEvents := db.get("event_channels", params={"guild_id": ctx.guild.id})):
+                    if not (allEvents := db.get("event_categoriesevent_channels", params={"guild_id": ctx.guild.id})):
                         await ctx.message.reply(":x: This server doesn't have any event categories registered!")
                     else:
                         await ctx.message.reply(":x: Unrecognised event. The following events exist in this server: " + ", ".join(e["event_name"].title() for e in allEvents))
                 else:
                     menu = self.bot.reactionMenus[int(menuID)]
-                    db.update('event_channels', set_params={"signin_menu_id": menu.msg.id}, where_params={"guild_id": ctx.guild.id, "event_name": eventName})
+                    db.update('event_categories', set_params={"signin_menu_id": menu.msg.id}, where_params={"guild_id": ctx.guild.id, "event_name": eventName})
                     await ctx.send(f"✅ The {eventName.title()} event signin menu is now: {menu.msg.jump_url}")
                     await self.bot.adminLog(ctx.message, {"Event signin menu updated": f"Event name: {eventName.title()}\nMenu id: {menuID}\ntype: {type(menu).__name__}\n[Menu]({menu.msg.jump_url})"})
 
@@ -189,7 +189,7 @@ class EventCategoriesCog(commands.Cog):
                     eventName = args[len(roleStr)+1:].lower()
                     db = db_gateway()
                     if not db.get("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName}):
-                        if not (allEvents := db.get("event_channels", params={"guild_id": ctx.guild.id})):
+                        if not (allEvents := db.get("event_categories", params={"guild_id": ctx.guild.id})):
                             await ctx.message.reply(":x: This server doesn't have any event categories registered!")
                         else:
                             await ctx.message.reply(":x: Unrecognised event. The following events exist in this server: " + ", ".join(e["event_name"].title() for e in allEvents))
@@ -271,8 +271,9 @@ class EventCategoriesCog(commands.Cog):
                                 categoryOverwrites[ctx.guild.default_role] = EVENT_CATEGORY_EVERYONE_PERMS
                                 signinOverwrites[ctx.guild.default_role] = EVENT_CATEGORY_EVERYONE_PERMS
                             newCategory = await ctx.guild.create_category(eventName.title(), reason=creationReason, overwrites=categoryOverwrites)
-                            signinChannel = await ctx.guild.create_text_channel(f"{eventName.title()}-signin", reason=creationReason, category=newCategory, overwrites=signinOverwrites)
-                            eventGeneral = await ctx.guild.create_text_channel(f"{eventName.title()}-general", reason=creationReason, category=newCategory, overwrites=categoryOverwrites)
+                            signinChannel = await ctx.guild.create_text_channel(f"{eventName}-signin", reason=creationReason, category=newCategory, overwrites=signinOverwrites)
+                            eventGeneral = await ctx.guild.create_text_channel(f"{eventName}-general", reason=creationReason, category=newCategory, overwrites=categoryOverwrites)
+                            eventVoice = await ctx.guild.create_voice_channel(f"{eventName}-voice", reason=creationReason, category=newCategory, overwrites=categoryOverwrites)
                             signinMenuMsg = await signinChannel.send("‎")
                             signinMenu = ReactionRoleMenu(signinMenuMsg, self.bot, {signinEmoji: eventRole}, col=Colour.blue(), titleTxt=f"Sign Into {eventName.title()}",
                                                             desc=f"If you're attending this event, react to this message to get the '{eventRole.name}' role, and access to secret event channels!")
@@ -291,7 +292,7 @@ class EventCategoriesCog(commands.Cog):
 
 
     @commands.command(name="unregister-event-category", usage="unregister-event-category <event name>",
-                        help="Unregister an event category so that it can no longer be used with `open-event` and `close-event`, but without deleting the channels.")
+                        help="Unregister an event category and role so that it can no longer be used with `open-event` and `close-event`, but without deleting the channels.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_unregister_event_category(self, ctx: Context, *, args: str):
         if not args:
@@ -300,7 +301,7 @@ class EventCategoriesCog(commands.Cog):
             db = db_gateway()
             eventName = args.lower()
             if not db.get("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName}):
-                if not (allEvents := db.get("event_channels", params={"guild_id": ctx.guild.id})):
+                if not (allEvents := db.get("event_categories", params={"guild_id": ctx.guild.id})):
                     await ctx.message.reply(":x: This server doesn't have any event categories registered!")
                 else:
                     await ctx.message.reply(":x: Unrecognised event. The following events exist in this server: " + ", ".join(e["event_name"].title() for e in allEvents))
@@ -320,7 +321,7 @@ class EventCategoriesCog(commands.Cog):
             db = db_gateway()
             eventName = args.lower()
             if not (eventData := db.get("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName})):
-                if not (allEvents := db.get("event_channels", params={"guild_id": ctx.guild.id})):
+                if not (allEvents := db.get("event_categories", params={"guild_id": ctx.guild.id})):
                     await ctx.message.reply(":x: This server doesn't have any event categories registered!")
                 else:
                     await ctx.message.reply(":x: Unrecognised event. The following events exist in this server: " + ", ".join(e["event_name"].title() for e in allEvents))
@@ -329,7 +330,7 @@ class EventCategoriesCog(commands.Cog):
                 eventCategory = self.bot.reactionMenus[signinMenuID].msg.channel.category
                 numChannels = len(eventCategory.channels)
                 eventRole = ctx.guild.get_role(eventData[0]["role_id"])
-                confirmMsg = await ctx.message.reply(f"React within 60 seconds: Are you sure you want to delete the '{eventName}' category" + (f", the {eventRole.name} role," if eventRole else "")" and the {numChannels!s} event channels?")
+                confirmMsg = await ctx.message.reply(f"React within 60 seconds: Are you sure you want to delete the '{eventName}' category" + (f", the {eventRole.name} role," if eventRole else "") + f" and the {numChannels!s} event channels?")
                 asyncio.create_task(confirmMsg.add_reaction('👍'))
                 asyncio.create_task(confirmMsg.add_reaction('👎'))
                 def confirmCheck(data: RawReactionActionEvent) -> bool:
@@ -339,21 +340,22 @@ class EventCategoriesCog(commands.Cog):
                     confirmResult = (await self.bot.wait_for("raw_reaction_add", check=confirmCheck, timeout=60)).emoji
                 except asyncio.TimeoutError:
                     await confirmMsg.reply("Out of time, please try the command again.")
-                elif confirmResult.name == "👎":
-                    await ctx.send("Event category deletion cancelled.")
                 else:
-                    deletionReason = f"Event category '{eventName}' deletion requested via {self.bot.command_prefix}delete-event-category command"
-                    self.bot.reactionMenus.removeID(signinMenuID)
-                    deletionTasks = set()
-                    if eventRole:
-                        deletionTasks.add(asyncio.create_task(eventRole.delete(reason=deletionReason)))
-                    for currentCategory in eventCategory.channels:
-                        deletionTasks.add(asyncio.create_task(currentCategory.delete(reason=deletionReason)))
-                    deletionTasks.add(asyncio.create_task(eventCategory.delete(reason=deletionReason)))
-                    await asyncio.wait(deletionTasks)
-                    db.delete("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName})
-                    await ctx.message.reply(f"✅ {eventName.title()} event category successfuly deleted.")
-                    await self.bot.adminLog(ctx.message, {"Event Category Deleted": f"Event name: {eventName.title()}\nChannels deleted: {numChannels!s}\nRole deleted: #{eventData['role_id']!s}"})
+                    if confirmResult.name == "👎":
+                        await ctx.send("Event category deletion cancelled.")
+                    else:
+                        deletionReason = f"Event category '{eventName}' deletion requested via {self.bot.command_prefix}delete-event-category command"
+                        self.bot.reactionMenus.removeID(signinMenuID)
+                        deletionTasks = set()
+                        if eventRole:
+                            deletionTasks.add(asyncio.create_task(eventRole.delete(reason=deletionReason)))
+                        for currentCategory in eventCategory.channels:
+                            deletionTasks.add(asyncio.create_task(currentCategory.delete(reason=deletionReason)))
+                        deletionTasks.add(asyncio.create_task(eventCategory.delete(reason=deletionReason)))
+                        await asyncio.wait(deletionTasks)
+                        db.delete("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName})
+                        await ctx.message.reply(f"✅ {eventName.title()} event category and role successfuly deleted.")
+                        await self.bot.adminLog(ctx.message, {"Event Category Deleted": f"Event name: {eventName.title()}\nChannels deleted: {numChannels!s}" + (f"\nRole deleted: #{eventData[0]['role_id']!s}" if eventData[0]['role_id'] else "")})
 
 
 def setup(bot):
