@@ -77,9 +77,9 @@ class Emote:
             raise ValueError("At least one of id or unicode is required")
         elif id != -1 and unicode != "":
             raise ValueError("Can only accept one of id or unicode, not both")
-        if type(id) != int:
+        if not isinstance(id, int):
             raise TypeError("Given incorrect type for Emote ID: " + type(id).__name__)
-        if type(unicode) != str:
+        if not isinstance(unicode, str):
             raise TypeError("Given incorrect type for Emote unicode: " + type(unicode).__name__)
 
         self.id = id
@@ -133,7 +133,7 @@ class Emote:
         :return: True of this emoji is semantically equal to the given emoji, False otherwise
         :rtype: bool
         """
-        return type(other) == Emote and self.sendable == other.sendable
+        return isinstance(other, Emote) and self.sendable == other.sendable
 
 
     def __str__(self) -> str:
@@ -163,7 +163,7 @@ class Emote:
         """
         rejectInvalid = kwargs["rejectInvalid"] if "rejectInvalid" in kwargs else False
 
-        if type(emojiDict) == Emote:
+        if isinstance(emojiDict, Emote):
             return emojiDict
         if "id" in emojiDict:
             return Emote(id=emojiDict["id"], rejectInvalid=rejectInvalid)
@@ -182,7 +182,7 @@ class Emote:
         :return: A Emote representing e
         :rtype: Emote
         """
-        if type(e) == Emote:
+        if isinstance(e, Emote):
             return e
         if e.is_unicode_emoji():
             return Emote(unicode=e.name, rejectInvalid=rejectInvalid)
@@ -203,16 +203,16 @@ class Emote:
         :return: A Emote representing e
         :rtype: Emote
         """
-        if type(e) == Emote:
+        if isinstance(e, Emote):
             return e
-        if type(e) == str:
+        if isinstance(e, str):
             if strIsUnicodeEmoji(e):
                 return Emote(unicode=e, rejectInvalid=rejectInvalid)
             elif strIsCustomEmoji(e):
                 return Emote.fromStr(e, rejectInvalid=rejectInvalid)
             else:
                 raise ValueError("Given a string that does not match any emoji format: " + e)
-        if type(e) == PartialEmoji:
+        if isinstance(e, PartialEmoji):
             return Emote.fromPartial(e, rejectInvalid=rejectInvalid)
         else:
             return Emote(id=e.id, rejectInvalid=rejectInvalid)
@@ -236,9 +236,9 @@ class Emote:
         :return: A Emote representing the given string emoji
         :rtype: Emote
         """
-        if type(s) == Emote:
+        if isinstance(s, Emote):
             return s
-        if type(s) == dict:
+        if isinstance(s, dict):
             return Emote.fromDict(s, rejectInvalid=rejectInvalid)
         if strIsUnicodeEmoji(s):
             return Emote(unicode=s, rejectInvalid=rejectInvalid)
