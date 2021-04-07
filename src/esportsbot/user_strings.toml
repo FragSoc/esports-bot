@@ -7,3 +7,7 @@ channel_get = "Logging channel is set to <#{channel_id!s}>"
 channel_get_notfound = "Logging channel has not been set"
 
 channel_removed = "Log channel has been removed"
+
+[admin]
+channel_cleared = "{author_mention} has cleared {message_amount} messages from {author_mention}"
+members = "This server has {member_count} members including me"
