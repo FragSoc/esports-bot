@@ -19,7 +19,7 @@ default_role_set = "Default role has been set to {role_id}"
 default_role_set_log = "{author} has set the default role to {role_mention}"
 default_role_set_missing_param = "You need to either @ a role or paste the ID"
 
-default_role_get = "Default role is set to {default_role_id}"
+default_role_get = "Default role is set to {role_id}"
 
 default_role_removed = "Default role has been removed"
 default_role_removed_log = "{author_mention} has removed the default role"
