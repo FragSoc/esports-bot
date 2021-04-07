@@ -11,7 +11,6 @@ import os
 import discord
 from datetime import datetime, timedelta
 import asyncio
-from typing import Set
 
 
 DEFAULT_ROLE_PING_COOLDOWN = timedelta(hours=5)
@@ -204,7 +203,6 @@ async def on_message(message: discord.Message):
         guildInfo = db.get('guild_info', params={'guild_id': message.guild.id})
         roleUpdateTasks = set()
         if guildInfo:
-            roleUpdateTasks = set()
             for role in message.role_mentions:
                 roleData = db.get('pingable_roles', params={'role_id': role.id})
                 if roleData and not roleData[0]["on_cooldown"]:
