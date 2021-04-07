@@ -26,7 +26,12 @@ class PingablesCog(commands.Cog):
     def __init__(self, bot: "EsportsBot"):
         self.bot: "EsportsBot" = bot
 
-    @commands.command(name="add-pingable-role", usage="add-pingable-role <@role> <name>", help="Convert an existing role into a !pingme role")
+    @commands.group(name="pingme", invoke_without_command=True)
+    async def pingme(self, ctx: Context, *, args: str):
+        pass
+
+
+    @pingme.command(name="regsiter", usage="pingme register <@role> <name>", help="Convert an existing role into a !pingme role")
     @commands.has_permissions(administrator=True)
     async def cmd_add_pingable_role(self, ctx: Context, *, args: str):
         argsSplit = args.split(" ")
@@ -55,7 +60,7 @@ class PingablesCog(commands.Cog):
                 await self.bot.adminLog(ctx.message, {"New !pingme Role Registered", "Name: " + roleName + "\nRole: " + role.mention})
 
 
-    @commands.command(name="remove-pingable-role", usage="remove-pingable-role <@role>", help="Unregister a role from !pingme without removing it from the server")
+    @pingme.command(name="unregister", usage="pingme unregister <@role>", help="Unregister a role from !pingme without removing it from the server")
     @commands.has_permissions(administrator=True)
     async def cmd_remove_pingable_role(self, ctx: Context, *, args: str):
         if len(ctx.message.role_mentions) != 1:
@@ -71,7 +76,7 @@ class PingablesCog(commands.Cog):
                 await self.bot.adminLog(ctx.message, {"!pingme Role Unregistered", "Role: " + role.mention})
 
 
-    @commands.command(name="delete-pingable-role", usage="delete-pingable-role <@role>", help="Delete a !pingme role from the server")
+    @pingme.command(name="delete", usage="pingme delete <@role>", help="Delete a !pingme role from the server")
     @commands.has_permissions(administrator=True)
     async def cmd_delete_pingable_role(self, ctx: Context, *, args: str):
         if len(ctx.message.role_mentions) != 1:
@@ -88,7 +93,7 @@ class PingablesCog(commands.Cog):
                 await self.bot.adminLog(ctx.message, {"!pingme Role Deleted", "Name: " + role.name + "\nID: " + str(role.id)})
 
 
-    @commands.command(name="reset-role-ping-cooldown", usage="reset-role-ping-cooldown <@role>", help="Reset the pinging cooldown for a !pingme role, making it pingable again instantly")
+    @pingme.command(name="reset-cooldown", usage="pingme reset-cooldown <@role>", help="Reset the pinging cooldown for a !pingme role, making it pingable again instantly")
     @commands.has_permissions(administrator=True)
     async def cmd_reset_role_ping_cooldown(self, ctx: Context, *, args: str):
         if len(ctx.message.role_mentions) != 1:
@@ -109,7 +114,7 @@ class PingablesCog(commands.Cog):
                 await self.bot.adminLog(ctx.message, {"Ping Cooldown Manually Reset For !pingme Role": role.mention})
 
 
-    @commands.command(name="set-role-ping-cooldown", usage="set-role-ping-cooldown [seconds=seconds] [minutes=minutes] [hours=hours] [days=days]", help="Set the cooldown between !pingme role pings")
+    @pingme.command(name="set-cooldown", usage="pingme set-cooldown [seconds=seconds] [minutes=minutes] [hours=hours] [days=days]", help="Set the cooldown between !pingme role pings")
     @commands.has_permissions(administrator=True)
     async def cmd_set_role_ping_cooldown(self, ctx: Context, *, args: str):
         if not args:
@@ -144,7 +149,7 @@ class PingablesCog(commands.Cog):
         await self.bot.adminLog(ctx.message, {"Cooldown For !pingme Role Pings Updated": lib.timeUtil.td_format_noYM(timeoutTD)})
 
 
-    @commands.command(name="set-pingme-create-threshold", usage="set-pingme-create-threshold <num_votes>", help="Set minimum number of votes required to create a new role during !pingme create")
+    @pingme.command(name="set-create-threshold", usage="pingme set-create-threshold <num_votes>", help="Set minimum number of votes required to create a new role during !pingme create")
     @commands.has_permissions(administrator=True)
     async def cmd_set_pingme_create_threshold(self, ctx: Context, *, args: str):
         if not args:
@@ -159,7 +164,7 @@ class PingablesCog(commands.Cog):
             await self.bot.adminLog(ctx.message, {"Votes Required For !pingme create Updated": "Minimum votes for new roles: " + args})
 
 
-    @commands.command(name="set-pingme-create-poll-length", usage="set-pingme-create-poll-length [seconds=seconds] [minutes=minutes] [hours=hours] [days=days]", help="Set the amount of time which !pingme create polls run for")
+    @pingme.command(name="set-create-poll-length", usage="pingme set-create-poll-length [seconds=seconds] [minutes=minutes] [hours=hours] [days=days]", help="Set the amount of time which !pingme create polls run for")
     @commands.has_permissions(administrator=True)
     async def cmd_set_pingme_create_poll_length(self, ctx: Context, *, args: str):
         if not args:
@@ -194,7 +199,7 @@ class PingablesCog(commands.Cog):
         await self.bot.adminLog(ctx.message, {"Poll length For !pingme create Pings Updated": lib.timeUtil.td_format_noYM(timeoutTD)})
 
 
-    @commands.command(name="set-pingme-role-emoji", usage="set-pingme-role-emoji <emoji>", help="Set the emoji which appears before the names of !pingme roles. Must be a built in emoji, not custom.")
+    @pingme.command(name="set-role-emoji", usage="pingme set-role-emoji <emoji>", help="Set the emoji which appears before the names of !pingme roles. Must be a built in emoji, not custom.")
     @commands.has_permissions(administrator=True)
     async def cmd_set_pingme_role_emoji(self, ctx: Context, *, args: str):
         if not args:
@@ -218,7 +223,7 @@ class PingablesCog(commands.Cog):
             await self.bot.adminLog(ctx.message, {"Emoji Prefix For !pingme roles Updated": "New emoji: " + args})
 
 
-    @commands.command(name="remove-pingme-role-emoji", usage="remove-pingme-role-emoji <emoji>", help="Remove the emoji which appears before the names of !pingme roles.")
+    @pingme.command(name="remove-role-emoji", usage="pingme remove-role-emoji <emoji>", help="Remove the emoji which appears before the names of !pingme roles.")
     @commands.has_permissions(administrator=True)
     async def cmd_remove_pingme_role_emoji(self, ctx: Context, *, args: str):
         db = db_gateway()
@@ -239,11 +244,6 @@ class PingablesCog(commands.Cog):
 
             await ctx.message.reply("Emoji prefix for `!pingme create` roles has been removed!")
             await self.bot.adminLog(ctx.message, {"Emoji Prefix For !pingme roles Removed": "‎"})
-
-
-    @commands.group(name="pingme", invoke_without_command=True)
-    async def pingme(self, ctx: Context, *, args: str):
-        pass
 
 
     @pingme.command(name="create", help="Start a poll for the creation of a new !pingme role")
