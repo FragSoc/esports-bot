@@ -1,8 +1,7 @@
 import inspect
 from discord import Embed, Colour, NotFound, HTTPException, Forbidden, Member, User, Message, Role, RawReactionActionEvent, Client
-from discord.reaction import Reaction
 from .. import lib
-from abc import abstractclassmethod, abstractmethod
+from abc import abstractmethod
 from typing import Union, Dict, List, Any
 import asyncio
 from types import FunctionType
@@ -160,7 +159,8 @@ class ReactionMenuOption:
         return {"name": self.name, "emoji": self.emoji.toDict(**kwargs)}
 
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def fromDict(cls, data: dict, **kwargs) -> "ReactionMenuOption":
         """Deserialize a dictionary representation of a reaction menu option into a functioning ReactionMenuOption object.
         This is undefined for the base ReactionMenuOption class.
@@ -504,7 +504,8 @@ class ReactionMenu:
         return data
 
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def fromDict(cls, data: dict, **kwargs) -> "ReactionMenu":
         """Deserialize a dictionary representation of a reaction menu into a functioning ReactionMenu object.
         This is undefined for the base ReactionMenu class.
