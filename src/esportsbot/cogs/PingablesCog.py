@@ -297,6 +297,21 @@ class PingablesCog(commands.Cog):
                     await ctx.message.reply("✅ You got the " + role.name + " role!")
 
 
+    @pingme.command(name="list", usage="pingme list", help="List all available `!pingme` roles")
+    async def pingme_for(self, ctx: Context):
+        allRolesData = db_gateway().get("pingable_roles", {"guild_id": ctx.guild.id})
+        if not allRolesData:
+            await ctx.message.reply(f":x: This guild has no `!pingme` roles! Make a new one with `{self.bot.command_prefix}pingme create`.")
+        else:
+            reportEmbed = discord.Embed(title="All !pingme Roles", desc=ctx.guild.name)
+            reportEmbed.colour = discord.Colour.random()
+            reportEmbed.set_thumbnail(url=self.bot.user.avatar_url_as(size=128))
+            for roleData in allRolesData:
+                reportEmbed.add_field(name=roleData["name"].title(),
+                                        value="<@&" + str(roleData["role_id"]) + ">\nCreated by: <@" + str(roleData["creator_id"]) + ">\nTotal pings: " + str(roleData["ping_count"]))
+            await ctx.reply(embed=reportEmbed)
+
+
     @pingme.command(name="clear", usage="pingme clear", help="Unsubscribe from all !pingme roles, if you have any.") 
     async def pingme_clear(self, ctx: Context, *, args: str):
         db = db_gateway()
