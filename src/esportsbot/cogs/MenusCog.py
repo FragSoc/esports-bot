@@ -1,5 +1,6 @@
 from discord.ext import commands
 from discord.ext.commands.context import Context
+from discord import Embed
 from ..db_gateway import db_gateway
 from .. import lib
 from ..lib.client import EsportsBot
@@ -228,7 +229,7 @@ class MenusCog(commands.Cog):
                 await ctx.send(":x: Invalid target role!")
                 return
 
-        menuMsg = await ctx.send("‎")
+        menuMsg = await ctx.send(embed=Embed())
 
         menu = reactionRoleMenu.ReactionRoleMenu(menuMsg, self.bot, reactionRoles, targetRole=targetRole, titleTxt=menuSubject)
         await menu.updateMessage()

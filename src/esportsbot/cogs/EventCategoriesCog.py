@@ -1,7 +1,7 @@
 from asyncio import tasks
 from discord.ext import commands
 from discord.ext.commands.context import Context
-from discord import PartialMessage, Forbidden, PermissionOverwrite, RawReactionActionEvent, Colour
+from discord import PartialMessage, Forbidden, PermissionOverwrite, RawReactionActionEvent, Colour, Embed
 from ..db_gateway import db_gateway
 import asyncio
 from .. import lib
@@ -274,7 +274,7 @@ class EventCategoriesCog(commands.Cog):
                             signinChannel = await ctx.guild.create_text_channel(f"{eventName}-signin", reason=creationReason, category=newCategory, overwrites=signinOverwrites)
                             eventGeneral = await ctx.guild.create_text_channel(f"{eventName}-general", reason=creationReason, category=newCategory, overwrites=categoryOverwrites)
                             eventVoice = await ctx.guild.create_voice_channel(f"{eventName}-voice", reason=creationReason, category=newCategory, overwrites=categoryOverwrites)
-                            signinMenuMsg = await signinChannel.send("‎")
+                            signinMenuMsg = await signinChannel.send(embed=Embed())
                             signinMenu = ReactionRoleMenu(signinMenuMsg, self.bot, {signinEmoji: eventRole}, col=Colour.blue(), titleTxt=f"Sign Into {eventName.title()}",
                                                             desc=f"If you're attending this event, react to this message to get the '{eventRole.name}' role, and access to secret event channels!")
                             await signinMenu.updateMessage()
