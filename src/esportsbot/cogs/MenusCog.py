@@ -1,5 +1,6 @@
 from discord.ext import commands
 from discord.ext.commands.context import Context
+from discord import Embed
 from ..db_gateway import db_gateway
 from .. import lib
 from ..lib.client import EsportsBot
@@ -25,14 +26,17 @@ class MenusCog(commands.Cog):
         """
         msgID = int(args)
         if msgID in self.bot.reactionMenus:
-            menuTypeName = type(self.bot.reactionMenus[msgID]).__name__
+            menu = self.bot.reactionMenus[msgID]
+            menuTypeName = type(menu).__name__
             await self.bot.reactionMenus[msgID].delete()
             try:
                 self.bot.reactionMenus.removeID(msgID)
             except KeyError:
                 pass
             await ctx.send("✅ Menu deleted!")
-            await self.bot.adminLog(ctx.message, {"Reaction menu deleted": "id: " + str(msgID) + "\ntype: " + menuTypeName})
+            await self.bot.adminLog(ctx.message, {"Reaction menu deleted": "id: " + str(msgID) \
+                                                    + "\nchannel: <#" + str(menu.msg.channel.id) + ">" \
+                                                    + "\ntype: " + menuTypeName})
         else:
             await ctx.send(":x: Unrecognised reaction menu!")
 
@@ -53,7 +57,7 @@ class MenusCog(commands.Cog):
             menu = self.bot.reactionMenus[int(argsSplit[0])]
             try:
                 roleEmoji = lib.emotes.Emote.fromStr(argsSplit[1], rejectInvalid=True)
-            except lib.exceptions.UnrecognisedEmoji:
+            except lib.exceptions.UnrecognisedCustomEmoji:
                 await ctx.send(":x: I don't know that emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
             else:
                 if not menu.hasEmojiRegistered(roleEmoji):
@@ -64,7 +68,9 @@ class MenusCog(commands.Cog):
                     if len(menu.options) == 1:
                         await menu.delete()
                         await ctx.send("The menu has no more options! Menu deleted.")
-                        adminActions["Reaction menu deleted (last option removed)"] = "id: " + str(menu.msg.id) + "\ntype: " + type(menu).__name__
+                        adminActions["Reaction menu deleted (last option removed)"] = "id: " + str(menu.msg.id) \
+                                                                                        + "\nchannel: <#" + str(menu.msg.channel.id) + ">" \
+                                                                                        + "\ntype: " + type(menu).__name__
                     else:
                         del menu.options[roleEmoji]
                         await menu.msg.remove_reaction(roleEmoji.sendable, ctx.guild.me)
@@ -92,7 +98,7 @@ class MenusCog(commands.Cog):
             menu = self.bot.reactionMenus[int(argsSplit[0])]
             try:
                 roleEmoji = lib.emotes.Emote.fromStr(argsSplit[1], rejectInvalid=True)
-            except lib.exceptions.UnrecognisedEmoji:
+            except lib.exceptions.UnrecognisedCustomEmoji:
                 await ctx.send(":x: I don't know that emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
             except TypeError:
                 await ctx.send(":x: Invalid emoji: " + argsSplit[1])
@@ -110,7 +116,10 @@ class MenusCog(commands.Cog):
                     await menu.updateMessage(noRefreshOptions=True)
                     self.bot.reactionMenus.updateDB(menu)
                     await ctx.send("✅ Added option " + roleEmoji.sendable + " to menu " + str(menu.msg.id) + "!")
-                    await self.bot.adminLog(ctx.message, {"Reaction menu option added": "id: " + str(menu.msg.id) + "\ntype: " + type(menu).__name__ + "\nOption: " + roleEmoji.sendable + " <@&" + str(role.id) + ">\n[Menu](" + menu.msg.jump_url + ")"})
+                    await self.bot.adminLog(ctx.message, {"Reaction menu option added": "id: " + str(menu.msg.id) \
+                                                                                        + "\ntype: " + type(menu).__name__ \
+                                                                                        + "\nOption: " + roleEmoji.sendable + " <@&" + str(role.id)  \
+                                                                                        + ">\n[Menu](" + menu.msg.jump_url + ")"})
         
 
 
@@ -157,15 +166,18 @@ class MenusCog(commands.Cog):
                     if arg.lower().startswith(kwArg):
                         kwArgs[kwArg[:-1]] = arg[len(kwArg):]
                         break
-            # except lib.emojis.UnrecognisedCustomEmoji:
-                # await message.channel.send(":x: I don't know your " + str(argPos) + lib.stringTyping.getNumExtension(argPos) + " emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
-                # return
+            except lib.exceptions.InvalidStringEmoji as e:
+                await ctx.send(":x: Invalid emoji: " + e.val)
+                return
+            except lib.exceptions.UnrecognisedCustomEmoji:
+                await ctx.send(":x: I don't know your " + str(argPos) + lib.stringTyping.getNumExtension(argPos) + " emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
+                return
             else:
                 if dumbReact.sendable == "None":
                     await ctx.send(":x: I don't know your " + str(argPos) + lib.stringTyping.getNumExtension(argPos) + " emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
                     return
                 if dumbReact is None:
-                    await ctx.send(":x: Invalid emoji: " + arg.strip(" ").split(" ")[1])
+                    await ctx.send(":x: Invalid emoji: " + arg.strip(" ").split(" ")[0])
                     return
                 elif dumbReact.isID:
                     localEmoji = False
@@ -186,7 +198,7 @@ class MenusCog(commands.Cog):
                 elif lib.stringTyping.strIsInt(roleStr):
                     roleID = int(roleStr)
                 else:
-                    await ctx.send(":x: Invalid role given for option " + dumbReact.sendable + "!")
+                    await ctx.send(":x: Invalid role given for emoji " + dumbReact.sendable + "!")
                     return
 
                 role = ctx.guild.get_role(roleID)
@@ -223,7 +235,7 @@ class MenusCog(commands.Cog):
                 await ctx.send(":x: Invalid target role!")
                 return
 
-        menuMsg = await ctx.send("‎")
+        menuMsg = await ctx.send(embed=Embed())
 
         menu = reactionRoleMenu.ReactionRoleMenu(menuMsg, self.bot, reactionRoles, targetRole=targetRole, titleTxt=menuSubject)
         await menu.updateMessage()
@@ -287,7 +299,7 @@ class MenusCog(commands.Cog):
                     if arg.lower().startswith(kwArg):
                         kwArgs[kwArg[:-1]] = arg[len(kwArg):]
                         break
-            except lib.exceptions.UnrecognisedEmoji:
+            except lib.exceptions.UnrecognisedCustomEmoji:
                 await ctx.message.reply(":x: I don't know your " + str(argPos) + lib.stringTyping.getNumExtension(argPos) \
                                         + " emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
                 return

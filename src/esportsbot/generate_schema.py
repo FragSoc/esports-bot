@@ -24,6 +24,7 @@ def generate_schema():
             pingme_create_threshold int NOT NULL,
             pingme_create_poll_length_seconds bigint NOT NULL,
             pingme_role_emoji text
+            shared_role_id bigint
         );
         ALTER TABLE ONLY guild_info
         ADD CONSTRAINT loggingchannel_pkey PRIMARY KEY(guild_id);
@@ -47,11 +48,29 @@ def generate_schema():
             creator_id bigint NOT NULL,
             colour int NOT NULL
         );
-        
         ALTER TABLE ONLY pingable_roles
             ADD CONSTRAINT roleid_pkey PRIMARY KEY(role_id);
         ALTER TABLE ONLY pingable_roles
             ADD CONSTRAINT guildid_fkey FOREIGN KEY(guild_id) REFERENCES guild_info (guild_id);
+        """
+        db_gateway().pure_query(query_string)
+
+    # Does the event_categories exist?
+    event_categories_exists = db_gateway().pure_return(
+        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'event_categories'")
+    if not event_categories_exists:
+        # Does not exist
+        query_string = """
+        CREATE TABLE event_categories(
+            guild_id bigint NOT NULL,
+            event_name text NOT NULL,
+            role_id bigint NOT NULL,
+            signin_menu_id bigint NOT NULL
+        );
+        ALTER TABLE ONLY event_categories
+            ADD CONSTRAINT eventname_pkey PRIMARY KEY(guild_id, event_name);
+        ALTER TABLE ONLY event_categories
+            ADD CONSTRAINT guildid_fkey FOREIGN KEY(guild_id) REFERENCES guild_info(guild_id);
         """
         db_gateway().pure_query(query_string)
 

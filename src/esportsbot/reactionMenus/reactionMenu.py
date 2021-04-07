@@ -563,7 +563,7 @@ class InlineReactionMenu(ReactionMenu):
         try:
             return reactPL.message_id == self.msg.id and reactPL.user_id == self.targetMember.id and \
                     lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True) in self.returnTriggers
-        except lib.exceptions.UnrecognisedEmoji:
+        except lib.exceptions.UnrecognisedCustomEmoji:
             return False
 
 

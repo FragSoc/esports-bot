@@ -1,0 +1,9 @@
+[logging]
+channel_set = "Logging channel has been set to <#{channel_id!s}>"
+channel_set_already = "Logging channel already set to this channel"
+channel_set_notify_in_channel = "{author_mention} has set this channel as the logging channel"
+
+channel_get = "Logging channel is set to <#{channel_id!s}>"
+channel_get_notfound = "Logging channel has not been set"
+
+channel_removed = "Log channel has been removed"

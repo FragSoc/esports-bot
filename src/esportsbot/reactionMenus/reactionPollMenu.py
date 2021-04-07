@@ -51,7 +51,7 @@ async def showPollResults(menu: InlineReactionPollMenu):
         try:
             currentEmoji = lib.emotes.Emote.fromReaction(reaction.emoji, rejectInvalid=True)
         # Reject custom emojis that are not accessible to the bot
-        except lib.exceptions.UnrecognisedEmoji:
+        except lib.exceptions.UnrecognisedCustomEmoji:
             continue
         
         # Validate emotes
@@ -261,5 +261,5 @@ class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
                 return self.yesesReceived >= self.requiredVotes
             return False
                     
-        except lib.exceptions.UnrecognisedEmoji:
+        except lib.exceptions.UnrecognisedCustomEmoji:
             return False
