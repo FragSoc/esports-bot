@@ -18,7 +18,7 @@ class AdminCog(commands.Cog):
     @commands.command(aliases=['Members'])
     @commands.has_permissions(manage_messages=True)
     async def members(self, ctx):
-        await ctx.channel.send(self.STRINGS['members'].format(member_count=ctx.guild.member_count)
+        await ctx.channel.send(self.STRINGS['members'].format(member_count=ctx.guild.member_count))
 
 
 def setup(bot):
