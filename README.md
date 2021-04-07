@@ -214,35 +214,35 @@ While the role takes its requested colour (default green), it is pingable by any
 
 Every month, a report of the use of all pingable roles will be sent to the servers logging channel, if one is set.
 
-##### !add-pingable-role {@role mention} {name}
+##### !pingme register {@role mention} {name}
 Admin command registering an existing role for use with `!pingme`.
 
-##### !remove-pingable-role {@role mention}
+##### !pingme unregister {@role mention}
 Admin command unregistering a role for use with `!pingme`, without deleting the role from the server.
 
-##### !delete-pingable-role {@role mention}
+##### !pingme delete {@role mention}
 Admin command unregistering a role for use with `!pingme`, and deleting the role from the server.
 
 Alternatively, if you have permission, you can simply delete the role from the server within discord, and the role will automatically be unregistered from `!pingme`.
 
-##### !reset-role-ping-cooldown {@role mention}
+##### !pingme reset-cooldown {@role mention}
 Admin command resetting the cooldown for mentioning the given `!pingme` role. The role will immediately become pingable again by anyone.
 
-##### !set-role-ping-cooldown seconds={seconds} minutes={minutes} hours={hours} days={days}
+##### !pingme set-cooldown seconds={seconds} minutes={minutes} hours={hours} days={days}
 Admin command setting the cooldown between a `!pingme` role being pinged, and it becoming pingable again. All args should be given as keyword args as shown. All args are optional.
 This does not update the cooldown for roles that are already on cooldown.
 
-##### !set-pingme-create-threshold {num votes}
+##### !pingme set-create-threshold {num votes}
 Admin command setting the minimum number of votes required for users to create a role with `!pingme create`. This does not affect already running polls.
 
-##### !set-pingme-create-poll-length seconds={seconds} minutes={minutes} hours={hours} days={days}
+##### !pingme set-create-poll-length seconds={seconds} minutes={minutes} hours={hours} days={days}
 Admin command setting the amount of time `!pingme create` polls run for. All args should be given as keyword args as shown. All args are optional.
 This does not affect already running polls.
 
-##### !set-pingme-role-emoji {emoji}
+##### !pingme set-role-emoji {emoji}
 Admin command setting a single unicode emoji to be prefixed onto all `!pingme` role names. This will update the names of all existing `!pingme` roles.
 
-##### !remove-pingme-role-emoji
+##### !pingme remove-role-emoji
 Admin command removing the emoji prefix for all `!pingme` role names. This will update the names of all existing `!pingme` roles.
 
 ##### !pingme create {name}
