@@ -126,24 +126,37 @@ List all the current Twitter handles configured in the server
 </details>
 
 <details>
-<summary>LAN Channel Management</summary>
+<summary>Event Channel Management</summary>
 
-### LAN Channel Management
+### Event Channel Management
+Each server can have any number of named event categories, each with a registered signin role menu granting an event specific role.
 
-##### !open-lan
-Set the server's LAN signin channel as visible.
+##### !open-event {event_name}
+Set the event's signin channel as visible to the server's shared role.
 
-##### !close-lan
-Set the server's LAN signin channel as invisible, remove the server's LAN role from all users, and reset the LAN signin menu.
+##### !close-event {event_name}
+Set the event's signin channel as invisible, remove the event's role from all users, and reset the event's signin menu.
 
-##### !set-lan-signin-menu {menu_id}
-Set the reaction menu to clear during `!close-menu`. This will also tell the bot which channel to set visibility for during `!open-lan`.
+##### !register-event-category {menu_id} {@role or role_id} {event_name}
+Register an existing category and role as an event category, allowing you to use `!open-event` and `!close-event` with it.
+
+##### !create-event-category {event_name}
+Create a new event category with a signin menu, general text and voice channels, and an event role. This category will automatically be registered for use with `open-event` and `!close-event`
+
+##### !unregister-event-category {event_name}
+Unregister an event category and role, without deleting them from the server.
+
+##### !delete-event-category {event_name}
+Delete an event category from the server, including the category, channels and role. You will be asked for confirmation first.
+
+##### !set-event-signin-menu {menu_id} {event_name}
+Change the reaction menu to clear during `!close-event`. This will also tell the bot which channel to set visibility for during `!open-event`.
 
 ##### !set-shared-role {@role or role_id}
-Set the role to deny signin channel visiblity to during `!close-menu`.
+Change the role to deny signin channel visiblity to during `!close-event`. All users should have ths role.
 
-##### !set-lan-role {@role or role_id}
-Set the role to remove from users during `!close-menu`.
+##### !set-event-role {@role or role_id} {event_name}
+Change the role to remove from users during `!close-event`.
 </details>
 
 <details>
