@@ -265,12 +265,14 @@ class EventCategoriesCog(commands.Cog):
                         else:
                             creationReason = f"Creating new event category '{eventName}' requested via {self.bot.command_prefix}create-event-category command"
                             eventRole = await ctx.guild.create_role(name=eventName.title(), reason=creationReason)
-                            newCategory = await ctx.guild.create_category(eventName.title(), reason=creationReason,
-                                                                            overwrites={sharedRole: EVENT_CATEGORY_SHARED_ROLE_PERMS, eventRole: EVENT_CATEGORY_EVENT_ROLE_PERMS, ctx.guild.default_role: EVENT_CATEGORY_EVERYONE_PERMS})
-                            signinChannel = await ctx.guild.create_text_channel(f"{eventName.title()}-signin", reason=creationReason, category=newCategory,
-                                                                                overwrites={sharedRole: CLOSED_EVENT_SIGNIN_CHANNEL_SHARED_PERMS, eventRole: EVENT_SIGNIN_CHANNEL_EVENT_PERMS, ctx.guild.default_role: EVENT_CATEGORY_EVERYONE_PERMS})
-                            eventGeneral = await ctx.guild.create_text_channel(f"{eventName.title()}-general", reason=creationReason, category=newCategory,
-                                                                                overwrites={sharedRole: EVENT_CATEGORY_SHARED_ROLE_PERMS, eventRole: EVENT_CATEGORY_EVENT_ROLE_PERMS, ctx.guild.default_role: EVENT_CATEGORY_EVERYONE_PERMS})
+                            categoryOverwrites = {sharedRole: EVENT_CATEGORY_SHARED_ROLE_PERMS, eventRole: EVENT_CATEGORY_EVENT_ROLE_PERMS}
+                            signinOverwrites = {sharedRole: CLOSED_EVENT_SIGNIN_CHANNEL_SHARED_PERMS, eventRole: EVENT_SIGNIN_CHANNEL_EVENT_PERMS}
+                            if eventRole != ctx.guild.default_role:
+                                categoryOverwrites[ctx.guild.default_role] = EVENT_CATEGORY_EVERYONE_PERMS
+                                signinOverwrites[ctx.guild.default_role] = EVENT_CATEGORY_EVERYONE_PERMS
+                            newCategory = await ctx.guild.create_category(eventName.title(), reason=creationReason, overwrites=categoryOverwrites)
+                            signinChannel = await ctx.guild.create_text_channel(f"{eventName.title()}-signin", reason=creationReason, category=newCategory, overwrites=signinOverwrites)
+                            eventGeneral = await ctx.guild.create_text_channel(f"{eventName.title()}-general", reason=creationReason, category=newCategory, overwrites=categoryOverwrites)
                             signinMenuMsg = await signinChannel.send("‎")
                             signinMenu = ReactionRoleMenu(signinMenuMsg, self.bot, {signinEmoji: eventRole}, col=Colour.blue(), titleTxt=f"Sign Into {eventName.title()}",
                                                             desc=f"If you're attending this event, react to this message to get the '{eventRole.name}' role, and access to secret event channels!")
