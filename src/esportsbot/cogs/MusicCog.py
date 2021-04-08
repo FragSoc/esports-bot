@@ -1,6 +1,6 @@
 import concurrent.futures
 import asyncio
-import math
+import sys
 import os
 import time
 
@@ -120,7 +120,7 @@ class MusicCog(commands.Cog):
 
         cleaned_channel_id = get_cleaned_id(given_channel_id)
 
-        is_valid_channel_id = (len(cleaned_channel_id) == 18) and strIsInt(cleaned_channel_id)
+        is_valid_channel_id = (len(str(cleaned_channel_id)) == 18) and strIsInt(cleaned_channel_id)
 
         if not is_valid_channel_id:
             # The channel id given is not valid.. exit
@@ -142,13 +142,13 @@ class MusicCog(commands.Cog):
         if len(current_channel_for_guild) > 0:
             # There is already a channel set.. update
             self.__db_accessor.update('music_channels', set_params={
-                'channel_id': given_channel_id}, where_params={'guild_id': ctx.guild.id})
+                'channel_id': cleaned_channel_id}, where_params={'guild_id': ctx.guild.id})
         else:
             # No channel for guild.. insert
             self.__db_accessor.insert('music_channels', params={
-                'channel_id': int(given_channel_id), 'guild_id': int(ctx.guild.id)})
+                'channel_id': int(cleaned_channel_id), 'guild_id': int(ctx.guild.id)})
 
-        await self.__setup_channel(ctx, int(given_channel_id), args)
+        await self.__setup_channel(ctx, int(cleaned_channel_id), args)
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -436,17 +436,17 @@ class MusicCog(commands.Cog):
             channel_id: The id of the music channel
             arg:
         """
-        channel_instance = await self._bot.get_channel(channel_id)
+        channel_instance = self._bot.get_channel(channel_id)
         if channel_instance is None:
             channel_instance = await self._bot.fetch_channel(channel_id)
-        channel_messages = await channel_instance.history(limit=1)
+        channel_messages = await channel_instance.history(limit=2).flatten()
         if len(channel_messages) > 1:
             # If there are messages in the channel
             if arg is None:
                 await ctx.channel.send(
                     "The channel is not empty, if you want to clear the channel for use, use !setmusicchannel -c <id>")
             elif arg == '-c':
-                await channel_instance.purge(limit=int(math.inf))
+                await channel_instance.purge(limit=int(sys.maxsize))
 
         temp_default_preview = EMPTY_PREVIEW_MESSAGE.copy()
         self.__add_time_remaining_field(ctx.guild.id, temp_default_preview)
@@ -481,6 +481,7 @@ class MusicCog(commands.Cog):
         return False
 
     async def __check_next_song(self, guild_id):
+        # TODO: Check spam updates
         """
         Check if there is another song to play after the current one. If no more songs, mark the channel as in active,
         otherwise play the next song.
