@@ -1,11 +1,14 @@
 import concurrent.futures
 import asyncio
+import math
 import os
 import time
 
 import requests
 import youtube_dl
 import re
+
+from enum import IntEnum
 from youtubesearchpython import VideosSearch
 
 from discord import Message, VoiceClient, TextChannel, Embed, Colour, FFmpegOpusAudio
@@ -21,27 +24,55 @@ from urllib.parse import parse_qs, urlparse
 
 import html
 
-from random import shuffle, uniform
+from random import shuffle, uniform, choice
 from collections import defaultdict
+
+from ..lib.discordUtil import send_timed_message
+from ..lib.stringTyping import strIsInt
 
 
 class EmbedColours:
+    green = Colour(0x1f8b4c)
+    orange = Colour(0xe67e22)
+    red = Colour(0xe74c3c)
+    music = Colour(0xd462fd)
 
-    @staticmethod
-    def green():
-        return Colour(0x1f8b4c)
 
-    @staticmethod
-    def orange():
-        return Colour(0xe67e22)
+class MessageTypeEnum(IntEnum):
+    url = 0
+    playlist = 1
+    string = 2
 
-    @staticmethod
-    def red():
-        return Colour(0xe74c3c)
 
-    @staticmethod
-    def music():
-        return Colour(0xd462fd)
+EMPTY_QUEUE_MESSAGE = "**__Queue list:__**\n" \
+                      "Join a VoiceChannel and search a song by name or YouTube url.\n"
+
+EMPTY_PREVIEW_MESSAGE = Embed(title="No song currently playing",
+                              colour=EmbedColours.music,
+                              footer="Use the prefix ! for commands"
+                              )
+EMPTY_PREVIEW_MESSAGE.set_image(url="http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png")
+EMPTY_PREVIEW_MESSAGE.set_footer(text="Definitely not made by fuxticks#1809 on discord")
+
+# Bitrate quality can be 0,1,2: 0 is best, 2 is worst
+BITRATE_QUALITY = 0
+
+FFMPEG_BEFORE_OPT = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+
+GOOGLE_API_KEY = os.getenv('GOOGLE_API')
+YOUTUBE_API = googleapiclient.discovery.build("youtube", "v3", developerKey=GOOGLE_API_KEY)
+
+BOT_INACTIVE_MINUTES = 2
+
+# Using a random user agent means there is less chance of being blocked by google
+USER_AGENT_LIST = ['Mozilla/5.0 CK={} (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
+                   'Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1',
+                   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                   + 'Chrome/74.0.3729.169 Safari/537.36',
+                   'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)',
+                   'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1',
+                   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                   + 'Chrome/74.0.3729.157 Safari/537.36']
 
 
 class MusicCog(commands.Cog):
@@ -56,27 +87,14 @@ class MusicCog(commands.Cog):
 
         self.__check_loops_alive()
 
-        self._empty_queue_message = "**__Queue list:__**\n" \
-                                    "Join a VoiceChannel and search a song by name or YouTube url.\n"
-
-        self._no_current_song_message = Embed(title="No song currently playing",
-                                              colour=EmbedColours.music(),
-                                              footer="Use the prefix ! for commands"
-                                              )
-        self._no_current_song_message.set_image(
-            url="http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png")
-        self._no_current_song_message.set_footer(text="Definitely not made by fuxticks#1809 on discord")
-        # Bitrate quality 0->2 inclusive, 0 is best, 2 is worst
-        self._bitrate_quality = 0
-
-        self._API_KEY = os.getenv('GOOGLE_API')
-
         self._time_allocation = defaultdict(lambda: self._allowed_time)
         # Seconds of song (time / day) / server
         # Currently 2 hours of playtime for each server per day
         self._allowed_time = 7200
 
         self._youtube_last_pinged = 0
+
+        self.__db_accessor = db_gateway()
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -96,39 +114,39 @@ class MusicCog(commands.Cog):
 
         if given_channel_id is None:
             # No given channel id.. exit
-            message = Embed(title="A channel id is a required argument", colour=EmbedColours.red())
-            await self.__send_timed_message(ctx.channel, message, timer=30)
+            message = Embed(title="A channel id is a required argument", colour=EmbedColours.red)
+            await send_timed_message(ctx.channel, embed=message, timer=30)
             return
 
         cleaned_channel_id = get_cleaned_id(given_channel_id)
 
-        is_valid_channel_id = (len(cleaned_channel_id) == 18) and cleaned_channel_id.isdigit()
+        is_valid_channel_id = (len(cleaned_channel_id) == 18) and strIsInt(cleaned_channel_id)
 
         if not is_valid_channel_id:
             # The channel id given is not valid.. exit
-            message = Embed(title="The id given was not a valid id", colour=EmbedColours.red())
-            await self.__send_timed_message(ctx.channel, message, timer=30)
+            message = Embed(title="The id given was not a valid id", colour=EmbedColours.red)
+            await send_timed_message(ctx.channel, embed=message, timer=30)
             return
 
-        guild_text_channel_ids = [str(x.id) for x in ctx.guild.text_channels]
+        music_channel_instance = ctx.guild.get_channel(cleaned_channel_id)
 
-        if str(given_channel_id) not in guild_text_channel_ids:
+        if not isinstance(music_channel_instance, TextChannel):
             # The channel id given not for a text channel.. exit
-            message = Embed(title="The id given must be of a text channel", colour=EmbedColours.red())
-            await self.__send_timed_message(ctx.channel, message, timer=30)
+            message = Embed(title="The id given must be of a text channel", colour=EmbedColours.red)
+            await send_timed_message(ctx.channel, embed=message, timer=30)
             return
 
-        current_channel_for_guild = db_gateway().get('music_channels', params={
-            'guild_id': ctx.author.guild.id})
+        current_channel_for_guild = self.__db_accessor.get('music_channels', params={
+            'guild_id': ctx.guild.id})
 
         if len(current_channel_for_guild) > 0:
             # There is already a channel set.. update
-            db_gateway().update('music_channels', set_params={
-                'channel_id': given_channel_id}, where_params={'guild_id': ctx.author.guild.id})
+            self.__db_accessor.update('music_channels', set_params={
+                'channel_id': given_channel_id}, where_params={'guild_id': ctx.guild.id})
         else:
             # No channel for guild.. insert
-            db_gateway().insert('music_channels', params={
-                'channel_id': int(given_channel_id), 'guild_id': int(ctx.author.guild.id)})
+            self.__db_accessor.insert('music_channels', params={
+                'channel_id': int(given_channel_id), 'guild_id': int(ctx.guild.id)})
 
         await self.__setup_channel(ctx, int(given_channel_id), args)
 
@@ -140,12 +158,12 @@ class MusicCog(commands.Cog):
         :param ctx: The context of the message.
         """
 
-        current_channel_for_guild = db_gateway().get('music_channels', params={
-            'guild_id': ctx.author.guild.id})
+        current_channel_for_guild = self.__db_accessor.get('music_channels', params={
+            'guild_id': ctx.guild.id})
 
-        if current_channel_for_guild[0].get('channel_id'):
+        if current_channel_for_guild and current_channel_for_guild[0].get('channel_id'):
             # If the music channel has been set in the guild
-            id_as_channel = [x for x in ctx.guild.channels if x.id == current_channel_for_guild[0].get('channel_id')][0]
+            id_as_channel = ctx.guild.get_channel(current_channel_for_guild[0].get('channel_id'))
             await ctx.channel.send(f"Music channel is set to {id_as_channel.mention}")
         else:
             await ctx.channel.send("Music channel has not been set")
@@ -158,14 +176,14 @@ class MusicCog(commands.Cog):
         :param ctx: The context of the message.
         """
 
-        current_channel_for_guild = db_gateway().get('music_channels', params={
-            'guild_id': ctx.author.guild.id})
+        current_channel_for_guild = self.__db_accessor.get('music_channels', params={
+            'guild_id': ctx.guild.id})
 
-        if current_channel_for_guild[0].get('channel_id'):
+        if current_channel_for_guild and current_channel_for_guild[0].get('channel_id'):
             # If the music channel has been set for the guild
             await self.__setup_channel(ctx, arg='-c', channel_id=current_channel_for_guild[0].get('channel_id'))
             message = "Successfully reset the music channel"
-            await self.__send_timed_message(ctx.channel, message, timer=20, is_embed=False)
+            await send_timed_message(ctx.channel, message, timer=20)
         else:
             await ctx.channel.send("Music channel has not been set")
 
@@ -180,22 +198,37 @@ class MusicCog(commands.Cog):
 
         if not self.__check_valid_user_vc(ctx):
             # Check if the user is in a valid voice channel
-            message = Embed(title="You are not in the voice channel with the bot", colour=EmbedColours.orange())
-            await self.__send_timed_message(ctx.channel, message)
+            message = Embed(title="You are not in the voice channel with the bot", colour=EmbedColours.orange)
+            await send_timed_message(ctx.channel, embed=message)
+            return
+
+        if not strIsInt(song_index):
+            message = Embed(title="To remove a song you must provide a number of a song in the queue",
+                            colour=EmbedColours.orange)
+            await send_timed_message(ctx.channel, embed=message)
+            return
+
+        if int(song_index) < 1:
+            message = Embed(title="The number of the song to remove must be greater than 1",
+                            colour=EmbedColours.orange)
+            await send_timed_message(ctx.channel, embed=message)
             return
 
         if len(self._currently_active.get(ctx.guild.id).get('queue')) < (int(song_index) - 1):
             # The index given is out of the bounds of the current queue
             message = Embed(title=f"There is no song at position {song_index} in the queue",
-                            colour=EmbedColours.orange())
-            await self.__send_timed_message(ctx.channel, message)
+                            description=f"A valid number is between 1 "
+                                        f"and {len(self._currently_active.get(ctx.guild.id).get('queue'))}.",
+                            colour=EmbedColours.orange)
+            await send_timed_message(ctx.channel, embed=message)
             return
 
-        self._currently_active[ctx.guild.id]['queue'].pop(int(song_index) - 1)
+        song_popped = self._currently_active[ctx.guild.id]['queue'].pop(int(song_index) - 1)
         await self.__update_channel_messages(ctx.guild.id)
         await ctx.message.delete()
-        message = Embed(title=f"Removed song at position {song_index} in the queue", colour=EmbedColours.green())
-        await self.__send_timed_message(ctx.channel, message)
+        message = Embed(title=f"Removed {song_popped.get('title')} from position {song_index} in the queue",
+                        colour=EmbedColours.green)
+        await send_timed_message(ctx.channel, embed=message)
 
     @commands.command()
     async def pausesong(self, ctx: Context):
@@ -211,8 +244,8 @@ class MusicCog(commands.Cog):
 
         self.__pause_song(ctx.guild.id)
         await ctx.message.delete()
-        message = Embed(title="Song Paused", colour=EmbedColours.music())
-        await self.__send_timed_message(ctx.channel, message, timer=20)
+        message = Embed(title="Song Paused", colour=EmbedColours.music)
+        await send_timed_message(ctx.channel, embed=message, timer=20)
 
     @commands.command()
     async def resumesong(self, ctx: Context):
@@ -228,8 +261,8 @@ class MusicCog(commands.Cog):
 
         self.__resume_song(ctx.guild.id)
         await ctx.message.delete()
-        message = Embed(title="Song Resumed", colour=EmbedColours.music())
-        await self.__send_timed_message(ctx.channel, message, timer=20)
+        message = Embed(title="Song Resumed", colour=EmbedColours.music)
+        await send_timed_message(ctx.channel, embed=message, timer=20)
 
     @commands.command()
     async def kickbot(self, ctx: Context):
@@ -245,8 +278,8 @@ class MusicCog(commands.Cog):
 
         await self.__remove_active_channel(ctx.guild.id)
         await ctx.message.delete()
-        message = Embed(title="I have left the Voice Channel", colour=EmbedColours.music())
-        await self.__send_timed_message(ctx.channel, message, timer=20)
+        message = Embed(title="I have left the Voice Channel", colour=EmbedColours.music)
+        await send_timed_message(ctx.channel, embed=message, timer=20)
 
     @commands.command()
     async def skipsong(self, ctx: Context):
@@ -269,8 +302,8 @@ class MusicCog(commands.Cog):
 
         await self.__check_next_song(ctx.guild.id)
         await ctx.message.delete()
-        message = Embed(title="Song Skipped!", colour=EmbedColours.music(), time=5)
-        await self.__send_timed_message(ctx.channel, message)
+        message = Embed(title="Song Skipped!", colour=EmbedColours.music, time=5)
+        await send_timed_message(ctx.channel, embed=message)
 
     @commands.command()
     async def listqueue(self, ctx: Context):
@@ -281,7 +314,7 @@ class MusicCog(commands.Cog):
         """
 
         # We don't want the song channel to be filled with the queue as it already shows it
-        music_channel_in_db = db_gateway().get('music_channels', params={'guild_id': ctx.guild.id})
+        music_channel_in_db = self.__db_accessor.get('music_channels', params={'guild_id': ctx.guild.id})
         if ctx.message.channel.id == music_channel_in_db[0].get('channel_id'):
             # Message is in the songs channel
             return
@@ -313,8 +346,8 @@ class MusicCog(commands.Cog):
 
         await self.__update_channel_messages(ctx.guild.id)
         await ctx.message.delete()
-        message = Embed(title="Queue Cleared!", colour=EmbedColours.music())
-        await self.__send_timed_message(ctx.channel, message)
+        message = Embed(title="Queue Cleared!", colour=EmbedColours.music)
+        await send_timed_message(ctx.channel, embed=message)
 
     @commands.command()
     async def shufflequeue(self, ctx: Context):
@@ -337,8 +370,8 @@ class MusicCog(commands.Cog):
         shuffle(self._currently_active.get(ctx.guild.id)['queue'])
         self._currently_active.get(ctx.guild.id).get('queue').insert(0, current_top)
 
-        message = Embed(title="Queue shuffled!", colour=EmbedColours.green())
-        await self.__send_timed_message(ctx.channel, message, timer=10)
+        message = Embed(title="Queue shuffled!", colour=EmbedColours.green)
+        await send_timed_message(ctx.channel, embed=message, timer=10)
         await ctx.message.delete()
 
     @tasks.loop(seconds=1)
@@ -373,8 +406,9 @@ class MusicCog(commands.Cog):
         marked_copy = self._marked_channels.copy()
         for guild_id in marked_copy.keys():
             guild_time = self._marked_channels.get(guild_id)
-            if time.time() - guild_time >= 60 * 2:
-                # If the time since inactivity has been more than 5 minutes leave the channel
+            if time.time() - guild_time >= 60 * BOT_INACTIVE_MINUTES:
+                # If the time since inactivity has been more than the minutes specified by BOT_TIMEOUT_MINUTES,
+                # leave the channel
                 asyncio.create_task(self.__remove_active_channel(guild_id))
                 self._marked_channels.pop(guild_id)
             elif self.__check_empty_vc(guild_id):
@@ -393,22 +427,6 @@ class MusicCog(commands.Cog):
         """
         self._time_allocation = defaultdict(lambda: self._allowed_time)
 
-    async def __send_timed_message(self, channel, message, timer=15, is_embed=True):
-        """
-        Sends a message to a specific channel that gets deleted  after a given amount of seconds.
-        Args:
-            channel: The channel to send the message to.
-            message: The message to send.
-            timer: The number of seconds before the message is deleted.
-            is_embed: If the message param is an embed message or just a string.
-        """
-        if is_embed:
-            # The message param is an embed message
-            timed_message = await channel.send(embed=message)
-        else:
-            timed_message = await channel.send(message)
-        await timed_message.delete(delay=timer)
-
     async def __setup_channel(self, ctx: Context, channel_id, arg):
         """
         Sends the preview and queue messages to the music channel and adds the ids of the messages to the database.
@@ -418,29 +436,30 @@ class MusicCog(commands.Cog):
             channel_id: The id of the music channel
             arg:
         """
-        channel_instance: TextChannel = await self._bot.fetch_channel(channel_id)
-        channel_messages = await channel_instance.history().flatten()
-        if len(channel_messages) > 0:
+        channel_instance = await self._bot.get_channel(channel_id)
+        if channel_instance is None:
+            channel_instance = await self._bot.fetch_channel(channel_id)
+        channel_messages = await channel_instance.history(limit=1)
+        if len(channel_messages) > 1:
             # If there are messages in the channel
             if arg is None:
                 await ctx.channel.send(
                     "The channel is not empty, if you want to clear the channel for use, use !setmusicchannel -c <id>")
             elif arg == '-c':
-                for message in channel_messages:
-                    await message.delete()
+                await channel_instance.purge(limit=int(math.inf))
 
-        temp_default_preview = self._no_current_song_message
+        temp_default_preview = EMPTY_PREVIEW_MESSAGE.copy()
         self.__add_time_remaining_field(ctx.guild.id, temp_default_preview)
 
         # Send the messages and record their ids
-        default_queue_message = await channel_instance.send(self._empty_queue_message)
+        default_queue_message = await channel_instance.send(EMPTY_QUEUE_MESSAGE)
         default_preview_message = await channel_instance.send(embed=temp_default_preview)
 
-        db_gateway().update('music_channels', set_params={'queue_message_id': int(default_queue_message.id)},
-                            where_params={'guild_id': ctx.author.guild.id})
+        self.__db_accessor.update('music_channels', set_params={'queue_message_id': int(default_queue_message.id)},
+                                  where_params={'guild_id': ctx.author.guild.id})
 
-        db_gateway().update('music_channels', set_params={'preview_message_id': int(default_preview_message.id)},
-                            where_params={'guild_id': ctx.author.guild.id})
+        self.__db_accessor.update('music_channels', set_params={'preview_message_id': int(default_preview_message.id)},
+                                  where_params={'guild_id': ctx.author.guild.id})
 
     async def __remove_active_channel(self, guild_id) -> bool:
         """
@@ -524,17 +543,17 @@ class MusicCog(commands.Cog):
 
         if not message.author.voice:
             # User is not in a voice channel.. exit
-            send = Embed(title="You must be in a voice channel to add a song", colour=EmbedColours.orange())
+            send = Embed(title="You must be in a voice channel to add a song", colour=EmbedColours.orange)
             await message.delete()
-            await self.__send_timed_message(message.channel, send, timer=10)
+            await send_timed_message(message.channel, embed=send, timer=10)
             return
 
         if not message.author.voice.channel.permissions_for(message.guild.me).connect:
             # The bot does not have permission to join the channel.. exit
             send = Embed(title="I need the permission `connect` to be able to join that channel",
-                         colour=EmbedColours.orange())
+                         colour=EmbedColours.orange)
             await message.delete()
-            await self.__send_timed_message(message.channel, send, timer=10)
+            await send_timed_message(message.channel, embed=send, timer=10)
             return
 
         if not self._currently_active.get(message.guild.id):
@@ -545,9 +564,9 @@ class MusicCog(commands.Cog):
         else:
             if self._currently_active.get(message.guild.id).get('channel_id') != message.author.voice.channel.id:
                 # The bot is already being used in the current guild.
-                send = Embed(title="I am already in another voice channel in this server", colour=EmbedColours.orange())
+                send = Embed(title="I am already in another voice channel in this server", colour=EmbedColours.orange)
                 await message.delete()
-                await self.__send_timed_message(message.channel, send, timer=10)
+                await send_timed_message(message.channel, embed=send, timer=10)
                 return
 
         # Check if the loops for marked and active channels are running.
@@ -555,14 +574,15 @@ class MusicCog(commands.Cog):
 
         # Splits multiline messages into a list. Single line messages return a list of [message]
         split_message = message.content.split("\n")
-        split_message = list(filter(lambda k: k.replace(' ', '') != '', split_message))
-        partial_success = True
+        split_message = [k for k in split_message if k not in ('', ' ')]
+        partial_success = False
 
         # Add each line of the message to the queue
         st = time.time()
         for line in split_message:
             partial_success = await self.process_song_request(message, line) or partial_success
-        print('Queue time:' + str(time.time() - st))
+
+        print(f"Queue time: {time.strftime('%H:%M:%S', time.gmtime(time.time() - st))}")
         # If any of the songs were successful, ensure that the channel is no long marked as inactive.
         if partial_success:
             if message.guild.id in self._marked_channels:
@@ -580,12 +600,12 @@ class MusicCog(commands.Cog):
         """
 
         message_type = self.__determine_message_type(request)
-        if message_type == 1:
+        if message_type == MessageTypeEnum.url:
             return await self.__add_song_to_queue(message.guild.id, request)
-        elif message_type == 0:
+        elif message_type == MessageTypeEnum.playlist:
             individual_links = self.__find_playlist_songs(request)
             return await self.__add_song_to_queue(message.guild.id, individual_links)
-        elif message_type == 2:
+        elif message_type == MessageTypeEnum.string:
             queried_song = self.__find_query(request)
             return await self.__add_song_to_queue(message.guild.id, queried_song)
 
@@ -595,7 +615,7 @@ class MusicCog(commands.Cog):
         :param guild_id: The guild id of the guild to be updated.
         """
 
-        guild_db_data = db_gateway().get('music_channels', params={'guild_id': guild_id})[0]
+        guild_db_data = self.__db_accessor.get('music_channels', params={'guild_id': guild_id})[0]
 
         # Get the ids of the queue and preview messages
         queue_message_id = guild_db_data.get('queue_message_id')
@@ -607,7 +627,9 @@ class MusicCog(commands.Cog):
 
         music_channel_id = guild_db_data.get('channel_id')
         # Get the music channel id as a discord.TextChannel object
-        music_channel_instance = await self._bot.fetch_channel(music_channel_id)
+        music_channel_instance = await self._bot.get_channel(music_channel_id)
+        if music_channel_instance is None:
+            music_channel_instance = await self._bot.fetch_channel(music_channel_id)
 
         # Get the message ids as discord.Message objects
         queue_message_instance: Message = await music_channel_instance.fetch_message(queue_message_id)
@@ -626,7 +648,7 @@ class MusicCog(commands.Cog):
 
         if not self._currently_active.get(guild_id) or len(self._currently_active.get(guild_id).get('queue')) == 0:
             # If the queue is empty or the bot isn't active
-            updated_queue_message = self._empty_queue_message
+            updated_queue_message = EMPTY_QUEUE_MESSAGE
         else:
             updated_queue_message = self.__make_queue_list(guild_id)
 
@@ -641,11 +663,11 @@ class MusicCog(commands.Cog):
 
         if not self._currently_active.get(guild_id) or len(self._currently_active.get(guild_id).get('queue')) == 0:
             # If the queue is empty, provide the empty queue embed or the bot isn't active
-            updated_preview_message = self._no_current_song_message
+            updated_preview_message = EMPTY_PREVIEW_MESSAGE
         else:
             current_song = self._currently_active.get(guild_id).get('current_song')
             updated_preview_message = Embed(title="Currently Playing: " + current_song.get('title'),
-                                            colour=Colour(0xd462fd), url=current_song.get('link'),
+                                            colour=EmbedColours.music, url=current_song.get('link'),
                                             video=current_song.get('link'))
             updated_preview_message.set_image(url=current_song.get('thumbnail'))
 
@@ -668,8 +690,7 @@ class MusicCog(commands.Cog):
         :param links: The list of video links.
         :return: A dict of each link with their video titles.
         """
-        threads = min(20, len(links))
-        with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
             generator = executor.map(self.__get_basic_song_information, links)
             return generator
 
@@ -680,21 +701,12 @@ class MusicCog(commands.Cog):
         :return: A dict with link and title keys.
         """
 
-        # Using a random user agent means there is less chance of being blocked by google
-        user_agents = ['Mozilla/5.0 CK={} (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
-                       'Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1',
-                       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                       + 'Chrome/74.0.3729.169 Safari/537.36',
-                       'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)',
-                       'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1',
-                       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                       + 'Chrome/74.0.3729.157 Safari/537.36']
-        shuffle(user_agents)
         # Wait some random time if its been less than 2 seconds since last ping
         if self._youtube_last_pinged - time.time() < 2:
             await asyncio.sleep(float(2) + uniform(0.1, 2.1))
-        headers = {'User-Agent': user_agents[0], 'Referer': 'https://www.google.co.uk/'}
+        headers = {'User-Agent': choice(USER_AGENT_LIST), 'Referer': 'https://www.google.co.uk/'}
 
+        # TODO: Use aiohttp
         resp = requests.get(url, headers=headers)
         text = resp.text
         page_title = text[text.find('<title>') + 7:text.find('</title>')]
@@ -762,7 +774,7 @@ class MusicCog(commands.Cog):
         :return: If all the above conditions are met, True, otherwise False.
         """
 
-        music_channel_in_db = db_gateway().get('music_channels', params={'guild_id': ctx.guild.id})
+        music_channel_in_db = self.__db_accessor.get('music_channels', params={'guild_id': ctx.guild.id})
         if ctx.message.channel.id != music_channel_in_db[0].get('channel_id'):
             # Message is not in the songs channel
             return False
@@ -788,12 +800,12 @@ class MusicCog(commands.Cog):
             # The message is a url
             if re.search(r'(playlist)', message):
                 # The message is a playlist
-                return 0
+                return MessageTypeEnum.playlist
             else:
-                return 1
+                return MessageTypeEnum.url
         else:
             # The message is a string
-            return 2
+            return MessageTypeEnum.string
 
     def __get_opus_stream(self, formats):
         """
@@ -808,7 +820,7 @@ class MusicCog(commands.Cog):
         # Sort the formats from highest br to lowest
         sorted_opus = list(sorted(opus_formats, key=lambda k: float(k.get('abr')), reverse=True))
 
-        chosen_stream = sorted_opus[self._bitrate_quality]
+        chosen_stream = sorted_opus[BITRATE_QUALITY]
 
         return chosen_stream.get('url'), chosen_stream.get('abr')
 
@@ -836,9 +848,7 @@ class MusicCog(commands.Cog):
         """
 
         # Sort by thumbnail size
-        sorted_thumbnails = list(sorted(thumbnails, key=lambda k: int(k.get('height')), reverse=True))
-
-        return sorted_thumbnails[0].get('url')
+        return max(thumbnails, key=lambda k: int(k.get('height'))).get('url')
 
     def __is_url(self, string):
         """
@@ -851,11 +861,7 @@ class MusicCog(commands.Cog):
         re_desktop = r'(http[s]?://)?youtube.com/(watch\?v)|(playlist\?list)='
         re_mobile = r'(http[s]?://)?youtu.be/([a-zA-Z]|[0-9])+'
 
-        re_string = "(" + re_desktop + ") | (" + re_mobile + ")"
-
-        if re.search(re_desktop, string) or re.search(re_mobile, string):
-            return True
-        return False
+        return re.search(re_desktop, string) or re.search(re_mobile, string)
 
     def __download_video_info(self, link, download=False):
         """
@@ -953,8 +959,7 @@ class MusicCog(commands.Cog):
 
         self._currently_active.get(guild_id)['current_song'] = next_song
 
-        before = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
-        voice_client.play(FFmpegOpusAudio(next_song.get('stream'), before_options=before,
+        voice_client.play(FFmpegOpusAudio(next_song.get('stream'), before_options=FFMPEG_BEFORE_OPT,
                                           bitrate=int(next_song.get('bitrate')) + 10))
         voice_client.volume = 100
 
@@ -967,7 +972,7 @@ class MusicCog(commands.Cog):
         :return: A string representing the queue list.
         """
 
-        queue_string = self._empty_queue_message
+        queue_string = EMPTY_QUEUE_MESSAGE
         if len(self._currently_active.get(guild_id).get('queue')) > 30:
             # The queue is too long to display
             first_part = self._currently_active.get(guild_id).get('queue')[:10]
@@ -990,14 +995,7 @@ class MusicCog(commands.Cog):
         :param songs: The list of songs to turn into a string.
         :return: A string representing a queue list.
         """
-
-        string = ""
-        for x in range(len(songs)):
-            index = x + 1
-            item = songs[x]
-            string += f"{index}. {item.get('title')}\n"
-
-        return string
+        return "\n".join(str(songNum + 1) + ". " + song.get('title') for songNum, song in enumerate(songs))
 
     def __find_playlist_songs(self, playlist_link):
         """
@@ -1008,9 +1006,8 @@ class MusicCog(commands.Cog):
 
         query = parse_qs(urlparse(playlist_link).query, keep_blank_values=True)
         playlist_id = query["list"][0]
-        youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=self._API_KEY)
 
-        request = youtube.playlistItems().list(
+        request = YOUTUBE_API.playlistItems().list(
             part="snippet",
             playlistId=playlist_id,
             maxResults=50
@@ -1021,7 +1018,7 @@ class MusicCog(commands.Cog):
         while request is not None:
             response = request.execute()
             playlist_items += response["items"]
-            request = youtube.playlistItems().list_next(request, response)
+            request = YOUTUBE_API.playlistItems().list_next(request, response)
 
         playlist_links = [f'https://www.youtube.com/watch?v={t["snippet"]["resourceId"]["videoId"]}'
                           for t in playlist_items]

@@ -175,7 +175,7 @@ async def on_command_error(ctx: Context, exception: Exception):
 
 @client.event
 async def on_message(message):
-    if message.author != message.guild.me:
+    if not message.author.bot:
         # Ignore self messages
         guild_id = message.guild.id
         music_channel_in_db = db_gateway().get('music_channels', params={'guild_id': guild_id})
