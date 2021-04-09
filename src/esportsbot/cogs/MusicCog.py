@@ -81,6 +81,10 @@ class MusicCog(commands.Cog):
 
         self.__db_accessor = db_gateway()
 
+    async def __send_message_and_delete(self, message: Embed, ctx: Context):
+        await send_timed_message(ctx.channel, embed=message)
+        await ctx.message.delete()
+
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def setmusicchannel(self, ctx: Context, args: str = None, given_channel_id: str = None) -> bool:
@@ -183,25 +187,27 @@ class MusicCog(commands.Cog):
         :param song_index: The index of the song to remove. Index starting from 1.
         :return: A boolean of if the removal of the song at the given index was successful.
         """
+        if not self._currently_active.get(ctx.guild.id):
+            # Not currently active
+            await self.__send_message_and_delete(Embed(title="I am not playing anything currently",
+                                                       colour=EmbedColours.music),
+                                                 ctx)
+            return False
 
-        await ctx.message.delete()
-
-        if not self.__check_valid_user_vc(ctx):
+        if not await self.__check_valid_user_vc(ctx):
             # Check if the user is in a valid voice channel
-            message = Embed(title="You are not in the voice channel with the bot", colour=EmbedColours.orange)
-            await send_timed_message(ctx.channel, embed=message)
             return False
 
         if not strIsInt(song_index):
-            message = Embed(title="To remove a song you must provide a number of a song in the queue",
-                            colour=EmbedColours.orange)
-            await send_timed_message(ctx.channel, embed=message)
+            await self.__send_message_and_delete(Embed(title="To remove a song you must provide a number "
+                                                           "of a song in the queue", colour=EmbedColours.orange),
+                                                 ctx)
             return False
 
         if int(song_index) < 1:
-            message = Embed(title="The number of the song to remove must be greater than 1",
-                            colour=EmbedColours.orange)
-            await send_timed_message(ctx.channel, embed=message)
+            await self.__send_message_and_delete(Embed(title="The number of the song to remove must be greater than 1",
+                                                       colour=EmbedColours.orange),
+                                                 ctx)
             return False
 
         if len(self._currently_active.get(ctx.guild.id).get('queue')) < (int(song_index) - 1):
@@ -210,14 +216,14 @@ class MusicCog(commands.Cog):
                             description=f"A valid number is between 1 "
                                         f"and {len(self._currently_active.get(ctx.guild.id).get('queue'))}.",
                             colour=EmbedColours.orange)
-            await send_timed_message(ctx.channel, embed=message)
+            await self.__send_message_and_delete(message, ctx)
             return False
 
         song_popped = self._currently_active[ctx.guild.id]['queue'].pop(int(song_index) - 1)
         await self.__update_channel_messages(ctx.guild.id)
         message = Embed(title=f"Removed {song_popped.get('title')} from position {song_index} in the queue",
                         colour=EmbedColours.green)
-        await send_timed_message(ctx.channel, embed=message)
+        await self.__send_message_and_delete(message, ctx)
         return True
 
     @commands.command()
@@ -228,16 +234,22 @@ class MusicCog(commands.Cog):
         :return: A boolean if the pausing of the current playback was successful.
         """
 
-        await ctx.message.delete()
+        if not self._currently_active.get(ctx.guild.id):
+            # Not currently active
+            await self.__send_message_and_delete(Embed(title="I am not playing anything currently",
+                                                       colour=EmbedColours.music),
+                                                 ctx)
+            return False
 
-        if not self.__check_valid_user_vc(ctx):
+        if not await self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
             return False
 
         if self.__pause_song(ctx.guild.id):
-            message = Embed(title="Song Paused", colour=EmbedColours.music)
-            await send_timed_message(ctx.channel, embed=message, timer=20)
+            await self.__send_message_and_delete(Embed(title="Song Paused", colour=EmbedColours.music), ctx)
             return True
+
+        await ctx.message.delete()
         return False
 
     @commands.command()
@@ -248,16 +260,23 @@ class MusicCog(commands.Cog):
         :return: A boolean if the playback was resumed successfully.
         """
 
-        await ctx.message.delete()
+        if not self._currently_active.get(ctx.guild.id):
+            # Not currently active
+            await self.__send_message_and_delete(Embed(title="There is nothing to resume at the moment...",
+                                                       colour=EmbedColours.music),
+                                                 ctx)
+            return False
 
-        if not self.__check_valid_user_vc(ctx):
+        if not await self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
             return False
 
         if self.__resume_song(ctx.guild.id):
             message = Embed(title="Song Resumed", colour=EmbedColours.music)
             await send_timed_message(ctx.channel, embed=message, timer=20)
+            await ctx.message.delete()
             return True
+        await ctx.message.delete()
         return False
 
     @commands.command()
@@ -267,16 +286,25 @@ class MusicCog(commands.Cog):
         :param ctx: The context of the message.
         :return: A boolean if the bot was removed from the voice channel successfully.
         """
-        await ctx.message.delete()
 
-        if not self.__check_valid_user_vc(ctx):
+        if not self._currently_active.get(ctx.guild.id):
+            # Not currently active
+            message = Embed(title="I am not in a channel at the moment", colour=EmbedColours.music)
+            await send_timed_message(ctx.channel, embed=message)
+            await ctx.message.delete()
+            return False
+
+        if not await self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
+            await ctx.message.delete()
             return False
 
         if await self.__remove_active_channel(ctx.guild.id):
             message = Embed(title="I have left the Voice Channel", colour=EmbedColours.music)
             await send_timed_message(ctx.channel, embed=message, timer=20)
+            await ctx.message.delete()
             return True
+        await ctx.message.delete()
         return False
 
     @commands.command()
@@ -287,21 +315,29 @@ class MusicCog(commands.Cog):
         :return: None
         """
 
-        await ctx.message.delete()
+        if not self._currently_active.get(ctx.guild.id):
+            # Not currently active
+            message = Embed(title="I am not currently active", colour=EmbedColours.music)
+            await send_timed_message(ctx.channel, embed=message)
+            await ctx.message.delete()
+            return False
 
-        if not self.__check_valid_user_vc(ctx):
+        if not await self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
+            await ctx.message.delete()
             return False
 
         # TODO: Decide if the bot should leave the vc if the queue is empty after skipping.
         if len(self._currently_active.get(ctx.guild.id).get('queue')) == 1:
             # Skipping when only one song in the queue will just kick the bot
             await self.__remove_active_channel(ctx.guild.id)
+            await ctx.message.delete()
             return True
 
         await self.__check_next_song(ctx.guild.id)
         message = Embed(title="Song Skipped!", colour=EmbedColours.music, time=5)
         await send_timed_message(ctx.channel, embed=message)
+        await ctx.message.delete()
         return True
 
     @commands.command()
@@ -311,6 +347,12 @@ class MusicCog(commands.Cog):
         :param ctx:The context of the message.
         :return: A boolean if sending the message was successful.
         """
+
+        if not self._currently_active.get(ctx.guild.id):
+            # Not currently active
+            await self.__send_message_and_delete(Embed(title="I am not currently active", colour=EmbedColours.music),
+                                                 ctx)
+            return False
 
         # We don't want the song channel to be filled with the queue as it already shows it
         music_channel_in_db = self.__db_accessor.get('music_channels', params={'guild_id': ctx.guild.id})
@@ -332,9 +374,13 @@ class MusicCog(commands.Cog):
         :return: A boolean if the current queue was successfully cleared.
         """
 
-        await ctx.message.delete()
+        if not self._currently_active.get(ctx.guild.id):
+            # Not currently active
+            await self.__update_channel_messages(ctx.guild.id)
+            await ctx.message.delete()
+            return False
 
-        if not self.__check_valid_user_vc(ctx):
+        if not await self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
             return False
 
@@ -348,8 +394,7 @@ class MusicCog(commands.Cog):
             await self.__check_next_song(ctx.guild.id)
 
         await self.__update_channel_messages(ctx.guild.id)
-        message = Embed(title="Queue Cleared!", colour=EmbedColours.music)
-        await send_timed_message(ctx.channel, embed=message)
+        await self.__send_message_and_delete(Embed(title="Queue Cleared!", colour=EmbedColours.music), ctx)
         return True
 
     @commands.command()
@@ -361,22 +406,26 @@ class MusicCog(commands.Cog):
         :return: A boolean if the queue was shuffled.
         """
 
-        await ctx.message.delete()
+        if not self._currently_active.get(ctx.guild.id):
+            # Not currently active
+            await self.__send_message_and_delete(Embed(title="I am not currently active", colour=EmbedColours.music),
+                                                 ctx)
+            return False
 
-        if not self.__check_valid_user_vc(ctx):
+        if not await self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
             return False
 
         if not len(self._currently_active.get(ctx.guild.id).get('queue')) > 2:
             # Nothing to shuffle
+            await ctx.message.delete()
             return False
 
         current_top = self._currently_active.get(ctx.guild.id).get('queue').pop(0)
         shuffle(self._currently_active.get(ctx.guild.id)['queue'])
         self._currently_active.get(ctx.guild.id).get('queue').insert(0, current_top)
 
-        message = Embed(title="Queue shuffled!", colour=EmbedColours.green)
-        await send_timed_message(ctx.channel, embed=message, timer=10)
+        await self.__send_message_and_delete(Embed(title="Queue shuffled!", colour=EmbedColours.green), ctx)
 
     @tasks.loop(seconds=1)
     async def check_active_channels(self):
@@ -536,8 +585,6 @@ class MusicCog(commands.Cog):
         :return: A boolean if the message was properly handled by the music cog.
         """
 
-        await message.delete()
-
         if message.content.startswith(self._bot.command_prefix):
             # Ignore commands, any MusicCog commands will get handled in the usual way
             return True
@@ -593,6 +640,8 @@ class MusicCog(commands.Cog):
         if not total_success:
             send = Embed(title="There were errors while adding some songs to the queue", colour=EmbedColours.red)
             await send_timed_message(message.channel, embed=send, timer=10)
+
+        await message.delete()
 
     async def process_song_request(self, message: Message, request: str) -> bool:
         """
@@ -807,7 +856,7 @@ class MusicCog(commands.Cog):
             return True
         return False
 
-    def __check_valid_user_vc(self, ctx: Context) -> bool:
+    async def __check_valid_user_vc(self, ctx: Context) -> bool:
         """
         Checks if the user: A) Is in a voice channel, B) The voice channel is the same as the voice channel the bot is
         connected to, C) The message sent was in the music text channel.
@@ -818,14 +867,23 @@ class MusicCog(commands.Cog):
         music_channel_in_db = self.__db_accessor.get('music_channels', params={'guild_id': ctx.guild.id})
         if ctx.message.channel.id != music_channel_in_db[0].get('channel_id'):
             # Message is not in the songs channel
+            await self.__send_message_and_delete(Embed(title="You are not in a valid voice channel",
+                                                       colour=EmbedColours.music),
+                                                 ctx)
             return False
 
         if not ctx.author.voice:
             # User is not in a voice channel
+            await self.__send_message_and_delete(Embed(title="You are not in a valid voice channel",
+                                                       colour=EmbedColours.music),
+                                                 ctx)
             return False
 
         if self._currently_active.get(ctx.guild.id).get('channel_id') != ctx.author.voice.channel.id:
             # The user is not in the same voice channel as the bot
+            await self.__send_message_and_delete(Embed(title="You are not in a valid voice channel",
+                                                       colour=EmbedColours.music),
+                                                 ctx)
             return False
 
         return True
