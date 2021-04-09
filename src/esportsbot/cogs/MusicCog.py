@@ -511,18 +511,12 @@ class MusicCog(commands.Cog):
 
         try:
             if isinstance(song, list):
-                all_songs = self.__download_link_list_info(song)
-                current_index = 0
-                for item in all_songs:
-                    song_data = {'title': item, 'link': song[current_index]}
-                    self._currently_active.get(guild_id).get('queue').append(song_data)
-                    current_index += 1
+                for item in song:
+                    self._currently_active.get(guild_id).get('queue').append(item)
             elif isinstance(song, dict):
                 self._currently_active.get(guild_id).get('queue').append(song)
             else:
-                title = self.__get_basic_song_information(song)
-                song_info = {'title': title, 'link': song}
-                self._currently_active.get(guild_id).get('queue').append(song_info)
+                raise ValueError("The values supplied to add to the queue were not a list or dict: \n" + str(song))
 
             if not self._currently_active.get(guild_id).get('voice_client').is_playing():
                 # If we are not currently playing, start playing
@@ -604,14 +598,52 @@ class MusicCog(commands.Cog):
         """
 
         message_type = self.__determine_message_type(request)
-        if message_type == MessageTypeEnum.url:
-            return await self.__add_song_to_queue(message.guild.id, request)
-        elif message_type == MessageTypeEnum.playlist:
-            individual_links = self.__find_playlist_songs(request)
-            return await self.__add_song_to_queue(message.guild.id, individual_links)
+        if message_type == MessageTypeEnum.url or message_type == MessageTypeEnum.playlist:
+            processed_request = self.__get_youtube_api_info(request, message_type)
+            formatted_request = self.__format_api_data(processed_request)
+            return await self.__add_song_to_queue(message.guild.id, formatted_request)
         elif message_type == MessageTypeEnum.string:
             queried_song = self.__find_query(request)
             return await self.__add_song_to_queue(message.guild.id, queried_song)
+
+    def __get_youtube_api_info(self, request, message_type):
+        func = YOUTUBE_API.videos() if message_type == MessageTypeEnum.url else YOUTUBE_API.playlistItems()
+        key = "v" if message_type == MessageTypeEnum.url else "list"
+
+        query = parse_qs(urlparse(request).query, keep_blank_values=True)
+        youtube_id = query[key][0]
+
+        args = {"part": "snippet", "maxResults": 1 if message_type == MessageTypeEnum.url else 50}
+
+        if message_type == MessageTypeEnum.url:
+            args["id"] = youtube_id
+        else:
+            args["playlistId"] = youtube_id
+
+        youtube_request = func.list(**args)
+
+        api_items = []
+        while youtube_request is not None:
+            response = youtube_request.execute()
+            api_items += response["items"]
+            youtube_request = func.list_next(youtube_request, response)
+
+        return api_items
+
+    def __format_api_data(self, data):
+        formatted_data = []
+        for item in data:
+            snippet = item.get("snippet")
+            info = {"title": snippet.get("title", "Unable to get title, this is a bug"),
+                    "link": snippet.get("resourceId", {}).get("videoId", item.get("id", "Unable to get link, this "
+                                                                                        "is a bug")),
+                    "thumbnail": snippet.get("thumbnails", {}).get("maxres", {}).get("url", "Unable to get thumbnail, "
+                                                                                            "this is a bug")}
+
+            info["link"] = "https://www.youtube.com/watch?v=" + info.get("link")
+            formatted_data.append(info)
+
+        return formatted_data
 
     async def __update_channel_messages(self, guild_id):
         """
@@ -686,37 +718,8 @@ class MusicCog(commands.Cog):
         :return: A dict of information required to play a song.
         """
         current_song = self._currently_active.get(guild_id).get('queue')[0]
-        return self.__format_download_data(self.__download_video_info(current_song.get('link')))
-
-    def __download_link_list_info(self, links):
-        """
-        Downloads the basic information regarding a list of links.
-        :param links: The list of video links.
-        :return: A dict of each link with their video titles.
-        """
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            generator = executor.map(self.__get_basic_song_information, links)
-            return generator
-
-    def __get_basic_song_information(self, url):
-        """
-        Download the title for a given url.
-        :param url: The url to find the title of.
-        :return: A dict with link and title keys.
-        """
-
-        # Wait some random time if its been less than 2 seconds since last ping
-        # if self._youtube_last_pinged - time.time() < 2:
-        #    await asyncio.sleep(float(2) + uniform(0.1, 2.1))
-        headers = {'User-Agent': choice(USER_AGENT_LIST), 'Referer': 'https://www.google.co.uk/'}
-
-        # TODO: Use aiohttp
-        resp = requests.get(url, headers=headers)
-        text = resp.text
-        page_title = text[text.find('<title>') + 7:text.find('</title>')]
-        formatted_title = html.unescape(page_title).replace(' - YouTube', '')
-        self._youtube_last_pinged = time.time()
-        return formatted_title
+        download_data = self.__download_video_info(current_song.get('link'))
+        return self.__format_download_data(download_data), current_song
 
     def __check_loops_alive(self):
         """
@@ -836,23 +839,11 @@ class MusicCog(commands.Cog):
         """
 
         stream, rate = self.__get_opus_stream(download_data.get('formats'))
-        useful_data = {'title': download_data.get('title'), 'id': download_data.get('id'),
-                       'link': download_data.get('webpage_url'), 'length': download_data.get('duration'),
+        useful_data = {'length': download_data.get('duration'),
                        'stream': stream,
                        'bitrate': rate,
-                       'thumbnail': self.__get_thumbnail(download_data.get('thumbnails')),
                        'filename': download_data.get('filename')}
         return useful_data
-
-    def __get_thumbnail(self, thumbnails):
-        """
-        Get the thumbnail from url from the thumbnails dictionary.
-        :param thumbnails: The dictionary of thumbnail urls.
-        :return: A url linking to the video thumbnail.
-        """
-
-        # Sort by thumbnail size
-        return max(thumbnails, key=lambda k: int(k.get('height'))).get('url')
 
     def __is_url(self, string):
         """
@@ -950,8 +941,9 @@ class MusicCog(commands.Cog):
             voice_client.stop()
 
         # Get the next song
-        next_song = self.__generate_link_data_from_queue(guild_id)
-        length = next_song.get('length')
+        extra_data, current_song = self.__generate_link_data_from_queue(guild_id)
+        next_song = {**current_song, **extra_data}
+        length = next_song.get("length")
 
         self._time_allocation[guild_id] = self._time_allocation[guild_id] - length
 
@@ -963,8 +955,8 @@ class MusicCog(commands.Cog):
 
         self._currently_active.get(guild_id)['current_song'] = next_song
 
-        voice_client.play(FFmpegOpusAudio(next_song.get('stream'), before_options=FFMPEG_BEFORE_OPT,
-                                          bitrate=int(next_song.get('bitrate')) + 10))
+        voice_client.play(FFmpegOpusAudio(next_song.get("stream"), before_options=FFMPEG_BEFORE_OPT,
+                                          bitrate=int(next_song.get("bitrate")) + 10))
         voice_client.volume = 100
 
         return True
@@ -1001,34 +993,6 @@ class MusicCog(commands.Cog):
         """
         return "\n".join(str(songNum + 1) + ". " + song.get('title') for songNum, song in enumerate(songs))
 
-    def __find_playlist_songs(self, playlist_link):
-        """
-        Gets the individual song links from a playlist link.
-        :param playlist_link: The link to the playlist to find the urls from.
-        :return: A list of YouTube urls.
-        """
-
-        query = parse_qs(urlparse(playlist_link).query, keep_blank_values=True)
-        playlist_id = query["list"][0]
-
-        request = YOUTUBE_API.playlistItems().list(
-            part="snippet",
-            playlistId=playlist_id,
-            maxResults=50
-        )
-        response = request.execute()
-
-        playlist_items = []
-        while request is not None:
-            response = request.execute()
-            playlist_items += response["items"]
-            request = YOUTUBE_API.playlistItems().list_next(request, response)
-
-        playlist_links = [f'https://www.youtube.com/watch?v={t["snippet"]["resourceId"]["videoId"]}'
-                          for t in playlist_items]
-
-        return playlist_links
-
     def __find_query(self, message) -> dict:
         """
         Query youtube to find a search result and get return a link to the top hit of that query.
@@ -1037,7 +1001,7 @@ class MusicCog(commands.Cog):
         """
 
         # Finds the required data for
-        search_info = self.__search_youtube(message)
+        search_info = self.__query_youtube(message)
 
         top_hit = search_info[-1]
         best_audio_hit = search_info[0]
@@ -1047,9 +1011,12 @@ class MusicCog(commands.Cog):
         # Better title to display
         best_audio_hit['title'] = top_hit['title']
 
+        # Ensures that all the dicts returned from api or this are formatted the same.
+        best_audio_hit.pop('viewCount', None)
+
         return best_audio_hit
 
-    def __clean_youtube_results(self, results) -> list:
+    def __clean_query_results(self, results) -> list:
         """
         Remove unnecessary data from a list of the youtube information gathered.
         :param results: The list of youtube information gathered from links.
@@ -1063,9 +1030,7 @@ class MusicCog(commands.Cog):
             new_result = {'title': result.get('title'),
                           'thumbnail': result.get('thumbnails')[-1].get('url'),
                           'link': result.get('link'),
-                          'id': result.get('id'),
-                          'viewCount': result.get('viewCount'),
-                          'length': result.get('duration')
+                          'viewCount': result.get('viewCount')
                           }
             new_result['localfile'] = self._song_location + re.sub(r'\W+', '', new_result.get('title')) + \
                                       f"{new_result.get('id')}.mp3"
@@ -1074,7 +1039,7 @@ class MusicCog(commands.Cog):
 
         return cleaned_data
 
-    def __search_youtube(self, message: str) -> list:
+    def __query_youtube(self, message: str) -> list:
         """
         Search youtube with a given string.
         :param message: The message to query youtube with.
@@ -1105,7 +1070,7 @@ class MusicCog(commands.Cog):
         music_results.append(top_results[0])
 
         # Remove useless data
-        cleaned_results = self.__clean_youtube_results(music_results)
+        cleaned_results = self.__clean_query_results(music_results)
 
         end = time.time()
 
