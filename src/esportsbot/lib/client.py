@@ -4,7 +4,7 @@ from ..reactionMenus.reactionMenuDB import ReactionMenuDB
 from ..reactionMenus import reactionMenu
 from ..db_gateway import db_gateway
 from . import exceptions
-from typing import Dict, Set
+from typing import Dict, MutableMapping, Set
 from datetime import datetime, timedelta
 import os
 import signal
@@ -20,16 +20,23 @@ class EsportsBot(commands.Bot):
 
     :var reactionMenus: A associating integer menu message IDs to ReactionMenu objects.
     :vartype reactionMenus: ReactionMenuDB
+    :var unknownCommandEmoji: The emote which the bot should react to messages with, if the message attempts to call an unknown command
+    :vartype unknownCommandEmoji: Emote
+    :var STRINGS: A dict-like object containing *all* user facing strings. The first level associates string category names with the second level.
+                    The second level is another dict-like object, mapping string names to parameter-formattable user-facing strings.
+    :vartype STRINGS: str
     """
 
     def __init__(self, command_prefix: str, unknownCommandEmoji: Emote, userStringsFile: str, **options):
         """
         :param str command_prefix: The prefix to use for bot commands when evoking from discord.
+        :param Emote unknownCommandEmoji: The emote which the bot should react to messages with, if the message attempts to call an unknown command
+        :param str userStringsFile: A path to the `user_strings.toml` configuration file containing *all* user facing strings
         """
         super().__init__(command_prefix, **options)
         self.reactionMenus = ReactionMenuDB()
         self.unknownCommandEmoji = unknownCommandEmoji
-        self.STRINGS = toml.load(userStringsFile)
+        self.STRINGS: MutableMapping[str, MutableMapping[str, str]] = toml.load(userStringsFile)
 
         signal.signal(signal.SIGINT, self.interruptReceived) # keyboard interrupt
         signal.signal(signal.SIGTERM, self.interruptReceived) # graceful exit request
