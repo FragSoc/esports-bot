@@ -1,10 +1,9 @@
-import concurrent.futures
 import asyncio
 import sys
 import os
 import time
+from typing import Union, List, Tuple
 
-import requests
 import youtube_dl
 import re
 
@@ -22,9 +21,7 @@ from ..lib.client import EsportsBot
 import googleapiclient.discovery
 from urllib.parse import parse_qs, urlparse
 
-import html
-
-from random import shuffle, uniform, choice
+from random import shuffle
 from collections import defaultdict
 
 from ..lib.discordUtil import send_timed_message
@@ -64,16 +61,6 @@ YOUTUBE_API = googleapiclient.discovery.build("youtube", "v3", developerKey=GOOG
 
 BOT_INACTIVE_MINUTES = 2
 
-# Using a random user agent means there is less chance of being blocked by google
-USER_AGENT_LIST = ['Mozilla/5.0 CK={} (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
-                   'Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1',
-                   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                   + 'Chrome/74.0.3729.169 Safari/537.36',
-                   'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)',
-                   'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1',
-                   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                   + 'Chrome/74.0.3729.157 Safari/537.36']
-
 
 class MusicCog(commands.Cog):
 
@@ -92,31 +79,30 @@ class MusicCog(commands.Cog):
         # Currently 2 hours of playtime for each server per day
         self._allowed_time = 7200
 
-        self._youtube_last_pinged = 0
-
         self.__db_accessor = db_gateway()
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def setmusicchannel(self, ctx: Context, args=None, given_channel_id=None):
+    async def setmusicchannel(self, ctx: Context, args: str = None, given_channel_id: str = None) -> bool:
         """
-        Sets the music channel for a given guild to a text channel in the given guild by passing the id of the channel.
+        Sets the music channel for a given guild to a text channel in the given guild by passing the id of the channel
+        or by tagging the channel with #<name>.
         :param ctx: The Context of the message sent.
         :param args: Used to specify extra actions for the set command to perform.
-        :param given_channel_id: The id of the channel to set as the music channel.
-        :return: None
+        :param given_channel_id: The channel to set as the music channel.
+        :return: A boolean determining setting the channel was successful.
         """
 
         if given_channel_id is None and args is not None:
             # No args was given, but a channel id was given
             given_channel_id = args
-            args = None
+            args = ""
 
         if given_channel_id is None:
             # No given channel id.. exit
             message = Embed(title="A channel id is a required argument", colour=EmbedColours.red)
             await send_timed_message(ctx.channel, embed=message, timer=30)
-            return
+            return False
 
         cleaned_channel_id = get_cleaned_id(given_channel_id)
 
@@ -126,7 +112,7 @@ class MusicCog(commands.Cog):
             # The channel id given is not valid.. exit
             message = Embed(title="The id given was not a valid id", colour=EmbedColours.red)
             await send_timed_message(ctx.channel, embed=message, timer=30)
-            return
+            return False
 
         music_channel_instance = ctx.guild.get_channel(cleaned_channel_id)
 
@@ -134,7 +120,7 @@ class MusicCog(commands.Cog):
             # The channel id given not for a text channel.. exit
             message = Embed(title="The id given must be of a text channel", colour=EmbedColours.red)
             await send_timed_message(ctx.channel, embed=message, timer=30)
-            return
+            return False
 
         current_channel_for_guild = self.__db_accessor.get('music_channels', params={
             'guild_id': ctx.guild.id})
@@ -149,10 +135,11 @@ class MusicCog(commands.Cog):
                 'channel_id': int(cleaned_channel_id), 'guild_id': int(ctx.guild.id)})
 
         await self.__setup_channel(ctx, int(cleaned_channel_id), args)
+        return True
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def getmusicchannel(self, ctx):
+    async def getmusicchannel(self, ctx: Context) -> None:
         """
         Sends a tagged channel if the music channel has been set, otherwise will send an error message.
         :param ctx: The context of the message.
@@ -170,9 +157,10 @@ class MusicCog(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def resetmusicchannel(self, ctx):
+    async def resetmusicchannel(self, ctx: Context) -> None:
         """
-        If the music channel is set, clear it and re-setup the channel with the correct messages. Otherwise do nothing.
+        If the music channel is set, clear it and re-setup the channel with the correct messages. Otherwise send an
+        error message.
         :param ctx: The context of the message.
         """
 
@@ -188,31 +176,33 @@ class MusicCog(commands.Cog):
             await ctx.channel.send("Music channel has not been set")
 
     @commands.command()
-    async def removesong(self, ctx: Context, song_index=None):
+    async def removesong(self, ctx, song_index=None) -> bool:
         """
         Remove a song at an index from the current queue.
         :param ctx: The context of the message.
         :param song_index: The index of the song to remove. Index starting from 1.
-        :return: None
+        :return: A boolean of if the removal of the song at the given index was successful.
         """
+
+        await ctx.message.delete()
 
         if not self.__check_valid_user_vc(ctx):
             # Check if the user is in a valid voice channel
             message = Embed(title="You are not in the voice channel with the bot", colour=EmbedColours.orange)
             await send_timed_message(ctx.channel, embed=message)
-            return
+            return False
 
         if not strIsInt(song_index):
             message = Embed(title="To remove a song you must provide a number of a song in the queue",
                             colour=EmbedColours.orange)
             await send_timed_message(ctx.channel, embed=message)
-            return
+            return False
 
         if int(song_index) < 1:
             message = Embed(title="The number of the song to remove must be greater than 1",
                             colour=EmbedColours.orange)
             await send_timed_message(ctx.channel, embed=message)
-            return
+            return False
 
         if len(self._currently_active.get(ctx.guild.id).get('queue')) < (int(song_index) - 1):
             # The index given is out of the bounds of the current queue
@@ -221,119 +211,132 @@ class MusicCog(commands.Cog):
                                         f"and {len(self._currently_active.get(ctx.guild.id).get('queue'))}.",
                             colour=EmbedColours.orange)
             await send_timed_message(ctx.channel, embed=message)
-            return
+            return False
 
         song_popped = self._currently_active[ctx.guild.id]['queue'].pop(int(song_index) - 1)
         await self.__update_channel_messages(ctx.guild.id)
-        await ctx.message.delete()
         message = Embed(title=f"Removed {song_popped.get('title')} from position {song_index} in the queue",
                         colour=EmbedColours.green)
         await send_timed_message(ctx.channel, embed=message)
+        return True
 
     @commands.command()
-    async def pausesong(self, ctx: Context):
+    async def pausesong(self, ctx: Context) -> bool:
         """
-        Pause the current playback.
+        If the bot is currently playing in the context's guild, pauses the playback, else does nothing.
         :param ctx: The context of the song.
-        :return: None
+        :return: A boolean if the pausing of the current playback was successful.
         """
+
+        await ctx.message.delete()
 
         if not self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
-            return
+            return False
 
-        self.__pause_song(ctx.guild.id)
-        await ctx.message.delete()
-        message = Embed(title="Song Paused", colour=EmbedColours.music)
-        await send_timed_message(ctx.channel, embed=message, timer=20)
+        if self.__pause_song(ctx.guild.id):
+            message = Embed(title="Song Paused", colour=EmbedColours.music)
+            await send_timed_message(ctx.channel, embed=message, timer=20)
+            return True
+        return False
 
     @commands.command()
-    async def resumesong(self, ctx: Context):
+    async def resumesong(self, ctx: Context) -> bool:
         """
-        Resume the current playback of the song.
-        :param ctx:The context of the message.
-        :return: None
+        If the bot is currently paused, the playback is resumed, else does nothing.
+        :param ctx: The context of the message.
+        :return: A boolean if the playback was resumed successfully.
         """
+
+        await ctx.message.delete()
 
         if not self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
-            return
+            return False
 
-        self.__resume_song(ctx.guild.id)
-        await ctx.message.delete()
-        message = Embed(title="Song Resumed", colour=EmbedColours.music)
-        await send_timed_message(ctx.channel, embed=message, timer=20)
+        if self.__resume_song(ctx.guild.id):
+            message = Embed(title="Song Resumed", colour=EmbedColours.music)
+            await send_timed_message(ctx.channel, embed=message, timer=20)
+            return True
+        return False
 
     @commands.command()
-    async def kickbot(self, ctx: Context):
+    async def kickbot(self, ctx: Context) -> bool:
         """
         Remove the bot from the voice channel. Will also reset the queue.
         :param ctx: The context of the message.
-        :return: None
+        :return: A boolean if the bot was removed from the voice channel successfully.
         """
+        await ctx.message.delete()
 
         if not self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
-            return
+            return False
 
-        await self.__remove_active_channel(ctx.guild.id)
-        await ctx.message.delete()
-        message = Embed(title="I have left the Voice Channel", colour=EmbedColours.music)
-        await send_timed_message(ctx.channel, embed=message, timer=20)
+        if await self.__remove_active_channel(ctx.guild.id):
+            message = Embed(title="I have left the Voice Channel", colour=EmbedColours.music)
+            await send_timed_message(ctx.channel, embed=message, timer=20)
+            return True
+        return False
 
     @commands.command()
-    async def skipsong(self, ctx: Context):
+    async def skipsong(self, ctx: Context) -> bool:
         """
         Skips the current song. If there are no more songs in the queue, the bot will leave.
         :param ctx: The context of the message.
         :return: None
         """
 
+        await ctx.message.delete()
+
         if not self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
-            return
+            return False
 
         # TODO: Decide if the bot should leave the vc if the queue is empty after skipping.
         if len(self._currently_active.get(ctx.guild.id).get('queue')) == 1:
             # Skipping when only one song in the queue will just kick the bot
             await self.__remove_active_channel(ctx.guild.id)
-            await ctx.message.delete()
-            return
+            return True
 
         await self.__check_next_song(ctx.guild.id)
-        await ctx.message.delete()
         message = Embed(title="Song Skipped!", colour=EmbedColours.music, time=5)
         await send_timed_message(ctx.channel, embed=message)
+        return True
 
     @commands.command()
-    async def listqueue(self, ctx: Context):
+    async def listqueue(self, ctx: Context) -> bool:
         """
         Sends a message of the current queue to the channel the message was sent from.
         :param ctx:The context of the message.
-        :return: None
+        :return: A boolean if sending the message was successful.
         """
 
         # We don't want the song channel to be filled with the queue as it already shows it
         music_channel_in_db = self.__db_accessor.get('music_channels', params={'guild_id': ctx.guild.id})
         if ctx.message.channel.id == music_channel_in_db[0].get('channel_id'):
             # Message is in the songs channel
-            return
+            return False
 
         queue_string = self.__make_queue_list(ctx.guild.id)
 
-        await ctx.channel.send(queue_string)
+        if await ctx.channel.send(queue_string) is not None:
+            return True
+        return False
 
     @commands.command()
-    async def clearqueue(self, ctx: Context):
+    async def clearqueue(self, ctx: Context) -> bool:
         """
         Clear the current queue of all songs. The bot won't leave the vc with this command.
         :param ctx: The context of the message.
-        :return: None
+        :return: A boolean if the current queue was successfully cleared.
         """
+
+        await ctx.message.delete()
 
         if not self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
-            return
+            return False
 
         if self._currently_active.get(ctx.guild.id).get('voice_client').is_playing():
             # If currently in a song, set the queue to what is currently playing
@@ -345,26 +348,28 @@ class MusicCog(commands.Cog):
             await self.__check_next_song(ctx.guild.id)
 
         await self.__update_channel_messages(ctx.guild.id)
-        await ctx.message.delete()
         message = Embed(title="Queue Cleared!", colour=EmbedColours.music)
         await send_timed_message(ctx.channel, embed=message)
+        return True
 
     @commands.command()
-    async def shufflequeue(self, ctx: Context):
+    async def shufflequeue(self, ctx: Context) -> bool:
         """
         Shuffle the current queue of songs. Does not include the current song playing, which is index 0. Won't bother
         with a shuffle unless there are 3 or more songs.
         :param ctx: The context of the message.
-        :return: None
+        :return: A boolean if the queue was shuffled.
         """
+
+        await ctx.message.delete()
 
         if not self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
-            return
+            return False
 
         if not len(self._currently_active.get(ctx.guild.id).get('queue')) > 2:
             # Nothing to shuffle
-            return
+            return False
 
         current_top = self._currently_active.get(ctx.guild.id).get('queue').pop(0)
         shuffle(self._currently_active.get(ctx.guild.id)['queue'])
@@ -372,7 +377,6 @@ class MusicCog(commands.Cog):
 
         message = Embed(title="Queue shuffled!", colour=EmbedColours.green)
         await send_timed_message(ctx.channel, embed=message, timer=10)
-        await ctx.message.delete()
 
     @tasks.loop(seconds=1)
     async def check_active_channels(self):
@@ -427,31 +431,34 @@ class MusicCog(commands.Cog):
         """
         self._time_allocation = defaultdict(lambda: self._allowed_time)
 
-    async def __setup_channel(self, ctx: Context, channel_id, arg):
+    async def __setup_channel(self, ctx: Context, channel_id: int, arg: str):
         """
         Sends the preview and queue messages to the music channel and adds the ids of the messages to the database.
         If the music channel is not empty and the correct arg is set, also clears the channel.
-        Args:
-            ctx: The context of the messages, used to send the messages to the channels.
-            channel_id: The id of the music channel
-            arg:
+        :param ctx: The context of the messages, used to send the messages to the channels.
+        :param channel_id: The id of the music channel.
+        :param arg: Optional arg to perform extra utilities while setting the channel up.
         """
+
+        # Get a discord object of the channel.
         channel_instance = self._bot.get_channel(channel_id)
         if channel_instance is None:
             channel_instance = await self._bot.fetch_channel(channel_id)
+
+        # Only need to get a few messages to check if the channel is non-empty.
         channel_messages = await channel_instance.history(limit=2).flatten()
         if len(channel_messages) > 1:
-            # If there are messages in the channel
+            # If there are messages in the channel.
             if arg is None:
-                await ctx.channel.send(
-                    "The channel is not empty, if you want to clear the channel for use, use !setmusicchannel -c <id>")
+                await ctx.channel.send("The channel is not empty, if you want to clear the channel for use, "
+                                       "use !setmusicchannel -c <channel>")
             elif arg == '-c':
                 await channel_instance.purge(limit=int(sys.maxsize))
 
         temp_default_preview = EMPTY_PREVIEW_MESSAGE.copy()
         self.__add_time_remaining_field(ctx.guild.id, temp_default_preview)
 
-        # Send the messages and record their ids
+        # Send the messages and record their ids.
         default_queue_message = await channel_instance.send(EMPTY_QUEUE_MESSAGE)
         default_preview_message = await channel_instance.send(embed=temp_default_preview)
 
@@ -461,14 +468,11 @@ class MusicCog(commands.Cog):
         self.__db_accessor.update('music_channels', set_params={'preview_message_id': int(default_preview_message.id)},
                                   where_params={'guild_id': ctx.author.guild.id})
 
-    async def __remove_active_channel(self, guild_id) -> bool:
+    async def __remove_active_channel(self, guild_id: int) -> bool:
         """
         Disconnect the bot from the voice channel and remove it from the currently active channels.
-        Args:
-            guild_id: The id of the guild to remove the bot from.
-
-        Returns: True if the removal was successful, False otherwise.
-
+        :param guild_id: The id of the guild to remove the bot from.
+        :return: True if the removal was successful, False otherwise.
         """
         if guild_id in self._currently_active:
             # If the guild is currently active.
@@ -480,13 +484,12 @@ class MusicCog(commands.Cog):
             return True
         return False
 
-    async def __check_next_song(self, guild_id):
+    async def __check_next_song(self, guild_id: int):
         # TODO: Check spam updates
         """
         Check if there is another song to play after the current one. If no more songs, mark the channel as in active,
         otherwise play the next song.
-        Args:
-            guild_id: The id of the guild to check the next song in.
+        :param guild_id: The id of the guild to check the next song in.
         """
         if len(self._currently_active.get(guild_id).get('queue')) == 1:
             # The queue will be empty so will be marked as inactive
@@ -499,14 +502,12 @@ class MusicCog(commands.Cog):
             self.__play_queue(guild_id)
             await self.__update_channel_messages(guild_id)
 
-    async def __add_song_to_queue(self, guild_id, song):
+    async def __add_song_to_queue(self, guild_id: int, song) -> bool:
         """
-        Add the given song to the queue in a guild.
-        Args:
-            guild_id: The id of the guild to add the song to the queue.
-            song: The song to add to the queue.
-
-        Returns: True if the addition was successful. False otherwise.
+        Add a list of songs or a single song to the queue.
+        :param guild_id: The id of the guild to add the song to the queue.
+        :param song: The song or list of songs. A song is a dict of information that is needed to play the song.
+        :return: True if the addition was successful. False otherwise.
         """
 
         try:
@@ -528,31 +529,31 @@ class MusicCog(commands.Cog):
             print("There was an error while adding to the queue: \n" + str(e))
             return False
 
-    async def on_message_handle(self, message: Message):
+    async def on_message_handle(self, message: Message) -> bool:
         """
         The handle the is called whenever a message is sent in the music channel of a guild.
         :param message: The message sent to the channel.
-        :return: None
+        :return: A boolean if the message was properly handled by the music cog.
         """
+
+        await message.delete()
 
         if message.content.startswith(self._bot.command_prefix):
             # Ignore commands, any MusicCog commands will get handled in the usual way
-            return
+            return True
 
         if not message.author.voice:
             # User is not in a voice channel.. exit
             send = Embed(title="You must be in a voice channel to add a song", colour=EmbedColours.orange)
-            await message.delete()
             await send_timed_message(message.channel, embed=send, timer=10)
-            return
+            return True
 
         if not message.author.voice.channel.permissions_for(message.guild.me).connect:
             # The bot does not have permission to join the channel.. exit
             send = Embed(title="I need the permission `connect` to be able to join that channel",
                          colour=EmbedColours.orange)
-            await message.delete()
             await send_timed_message(message.channel, embed=send, timer=10)
-            return
+            return True
 
         if not self._currently_active.get(message.guild.id):
             # We aren't in a voice channel in the given guild
@@ -563,9 +564,8 @@ class MusicCog(commands.Cog):
             if self._currently_active.get(message.guild.id).get('channel_id') != message.author.voice.channel.id:
                 # The bot is already being used in the current guild.
                 send = Embed(title="I am already in another voice channel in this server", colour=EmbedColours.orange)
-                await message.delete()
                 await send_timed_message(message.channel, embed=send, timer=10)
-                return
+                return True
 
         # Check if the loops for marked and active channels are running.
         self.__check_loops_alive()
@@ -574,11 +574,14 @@ class MusicCog(commands.Cog):
         split_message = message.content.split("\n")
         split_message = [k for k in split_message if k not in ('', ' ')]
         partial_success = False
+        total_success = True
 
         # Add each line of the message to the queue
         st = time.time()
         for line in split_message:
-            partial_success = await self.process_song_request(message, line) or partial_success
+            result = await self.process_song_request(message, line)
+            partial_success = result or partial_success
+            total_success = result and total_success
 
         print(f"Queue time: {time.strftime('%H:%M:%S', time.gmtime(time.time() - st))}")
         # If any of the songs were successful, ensure that the channel is no long marked as inactive.
@@ -587,13 +590,15 @@ class MusicCog(commands.Cog):
                 # Remove the channel from marked channels as it is no longer inactive
                 self._marked_channels.pop(message.guild.id)
 
-        await message.delete()
+        if not total_success:
+            send = Embed(title="There were errors while adding some songs to the queue", colour=EmbedColours.red)
+            await send_timed_message(message.channel, embed=send, timer=10)
 
-    async def process_song_request(self, message, request):
+    async def process_song_request(self, message: Message, request: str) -> bool:
         """
-        Process a song request.
+        Process the incoming message as a song request
         :param message: The instance of the discord message that sent the request.
-        :param request: The actual message request.
+        :param request: The contents of the request made.
         :return The success value of if the song was added to the queue or not.
         """
 
@@ -606,13 +611,23 @@ class MusicCog(commands.Cog):
             queried_song = self.__find_query(request)
             return await self.__add_song_to_queue(message.guild.id, queried_song)
 
-    def __get_youtube_api_info(self, request, message_type):
+    def __get_youtube_api_info(self, request: str, message_type: int) -> Union[List[dict], None]:
+        """
+        Downloads the video information associated with a url as a list for each video in the request.
+        :param request: The request to make to the YouTube API.
+        :param message_type: The kind of request: Video url or Playlist url.
+        :return: A list of dicts for each video in the request.
+        """
+
+        # Determines if we access the videos or playlist part of the YouTube API.
         func = YOUTUBE_API.videos() if message_type == MessageTypeEnum.url else YOUTUBE_API.playlistItems()
+        # Used to get the id of the url.
         key = "v" if message_type == MessageTypeEnum.url else "list"
 
         query = parse_qs(urlparse(request).query, keep_blank_values=True)
         youtube_id = query[key][0]
 
+        # The args used to get the data from the API.
         args = {"part": "snippet", "maxResults": 1 if message_type == MessageTypeEnum.url else 50}
 
         if message_type == MessageTypeEnum.url:
@@ -622,30 +637,42 @@ class MusicCog(commands.Cog):
 
         youtube_request = func.list(**args)
 
+        # The list of video data.
         api_items = []
         while youtube_request is not None:
             response = youtube_request.execute()
             api_items += response["items"]
             youtube_request = func.list_next(youtube_request, response)
 
+        if len(api_items) == 0:
+            return None
         return api_items
 
-    def __format_api_data(self, data):
+    def __format_api_data(self, data: list) -> List[dict]:
+        """
+        Formats a list of data that was obtained from the YouTube API call, where each item in the list is a dict.
+        :param data: The list of dicts that was gained from the API call.
+        :return: A formatted list of dicts. Each dict contains the YouTube url, the thumbnail url and the title of the
+                 video.
+        """
         formatted_data = []
         for item in data:
             snippet = item.get("snippet")
             info = {"title": snippet.get("title", "Unable to get title, this is a bug"),
+                    # The url can be in different places depending on if the data is coming from a playlist or a video
                     "link": snippet.get("resourceId", {}).get("videoId", item.get("id", "Unable to get link, this "
                                                                                         "is a bug")),
                     "thumbnail": snippet.get("thumbnails", {}).get("maxres", {}).get("url", "Unable to get thumbnail, "
                                                                                             "this is a bug")}
 
-            info["link"] = "https://www.youtube.com/watch?v=" + info.get("link")
+            # Turn the id gained from the dict into an actual url.
+            if "Unable to get link, this is a bug" not in info.get("link"):
+                info["link"] = "https://www.youtube.com/watch?v=" + info.get("link")
             formatted_data.append(info)
 
         return formatted_data
 
-    async def __update_channel_messages(self, guild_id):
+    async def __update_channel_messages(self, guild_id: int):
         """
         Update the queue and preview messages in the music channel.
         :param guild_id: The guild id of the guild to be updated.
@@ -675,7 +702,7 @@ class MusicCog(commands.Cog):
         await queue_message_instance.edit(content=queue_message)
         await preview_message_instance.edit(embed=preview_message)
 
-    def __make_updated_queue_message(self, guild_id):
+    def __make_updated_queue_message(self, guild_id: int) -> str:
         """
         Update the queue message in a given guild.
         :param guild_id: The guild id of the guild to update the queue message in.
@@ -690,7 +717,7 @@ class MusicCog(commands.Cog):
 
         return updated_queue_message
 
-    def __make_update_preview_message(self, guild_id):
+    def __make_update_preview_message(self, guild_id: int) -> Embed:
         """
         Update the preview message in a given guild.
         :param guild_id: The guild id of the guild to update the preview message in.
@@ -711,11 +738,12 @@ class MusicCog(commands.Cog):
 
         return updated_preview_message
 
-    def __generate_link_data_from_queue(self, guild_id):
+    def __generate_link_data_from_queue(self, guild_id: int) -> Tuple[dict, dict]:
         """
-        Get the stream data, thumbnails and other data regarding the top song in the queue.
+        Get the opus stream, length and bitrate of the stream for a given YouTube url.
         :param guild_id: The guild id to get the queue from.
-        :return: A dict of information required to play a song.
+        :return: A tuple of two dicts. First dict is the stream data, Second dict is the current song information
+                 already gained.
         """
         current_song = self._currently_active.get(guild_id).get('queue')[0]
         download_data = self.__download_video_info(current_song.get('link'))
@@ -732,7 +760,7 @@ class MusicCog(commands.Cog):
         if not self.reset_music_allowance.is_running():
             self.reset_music_allowance.start()
 
-    def __add_new_active_channel(self, guild_id, channel_id=None, voice_client=None) -> bool:
+    def __add_new_active_channel(self, guild_id: int, channel_id: str = None, voice_client: VoiceClient = None) -> bool:
         """
         Add a new voice channel to the currently active channels.
         :param guild_id: The id of the guild the voice channel is in.
@@ -751,29 +779,35 @@ class MusicCog(commands.Cog):
             return True
         return False
 
-    def __pause_song(self, guild_id):
+    def __pause_song(self, guild_id: int) -> bool:
         """
         Pauses the playback of a specific guild if the guild is playing. Otherwise nothing.
         :param guild_id: The id of the guild to pause the playback in.
+        :return: A boolean if the pause was successful.
         """
 
         if self._currently_active.get(guild_id).get('voice_client').is_playing():
             # Can't pause if the bot isn't playing
             voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
             voice_client.pause()
+            return True
+        return False
 
-    def __resume_song(self, guild_id):
+    def __resume_song(self, guild_id: int) -> bool:
         """
         Resumes the playback of a specific guild if the guild is paused. Otherwise nothing.
         :param guild_id: The id of the guild to resume the playback in.
+        :return: A boolean if the playback resume was successful.
         """
 
         if self._currently_active.get(guild_id).get('voice_client').is_paused():
             # Only able to resume if currently paused
             voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
             voice_client.resume()
+            return True
+        return False
 
-    def __check_valid_user_vc(self, ctx: Context):
+    def __check_valid_user_vc(self, ctx: Context) -> bool:
         """
         Checks if the user: A) Is in a voice channel, B) The voice channel is the same as the voice channel the bot is
         connected to, C) The message sent was in the music text channel.
@@ -796,7 +830,7 @@ class MusicCog(commands.Cog):
 
         return True
 
-    def __determine_message_type(self, message) -> int:
+    def __determine_message_type(self, message: str) -> int:
         """
         Determine if the message received is a video url, playlist url or a string that needs to be queried.
         :param message: The message to determine the type of.
@@ -814,7 +848,7 @@ class MusicCog(commands.Cog):
             # The message is a string
             return MessageTypeEnum.string
 
-    def __get_opus_stream(self, formats):
+    def __get_opus_stream(self, formats: list) -> Tuple[str, float]:
         """
         Get the opus formatted streaming link from the formats dictionary.
         :param formats: The formats dictionary that contains the different streaming links.
@@ -829,9 +863,9 @@ class MusicCog(commands.Cog):
 
         chosen_stream = sorted_opus[BITRATE_QUALITY]
 
-        return chosen_stream.get('url'), chosen_stream.get('abr')
+        return chosen_stream.get('url'), float(chosen_stream.get('abr'))
 
-    def __format_download_data(self, download_data):
+    def __format_download_data(self, download_data: dict) -> dict:
         """
         Format a songs data to remove the useless data.
         :param download_data: The song data to format.
@@ -845,7 +879,7 @@ class MusicCog(commands.Cog):
                        'filename': download_data.get('filename')}
         return useful_data
 
-    def __is_url(self, string):
+    def __is_url(self, string: str) -> bool:
         """
         Returns if the string given is a url.
         :param string: The string to check.
@@ -856,14 +890,14 @@ class MusicCog(commands.Cog):
         re_desktop = r'(http[s]?://)?youtube.com/(watch\?v)|(playlist\?list)='
         re_mobile = r'(http[s]?://)?youtu.be/([a-zA-Z]|[0-9])+'
 
-        return re.search(re_desktop, string) or re.search(re_mobile, string)
+        return bool(re.search(re_desktop, string) or re.search(re_mobile, string))
 
-    def __download_video_info(self, link, download=False):
+    def __download_video_info(self, link: str, download: bool = False) -> dict:
         """
-        Download all the information about a given link from youtube.
+        Download all the information about a given link from YouTube.
         :param link: The link to find the information about.
         :param download: If the song should also be downloaded to a file.
-        :return: The information about a youtube url.
+        :return: The information about a YouTube url.
         """
 
         ydl_opts = {
@@ -882,7 +916,7 @@ class MusicCog(commands.Cog):
 
         return info
 
-    def __add_time_remaining_field(self, guild_id, embed):
+    def __add_time_remaining_field(self, guild_id: int, embed: Embed):
         """
         Create the field for an embed that displays how much time a server has left to play songs in that day.
         :param guild_id: The guild id of the guild.
@@ -901,7 +935,7 @@ class MusicCog(commands.Cog):
         embed.add_field(name=f"Time Remaining Today: {guild_time_string} / {allowed_time_string}",
                         value="Blame Ryan :upside_down:")
 
-    def __check_empty_vc(self, guild_id):
+    def __check_empty_vc(self, guild_id: int) -> bool:
         """
         Checks if the voice channel the bot is in has no members in it.
         :param guild_id: The id of the guild that is being checked.
@@ -917,13 +951,9 @@ class MusicCog(commands.Cog):
         members_not_bots = [x for x in voice_channel.members if not x.bot]
         # members_not_bots = voice_channel.members.remove(voice_channel.guild.me)
 
-        if len(members_not_bots) > 0:
-            # There are members in the channel
-            return False
-        else:
-            return True
+        return not len(members_not_bots) > 0
 
-    def __play_queue(self, guild_id):
+    def __play_queue(self, guild_id: int) -> bool:
         """
         Starts the playback of the song at the top of the queue.
         :param guild_id: The id of the guild the bot is playing in.
@@ -961,7 +991,7 @@ class MusicCog(commands.Cog):
 
         return True
 
-    def __make_queue_list(self, guild_id):
+    def __make_queue_list(self, guild_id: int) -> str:
         """
         Create a formatted string representing the queue from a server.
         :param guild_id: The guild of the queue to turn into a string.
@@ -985,7 +1015,7 @@ class MusicCog(commands.Cog):
 
         return queue_string
 
-    def __song_list_to_string(self, songs):
+    def __song_list_to_string(self, songs: list) -> str:
         """
         Turn a list into a string.
         :param songs: The list of songs to turn into a string.
@@ -993,10 +1023,10 @@ class MusicCog(commands.Cog):
         """
         return "\n".join(str(songNum + 1) + ". " + song.get('title') for songNum, song in enumerate(songs))
 
-    def __find_query(self, message) -> dict:
+    def __find_query(self, message: str) -> dict:
         """
-        Query youtube to find a search result and get return a link to the top hit of that query.
-        :param message: The message to query youtube with.
+        Query YouTube to find a search result and get return a link to the top hit of that query.
+        :param message: The message to query YouTube with.
         :return: A link and some other basic information regarding the query.
         """
 
@@ -1016,11 +1046,11 @@ class MusicCog(commands.Cog):
 
         return best_audio_hit
 
-    def __clean_query_results(self, results) -> list:
+    def __clean_query_results(self, results: list) -> list:
         """
-        Remove unnecessary data from a list of the youtube information gathered.
-        :param results: The list of youtube information gathered from links.
-        :return: A list of data that has the unnecessary removed from each of the values.
+        Remove unnecessary data from a list of dicts gained from querying YouTube.
+        :param results: The list of YouTube information gathered from the query.
+        :return: A list of dicts containing the title, thumbnail url, video url and view count of a video.
         """
 
         cleaned_data = []
@@ -1032,8 +1062,8 @@ class MusicCog(commands.Cog):
                           'link': result.get('link'),
                           'viewCount': result.get('viewCount')
                           }
-            new_result['localfile'] = self._song_location + re.sub(r'\W+', '', new_result.get('title')) + \
-                                      f"{new_result.get('id')}.mp3"
+            filename = re.sub(r'\W+', '', new_result.get('title')) + f"{new_result.get('id')}.mp3"
+            new_result['localfile'] = self._song_location + filename
 
             cleaned_data.append(new_result)
 
@@ -1041,8 +1071,8 @@ class MusicCog(commands.Cog):
 
     def __query_youtube(self, message: str) -> list:
         """
-        Search youtube with a given string.
-        :param message: The message to query youtube with.
+        Search YouTube with a given string.
+        :param message: The message to query YouTube with.
         :return: A dictionary having the information about the query.
         """
 
