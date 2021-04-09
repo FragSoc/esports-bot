@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import os
 import signal
 import asyncio
+import toml
 
 from .exceptions import UnrecognisedReactionMenuMessage
 from .emotes import Emote
@@ -21,13 +22,14 @@ class EsportsBot(commands.Bot):
     :vartype reactionMenus: ReactionMenuDB
     """
 
-    def __init__(self, command_prefix: str, unknownCommandEmoji: Emote, **options):
+    def __init__(self, command_prefix: str, unknownCommandEmoji: Emote, userStringsFile: str, **options):
         """
         :param str command_prefix: The prefix to use for bot commands when evoking from discord.
         """
         super().__init__(command_prefix, **options)
         self.reactionMenus = ReactionMenuDB()
         self.unknownCommandEmoji = unknownCommandEmoji
+        self.STRINGS = toml.load(userStringsFile)
 
         signal.signal(signal.SIGINT, self.interruptReceived) # keyboard interrupt
         signal.signal(signal.SIGTERM, self.interruptReceived) # graceful exit request
@@ -228,5 +230,5 @@ def instance() -> EsportsBot:
     if _instance is None:
         intents = Intents.default()
         intents.members = True
-        _instance = EsportsBot('!', Emote.fromStr("⁉"), intents=intents)
+        _instance = EsportsBot('!', Emote.fromStr("⁉"), "esportsbot/user_strings.toml", intents=intents)
     return _instance
