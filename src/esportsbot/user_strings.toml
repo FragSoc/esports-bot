@@ -1,3 +1,13 @@
+[main]
+member_join_with_default_role = "{member_mention} has joined the server and received the {default_role_name} role"
+member_join = "{member_mention} has joined the server"
+
+vm_slave_deleted = "{user_mention} has deleted a VM slave"
+vm_slave_created = "{user_mention} has created a VM slave"
+
+guild_already_setup = "This server is already set up"
+guild_setup_complete = "This server has now been initialised"
+
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
 channel_set_already = "Logging channel already set to this channel"

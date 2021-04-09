@@ -11,6 +11,7 @@ import os
 import discord
 from datetime import datetime, timedelta
 import asyncio
+import toml
 
 
 DEFAULT_ROLE_PING_COOLDOWN = timedelta(hours=5)
@@ -18,6 +19,7 @@ DEFAULT_PINGME_CREATE_POLL_LENGTH = timedelta(hours=1)
 DEFAULT_PINGME_CREATE_THRESHOLD = 6
 client = lib.client.instance()
 client.remove_command('help')
+STRINGS = toml.load("user_strings.toml")["main"]
 
 
 def make_guild_init_data(guild: discord.Guild) -> dict:
@@ -59,9 +61,9 @@ async def on_member_join(member):
         default_role = member.guild.get_role(
             default_role_exists[0]['default_role_id'])
         await member.add_roles(default_role)
-        await send_to_log_channel(member.guild.id, f"{member.mention} has joined the server and received the {default_role.mention} role")
+        await send_to_log_channel(member.guild.id, STRINGS["member_join_with_default_role"].format(member_mention=member.mention, default_role_name=default_role.name))
     else:
-        await send_to_log_channel(member.guild.id, f"{member.mention} has joined the server")
+        await send_to_log_channel(member.guild.id, STRINGS["member_join"].format(member_mention=member.mention))
 
 
 @client.event
@@ -76,7 +78,7 @@ async def on_voice_state_update(member, before, after):
             await before.channel.delete()
             db_gateway().delete('voicemaster_slave', where_params={
                 'guild_id': member.guild.id, 'channel_id': before_channel_id})
-            await send_to_log_channel(member.guild.id, f"{member.mention} has deleted a VM slave")
+            await send_to_log_channel(member.guild.id, STRINGS["member_join"].format(member_mention=member.mention))
         else:
             # Still others in VC
             await before.channel.edit(name=f"{before.channel.members[0].display_name}'s VC")
@@ -92,7 +94,7 @@ async def on_voice_state_update(member, before, after):
                                                          'locked': False,
                                                          })
         await member.move_to(new_slave_channel)
-        await send_to_log_channel(member.guild.id, f"{member.mention} has created a VM slave")
+        await send_to_log_channel(member.guild.id, STRINGS["member_join"].format(member_mention=member.mention))
 
 
 @client.event
@@ -208,10 +210,10 @@ async def initialsetup(ctx):
     already_in_db = db_gateway().get(
         'guild_info', params={'guild_id': ctx.author.guild.id})
     if already_in_db:
-        await ctx.channel.send("This server is already set up")
+        await ctx.channel.send(STRINGS["guild_already_setup"])
     else:
         db_gateway().insert('guild_info', make_guild_init_data(ctx.guild))
-        await ctx.channel.send("This server has now been initialised")
+        await ctx.channel.send(STRINGS["guild_setup_complete"])
 
 
 @client.event
