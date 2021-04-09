@@ -23,7 +23,7 @@ def generate_schema():
             role_ping_cooldown_seconds bigint NOT NULL,
             pingme_create_threshold int NOT NULL,
             pingme_create_poll_length_seconds bigint NOT NULL,
-            pingme_role_emoji text
+            pingme_role_emoji text,
             shared_role_id bigint
         );
         ALTER TABLE ONLY guild_info
