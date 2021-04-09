@@ -628,7 +628,7 @@ class MusicCog(commands.Cog):
 
         music_channel_id = guild_db_data.get('channel_id')
         # Get the music channel id as a discord.TextChannel object
-        music_channel_instance = await self._bot.get_channel(music_channel_id)
+        music_channel_instance = self._bot.get_channel(music_channel_id)
         if music_channel_instance is None:
             music_channel_instance = await self._bot.fetch_channel(music_channel_id)
 
@@ -664,7 +664,7 @@ class MusicCog(commands.Cog):
 
         if not self._currently_active.get(guild_id) or len(self._currently_active.get(guild_id).get('queue')) == 0:
             # If the queue is empty, provide the empty queue embed or the bot isn't active
-            updated_preview_message = EMPTY_PREVIEW_MESSAGE
+            updated_preview_message = EMPTY_PREVIEW_MESSAGE.copy()
         else:
             current_song = self._currently_active.get(guild_id).get('current_song')
             updated_preview_message = Embed(title="Currently Playing: " + current_song.get('title'),
