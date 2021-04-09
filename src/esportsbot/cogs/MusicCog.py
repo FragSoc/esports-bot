@@ -512,12 +512,15 @@ class MusicCog(commands.Cog):
         try:
             if isinstance(song, list):
                 all_songs = self.__download_link_list_info(song)
+                current_index = 0
                 for item in all_songs:
-                    self._currently_active.get(guild_id).get('queue').append(item)
+                    song_data = {'title': item, 'link': song[current_index]}
+                    self._currently_active.get(guild_id).get('queue').append(song_data)
+                    current_index += 1
             elif isinstance(song, dict):
                 self._currently_active.get(guild_id).get('queue').append(song)
             else:
-                title = await self.__get_basic_song_information(song)
+                title = self.__get_basic_song_information(song)
                 song_info = {'title': title, 'link': song}
                 self._currently_active.get(guild_id).get('queue').append(song_info)
 
@@ -695,7 +698,7 @@ class MusicCog(commands.Cog):
             generator = executor.map(self.__get_basic_song_information, links)
             return generator
 
-    async def __get_basic_song_information(self, url):
+    def __get_basic_song_information(self, url):
         """
         Download the title for a given url.
         :param url: The url to find the title of.
@@ -703,8 +706,8 @@ class MusicCog(commands.Cog):
         """
 
         # Wait some random time if its been less than 2 seconds since last ping
-        if self._youtube_last_pinged - time.time() < 2:
-            await asyncio.sleep(float(2) + uniform(0.1, 2.1))
+        # if self._youtube_last_pinged - time.time() < 2:
+        #    await asyncio.sleep(float(2) + uniform(0.1, 2.1))
         headers = {'User-Agent': choice(USER_AGENT_LIST), 'Referer': 'https://www.google.co.uk/'}
 
         # TODO: Use aiohttp
