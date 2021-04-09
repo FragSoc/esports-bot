@@ -19,7 +19,7 @@ DEFAULT_PINGME_CREATE_POLL_LENGTH = timedelta(hours=1)
 DEFAULT_PINGME_CREATE_THRESHOLD = 6
 client = lib.client.instance()
 client.remove_command('help')
-STRINGS = toml.load("esportsbot/user_strings.toml")["main"]
+STRINGS = client.STRINGS["main"]
 
 
 def make_guild_init_data(guild: discord.Guild) -> dict:
