@@ -143,7 +143,7 @@ class MusicCog(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def getmusicchannel(self, ctx: Context) -> None:
+    async def getmusicchannel(self, ctx: Context):
         """
         Sends a tagged channel if the music channel has been set, otherwise will send an error message.
         :param ctx: The context of the message.
@@ -161,7 +161,7 @@ class MusicCog(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def resetmusicchannel(self, ctx: Context) -> None:
+    async def resetmusicchannel(self, ctx: Context):
         """
         If the music channel is set, clear it and re-setup the channel with the correct messages. Otherwise send an
         error message.
