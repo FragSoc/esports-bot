@@ -8,7 +8,7 @@ from ..base_functions import send_to_log_channel
 class DefaultRoleCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.STRINGS = toml.load("../user_strings.toml")["default_role"]
+        self.STRINGS = bot.STRINGS["default_role"]
 
     @commands.command()
     @commands.has_permissions(administrator=True)
