@@ -44,11 +44,13 @@ class MessageTypeEnum(IntEnum):
 EMPTY_QUEUE_MESSAGE = "**__Queue list:__**\n" \
                       "Join a VoiceChannel and search a song by name or YouTube url.\n"
 
+ESPORTS_LOGO_URL = "http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png"
+
 EMPTY_PREVIEW_MESSAGE = Embed(title="No song currently playing",
                               colour=EmbedColours.music,
                               footer="Use the prefix ! for commands"
                               )
-EMPTY_PREVIEW_MESSAGE.set_image(url="http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png")
+EMPTY_PREVIEW_MESSAGE.set_image(url=ESPORTS_LOGO_URL)
 EMPTY_PREVIEW_MESSAGE.set_footer(text="Definitely not made by fuxticks#1809 on discord")
 
 # Bitrate quality can be 0,1,2: 0 is best, 2 is worst
@@ -712,15 +714,23 @@ class MusicCog(commands.Cog):
         for item in data:
             snippet = item.get("snippet")
             info = {"title": snippet.get("title", "Unable to get title, this is a bug"),
-                    # The url can be in different places depending on if the data is coming from a playlist or a video
-                    "link": snippet.get("resourceId", {}).get("videoId", item.get("id", "Unable to get link, this "
-                                                                                        "is a bug")),
-                    "thumbnail": snippet.get("thumbnails", {}).get("maxres", {}).get("url", "Unable to get thumbnail, "
+                    "thumbnail": snippet.get("thumbnails", {}).get("maxres", {}).get("url", "Unable to get thumbnail "
                                                                                             "this is a bug")}
+            if "id" in info:
+                info["link"] = info.get("id", "Unable to get link, this is a bug")
+            else:
+                info["link"] = snippet.get("resourceId", {}).get("videoId", "Unable to get link, this is a bug")
 
             # Turn the id gained from the dict into an actual url.
             if "Unable to get link, this is a bug" not in info.get("link"):
                 info["link"] = "https://www.youtube.com/watch?v=" + info.get("link")
+
+            # Generate the url from the video id if the video id was gotten successfully.
+            if not self.__is_url(info.get("thumbnail")):
+                thumbnail = snippet.get("thumbnails", {}).get("maxres", {}).get("url", "Unable to get thumbnail this "
+                                                                                       "is a bug")
+                info["thumbnail"] = thumbnail
+
             formatted_data.append(info)
 
         return formatted_data
@@ -785,7 +795,11 @@ class MusicCog(commands.Cog):
             updated_preview_message = Embed(title="Currently Playing: " + current_song.get('title'),
                                             colour=EmbedColours.music, url=current_song.get('link'),
                                             video=current_song.get('link'))
-            updated_preview_message.set_image(url=current_song.get('thumbnail'))
+            thumbnail = current_song.get('thumbnail')
+            # If the current thumbnail isn't a url, just use the default image.
+            if not self.__is_url(current_song.get('thumbnail')):
+                thumbnail = ESPORTS_LOGO_URL
+            updated_preview_message.set_image(url=thumbnail)
 
         self.__add_time_remaining_field(guild_id, updated_preview_message)
 
@@ -951,8 +965,9 @@ class MusicCog(commands.Cog):
         # Match desktop, mobile and playlist links
         re_desktop = r'(http[s]?://)?youtube.com/(watch\?v)|(playlist\?list)='
         re_mobile = r'(http[s]?://)?youtu.be/([a-zA-Z]|[0-9])+'
+        re_thumbnail = r'(http[s]?://)?i.ytimg.com/vi/([a-zA-Z]|[0-9])+'
 
-        return bool(re.search(re_desktop, string) or re.search(re_mobile, string))
+        return bool(re.search(re_desktop, string) or re.search(re_mobile, string) or re.search(re_thumbnail, string))
 
     def __download_video_info(self, link: str, download: bool = False) -> dict:
         """
