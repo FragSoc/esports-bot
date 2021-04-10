@@ -208,6 +208,9 @@ preview messages will be sent. Any messages sent to this channel get deleted aft
 #### !resumesong
 * Resumes the current song. Only works if paused.
 
+#### !pausesong
+* Pauses the current song. Only works if there is something playing.
+
 #### !kickbot
 * Kicks the bot from the current call. Will also clear the queue
 
