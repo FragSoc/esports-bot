@@ -716,7 +716,7 @@ class MusicCog(commands.Cog):
             info = {"title": snippet.get("title", "Unable to get title, this is a bug"),
                     "thumbnail": snippet.get("thumbnails", {}).get("maxres", {}).get("url", "Unable to get thumbnail "
                                                                                             "this is a bug")}
-            if "id" in info:
+            if "id" in item:
                 info["link"] = info.get("id", "Unable to get link, this is a bug")
             else:
                 info["link"] = snippet.get("resourceId", {}).get("videoId", "Unable to get link, this is a bug")
