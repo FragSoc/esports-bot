@@ -503,7 +503,7 @@ class MusicCog(commands.Cog):
             # If there are messages in the channel.
             if arg is None:
                 await ctx.channel.send("The channel is not empty, if you want to clear the channel for use, "
-                                       "use !setmusicchannel -c <channel>")
+                                       f"use {self._bot.command_prefix}setmusicchannel -c <channel>")
             elif arg == '-c':
                 await channel_instance.purge(limit=int(sys.maxsize))
 
