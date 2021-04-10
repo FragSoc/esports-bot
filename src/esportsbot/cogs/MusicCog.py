@@ -182,7 +182,7 @@ class MusicCog(commands.Cog):
             await ctx.channel.send("Music channel has not been set")
 
     @commands.command()
-    async def removesong(self, ctx, song_index=None) -> bool:
+    async def removesong(self, ctx: Context, song_index : int = None) -> bool:
         """
         Remove a song at an index from the current queue.
         :param ctx: The context of the message.
@@ -503,7 +503,7 @@ class MusicCog(commands.Cog):
             # If there are messages in the channel.
             if arg is None:
                 await ctx.channel.send("The channel is not empty, if you want to clear the channel for use, "
-                                       "use !setmusicchannel -c <channel>")
+                                       f"use {self._bot.command_prefix}setmusicchannel -c <channel>")
             elif arg == '-c':
                 await channel_instance.purge(limit=int(sys.maxsize))
 
