@@ -424,6 +424,7 @@ class MusicCog(commands.Cog):
         shuffle(self._currently_active.get(ctx.guild.id)['queue'])
         self._currently_active.get(ctx.guild.id).get('queue').insert(0, current_top)
 
+        await self.__update_channel_messages(ctx.guild.id)
         await self.__send_message_and_delete(Embed(title="Queue shuffled!", colour=EmbedColours.green), ctx.message)
 
     @tasks.loop(seconds=1)
@@ -432,19 +433,20 @@ class MusicCog(commands.Cog):
         Check the inactive channels if they are still playing. If its been more than the allotted time remove the
         channel from any active/inactive status.
         """
-        # Create a copy to avoid concurrent changes to _currently_active
-        active_copy = self._currently_active.copy()
-        for guild_id in active_copy.keys():
+        # Get a list of the keys to iterate through
+        active_copy = list(self._currently_active.keys())
+        for guild_id in active_copy:
             if not self._currently_active.get(guild_id).get('voice_client').is_playing() \
                     and not self._currently_active.get(guild_id).get('voice_client').is_paused():
                 # Check any voice_clients that are no longer playing but that aren't just paused
                 await self.__check_next_song(guild_id)
             elif self.__check_empty_vc(guild_id):
                 # Check if the bot is in a channel by itself
-                asyncio.create_task(self.__remove_active_channel(guild_id))
-                self._marked_channels.pop(guild_id)
+                guild = self._currently_active.pop(guild_id)
+                await guild['voice_client'].disconnect()
+                await self.__update_channel_messages(guild_id)
 
-        if len(active_copy.keys()) == 0:
+        if len(self._currently_active) == 0:
             # Stop the task when no channels to check
             self.check_active_channels.stop()
 
@@ -455,8 +457,8 @@ class MusicCog(commands.Cog):
         if the bot is in a channel by itself.
         """
         # Create a copy to avoid concurrent changes to _marked_channels
-        marked_copy = self._marked_channels.copy()
-        for guild_id in marked_copy.keys():
+        marked_copy = list(self._marked_channels.keys())
+        for guild_id in marked_copy:
             guild_time = self._marked_channels.get(guild_id)
             if time.time() - guild_time >= 60 * BOT_INACTIVE_MINUTES:
                 # If the time since inactivity has been more than the minutes specified by BOT_TIMEOUT_MINUTES,
@@ -468,7 +470,7 @@ class MusicCog(commands.Cog):
                 asyncio.create_task(self.__remove_active_channel(guild_id))
                 self._marked_channels.pop(guild_id)
 
-        if len(marked_copy.keys()) == 0:
+        if len(self._marked_channels) == 0:
             # Stop the task when no channels to check
             self.check_marked_channels.stop()
 
