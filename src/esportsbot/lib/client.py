@@ -4,7 +4,7 @@ from ..reactionMenus.reactionMenuDB import ReactionMenuDB
 from ..reactionMenus import reactionMenu
 from ..db_gateway import db_gateway
 from . import exceptions
-from typing import Dict, MutableMapping, Set
+from typing import Dict, MutableMapping, Set, Union
 from datetime import datetime, timedelta
 import os
 import signal
@@ -14,6 +14,7 @@ import toml
 from .exceptions import UnrecognisedReactionMenuMessage
 from .emotes import Emote
 
+StringTable = MutableMapping[str, Union[str, "StringTable"]]
 
 class EsportsBot(commands.Bot):
     """A discord.commands.Bot subclass, adding a dictionary of active reaction menus.
@@ -36,7 +37,7 @@ class EsportsBot(commands.Bot):
         super().__init__(command_prefix, **options)
         self.reactionMenus = ReactionMenuDB()
         self.unknownCommandEmoji = unknownCommandEmoji
-        self.STRINGS: MutableMapping[str, MutableMapping[str, str]] = toml.load(userStringsFile)
+        self.STRINGS: StringTable = toml.load(userStringsFile)
 
         signal.signal(signal.SIGINT, self.interruptReceived) # keyboard interrupt
         signal.signal(signal.SIGTERM, self.interruptReceived) # graceful exit request
