@@ -559,7 +559,7 @@ class MusicCog(commands.Cog):
         elif len(self._currently_active.get(guild_id).get('queue')) > 1:
             # The queue is not empty, play the next song
             self._currently_active.get(guild_id).get('queue').pop(0)
-            self.__play_queue(guild_id)
+            await self.__play_queue(guild_id)
             await self.__update_channel_messages(guild_id)
 
     async def __add_song_to_queue(self, guild_id: int, song) -> bool:
@@ -581,7 +581,7 @@ class MusicCog(commands.Cog):
 
             if not self._currently_active.get(guild_id).get('voice_client').is_playing():
                 # If we are not currently playing, start playing
-                self.__play_queue(guild_id)
+                await self.__play_queue(guild_id)
 
             await self.__update_channel_messages(guild_id)
             return True
@@ -1038,7 +1038,7 @@ class MusicCog(commands.Cog):
 
         return not len(members_not_bots) > 0
 
-    def __play_queue(self, guild_id: int) -> bool:
+    async def __play_queue(self, guild_id: int) -> bool:
         """
         Starts the playback of the song at the top of the queue.
         :param guild_id: The id of the guild the bot is playing in.
@@ -1060,13 +1060,22 @@ class MusicCog(commands.Cog):
         next_song = {**current_song, **extra_data}
         length = next_song.get("length")
 
-        self._time_allocation[guild_id] = self._time_allocation[guild_id] - length
+        time_remaining = self._time_allocation[guild_id] - length
 
-        if self._time_allocation[guild_id] < 0:
+        if time_remaining <= 0:
             # If the allocated time is used up set it to 0 and exit out
-            self.__remove_active_channel(guild_id)
-            self._time_allocation[guild_id] = 0
-            return False
+            message = Embed(title="The current song is too long for the remaining time today, trying the next song.",
+                            colour=EmbedColours.orange)
+            channel_id = self.__db_accessor.get('music_channels', params={'guild_id': guild_id})[0].get('channel_id')
+            channel = self._bot.get_channel(channel_id)
+            if channel is None:
+                channel = await self._bot.fetch_channel(channel_id)
+            await send_timed_message(channel=channel, embed=message, timer=5)
+            self._currently_active.get(guild_id)["queue"] = [None] + self._currently_active.get(guild_id).get("queue")
+            await self.__check_next_song(guild_id)
+            return True
+
+        self._time_allocation[guild_id] = self._time_allocation[guild_id] - length
 
         self._currently_active.get(guild_id)['current_song'] = next_song
 
