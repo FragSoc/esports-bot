@@ -915,7 +915,7 @@ class MusicCog(commands.Cog):
 
         if self.__is_url(message):
             # The message is a url
-            if re.search(r'(&list)', message):
+            if re.search(r'(list)', message):
                 # The message is a playlist
                 return MessageTypeEnum.playlist
             else:
