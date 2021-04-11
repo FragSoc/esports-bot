@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from . import lib
 from .base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 from .generate_schema import generate_schema
 from .db_gateway import db_gateway
@@ -8,12 +9,20 @@ from discord.ext.commands.context import Context
 from discord import NotFound, HTTPException, Forbidden
 import os
 import discord
-from . import lib
-from datetime import datetime
+from datetime import datetime, timedelta
+import asyncio
 
 
+DEFAULT_ROLE_PING_COOLDOWN = timedelta(hours=5)
+DEFAULT_PINGME_CREATE_POLL_LENGTH = timedelta(hours=1)
+DEFAULT_PINGME_CREATE_THRESHOLD = 6
 client = lib.client.instance()
 client.remove_command('help')
+
+
+def make_guild_init_data(guild: discord.Guild) -> dict:
+    return {'guild_id': guild.id, 'num_running_polls': 0, 'role_ping_cooldown_seconds': int(DEFAULT_ROLE_PING_COOLDOWN.total_seconds()),
+            "pingme_create_threshold": DEFAULT_PINGME_CREATE_THRESHOLD, "pingme_create_poll_length_seconds": int(DEFAULT_PINGME_CREATE_POLL_LENGTH.total_seconds())}
 
 
 async def send_to_log_channel(guild_id, msg):
@@ -25,15 +34,14 @@ async def send_to_log_channel(guild_id, msg):
 
 @client.event
 async def on_ready():
-    client.init()
-    print('Bot is now active')
-    await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="to my tears"))
+    await client.init()
+    await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="your commands"))
 
 
 @client.event
 async def on_guild_join(guild):
     print(f"Joined the guild: {guild.name}")
-    db_gateway().insert('guild_info', params={'guild_id': guild.id})
+    db_gateway().insert('guild_info', params=make_guild_init_data(guild))
 
 
 @client.event
@@ -137,7 +145,16 @@ async def on_raw_message_delete(payload: discord.RawMessageDeleteEvent):
     :param discord.RawMessageDeleteEvent payload: An event describing the message deleted.
     """
     if payload.message_id in client.reactionMenus:
-        client.reactionMenus.removeID(payload.message_id)
+        menu = client.reactionMenus[payload.message_id]
+        try:
+            client.reactionMenus.removeID(payload.message_id)
+        except KeyError:
+            pass
+        else:
+            await client.adminLog(None, {"Reaction menu deleted": "id: " + str(payload.message_id) \
+                                                + "\nchannel: <#" + str(menu.msg.channel.id) + ">"
+                                                + "\ntype: " + type(menu).__name__},
+                                    guildID=payload.guild_id)
 
 
 @client.event
@@ -149,7 +166,16 @@ async def on_raw_bulk_message_delete(payload: discord.RawBulkMessageDeleteEvent)
     """
     for msgID in payload.message_ids:
         if msgID in client.reactionMenus:
-            client.reactionMenus.removeID(msgID)
+            menu = client.reactionMenus[payload.message_id]
+            try:
+                client.reactionMenus.removeID(msgID)
+            except KeyError:
+                pass
+            else:
+                await client.adminLog(None, {"Reaction menu deleted": "id: " + str(payload.message_id) \
+                                                    + "\nchannel: <#" + str(menu.msg.channel.id) + ">"
+                                                    + "\ntype: " + type(menu).__name__},
+                                        guildID=payload.guild_id)
 
 
 @client.event
@@ -162,15 +188,18 @@ async def on_command_error(ctx: Context, exception: Exception):
         except (Forbidden, HTTPException):
             pass
         except NotFound:
-            raise ValueError("Invalid unknownCommandEmoji: " + client.unknownCommandEmoji.sendable)
+            raise ValueError("Invalid unknownCommandEmoji: "
+                             + client.unknownCommandEmoji.sendable)
     else:
         sourceStr = str(ctx.message.id)
         try:
             sourceStr += "/" + ctx.channel.name + "#" + str(ctx.channel.id) \
-                            + "/" + ctx.guild.name + "#" + str(ctx.guild.id)
+                + "/" + ctx.guild.name + "#" + str(ctx.guild.id)
         except AttributeError:
             sourceStr += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
-        print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught " + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
+        print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught "
+                                      + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
+        lib.exceptions.print_exception_trace(exception)
 
 
 @client.event
@@ -196,9 +225,36 @@ async def initialsetup(ctx):
     if already_in_db:
         await ctx.channel.send("This server is already set up")
     else:
-        db_gateway().insert('guild_info', params={
-            'guild_id': ctx.author.guild.id})
+        db_gateway().insert('guild_info', make_guild_init_data(ctx.guild))
         await ctx.channel.send("This server has now been initialised")
+
+
+@client.event
+async def on_message(message: discord.Message):
+    if message.guild is not None and message.role_mentions:
+        roleUpdateTasks = client.handleRoleMentions(message)
+        await client.process_commands(message)
+        if roleUpdateTasks:
+            await asyncio.wait(roleUpdateTasks)
+            for task in roleUpdateTasks:
+                if e := task.exception():
+                    lib.exceptions.print_exception_trace(e)
+    else:
+        await client.process_commands(message)
+
+
+@client.event
+async def on_guild_role_delete(role: discord.Role):
+    db = db_gateway()
+    if db.get("pingable_roles", {"role_id": role.id}):
+        db.delete("pingable_roles", {"role_id": role.id})
+        logEmbed = discord.Embed()
+        logEmbed.set_author(icon_url=client.user.avatar_url_as(size=64), name="Admin Log")
+        logEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
+        logEmbed.colour = discord.Colour.random()
+        for aTitle, aDesc in {"!pingme Role Deleted": "Role: " + role.mention + "\nName: " + role.name + "\nDeleting user unknown, please see the server's audit log."}.items():
+            logEmbed.add_field(name=str(aTitle), value=str(aDesc), inline=False)
+        await client.adminLog(None, embed=logEmbed)
 
 
 def launch():
@@ -213,9 +269,11 @@ def launch():
     client.load_extension('esportsbot.cogs.LogChannelCog')
     client.load_extension('esportsbot.cogs.AdminCog')
     client.load_extension('esportsbot.cogs.MenusCog')
-    if os.getenv('ENABLE_TWITTER') == "True":
+    client.load_extension('esportsbot.cogs.PingablesCog')
+    client.load_extension('esportsbot.cogs.EventCategoriesCog')
+    if os.getenv('ENABLE_TWITTER').lower() == 'true':
         client.load_extension('esportsbot.cogs.TwitterIntegrationCog')
-    if os.getenv('ENABLE_TWITCH') == "True":
+    if os.getenv('ENABLE_TWITCH').lower() == 'true':
         client.load_extension('esportsbot.cogs.TwitchIntegrationCog')
     if os.getenv('ENABLE_MUSIC') == 'TRUE':
         client.load_extension('esportsbot.cogs.MusicCog')
