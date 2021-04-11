@@ -212,6 +212,14 @@ class MusicCog(commands.Cog):
                                                  ctx.message)
             return False
 
+        if int(song_index) == 1:
+            self.__pause_song(ctx.guild.id)
+            await self.__check_next_song(ctx.guild.id)
+            message = Embed(title=f"Removed the current song from playback, playing next song!",
+                            colour=EmbedColours.green)
+            await self.__send_message_and_delete(message, ctx.message)
+            return True
+
         if len(self._currently_active.get(ctx.guild.id).get('queue')) < (int(song_index) - 1):
             # The index given is out of the bounds of the current queue
             message = Embed(title=f"There is no song at position {song_index} in the queue",
