@@ -182,7 +182,7 @@ class MusicCog(commands.Cog):
             await ctx.channel.send("Music channel has not been set")
 
     @commands.command()
-    async def removesong(self, ctx: Context, song_index : int = None) -> bool:
+    async def removesong(self, ctx: Context, song_index: int = None) -> bool:
         """
         Remove a song at an index from the current queue.
         :param ctx: The context of the message.
@@ -202,7 +202,7 @@ class MusicCog(commands.Cog):
 
         if not strIsInt(song_index):
             await self.__send_message_and_delete(Embed(title="To remove a song you must provide a number "
-                                                           "of a song in the queue", colour=EmbedColours.orange),
+                                                             "of a song in the queue", colour=EmbedColours.orange),
                                                  ctx.message)
             return False
 
@@ -716,8 +716,8 @@ class MusicCog(commands.Cog):
             info = {"title": snippet.get("title", "Unable to get title, this is a bug"),
                     "thumbnail": snippet.get("thumbnails", {}).get("maxres", {}).get("url", "Unable to get thumbnail "
                                                                                             "this is a bug")}
-            if "id" in item:
-                info["link"] = info.get("id", "Unable to get link, this is a bug")
+            if item.get("id", None) is not None:
+                info["link"] = item.get("id", "Unable to get link, this is a bug")
             else:
                 info["link"] = snippet.get("resourceId", {}).get("videoId", "Unable to get link, this is a bug")
 
