@@ -26,6 +26,8 @@ $ vim secrets.env
 DISCORD_TOKEN=
 TWITCH_CLIENT_ID=
 TWITCH_CLIENT_SECRET=
+GOOGLE_API=
+ENABLE_MUSIC=TRUE
 ```
 
 <details>
@@ -240,6 +242,58 @@ To get the ID of a reaction menu, enable discord's developer mode, right click o
 </details>
 
 <details>
+<summary>Music Bot</summary>
+
+### Music Bot
+
+The Esports bot now has a basic music bot that functions very similarly to the popular 'Hydra Bot'.
+
+Commands that control the music must be performed in the defined music channel. They also require you to be in the same
+voice channel as the bot, so that only the people listening can change the flow of music.
+
+To add new songs to the queue, just put the name, youtube link, or a youtube playlist into the music channel once set.
+Also requires you to be in the voice channel with the bot, or if the bot is inactive, in any voice channel.
+
+#### !setmusicchannel <optional: {args}> {channel-id}
+
+* Set the channel to be used for requesting music. Once set the channel will be cleared of any past messages, and the
+preview messages will be sent. Any messages sent to this channel get deleted after being processed.
+* If the channel being set has past messages, use the `-c` arg to indicate that the channel can be cleared and then set.
+* *__Does not need to be sent in the music channel__*
+
+
+#### !getmusicchannel
+* Returns the current channel set as the music channel as a mentioned channel with a `#`.
+* *__Does not need to be sent in the music channel__*
+
+#### !resetmusicchannel
+* This clears the current music channel and resets the preview and queue messages.
+* *__Does not need to be sent in the music channel__*
+
+#### !removesong {index}
+* Removes a song from the queue at the given index.
+
+#### !resumesong
+* Resumes the current song. Only works if paused.
+
+#### !pausesong
+* Pauses the current song. Only works if there is something playing.
+
+#### !kickbot
+* Kicks the bot from the current call. Will also clear the queue
+
+#### !skipsong
+* Skips the current song. If the current song is the only song in the playlist, the bot will leave.
+
+#### !listqueue
+* Shows the current queue. Has the same output as the current queue in the music channel
+* *__Can't be sent in the music channel__*
+
+#### !clearqueue
+* Clears the current queue
+
+#### !shufflequeue
+* If the queue has 3 or more items, including the current song, it will shuffle all but the current songs. 
 <summary>User Created Roles w/ Cooldown-Limited Pings</summary>
 
 ### User Created Pingable Roles
