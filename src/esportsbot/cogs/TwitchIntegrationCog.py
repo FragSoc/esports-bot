@@ -1,9 +1,6 @@
 from discord.ext import commands, tasks
 from ..db_gateway import db_gateway
 from ..base_functions import get_cleaned_id
-import requests
-import aiohttp
-import asyncio
 import time
 import os
 
@@ -29,10 +26,10 @@ class TwitchIntegrationCog(commands.Cog):
             if not twitch_in_db:
                 # Check user exists
                 user_exists = bool(
-                    self.twitch_handler.request_user(twitch_handle))
+                    await self.twitch_handler.request_user(twitch_handle))
                 if user_exists:
                     # Get live status of the channel
-                    live_status = bool(self.twitch_handler.request_data(
+                    live_status = bool(await self.twitch_handler.request_data(
                         [twitch_handle]))
                     # Insert Twitch channel into DB
                     db_gateway().insert('twitch_info', params={
@@ -57,10 +54,10 @@ class TwitchIntegrationCog(commands.Cog):
             if not twitch_in_db:
                 # Check user exists
                 user_exists = bool(
-                    self.twitch_handler.request_user(twitch_handle))
+                    await self.twitch_handler.request_user(twitch_handle))
                 if user_exists:
                     # Get live status of the channel
-                    live_status = bool(self.twitch_handler.request_data(
+                    live_status = bool(await self.twitch_handler.request_data(
                         [twitch_handle]))
                     # Insert Twitch channel into DB
                     db_gateway().insert('twitch_info', params={
@@ -176,7 +173,7 @@ class TwitchIntegrationCog(commands.Cog):
                 twitch_status_dict[twitch_user['twitch_handle']
                                    ] = twitch_user['currently_live']
             # Query Twitch to receive array of all live users
-            returned_data = self.twitch_handler.request_data(
+            returned_data = await self.twitch_handler.request_data(
                 twitch_handle_arr)
             # Loop through all users comparing them to the live list
             for twitch_handle in twitch_handle_arr:
@@ -224,38 +221,38 @@ class TwitchAPIHandler:
             'Client-ID': self.client_id
         }
 
-    def generate_new_oauth(self):
+    async def generate_new_oauth(self):
         OAuthURL = 'https://id.twitch.tv/oauth2/token'
         params = {
             'client_id': self.client_id,
             'client_secret': self.client_secret,
             'grant_type': 'client_credentials'
         }
-        oauth_response = requests.post(OAuthURL, params)
-        if oauth_response.status_code == 200:
-            oauth_response_json = oauth_response.json()
-            oauth_response_json['expires_in'] += time.time()
-            self.token = oauth_response_json
-            print("TWITCH: Generated new OAuth token")
-            return self.token
+        async with self.bot.httpClient.post(OAuthURL, params=params) as oauth_response:
+            if oauth_response.status == 200:
+                oauth_response_json = oauth_response.json()
+                oauth_response_json['expires_in'] += time.time()
+                self.token = oauth_response_json
+                print("TWITCH: Generated new OAuth token")
+                return self.token
 
-    def request_data(self, twitch_handles):
+    async def request_data(self, twitch_handles):
         if self.token is None or self.token['expires_in'] < time.time():
-            self.generate_new_oauth()
+            await self.generate_new_oauth()
         data_url = 'https://api.twitch.tv/helix/streams?'
         data_url = data_url+"user_login="+("&user_login=".join(twitch_handles))
-        data_response = requests.get(
-            data_url, headers=self.base_headers(), params=self.params)
-        return data_response.json()['data']
+        async with self.bot.httpClient.get(data_url, headers=self.base_headers(),
+                params=self.params) as data_response:
+            return data_response.json()['data']
 
-    def request_user(self, twitch_handle):
+    async def request_user(self, twitch_handle):
         if self.token is None or self.token['expires_in'] < time.time():
-            self.generate_new_oauth()
+            await self.generate_new_oauth()
         data_url = f'https://api.twitch.tv/helix/users?login={twitch_handle}'
         #data_url = data_url+"user_login="+("&user_login=".join(twitch_handles))
-        data_response = requests.get(
-            data_url, headers=self.base_headers(), params=self.params)
-        return data_response.json()['data']
+        async with self.bot.httpClient.get(data_url, headers=self.base_headers(),
+                params=self.params) as data_response:
+            return data_response.json()['data']
 
 
 def setup(bot):
