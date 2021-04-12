@@ -1,11 +1,21 @@
-from discord.ext import commands, tasks
-from ..db_gateway import db_gateway
-from ..base_functions import get_cleaned_id
-import requests
-import aiohttp
-import asyncio
-import time
 import os
+import time
+
+import requests
+from discord import Embed
+from discord.ext import commands, tasks
+
+from ..base_functions import get_cleaned_id
+from ..db_gateway import db_gateway
+
+EMPTY_EMBED = Embed(title="This is the stream title!",
+                    url="https://twitch.tv/uoyesports")
+EMPTY_EMBED.set_thumbnail(url="http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png")
+EMPTY_EMBED.set_author(name="UoY Esports",
+                       icon_url="http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png")
+EMPTY_EMBED.add_field(name="Game", value="Game placeholder", inline=True)
+EMPTY_EMBED.set_image(url="https://cdn.pixabay.com/photo/2014/02/27/16/10/tree-276014__340.jpg")
+EMPTY_EMBED.set_footer(text="Come support our streamers!")
 
 
 class TwitchIntegrationCog(commands.Cog):
@@ -36,8 +46,10 @@ class TwitchIntegrationCog(commands.Cog):
                         [twitch_handle]))
                     # Insert Twitch channel into DB
                     db_gateway().insert('twitch_info', params={
-                        'guild_id': ctx.author.guild.id, 'channel_id': cleaned_channel_id, 'twitch_handle': twitch_handle.lower(), 'currently_live': live_status})
-                    await ctx.channel.send(f"{twitch_handle} is valid and has been added, their notifications will be placed in {channel_mention}")
+                        'guild_id': ctx.author.guild.id, 'channel_id': cleaned_channel_id,
+                        'twitch_handle': twitch_handle.lower(), 'currently_live': live_status})
+                    await ctx.channel.send(
+                        f"{twitch_handle} is valid and has been added, their notifications will be placed in {channel_mention}")
                 else:
                     await ctx.channel.send(f"{twitch_handle} is not a valid Twitch handle")
             else:
@@ -64,11 +76,20 @@ class TwitchIntegrationCog(commands.Cog):
                         [twitch_handle]))
                     # Insert Twitch channel into DB
                     db_gateway().insert('twitch_info', params={
-                        'guild_id': ctx.author.guild.id, 'channel_id': cleaned_channel_id, 'twitch_handle': twitch_handle.lower(), 'currently_live': live_status, 'custom_message': custom_message})
-                    await ctx.channel.send(f"{twitch_handle} is valid and has been added, their notifications will be placed in {channel_mention}")
+                        'guild_id': ctx.author.guild.id, 'channel_id': cleaned_channel_id,
+                        'twitch_handle': twitch_handle.lower(), 'currently_live': live_status,
+                        'custom_message': custom_message})
+                    await ctx.channel.send(
+                        f"{twitch_handle} is valid and has been added, their notifications will be placed in {channel_mention}")
                     sample_message = custom_message.format(
                         handle="TwitchHandle", game="Game/Genre", link="StreamLink", title="Title")
-                    await ctx.channel.send(f"Sample custom message below\n {sample_message}")
+                    sample_embed = await self.create_embed(stream_title="Stream title here",
+                                                           stream_thumbnail="http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png",
+                                                           user_name="UoYEsports",
+                                                           user_profile="http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png",
+                                                           stream_game="Placeholder Game")
+                    await ctx.channel.send(content=f"Sample custom message below\n {sample_message}",
+                                           embed=sample_embed)
                 else:
                     await ctx.channel.send(f"{twitch_handle} is not a valid Twitch handle")
             else:
@@ -85,10 +106,17 @@ class TwitchIntegrationCog(commands.Cog):
             if twitch_in_db:
                 # Make DB edit
                 db_gateway().update('twitch_info', set_params={
-                    'custom_message': custom_message}, where_params={'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
+                    'custom_message': custom_message}, where_params={'guild_id': ctx.author.guild.id,
+                                                                     'twitch_handle': twitch_handle.lower()})
                 sample_message = custom_message.format(
                     handle="TwitchHandle", game="Game/Genre", link="StreamLink", title="Title")
-                await ctx.channel.send(f"Sample custom message below\n {sample_message}")
+                sample_embed = await self.create_embed(stream_title="Stream title here",
+                                                       stream_thumbnail="http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png",
+                                                       user_name="UoYEsports",
+                                                       user_profile="http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png",
+                                                       stream_game="Placeholder Game")
+                await ctx.channel.send(content=f"Sample custom message below\n {sample_message}",
+                                       embed=sample_embed)
             else:
                 await ctx.channel.send("That Twitch handle is not configured in this server")
         else:
@@ -106,7 +134,8 @@ class TwitchIntegrationCog(commands.Cog):
             if twitch_in_db:
                 # Make DB edit
                 db_gateway().update('twitch_info', set_params={
-                    'channel_id': cleaned_channel_id}, where_params={'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
+                    'channel_id': cleaned_channel_id}, where_params={'guild_id': ctx.author.guild.id,
+                                                                     'twitch_handle': twitch_handle.lower()})
                 await ctx.channel.send(f"Changed the alerts for {twitch_handle} to {channel_mention}")
             else:
                 await ctx.channel.send("The Twitch user mentioned is not configured in this server")
@@ -123,7 +152,8 @@ class TwitchIntegrationCog(commands.Cog):
             if handle_exists:
                 # Handle exists
                 db_gateway().delete('twitch_info',
-                                    where_params={'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
+                                    where_params={'guild_id': ctx.author.guild.id,
+                                                  'twitch_handle': twitch_handle.lower()})
                 await ctx.channel.send(f"Alerts for {twitch_handle} have been removed from this server")
             else:
                 await ctx.channel.send("Entered Twitch handle is not configured in this server")
@@ -145,6 +175,14 @@ class TwitchIntegrationCog(commands.Cog):
             channel_mention = "<#" + str(each['channel_id']) + ">"
             all_handles += f"{each['twitch_handle']} is set to alert in {channel_mention}\n"
         await ctx.channel.send(all_handles)
+
+    @commands.command()
+    async def test(self, ctx):
+        await ctx.channel.send("TEST")
+        returned_data = self.twitch_handler.request_data(["ryth_cs"])
+        returned_user = self.twitch_handler.request_user("ryth_cs")
+        print(f"DATA - {returned_data}")
+        print(f"USER - {returned_user}")
 
     @tasks.loop(seconds=50)
     async def live_checker(self):
@@ -174,7 +212,7 @@ class TwitchIntegrationCog(commands.Cog):
                 'SELECT DISTINCT twitch_handle, currently_live FROM "twitch_info"')
             for twitch_user in all_twitch_statuses:
                 twitch_status_dict[twitch_user['twitch_handle']
-                                   ] = twitch_user['currently_live']
+                ] = twitch_user['currently_live']
             # Query Twitch to receive array of all live users
             returned_data = self.twitch_handler.request_data(
                 twitch_handle_arr)
@@ -194,16 +232,38 @@ class TwitchIntegrationCog(commands.Cog):
                             # Grab all channels to be alerted
                             all_channels = db_gateway().get('twitch_info', params={
                                 'twitch_handle': twitch_handle.lower()})
+                            # Grab information on user
+                            user_info = self.twitch_handler.request_user(handle_live['user_name'])
                             for each in all_channels:
                                 # Send alert to specified channel to each['channel_id']
-                                custom_message = each['custom_message'].format(
-                                    handle=handle_live['user_name'], game=handle_live['game_name'], link=f"https://twitch.tv/{handle_live['user_name']}", title=handle_live['title']) if each['custom_message'] != '' else f"{handle_live['user_name']} has just gone live with {handle_live['game_name']}, check them out here: https://twitch.tv/{handle_live['user_name']}"
-                                await self.bot.get_channel(each['channel_id']).send(custom_message)
+                                if each['custom_message'] is not None:
+                                    custom_message = each['custom_message'].format(handle=handle_live['user_name'],
+                                                                                   game=handle_live['game_name'],
+                                                                                   link=f"https://twitch.tv/{handle_live['user_name']}",
+                                                                                   title=handle_live['title'])
+                                else:
+                                    custom_message = f"** **\n{handle_live['user_name']} has just gone live!"
+                                stream_embed = await self.create_embed(stream_title=handle_live['title'],
+                                                                       stream_thumbnail=handle_live['thumbnail_url'],
+                                                                       user_name=handle_live['user_name'],
+                                                                       user_profile=user_info[0]['profile_image_url'],
+                                                                       stream_game=handle_live['game_name'])
+                                await self.bot.get_channel(each['channel_id']).send(content=custom_message,
+                                                                                    embed=stream_embed)
                 else:
                     # User is not live
                     db_gateway().update('twitch_info', set_params={
                         'currently_live': False}, where_params={'twitch_handle': twitch_handle.lower()})
-        return round(time.time()-start_time, 3)
+        return round(time.time() - start_time, 3)
+
+    async def create_embed(self, stream_title, stream_thumbnail, user_name, user_profile, stream_game):
+        embed = Embed(title=stream_title, url=f"https://twitch.tv/{user_name}")
+        embed.set_thumbnail(url=user_profile)
+        embed.set_author(name=user_name, icon_url=user_profile)
+        embed.add_field(name="Game", value=stream_game, inline=True)
+        embed.set_image(url=stream_thumbnail.format(width="1920", height="1080"))
+        embed.set_footer(text="Come support our streamers!")
+        return embed
 
 
 class TwitchAPIHandler:
@@ -243,18 +303,20 @@ class TwitchAPIHandler:
         if self.token is None or self.token['expires_in'] < time.time():
             self.generate_new_oauth()
         data_url = 'https://api.twitch.tv/helix/streams?'
-        data_url = data_url+"user_login="+("&user_login=".join(twitch_handles))
+        data_url = data_url + "user_login=" + ("&user_login=".join(twitch_handles))
         data_response = requests.get(
             data_url, headers=self.base_headers(), params=self.params)
+        print(data_response.json())
         return data_response.json()['data']
 
     def request_user(self, twitch_handle):
         if self.token is None or self.token['expires_in'] < time.time():
             self.generate_new_oauth()
         data_url = f'https://api.twitch.tv/helix/users?login={twitch_handle}'
-        #data_url = data_url+"user_login="+("&user_login=".join(twitch_handles))
+        # data_url = data_url+"user_login="+("&user_login=".join(twitch_handles))
         data_response = requests.get(
             data_url, headers=self.base_headers(), params=self.params)
+        print(data_response.json())
         return data_response.json()['data']
 
 
