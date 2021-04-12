@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import os
 import signal
 import asyncio
+import aiohttp
 
 from .exceptions import UnrecognisedReactionMenuMessage
 from .emotes import Emote
@@ -28,6 +29,7 @@ class EsportsBot(commands.Bot):
         super().__init__(command_prefix, **options)
         self.reactionMenus = ReactionMenuDB()
         self.unknownCommandEmoji = unknownCommandEmoji
+        self.httpClient = aiohttp.ClientSession()
 
         signal.signal(signal.SIGINT, self.interruptReceived) # keyboard interrupt
         signal.signal(signal.SIGTERM, self.interruptReceived) # graceful exit request
@@ -45,6 +47,7 @@ class EsportsBot(commands.Bot):
         """Shut down the bot gracefully.
         """
         print("[EsportsBot] Shutting down...")
+        await self.httpClient.close()
         await self.logout()
 
 
