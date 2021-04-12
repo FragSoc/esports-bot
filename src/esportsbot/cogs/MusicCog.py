@@ -109,10 +109,13 @@ class MusicCog(commands.Cog):
             message = Embed(title="A channel id is a required argument", colour=EmbedColours.red)
             await send_timed_message(ctx.channel, embed=message, timer=30)
             return False
-
-        cleaned_channel_id = channel_id_from_mention(given_channel_id)
-
-        is_valid_channel_id = len(str(cleaned_channel_id)) == 18
+        
+        try:
+            cleaned_channel_id = channel_id_from_mention(given_channel_id)
+        except ValueError:
+            is_valid_channel_id = False
+        else:
+            is_valid_channel_id = len(str(cleaned_channel_id)) == 18
 
         if not is_valid_channel_id:
             # The channel id given is not valid.. exit
