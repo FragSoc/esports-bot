@@ -3,5 +3,10 @@ discord.py
 python-dotenv
 emoji
 git+git://github.com/JustAnotherArchivist/snscrape.git#egg=snscrape
+lxml
+google-api-python-client
+youtube-dl
+youtube-search-python
+PyNaCl
 aiohttp[speedups]
 toml
