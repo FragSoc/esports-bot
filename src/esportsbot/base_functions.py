@@ -38,6 +38,7 @@ def user_id_from_mention(pre_clean_data: str) -> int:
     """Extracts the ID of a user from a user mention.
     Will also accept strings containing a user ID, and will reject invalid integers with a ValueError.
     This does validate the ID further, e.g the size of the ID, or the existence of a user with the ID.
+    Accepting ! characters also accounts for member mentions where the member has a nickname.
 
     :param str pre_clean_data: A string containing either a user mention or ID
     :return: The ID quoted in pre_clean_data
