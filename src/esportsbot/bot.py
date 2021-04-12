@@ -1,16 +1,17 @@
-from dotenv import load_dotenv
-from .base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
-from .generate_schema import generate_schema
-from .db_gateway import db_gateway
+import os
+from datetime import datetime
+
+import discord
+from discord import NotFound, HTTPException, Forbidden
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 from discord.ext.commands.context import Context
-from discord import NotFound, HTTPException, Forbidden
-import os
-import discord
-from . import lib
-from datetime import datetime
+from dotenv import load_dotenv
 
+from . import lib
+from .base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
+from .db_gateway import db_gateway
+from .generate_schema import generate_schema
 
 client = lib.client.instance()
 client.remove_command('help')
@@ -27,7 +28,8 @@ async def send_to_log_channel(guild_id, msg):
 async def on_ready():
     client.init()
     print('BOT: Bot is now active')
-    await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="your commands"))
+    await client.change_presence(status=discord.Status.dnd,
+                                 activity=discord.Activity(type=discord.ActivityType.listening, name="your commands"))
 
 
 @client.event
@@ -51,7 +53,8 @@ async def on_member_join(member):
         default_role = member.guild.get_role(
             default_role_exists[0]['default_role_id'])
         await member.add_roles(default_role)
-        await send_to_log_channel(member.guild.id, f"{member.mention} has joined the server and received the {default_role.mention} role")
+        await send_to_log_channel(member.guild.id,
+                                  f"{member.mention} has joined the server and received the {default_role.mention} role")
     else:
         await send_to_log_channel(member.guild.id, f"{member.mention} has joined the server")
 
@@ -72,8 +75,9 @@ async def on_voice_state_update(member, before, after):
         else:
             # Still others in VC
             await before.channel.edit(name=f"{before.channel.members[0].display_name}'s VC")
-            db_gateway().update('voicemaster_slave', set_params={'owner_id': before.channel.members[0].id}, where_params={
-                'guild_id': member.guild.id, 'channel_id': before_channel_id})
+            db_gateway().update('voicemaster_slave', set_params={'owner_id': before.channel.members[0].id},
+                                where_params={
+                                    'guild_id': member.guild.id, 'channel_id': before_channel_id})
     elif after_channel_id and get_whether_in_vm_master(member.guild.id, after_channel_id):
         # Moved into a master VM VC
         slave_channel_name = f"{member.display_name}'s VC"
@@ -155,7 +159,8 @@ async def on_raw_bulk_message_delete(payload: discord.RawBulkMessageDeleteEvent)
 @client.event
 async def on_command_error(ctx: Context, exception: Exception):
     if isinstance(exception, MissingRequiredArgument):
-        await ctx.message.reply("Arguments are required for this command! See `" + client.command_prefix + "help " + ctx.invoked_with + "` for more information.")
+        await ctx.message.reply(
+            "Arguments are required for this command! See `" + client.command_prefix + "help " + ctx.invoked_with + "` for more information.")
     elif isinstance(exception, CommandNotFound):
         try:
             await ctx.message.add_reaction(client.unknownCommandEmoji.sendable)
@@ -168,11 +173,12 @@ async def on_command_error(ctx: Context, exception: Exception):
         sourceStr = str(ctx.message.id)
         try:
             sourceStr += "/" + ctx.channel.name + "#" + str(ctx.channel.id) \
-                + "/" + ctx.guild.name + "#" + str(ctx.guild.id)
+                         + "/" + ctx.guild.name + "#" + str(ctx.guild.id)
         except AttributeError:
             sourceStr += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
         print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught "
-                                      + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
+                                      + type(exception).__name__ + " '") + str(
+            exception) + "' from message " + sourceStr)
 
 
 @client.command()
@@ -200,10 +206,9 @@ def launch():
     client.load_extension('esportsbot.cogs.LogChannelCog')
     client.load_extension('esportsbot.cogs.AdminCog')
     client.load_extension('esportsbot.cogs.MenusCog')
-    # if os.getenv('ENABLE_TWITTER').lower() == 'true':
-    #     client.load_extension('esportsbot.cogs.TwitterIntegrationCog')
-    # if os.getenv('ENABLE_TWITCH').lower() == 'true':
-    #     client.load_extension('esportsbot.cogs.TwitchIntegrationCog')
-    client.load_extension('esportsbot.cogs.TwitchIntegrationCog')
+    if os.getenv('ENABLE_TWITTER').lower() == 'true':
+        client.load_extension('esportsbot.cogs.TwitterIntegrationCog')
+    if os.getenv('ENABLE_TWITCH').lower() == 'true':
+        client.load_extension('esportsbot.cogs.TwitchIntegrationCog')
 
     client.run(TOKEN)

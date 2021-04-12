@@ -8,15 +8,6 @@ from discord.ext import commands, tasks
 from ..base_functions import get_cleaned_id
 from ..db_gateway import db_gateway
 
-EMPTY_EMBED = Embed(title="This is the stream title!",
-                    url="https://twitch.tv/uoyesports")
-EMPTY_EMBED.set_thumbnail(url="http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png")
-EMPTY_EMBED.set_author(name="UoY Esports",
-                       icon_url="http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png")
-EMPTY_EMBED.add_field(name="Game", value="Game placeholder", inline=True)
-EMPTY_EMBED.set_image(url="https://cdn.pixabay.com/photo/2014/02/27/16/10/tree-276014__340.jpg")
-EMPTY_EMBED.set_footer(text="Come support our streamers!")
-
 
 class TwitchIntegrationCog(commands.Cog):
     def __init__(self, bot):
@@ -176,14 +167,6 @@ class TwitchIntegrationCog(commands.Cog):
             all_handles += f"{each['twitch_handle']} is set to alert in {channel_mention}\n"
         await ctx.channel.send(all_handles)
 
-    @commands.command()
-    async def test(self, ctx):
-        await ctx.channel.send("TEST")
-        returned_data = self.twitch_handler.request_data(["ryth_cs"])
-        returned_user = self.twitch_handler.request_user("ryth_cs")
-        print(f"DATA - {returned_data}")
-        print(f"USER - {returned_user}")
-
     @tasks.loop(seconds=50)
     async def live_checker(self):
         print('TWITCH: Retrieving current statuses')
@@ -306,7 +289,6 @@ class TwitchAPIHandler:
         data_url = data_url + "user_login=" + ("&user_login=".join(twitch_handles))
         data_response = requests.get(
             data_url, headers=self.base_headers(), params=self.params)
-        print(data_response.json())
         return data_response.json()['data']
 
     def request_user(self, twitch_handle):
@@ -316,7 +298,6 @@ class TwitchAPIHandler:
         # data_url = data_url+"user_login="+("&user_login=".join(twitch_handles))
         data_response = requests.get(
             data_url, headers=self.base_headers(), params=self.params)
-        print(data_response.json())
         return data_response.json()['data']
 
 
