@@ -23,3 +23,17 @@ def strIsRoleMention(mention: str) -> bool:
     :rtype: bool
     """
     return mention.endswith(">") and mention.startswith("<@&") and strIsInt(mention[3:-1])
+
+
+# string extensions for numbers, e.g 11th, 1st, 23rd...
+NUM_EXTS = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"]
+
+
+def getNumExtension(num: int) -> str:
+    """Return the string extension for an integer, e.g 'th' or 'rd'.
+
+    :param int num: The integer to find the extension for
+    :return: string containing a number extension from numExtensions
+    :rtype: str
+    """
+    return NUM_EXTS[int(str(num)[-1])] if not (num > 10 and num < 20) else "th"

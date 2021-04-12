@@ -8,6 +8,19 @@ from discord.ext import commands
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 from discord.ext.commands.context import Context
 from dotenv import load_dotenv
+from dotenv import load_dotenv
+from . import lib
+from .base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
+from .generate_schema import generate_schema
+from .db_gateway import db_gateway
+from discord.ext import commands
+from discord.ext.commands import CommandNotFound, MissingRequiredArgument
+from discord.ext.commands.context import Context
+from discord import NotFound, HTTPException, Forbidden
+import os
+import discord
+from datetime import datetime, timedelta
+import asyncio
 
 from . import lib
 from .base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
@@ -205,8 +218,7 @@ async def on_command_error(ctx: Context, exception: Exception):
         except AttributeError:
             sourceStr += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
         print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught "
-                                      + type(exception).__name__ + " '") + str(
-            exception) + "' from message " + sourceStr)
+                                      + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
         lib.exceptions.print_exception_trace(exception)
 
 
@@ -260,8 +272,7 @@ async def on_guild_role_delete(role: discord.Role):
         logEmbed.set_author(icon_url=client.user.avatar_url_as(size=64), name="Admin Log")
         logEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
         logEmbed.colour = discord.Colour.random()
-        for aTitle, aDesc in {
-            "!pingme Role Deleted": "Role: " + role.mention + "\nName: " + role.name + "\nDeleting user unknown, please see the server's audit log."}.items():
+        for aTitle, aDesc in {"!pingme Role Deleted": "Role: " + role.mention + "\nName: " + role.name + "\nDeleting user unknown, please see the server's audit log."}.items():
             logEmbed.add_field(name=str(aTitle), value=str(aDesc), inline=False)
         await client.adminLog(None, embed=logEmbed)
 

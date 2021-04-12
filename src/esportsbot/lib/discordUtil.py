@@ -2,6 +2,11 @@ from discord import RawReactionActionEvent, Message, Member, User, Client, DMCha
 from typing import Tuple, Union
 from . import emotes, exceptions
 
+
+# Link to an empty image, to allow for an author name in embeds without providing an icon.
+EMPTY_IMAGE = "https://i.imgur.com/sym17F7.png"
+
+
 async def reactionFromRaw(client: Client, payload: RawReactionActionEvent) -> Tuple[Message, Union[User, Member], emotes.Emote]:
     """Retrieve complete Reaction and user info from a RawReactionActionEvent payload.
 
@@ -60,3 +65,14 @@ async def reactionFromRaw(client: Client, payload: RawReactionActionEvent) -> Tu
         return None, None, None
 
     return message, user, emoji
+
+
+async def send_timed_message(channel, *args, **kwargs):
+    """
+    Sends a message to a specific channel that gets deleted  after a given amount of seconds.
+    Args:
+        channel: The channel to send the message to.
+    """
+    timer = kwargs.pop("timer") if "timer" in kwargs else 15
+    timed_message = await channel.send(*args, **kwargs)
+    await timed_message.delete(delay=timer)
