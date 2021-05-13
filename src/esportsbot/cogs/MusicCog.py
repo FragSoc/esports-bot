@@ -189,7 +189,7 @@ class MusicCog(commands.Cog):
         self._time_allocation[ctx.guild.id] = self._allowed_time
         await self.__update_channel_messages(ctx.guild.id)
 
-    @commands.command()
+    @commands.command(aliases=["volume"])
     async def setvolume(self, ctx: Context, volume_level: int):
         if not self._currently_active.get(ctx.guild.id):
             # Not currently active
@@ -221,7 +221,7 @@ class MusicCog(commands.Cog):
                                  embed=Embed(title=f"Set the volume to {volume_level}%", colour=EmbedColours.music),
                                  timer=10)
 
-    @commands.command()
+    @commands.command(aliases=["remove", "removeat"])
     async def removesong(self, ctx: Context, song_index: int = None) -> bool:
         """
         Remove a song at an index from the current queue.
@@ -278,7 +278,7 @@ class MusicCog(commands.Cog):
         await send_timed_message(channel=ctx.channel, embed=message, timer=10)
         return True
 
-    @commands.command()
+    @commands.command(aliases=["pause", "stop"])
     async def pausesong(self, ctx: Context) -> bool:
         """
         If the bot is currently playing in the context's guild, pauses the playback, else does nothing.
@@ -305,7 +305,7 @@ class MusicCog(commands.Cog):
 
         return False
 
-    @commands.command()
+    @commands.command(aliases=["resume", "play"])
     async def resumesong(self, ctx: Context) -> bool:
         """
         If the bot is currently paused, the playback is resumed, else does nothing.
@@ -331,7 +331,7 @@ class MusicCog(commands.Cog):
 
         return False
 
-    @commands.command()
+    @commands.command(aliases=["kick"])
     async def kickbot(self, ctx: Context) -> bool:
         """
         Remove the bot from the voice channel. Will also reset the queue.
@@ -355,7 +355,7 @@ class MusicCog(commands.Cog):
             return True
         return False
 
-    @commands.command()
+    @commands.command(aliases=["skip"])
     async def skipsong(self, ctx: Context) -> bool:
         """
         Skips the current song. If there are no more songs in the queue, the bot will leave.
@@ -385,7 +385,7 @@ class MusicCog(commands.Cog):
                                  timer=5)
         return True
 
-    @commands.command()
+    @commands.command(aliases=["list", "queue"])
     async def listqueue(self, ctx: Context) -> bool:
         """
         Sends a message of the current queue to the channel the message was sent from.
@@ -415,7 +415,7 @@ class MusicCog(commands.Cog):
             return True
         return False
 
-    @commands.command()
+    @commands.command(aliases=["clear", "empty"])
     async def clearqueue(self, ctx: Context) -> bool:
         """
         Clear the current queue of all songs. The bot won't leave the vc with this command.
@@ -446,7 +446,7 @@ class MusicCog(commands.Cog):
                                  timer=10)
         return True
 
-    @commands.command()
+    @commands.command(aliases=["shuffle", "randomise"])
     async def shufflequeue(self, ctx: Context) -> bool:
         """
         Shuffle the current queue of songs. Does not include the current song playing, which is index 0. Won't bother
