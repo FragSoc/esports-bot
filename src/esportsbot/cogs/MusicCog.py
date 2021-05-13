@@ -489,7 +489,11 @@ class MusicCog(commands.Cog):
         """
         Reset the number of minutes a guild can use per day. Runs every 24hrs
         """
+        active_guilds = list(self._time_allocation.keys())
         self._time_allocation = defaultdict(lambda: self._allowed_time)
+        for guild in active_guilds:
+            print(f"Resetting {guild}")
+            await self.__update_channel_messages(guild)
 
     async def __setup_channel(self, ctx: Context, channel_id: int, arg: str):
         """
