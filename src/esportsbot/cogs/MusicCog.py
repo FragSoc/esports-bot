@@ -10,7 +10,8 @@ import re
 from enum import IntEnum
 from youtubesearchpython import VideosSearch
 
-from discord import Message, VoiceClient, TextChannel, Embed, Colour, FFmpegOpusAudio
+from discord import Message, VoiceClient, TextChannel, Embed, Colour, FFmpegOpusAudio, FFmpegPCMAudio, \
+    PCMVolumeTransformer
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
 
@@ -187,6 +188,38 @@ class MusicCog(commands.Cog):
     async def resetallowance(self, ctx):
         self._time_allocation[ctx.guild.id] = self._allowed_time
         await self.__update_channel_messages(ctx.guild.id)
+
+    @commands.command()
+    async def setvolume(self, ctx: Context, volume_level: int):
+        if not self._currently_active.get(ctx.guild.id):
+            # Not currently active
+            await send_timed_message(channel=ctx.channel, embed=Embed(title="I am not playing anything currently",
+                                                                      colour=EmbedColours.music), timer=10)
+            return False
+
+        if not await self.__check_valid_user_vc(ctx):
+            # Checks if the user is in a valid voice channel
+            return False
+
+        if not strIsInt(volume_level):
+            await send_timed_message(channel=ctx.channel,
+                                     embed=Embed(title="To set the volume you must give a number between 0 and 100",
+                                                 colour=EmbedColours.orange),
+                                     timer=10)
+            return False
+
+        if int(volume_level) < 0:
+            volume_level = 0
+
+        if int(volume_level) > 100:
+            volume_level = 100
+
+        client = self._currently_active.get(ctx.guild.id).get("voice_client")
+        client.source.volume = float(volume_level)/float(100)
+        self._currently_active.get(ctx.guild.id)["volume"] = client.source.volume
+        await send_timed_message(channel=ctx.channel,
+                                 embed=Embed(title=f"Set the volume to {volume_level}%", colour=EmbedColours.music),
+                                 timer=10)
 
     @commands.command()
     async def removesong(self, ctx: Context, song_index: int = None) -> bool:
@@ -860,6 +893,7 @@ class MusicCog(commands.Cog):
             self._currently_active[guild_id]['voice_client'] = voice_client
             self._currently_active[guild_id]['queue'] = []
             self._currently_active[guild_id]['current_song'] = None
+            self._currently_active[guild_id]['volume'] = 0.75
             return True
         return False
 
@@ -1084,9 +1118,12 @@ class MusicCog(commands.Cog):
 
         self._currently_active.get(guild_id)['current_song'] = next_song
 
-        voice_client.play(FFmpegOpusAudio(next_song.get("stream"), before_options=FFMPEG_BEFORE_OPT,
-                                          bitrate=int(next_song.get("bitrate")) + 10))
-        voice_client.volume = 100
+        # voice_client.play(FFmpegOpusAudio(next_song.get("stream"), before_options=FFMPEG_BEFORE_OPT,
+        #                                  bitrate=int(next_song.get("bitrate")) + 10))
+        source = PCMVolumeTransformer(FFmpegPCMAudio(next_song.get("stream"),
+                                                     before_options=FFMPEG_BEFORE_OPT, options="-vn"),
+                                      volume=self._currently_active.get(guild_id).get("volume"))
+        voice_client.play(source)
 
         return True
 
