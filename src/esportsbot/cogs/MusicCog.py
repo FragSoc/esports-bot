@@ -853,6 +853,8 @@ class MusicCog(commands.Cog):
 
         self.__add_time_remaining_field(guild_id, updated_preview_message)
 
+        updated_preview_message.set_footer(text="Definitely not made by fuxticks#1809 on discord")
+
         return updated_preview_message
 
     def __generate_link_data_from_queue(self, guild_id: int) -> Tuple[dict, dict]:
