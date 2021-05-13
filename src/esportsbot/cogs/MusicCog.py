@@ -10,8 +10,7 @@ import re
 from enum import IntEnum
 from youtubesearchpython import VideosSearch
 
-from discord import Message, VoiceClient, TextChannel, Embed, Colour, FFmpegOpusAudio, FFmpegPCMAudio, \
-    PCMVolumeTransformer
+from discord import Message, VoiceClient, TextChannel, Embed, Colour, FFmpegPCMAudio, PCMVolumeTransformer
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
 
@@ -83,11 +82,6 @@ class MusicCog(commands.Cog):
         self._allowed_time = 7200
 
         self.__db_accessor = db_gateway()
-
-    @staticmethod
-    async def __send_message_and_delete(to_send: Embed, to_delete: Message, timer=10):
-        await send_timed_message(to_delete.channel, embed=to_send, timer=timer)
-        await to_delete.delete()
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -186,11 +180,20 @@ class MusicCog(commands.Cog):
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def resetallowance(self, ctx):
+        """
+        Resets the time allowed for music to play in a server.
+        :param ctx: The context of the message.
+        """
         self._time_allocation[ctx.guild.id] = self._allowed_time
         await self.__update_channel_messages(ctx.guild.id)
 
     @commands.command(aliases=["volume"])
     async def setvolume(self, ctx: Context, volume_level: int):
+        """
+        Sets the volume level of the bot. Does not persist if the bot disconnects.
+        :param ctx: The context of the message.
+        :param volume_level: The volume percentage between 0 and 100 to set the volume to.
+        """
         if not self._currently_active.get(ctx.guild.id):
             # Not currently active
             await send_timed_message(channel=ctx.channel, embed=Embed(title="I am not playing anything currently",
@@ -215,7 +218,7 @@ class MusicCog(commands.Cog):
             volume_level = 100
 
         client = self._currently_active.get(ctx.guild.id).get("voice_client")
-        client.source.volume = float(volume_level)/float(100)
+        client.source.volume = float(volume_level) / float(100)
         self._currently_active.get(ctx.guild.id)["volume"] = client.source.volume
         await send_timed_message(channel=ctx.channel,
                                  embed=Embed(title=f"Set the volume to {volume_level}%", colour=EmbedColours.music),
@@ -533,7 +536,6 @@ class MusicCog(commands.Cog):
         active_guilds = list(self._time_allocation.keys())
         self._time_allocation = defaultdict(lambda: self._allowed_time)
         for guild in active_guilds:
-            print(f"Resetting {guild}")
             await self.__update_channel_messages(guild)
 
     async def __setup_channel(self, ctx: Context, channel_id: int, arg: str):
@@ -718,7 +720,8 @@ class MusicCog(commands.Cog):
             queried_song = self.__find_query(request)
             return await self.__add_song_to_queue(message.guild.id, queried_song)
 
-    def __get_youtube_api_info(self, request: str, message_type: int) -> Union[List[dict], None]:
+    @staticmethod
+    def __get_youtube_api_info(request: str, message_type: int) -> Union[List[dict], None]:
         """
         Downloads the video information associated with a url as a list for each video in the request.
         :param request: The request to make to the YouTube API.
@@ -975,7 +978,8 @@ class MusicCog(commands.Cog):
             # The message is a string
             return MessageTypeEnum.string
 
-    def __get_opus_stream(self, formats: list) -> Tuple[str, float]:
+    @staticmethod
+    def __get_opus_stream(formats: list) -> Tuple[str, float]:
         """
         Get the opus formatted streaming link from the formats dictionary.
         :param formats: The formats dictionary that contains the different streaming links.
@@ -1006,7 +1010,8 @@ class MusicCog(commands.Cog):
                        'filename': download_data.get('filename')}
         return useful_data
 
-    def __is_url(self, string: str) -> bool:
+    @staticmethod
+    def __is_url(string: str) -> bool:
         """
         Returns if the string given is a url.
         :param string: The string to check.
@@ -1155,7 +1160,8 @@ class MusicCog(commands.Cog):
 
         return queue_string
 
-    def __song_list_to_string(self, songs: list) -> str:
+    @staticmethod
+    def __song_list_to_string(songs: list) -> str:
         """
         Turn a list into a string.
         :param songs: The list of songs to turn into a string.
