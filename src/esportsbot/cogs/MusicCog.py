@@ -182,6 +182,13 @@ class MusicCog(commands.Cog):
             await ctx.channel.send("Music channel has not been set")
 
     @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def resetallowance(self, ctx):
+        self._time_allocation[ctx.guild.id] = self._allowed_time
+        await self.__update_channel_messages(ctx.guild.id)
+        await ctx.message.delete()
+
+    @commands.command()
     async def removesong(self, ctx: Context, song_index: int = None) -> bool:
         """
         Remove a song at an index from the current queue.
