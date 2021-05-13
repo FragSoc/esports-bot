@@ -7,7 +7,7 @@ from ..base_functions import send_to_log_channel
 class LogChannelCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.STRINGS = toml.load("../user_strings.toml")["logging"]
+        self.STRINGS = bot.STRINGS["logging"]
 
     @commands.command()
     @commands.has_permissions(administrator=True)

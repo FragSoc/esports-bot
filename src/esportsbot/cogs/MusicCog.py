@@ -82,7 +82,7 @@ class MusicCog(commands.Cog):
         self._allowed_time = 7200
 
         self.__db_accessor = db_gateway()
-
+        
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def setmusicchannel(self, ctx: Context, args: str = None, given_channel_id: str = None) -> bool:
@@ -298,7 +298,6 @@ class MusicCog(commands.Cog):
 
         if not await self.__check_valid_user_vc(ctx):
             # Checks if the user is in a valid voice channel
-
             return False
 
         if self.__pause_song(ctx.guild.id):
@@ -857,9 +856,7 @@ class MusicCog(commands.Cog):
             updated_preview_message.set_image(url=thumbnail)
 
         self.__add_time_remaining_field(guild_id, updated_preview_message)
-
         updated_preview_message.set_footer(text="Definitely not made by fuxticks#1809 on discord")
-
         return updated_preview_message
 
     def __generate_link_data_from_queue(self, guild_id: int) -> Tuple[dict, dict]:
