@@ -18,10 +18,59 @@ def generate_schema():
         CREATE TABLE guild_info(
             guild_id bigint NOT NULL,
             log_channel_id bigint,
-            default_role_id bigint
+            default_role_id bigint,
+            num_running_polls int NOT NULL,
+            role_ping_cooldown_seconds bigint NOT NULL,
+            pingme_create_threshold int NOT NULL,
+            pingme_create_poll_length_seconds bigint NOT NULL,
+            pingme_role_emoji text
+            shared_role_id bigint
         );
         ALTER TABLE ONLY guild_info
         ADD CONSTRAINT loggingchannel_pkey PRIMARY KEY(guild_id);
+        """
+        db_gateway().pure_query(query_string)
+
+    # Does the pingable_roles table exist?
+    pingable_roles_exists = db_gateway().pure_return(
+        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'pingable_roles'")
+    if not pingable_roles_exists:
+        # Does not exist
+        query_string = """
+        CREATE TABLE pingable_roles(
+            name text NOT NULL,
+            guild_id bigint NOT NULL,
+            role_id bigint NOT NULL,
+            on_cooldown boolean NOT NULL,
+            last_ping float NOT NULL,
+            ping_count int NOT NULL,
+            monthly_ping_count int NOT NULL,
+            creator_id bigint NOT NULL,
+            colour int NOT NULL
+        );
+        ALTER TABLE ONLY pingable_roles
+            ADD CONSTRAINT roleid_pkey PRIMARY KEY(role_id);
+        ALTER TABLE ONLY pingable_roles
+            ADD CONSTRAINT guildid_fkey FOREIGN KEY(guild_id) REFERENCES guild_info (guild_id);
+        """
+        db_gateway().pure_query(query_string)
+
+    # Does the event_categories exist?
+    event_categories_exists = db_gateway().pure_return(
+        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'event_categories'")
+    if not event_categories_exists:
+        # Does not exist
+        query_string = """
+        CREATE TABLE event_categories(
+            guild_id bigint NOT NULL,
+            event_name text NOT NULL,
+            role_id bigint NOT NULL,
+            signin_menu_id bigint NOT NULL
+        );
+        ALTER TABLE ONLY event_categories
+            ADD CONSTRAINT eventname_pkey PRIMARY KEY(guild_id, event_name);
+        ALTER TABLE ONLY event_categories
+            ADD CONSTRAINT guildid_fkey FOREIGN KEY(guild_id) REFERENCES guild_info(guild_id);
         """
         db_gateway().pure_query(query_string)
 
@@ -36,7 +85,7 @@ def generate_schema():
             menu jsonb
         );
         ALTER TABLE ONLY reaction_menus
-        ADD CONSTRAINT menu_pkey PRIMARY KEY(message_id);
+            ADD CONSTRAINT menu_pkey PRIMARY KEY(message_id);
         """
         db_gateway().pure_query(query_string)
 
@@ -101,7 +150,8 @@ def generate_schema():
             guild_id bigint NOT NULL,
             channel_id bigint NOT NULL,
             twitch_handle character varying NOT NULL,
-            currently_live boolean NOT NULL
+            currently_live boolean NOT NULL,
+            custom_message character varying
         );
         ALTER TABLE public.twitch_info ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY(
             SEQUENCE NAME public.twitch_info_id_seq
@@ -116,10 +166,10 @@ def generate_schema():
         """
         db_gateway().pure_query(query_string)
 
-    # Does the twitch_info table exist?
-    twitch_info_exists = db_gateway().pure_return(
+    # Does the twitter_info table exist?
+    twitter_info_exists = db_gateway().pure_return(
         "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'twitter_info'")
-    if not twitch_info_exists:
+    if not twitter_info_exists:
         # Does not exist
         query_string = """
         CREATE TABLE public.twitter_info(

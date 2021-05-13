@@ -1,17 +1,35 @@
-class UnrecognisedEmoji(Exception):
+import traceback
+
+class UnrecognisedCustomEmoji(Exception):
     """Exception raised when creating an Emote instance, but the client could not match an emoji to the given ID.
 
-    :var id: The ID that coult not be matched
+    :var id: The ID that could not be matched
     :vartype id: int
     """
 
     def __init__(self, comment: str, id: int):
         """
         :param str comment: Description of the exception
-        :param int id: The ID that coult not be matched
+        :param int id: The ID that could not be matched
         """
         super().__init__(comment)
         self.id = id
+
+
+class InvalidStringEmoji(Exception):
+    """Exception raised when creating an Emote instance from a string, but the string did not match any valid emote formats.
+
+    :var val: The string that could not be matched
+    :vartype val: str
+    """
+
+    def __init__(self, comment: str, val: str):
+        """
+        :param str comment: Description of the exception
+        :param int val: The string that could not be matched
+        """
+        super().__init__(comment)
+        self.val = val
 
 
 class UnrecognisedReactionMenuMessage(Exception):
@@ -29,3 +47,10 @@ class UnrecognisedReactionMenuMessage(Exception):
         self.channel = channel
         self.msg = msg
         super().__init__("Failed to fetch message for reaction menu: guild " + str(guild) + " channel " + str(channel) + " message " + str(msg))
+
+
+def print_exception_trace(e: Exception):
+    """Prints the trace for an exception into stdout.
+    Great for debugging errors that are swallowed by the event loop.
+    """
+    traceback.print_exception(type(e), e, e.__traceback__)
