@@ -601,6 +601,8 @@ class MusicCog(commands.Cog):
             self._currently_active.get(guild_id).get('queue').pop(0)
             self._marked_channels[guild_id] = time.time()
             await self.__update_channel_messages(guild_id)
+            if not self.check_marked_channels.is_running():
+                self.check_marked_channels.start()
         elif len(self._currently_active.get(guild_id).get('queue')) > 1:
             # The queue is not empty, play the next song
             self._currently_active.get(guild_id).get('queue').pop(0)
