@@ -183,9 +183,8 @@ async def on_message(message):
             # The message was in a music channel and a song should be found
             music_cog_instance = client.cogs.get('MusicCog')
             await music_cog_instance.on_message_handle(message)
-
-    # If message was command, perform the command
-    await client.process_commands(message)
+            await client.process_commands(message)
+            await message.delete()
 
 
 @client.command()
