@@ -1,7 +1,7 @@
 import toml
 from discord.ext import commands
 from ..db_gateway import db_gateway
-from ..base_functions import get_cleaned_id
+from ..base_functions import channel_id_from_mention
 from ..base_functions import send_to_log_channel
 
 class LogChannelCog(commands.Cog):
@@ -12,7 +12,7 @@ class LogChannelCog(commands.Cog):
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def setlogchannel(self, ctx, given_channel_id=None):
-        cleaned_channel_id = get_cleaned_id(
+        cleaned_channel_id = channel_id_from_mention(
             given_channel_id) if given_channel_id else ctx.channel.id
         log_channel_exists = db_gateway().get(
             'guild_info', params={'guild_id': ctx.author.guild.id})

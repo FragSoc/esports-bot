@@ -1,7 +1,7 @@
 import toml
 from discord.ext import commands
 from ..db_gateway import db_gateway
-from ..base_functions import get_cleaned_id
+from ..base_functions import role_id_from_mention
 from ..base_functions import send_to_log_channel
 
 
@@ -13,7 +13,7 @@ class DefaultRoleCog(commands.Cog):
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def setdefaultrole(self, ctx, given_role_id=None):
-        cleaned_role_id = get_cleaned_id(
+        cleaned_role_id = role_id_from_mention(
             given_role_id) if given_role_id else False
         if cleaned_role_id:
             db_gateway().update('guild_info', set_params={
