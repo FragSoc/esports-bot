@@ -76,11 +76,6 @@ class MusicCog(commands.Cog):
 
         self.__check_loops_alive()
 
-        self._time_allocation = defaultdict(lambda: self._allowed_time)
-        # Seconds of song (time / day) / server
-        # Currently 2 hours of playtime for each server per day
-        self._allowed_time = 7200
-
         self.__db_accessor = db_gateway()
         
     @commands.command()
@@ -176,16 +171,6 @@ class MusicCog(commands.Cog):
             await send_timed_message(ctx.channel, message, timer=20)
         else:
             await ctx.channel.send("Music channel has not been set")
-
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def resetallowance(self, ctx):
-        """
-        Resets the time allowed for music to play in a server.
-        :param ctx: The context of the message.
-        """
-        self._time_allocation[ctx.guild.id] = self._allowed_time
-        await self.__update_channel_messages(ctx.guild.id)
 
     @commands.command(aliases=["volume"])
     async def setvolume(self, ctx: Context, volume_level: int):
@@ -527,16 +512,6 @@ class MusicCog(commands.Cog):
             # Stop the task when no channels to check
             self.check_marked_channels.stop()
 
-    @tasks.loop(hours=24)
-    async def reset_music_allowance(self):
-        """
-        Reset the number of minutes a guild can use per day. Runs every 24hrs
-        """
-        active_guilds = list(self._time_allocation.keys())
-        self._time_allocation = defaultdict(lambda: self._allowed_time)
-        for guild in active_guilds:
-            await self.__update_channel_messages(guild)
-
     async def __setup_channel(self, ctx: Context, channel_id: int, arg: str):
         """
         Sends the preview and queue messages to the music channel and adds the ids of the messages to the database.
@@ -562,7 +537,6 @@ class MusicCog(commands.Cog):
                 await channel_instance.purge(limit=int(sys.maxsize))
 
         temp_default_preview = EMPTY_PREVIEW_MESSAGE.copy()
-        self.__add_time_remaining_field(ctx.guild.id, temp_default_preview)
 
         # Send the messages and record their ids.
         default_queue_message = await channel_instance.send(EMPTY_QUEUE_MESSAGE)
@@ -855,7 +829,6 @@ class MusicCog(commands.Cog):
                 thumbnail = ESPORTS_LOGO_URL
             updated_preview_message.set_image(url=thumbnail)
 
-        self.__add_time_remaining_field(guild_id, updated_preview_message)
         updated_preview_message.set_footer(text="Definitely not made by fuxticks#1809 on discord")
         return updated_preview_message
 
@@ -878,8 +851,6 @@ class MusicCog(commands.Cog):
             self.check_active_channels.start()
         if not self.check_marked_channels.is_running():
             self.check_marked_channels.start()
-        if not self.reset_music_allowance.is_running():
-            self.reset_music_allowance.start()
 
     def __add_new_active_channel(self, guild_id: int, channel_id: str = None, voice_client: VoiceClient = None) -> bool:
         """
@@ -1046,25 +1017,6 @@ class MusicCog(commands.Cog):
 
         return info
 
-    def __add_time_remaining_field(self, guild_id: int, embed: Embed):
-        """
-        Create the field for an embed that displays how much time a server has left to play songs in that day.
-        :param guild_id: The guild id of the guild.
-        :param embed: The embed message to add the field to.
-        """
-
-        # Get the time remaining
-        guild_time = self._time_allocation[guild_id]
-        guild_time_string = time.strftime('%H:%M:%S', time.gmtime(guild_time))
-
-        # Get the total time allowed.
-        allowed_time = self._allowed_time
-        allowed_time_string = time.strftime('%H:%M:%S', time.gmtime(allowed_time))
-
-        # Add the field to the embed.
-        embed.add_field(name=f"Time Remaining Today: {guild_time_string} / {allowed_time_string}",
-                        value="Blame Ryan :upside_down:")
-
     def __check_empty_vc(self, guild_id: int) -> bool:
         """
         Checks if the voice channel the bot is in has no members in it.
@@ -1103,24 +1055,6 @@ class MusicCog(commands.Cog):
         # Get the next song
         extra_data, current_song = self.__generate_link_data_from_queue(guild_id)
         next_song = {**current_song, **extra_data}
-        length = next_song.get("length")
-
-        time_remaining = self._time_allocation[guild_id] - length
-
-        if time_remaining <= 0:
-            # If the allocated time is used up set it to 0 and exit out
-            message = Embed(title="The current song is too long for the remaining time today, trying the next song.",
-                            colour=EmbedColours.orange)
-            channel_id = self.__db_accessor.get('music_channels', params={'guild_id': guild_id})[0].get('channel_id')
-            channel = self._bot.get_channel(channel_id)
-            if channel is None:
-                channel = await self._bot.fetch_channel(channel_id)
-            await send_timed_message(channel=channel, embed=message, timer=5)
-            self._currently_active.get(guild_id)["queue"] = [None] + self._currently_active.get(guild_id).get("queue")
-            await self.__check_next_song(guild_id)
-            return True
-
-        self._time_allocation[guild_id] = self._time_allocation[guild_id] - length
 
         self._currently_active.get(guild_id)['current_song'] = next_song
 
