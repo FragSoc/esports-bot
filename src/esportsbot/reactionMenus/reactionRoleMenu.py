@@ -1,3 +1,9 @@
+"""
+The reactionMenus package was partially copied over from the BASED template project: https://github.com/Trimatix/BASED
+It is modified and not actively synced with BASED, so will very likely be out of date.
+
+.. codeauthor:: Trimatix
+"""
 from . import reactionMenu
 from .. import lib
 from discord import Colour, Guild, Role, Message, User, Client, Member, PartialMessage
@@ -43,13 +49,19 @@ async def removeRole(args : List[Union[Guild, Role, int]], reactingUser : Union[
 
 
 class ReactionRoleMenuOption(reactionMenu.ReactionMenuOption):
-    """A reaction menu option that stores a role, granting the reacting user the role when added, and removing the role when the reaction is removed.
+    """A saveable reaction menu option that stores a role, granting the reacting user the role when added,
+    and removing the role when the reaction is removed.
+    Constraining eligible users can be done through the ReactionMenu kwargs targetMember and targetRole.
 
     :var role: The role to toggle on reactions
     :vartype role: discord.Role 
     """
 
     def __init__(self, emoji : lib.emotes.Emote, role : Role, menu : reactionMenu.ReactionMenu):
+        """
+        :param lib.emotes.Emote emoji: The emoji to react to the menu with to trigger role updates
+        :param Role role: The role to (un)assign reacting users
+        """
         self.role = role
         super(ReactionRoleMenuOption, self).__init__(self.role.name, emoji, addFunc=giveRole, addArgs=(menu.msg.guild, self.role, menu.msg.id), removeFunc=removeRole, removeArgs=(menu.msg.guild, self.role, menu.msg.id))
 
@@ -86,7 +98,7 @@ class ReactionRoleMenuOption(reactionMenu.ReactionMenuOption):
 
 @reactionMenu.saveableMenu
 class ReactionRoleMenu(reactionMenu.ReactionMenu):
-    """A reaction menu that grants and removes roles when interacted with.
+    """A saveable reaction menu that grants and removes roles when interacted with.
     """
 
     def __init__(self, msg : Message, client: Client, reactionRoles : Dict[lib.emotes.Emote, Role],
