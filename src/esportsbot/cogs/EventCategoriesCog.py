@@ -212,6 +212,12 @@ class EventCategoriesCog(commands.Cog):
                         help="Change the role to admit/deny into *all* event signin menus. This should NOT be the same as any event role. Role can be given as either a mention or an ID.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_set_shared_role(self, ctx: Context, *, args: str):
+        """Admin command: Set the guild's "shared" role, which is denied visibility of the event category channels when not
+        signed into the event.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing a mention or ID of the new shared role
+        """
         if not args:
             await ctx.send(":x: Please provide a role to set!")
         else:
@@ -232,6 +238,11 @@ class EventCategoriesCog(commands.Cog):
                         help="Change the role to remove during `close-event`. This should NOT be the same as your shared role. Role can be given as either a mention or an ID.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_set_event_role(self, ctx: Context, *, args: str):
+        """Admin command: Set the named event's event role, which is granted visibility of the event category channels.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing a mention or ID of the new role, followed by the name of the event to update
+        """
         if len(args.split(" ")) < 2:
             await ctx.send(":x: Please provide a role to set!")
         else:
@@ -261,6 +272,12 @@ class EventCategoriesCog(commands.Cog):
                         help="Register an existing event category, menu, and role, for use with `open-event` and `close-event`. This does not setup permissions for the category or channels.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_register_event_category(self, ctx: Context, *, args: str):
+        """Admin command: Register an existing category as an event category.
+        The signin menu and role must already exist, and the new event's name must not already be taken.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string with the ID of the new sigin menu, a mention or ID of the new role, and the name of the event
+        """
         argsSplit = args.split(" ")
         if len(argsSplit < 3):
             await ctx.send(":x: Please provide a menu ID, followed by a role, and the name of your event!")
@@ -295,6 +312,11 @@ class EventCategoriesCog(commands.Cog):
                         help="Create a new event category with a signin channel and menu, event role, general channel and correct permissions, and automatically register them for use with `open-event` and `close-event`.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_create_event_category(self, ctx: Context, *, args: str):
+        """Admin command: Automatically create and fully set up a new event category with the given name.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing the name of the event to create
+        """
         if not args:
             await ctx.send(":x: Please give name of your event!")
         else:
@@ -353,6 +375,12 @@ class EventCategoriesCog(commands.Cog):
                         help="Unregister an event category and role so that it can no longer be used with `open-event` and `close-event`, but without deleting the channels.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_unregister_event_category(self, ctx: Context, *, args: str):
+        """Admin command: Unregister a category, menu and role as an event category, without deleting any of them
+        from the server.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing the name of the event to unregister
+        """
         if not args:
             await ctx.send(":x: Please give name of your event!")
         else:
@@ -373,6 +401,11 @@ class EventCategoriesCog(commands.Cog):
                         help="Delete an event category and its role and channels from the server.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_delete_event_category(self, ctx: Context, *, args: str):
+        """Admin command: Delete an event category, its channels and role from the server entirely.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing the name of the event to delete
+        """
         if not args:
             await ctx.send(":x: Please give name of your event!")
         else:
@@ -416,6 +449,10 @@ class EventCategoriesCog(commands.Cog):
                         await self.bot.adminLog(ctx.message, {"Event Category Deleted": f"Event name: {eventName.title()}\nChannels deleted: {numChannels!s}" + (f"\nRole deleted: #{eventData[0]['role_id']!s}" if eventData[0]['role_id'] else "")})
 
 
-def setup(bot):
+def setup(bot: "EsportsBot"):
+    """Create a new instance of EventCategoriesCog, and register it to the given client instance.
+
+    :param EsportsBot bot: The client instance to register the new cog instance with
+    """
     bot.add_cog(EventCategoriesCog(bot))
     
