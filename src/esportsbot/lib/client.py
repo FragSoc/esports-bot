@@ -1,3 +1,4 @@
+from types import FrameType
 from discord.ext import commands, tasks
 from discord import Intents, Embed, Message, Colour, Role
 from ..reactionMenus.reactionMenuDB import ReactionMenuDB
@@ -14,6 +15,7 @@ import toml
 from .exceptions import UnrecognisedReactionMenuMessage
 from .emotes import Emote
 
+# Type alias to be used for user facing strings. Allows for multi-level tables.
 StringTable = MutableMapping[str, Union[str, "StringTable"]]
 
 class EsportsBot(commands.Bot):
@@ -43,9 +45,12 @@ class EsportsBot(commands.Bot):
         signal.signal(signal.SIGTERM, self.interruptReceived) # graceful exit request
 
 
-    def interruptReceived(self, signum, frame):
+    def interruptReceived(self, signum: signal.Signals, frame: FrameType):
         """Shut down the bot gracefully.
         This method is called automatically upon receipt of sigint/sigterm.
+
+        :param signal.Signals signum: Enum representing the type of interrupt received
+        :param FrameType frame: The current stack frame (https://docs.python.org/3/reference/datamodel.html#frame-objects)
         """
         print("[EsportsBot] Interrupt received.")
         asyncio.ensure_future(self.shutdown())
@@ -61,6 +66,9 @@ class EsportsBot(commands.Bot):
     async def rolePingCooldown(self, role: Role, cooldownSeconds: int):
         """wait cooldownSeconds seconds, then set role back to pingable.
         role must be registered in the pingable_roles table.
+
+        :param Role role: The role to set back to pingable by anyone
+        :param int cooldownSeconds: The number of seconds to wait asynchronously before updating role
         """
         await asyncio.sleep(cooldownSeconds)
         db = db_gateway()
@@ -173,18 +181,19 @@ class EsportsBot(commands.Bot):
                     exceptions.print_exception_trace(e)
 
     
-    async def adminLog(self, message: Message, actions: Dict[str, str], *args, **kwargs):
+    async def adminLog(self, message: Message, actions: Dict[str, str], *args, guildID=None, **kwargs):
         """Log an event or series of events to the server's admin logging channel.
+        To log an administration action which was not due to a user command, give message as None, and specify the guild in
+        which to send the log with the guildID kwarg.
         
         :param Message message: The message that triggered this log. Probably a command.
         :param actions: A dictionary associating action types with action details. No key or value can be empty.
         :type actions: Dict[str, str]
+        :param int guildID: The ID of the guild in which to send the log, if message is given as None. Ignored otherwise.
         """
-        if message is None and "guildID" not in kwargs:
-            raise ValueError("Given None message and no guildID")
         if message is None:
-            guildID = kwargs["guildID"]
-            del kwargs["guildID"]
+            if guildID is None:
+                raise ValueError("Must give at least one of message or guildID")
         else:
             guildID = message.guild.id
         db_logging_call = db_gateway().get('guild_info', params={'guild_id': guildID})
@@ -229,10 +238,12 @@ class EsportsBot(commands.Bot):
         return roleUpdateTasks
 
 
+# Singular class instance of EsportsBot
 _instance: EsportsBot = None
 
 def instance() -> EsportsBot:
     """Get the singular instance of the discord client.
+    EsportsBot is singular to allow for global client instance references outside of coges, e.g emoji validation in lib
     """
     global _instance
     if _instance is None:
