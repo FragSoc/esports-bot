@@ -330,7 +330,7 @@ class EventCategoriesCog(commands.Cog):
                 eventCategory = self.bot.reactionMenus[signinMenuID].msg.channel.category
                 numChannels = len(eventCategory.channels)
                 eventRole = ctx.guild.get_role(eventData[0]["role_id"])
-                confirmMsg = await ctx.message.reply(f"React within 60 seconds: Are you sure you want to delete the '{eventName}' category" + (f", the {eventRole.name} role," if eventRole else "") + f" and the {numChannels!s} event channels?")
+                confirmMsg = await ctx.message.reply(self.STRINGS['react_delete_confirm'].format(event_title=eventName.title(), event_segment=(f", the {eventRole.name} role," if eventRole else ""), num_channels=numChannels))
                 asyncio.create_task(confirmMsg.add_reaction('👍'))
                 asyncio.create_task(confirmMsg.add_reaction('👎'))
                 def confirmCheck(data: RawReactionActionEvent) -> bool:

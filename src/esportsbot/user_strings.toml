@@ -48,6 +48,7 @@ nothing_to_do = "Nothing to do!\n*(<#{channel_id!s}> already invisible to {share
 menu_title = "Sign Into {event_name}"
 menu_description = "If you're attending this event, react to this message to get the '{event_role}' role, and access to secret event channels!"
 
+react_delete_confirm = "React within 60 seconds: Are you sure you want to delete the '{event_title}' category{event_segment} and the {num_channels!s} event channels?"
 react_error = "An error occurred when loading your reaction, please try the command again with a different emoji."
 react_event_delete_cancel = "Event category deletion cancelled."
 react_no_time = "Out of time, please try the command again."
