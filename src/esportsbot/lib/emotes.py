@@ -1,3 +1,10 @@
+"""
+The lib package was partially copied over from the BASED template project: https://github.com/Trimatix/BASED
+It is modified and not actively synced with BASED, so will very likely be out of date.
+
+.. codeauthor:: Trimatix
+"""
+
 from __future__ import annotations
 import emoji
 from . import client
@@ -8,9 +15,11 @@ if TYPE_CHECKING:
     from discord import PartialEmoji, Emoji
 
 
+# Emoji to send in place of unrecognised emojis, when forced to. This should be used as a last resort as it its ambiguous.
 err_UnknownEmoji = "❓"
 # True to raise an UnrecognisedCustomEmoji exception when requesting an unknown custom emoji
 raiseUnkownEmojis = False
+# True to print unrecognised emoji requests to console
 logUnknownEmojis = True
 # Assumption of the maximum number of unicode characters in an emoji, just to put a cap on the time complexity of
 # strisUnicodeEmoji. 10 characters makes sense as a 5-long ZWJ sequence plus a variation selector.
@@ -24,6 +33,7 @@ REGIONAL_INDICATORS = ('🇦', '🇧', '🇨', '🇩', '🇪', '🇫', '🇬', '
 
 def strIsUnicodeEmoji(c: str) -> bool:
     """Decide whether a given string contrains a single unicode emoji.
+
     :param str c: The string to test
     :return: True if c contains exactly one character, and that character is a unicode emoji. False otherwise.
     :rtype: bool
@@ -229,8 +239,6 @@ class Emote:
         
         s may also be a Emote (returns s), a dictionary-serialized Emote (returns Emote.fromDict(s)), or
         only an ID of a discord custom emoji (may be either str or int)
-
-        If 
 
         :param str s: A string containing only one of: A unicode emoji, a discord custom emoji, or
                         the ID of a discord custom emoji.
