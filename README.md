@@ -43,6 +43,23 @@ ENABLE_MUSIC=TRUE
 $ docker-compose up
 ```
 
+### Without Docker
+
+If you don't want to or cannot use docker, you can run the bot outside of docker.
+You will need:
+
+- Python 3
+- Pip
+- Your `secrets.env` file setup as above, or the env vars within set in your environment
+- [A postgres database](https://www.postgresql.org/docs/current/admin.html).
+  You must set the `PG_HOST`, `PG_USER`, `PG_PWD` and `PG_DATABASE` environment variables according to your postgres setup.
+
+```bash
+pip install -r requirements.txt
+source secrets.env
+python3 src/main.py
+```
+
 ## Current commands
 <details>
 <summary>Voicemaster</summary>
@@ -185,7 +202,7 @@ Edit a configured Twitch handle to display a custom message using the placeholde
 ##### !removetwitch {twitch_handle}
 Remove the specified twitch handle from alerting
 
-##### !removealltwitch 
+##### !removealltwitch
 Remove all the Twitch alerts in the guild
 
 ##### !getalltwitch
@@ -293,7 +310,7 @@ preview messages will be sent. Any messages sent to this channel get deleted aft
 * Clears the current queue
 
 #### !shufflequeue
-* If the queue has 3 or more items, including the current song, it will shuffle all but the current songs. 
+* If the queue has 3 or more items, including the current song, it will shuffle all but the current songs.
 <summary>User Created Roles w/ Cooldown-Limited Pings</summary>
 
 ### User Created Pingable Roles
