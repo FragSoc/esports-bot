@@ -42,6 +42,7 @@ success_event_role = "✅ The {event_name} event role is now **{role_name}**."
 success_event_role_unregister = "✅ {event_title} event category successfuly unregistered."
 success_menu = "✅ The {event_namme} event signin menu is now: {menu_url}"
 success_shared_role = "✅ The shared role is now **{role_name}**."
+success_event_closed = "Done!"
 nothing_to_do = "Nothing to do!\n*(<#{channel_id!s}> already invisible to {shared_role}, no reactions on signin menu, no users with {event_role} role)*"
 
 menu_title = "Sign Into {event_name}"
@@ -77,3 +78,16 @@ event_category_create_reason = "Creating new event category '{event_name}' reque
 event_category_delete_reason = "Event category '{event_name}' deletion requested via {command_prefix}delete-event-category command"
 event_channel_close_reason = "{author} closed the {event_name} event via {command_prefix}close-event command"
 event_channel_open_reason = "{author} opened the {event_name} event via the {command_prefix}open-event command"
+
+admin_channel_invisible = ["Event Channel made invisibile", "<#{channel_id!s}>"]
+admin_event_category_deleted = ["Event Category Deleted", "Event name: {event_title}\nChannels deleted: {num_channels!s}"]
+admin_event_category_unregistered = ["Event Category Unregistered", "Event name: {event_title}\nCategory/channels left undeleted."]
+admin_event_category_updated = ["New Event Category Created", "Event name: {event_title}\nMenu ID: {menu_id!s}\nRole: <@&{role_id!s}>\n[Menu]({menu_url})"]
+admin_event_closed = ["Event Closed", "Event name: {event_title}"]
+admin_event_role_set = ["Event role set", "<@&{role_id}!s}>"]
+admin_existing_event_registered = ["Existing Event Category Registered", "Event name: {event_title}\nMenu id: {menu_id}\nRole: <@&{role_id!s}>\n[Menu]({menu_url})"]
+admin_menu_updated = ["Event signin menu updated", "Event name: {event_title}\nMenu ID: {menu_id}\nType: {menu_type}\n[Menu]({menu_url})"]
+admin_role_menu_reset = ["Role menu reset", "id: {menu_id}\ntype: {menu_type}\n[Menu]({menu_url})"]
+admin_role_removed = ["Event Role removed", "Users: {users!s}\n<@&{event_role_id!s}>"]
+admin_shared_role_set = ["Shared role set", "<@&{role_id!s}>"]
+admin_signin_visible = ["Event signin channel made visible", "<#{channel_id}>"]

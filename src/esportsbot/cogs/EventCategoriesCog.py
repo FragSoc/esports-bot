@@ -5,7 +5,7 @@ from discord import PartialMessage, Forbidden, PermissionOverwrite, RawReactionA
 from ..db_gateway import db_gateway
 import asyncio
 from .. import lib
-from ..lib.client import EsportsBot
+from ..lib.client import EsportsBot, StringTable
 from ..reactionMenus.reactionRoleMenu import ReactionRoleMenu
 
 CLOSED_EVENT_SIGNIN_CHANNEL_SHARED_PERMS = PermissionOverwrite(read_messages=False, read_message_history=True, add_reactions=False, send_messages=False, use_slash_commands=False)
@@ -56,7 +56,8 @@ class EventCategoriesCog(commands.Cog):
                     reason = self.STRINGS['event_channel_open_reason'].format(author=ctx.author.name, event_name=eventName, command_prefix=self.bot.command_prefix)
                     await eventChannel.set_permissions(sharedRole, read_messages=True, reason=reason)
                     await ctx.send(self.STRINGS['success_channel'].format(channel_id=eventChannel.id, role_name=sharedRole.name))
-                    await self.bot.adminLog(ctx.message, {"Event signin channel made visible": "<#" + str(eventChannel.id) + ">"})
+                    admin_message = self.STRINGS['admin_signin_visible'][1].format(channel_id=eventChannel.id)
+                    await self.bot.adminLog(ctx.message, {self.STRINGS['admin_signin_visible'][0]: admin_message})
                 else:
                     await ctx.send(self.STRINGS['channel_already_open'].format(event_name=eventName.title(), channel_id=eventChannel.id))
 
@@ -95,15 +96,17 @@ class EventCategoriesCog(commands.Cog):
                                         "Unassigning role" + ((" from " + str(usersEdited) + " users... ⏳") if usersEdited else "... ✅"),
                                         "Resetting signin menu... " + ("⏳" if menuReset else "✅")]
                         loadingMsg = await ctx.send("\n".join(loadingTxts))
-                        adminActions = {"Event Closed": f"Event name: {eventName.title()}",
-                                        "Role menu reset": f"id: {signinMenu.msg.id!s}\ntype: {type(signinMenu).__name__}\n[Menu]({signinMenu.msg.jump_url})"}
+                        adminActions = {
+                            self.STRINGS['admin_event_closed'][0]: self.STRINGS['admin_event_closed'][0].format(event_title=eventName.title()),
+                            self.STRINGS['admin_role_menu_reset'][0]: self.STRINGS['admin_role_menu_reset'][1].format(menu_id=signinMenu.msg.id, menu_type=type(signinMenu).__name__, menu_url=signinMenu.msg.jump_url)
+                        }
 
                         if channelEdited:
                             reason = self.STRINGS['event_channel_close_reason'].format(author=ctx.author.name, event_name=eventName, command_prefix=self.bot.command_prefix)
                             await eventChannel.set_permissions(sharedRole, read_messages=False, reason=reason)
                             loadingTxts[0] = loadingTxts[0][:-1] + "✅"
                             asyncio.create_task(loadingMsg.edit(content="\n".join(loadingTxts)))
-                            adminActions["Event Channel Made Invisible"] = f"<#{eventChannel.id!s}>"
+                            adminActions[self.STRINGS['admin_channel_invisible'][0]] = self.STRINGS['admin_channel_invisible'][1].format(channel_id=eventChannel.id)
                         membersFutures = set()
                         for member in eventRole.members:
                             reason = self.STRINGS['event_channel_close_reason'].format(author=ctx.author.name, event_name=eventName, command_prefix=self.bot.command_prefix)
@@ -119,7 +122,8 @@ class EventCategoriesCog(commands.Cog):
                             loadingTxts[1] = loadingTxts[1][:-1] + "✅"
                             await loadingMsg.edit(content="\n".join(loadingTxts))
                             adminActions["Event Role Removed"] = f"Users: {usersEdited!s}\n<@&{eventRole.id!s}>"
-                        await ctx.message.reply("Done!")
+                            adminActions[self.STRINGS['admin_role_removed'][0]] = self.STRINGS['admin_role_removed'][1].format(users=usersEdited, event_role_id=eventRole.id)
+                        await ctx.message.reply(self.STRINGS['success_event_closed'])
                         await self.bot.adminLog(ctx.message, adminActions)
 
 
@@ -147,7 +151,8 @@ class EventCategoriesCog(commands.Cog):
                     menu = self.bot.reactionMenus[int(menuID)]
                     db.update('event_categories', set_params={"signin_menu_id": menu.msg.id}, where_params={"guild_id": ctx.guild.id, "event_name": eventName})
                     await ctx.send(self.STRINGS['success_menu'].format(event_name=eventName.title, menu_url=menu.msg.jump_url))
-                    await self.bot.adminLog(ctx.message, {"Event signin menu updated": f"Event name: {eventName.title()}\nMenu id: {menuID}\ntype: {type(menu).__name__}\n[Menu]({menu.msg.jump_url})"})
+                    admin_message = self.STRINGS['admin_menu_updated'][1].format(event_title=eventName.title(), menu_id=menuID, menu_type=type(menu).__name__, menu_url=menu.msg.jump_url)
+                    await self.bot.adminLog(ctx.message, {self.STRINGS['admin_menu_updated'][0]: admin_message})
 
 
     @commands.command(name="set-shared-role", usage="set-shared-role <role>",
@@ -167,7 +172,7 @@ class EventCategoriesCog(commands.Cog):
                 else:
                     db_gateway().update('guild_info', set_params={"shared_role_id": roleID}, where_params={"guild_id": ctx.guild.id})
                     await ctx.send(self.STRINGS['success_shared_role'].format(role_name=role.name))
-                    await self.bot.adminLog(ctx.message, {"Shared role set": "<@&{roleID!s}>"})
+                    await self.bot.adminLog(ctx.message, {self.STRINGS['admin_shared_role_set'][0]: self.STRINGS['admin_shared_role_set'][1].format(role_id=roleID)})
 
 
     @commands.command(name="set-event-role", usage="set-event-role <role> <event name>",
@@ -196,8 +201,7 @@ class EventCategoriesCog(commands.Cog):
                     else:
                         db.update('event_categories', set_params={"role_id": roleID}, where_params={"guild_id": ctx.guild.id, "event_name": eventName})
                         await ctx.send(self.STRINGS['success_event_role'].format(event_name=eventName.title(), role_name=role.name))
-                        await self.bot.adminLog(ctx.message, {"Event role set": f"<@&{roleID!s}>"})
-
+                        await self.bot.adminLog(ctx.message, {self.STRINGS['admin_event_role_set'][0]: self.STRINGS['admin_event_role_set'][1].format(role_id=roleID)})
 
     @commands.command(name="register-event-category", usage="register-event-category <signin menu id> <role> <event name>",
                         help="Register an existing event category, menu, and role, for use with `open-event` and `close-event`. This does not setup permissions for the category or channels.")
@@ -230,7 +234,8 @@ class EventCategoriesCog(commands.Cog):
                             menu = self.bot.reactionMenus[int(menuIDStr)]
                             db.insert('event_categories', {"guild_id": ctx.guild.id, "event_name": eventName, "role_id": roleID, "signin_menu_id": menu.msg.id})
                             await ctx.send(self.STRINGS['success_event_category'].format(event_name=eventName.title()))
-                            await self.bot.adminLog(ctx.message, {"Existing Event Category Registered": f"Event name: {eventName.title()}\nMenu id: {menuIDStr}\nRole: <@&{roleID!s}>\n[Menu]({menu.msg.jump_url})"})
+                            admin_message = self.STRINGS['admin_existing_event_registered'][1].format(event_title=eventName.title(), menu_id=menuIDStr, role_id=roleID, menu_url=menu.msg.jump_url)
+                            await self.bot.adminLog(ctx.message, {self.STRINGS['admin_existing_event_registered'][0]: admin_message})
 
 
     @commands.command(name="create-event-category", usage="create-event-category <event name>",
@@ -281,7 +286,8 @@ class EventCategoriesCog(commands.Cog):
                             self.bot.reactionMenus.add(signinMenu)
                             db.insert('event_categories', {"guild_id": ctx.guild.id, "event_name": eventName, "role_id": eventRole.id, "signin_menu_id": signinMenuMsg.id})
                             await ctx.send(self.STRINGS['success_event'].format(event_title=eventName.title(), signin_menu_id=signinMenuMsg.id, signin_channel_mention=signinChannel.mention, shared_role_name=sharedRole.name, command_prefix=self.bot.command_prefix, event_name=eventName, event_general_mention=eventGeneral.mention))
-                            await self.bot.adminLog(ctx.message, {"New Event Category Created": f"Event name: {eventName.title()}\nMenu id: {signinMenuMsg.id!s}\nRole: <@&{eventRole.id!s}>\n[Menu]({signinMenuMsg.jump_url})"})
+                            admin_message = self.STRINGS['admin_event_category_updated'][1].format(event_title=eventName.title(), menu_id=signinMenuMsg.id, role_id=eventRole.id, menu_url=signinMenuMsg.jump_url)
+                            await self.bot.adminLog(ctx.message, {self.STRINGS['admin_event_category_updated'][0]: admin_message})
 
 
     @commands.command(name="unregister-event-category", usage="unregister-event-category <event name>",
@@ -301,7 +307,8 @@ class EventCategoriesCog(commands.Cog):
             else:
                 db.delete("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName})
                 await ctx.message.reply(self.STRINGS['success_event_role_unregister'].format(event_title=eventName.title()))
-                await self.bot.adminLog(ctx.message, {"Event Category Unregistered": f"Event name: {eventName.title()}\nCategory/channels left undeleted."})
+                admin_message = self.STRINGS['admin_event_category_unregistered'].format(event_title=eventName.title())
+                await self.bot.adminLog(ctx.message, {self.STRINGS['admin_event_category_unregistered'][0]: admin_message})
 
 
     @commands.command(name="delete-event-category", usage="delete-event-category <event name>",
@@ -348,7 +355,8 @@ class EventCategoriesCog(commands.Cog):
                         await asyncio.wait(deletionTasks)
                         db.delete("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName})
                         await ctx.message.reply(self.STRINGS['success_event_deleted'].format(event_title=eventName.title()))
-                        await self.bot.adminLog(ctx.message, {"Event Category Deleted": f"Event name: {eventName.title()}\nChannels deleted: {numChannels!s}" + (f"\nRole deleted: #{eventData[0]['role_id']!s}" if eventData[0]['role_id'] else "")})
+                        admin_message = self.STRINGS['admin_event_category_deleted'][1].format(event_title=eventName.title(), num_channels=numChannels) + (f"\nRole deleted: #{eventData[0]['role_id']!s}" if eventData[0]['role_id'] else "")
+                        await self.bot.adminLog(ctx.message, {self.STRINGS['admin_event_category_deleted'][0]: admin_message})
 
 
 def setup(bot):
