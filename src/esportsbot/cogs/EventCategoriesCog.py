@@ -1,4 +1,5 @@
 from asyncio import tasks
+from typing import Tuple
 from discord.ext import commands
 from discord.ext.commands.context import Context
 from discord import PartialMessage, Forbidden, PermissionOverwrite, RawReactionActionEvent, Colour, Embed
@@ -8,20 +9,51 @@ from .. import lib
 from ..lib.client import EsportsBot
 from ..reactionMenus.reactionRoleMenu import ReactionRoleMenu
 
+# Permissions overrides assigned to the shared role in closed event signin channels
 CLOSED_EVENT_SIGNIN_CHANNEL_SHARED_PERMS = PermissionOverwrite(read_messages=False, read_message_history=True, add_reactions=False, send_messages=False, use_slash_commands=False)
+# Permissions overrides assigned to the shared role in open event signin channels
 OPEN_EVENT_SIGNIN_CHANNEL_SHARED_PERMS = PermissionOverwrite(read_messages=True, read_message_history=True, add_reactions=False, send_messages=False, use_slash_commands=False)
+# Permissions overrides assigned to @everyone in all event category channels
 EVENT_CATEGORY_EVERYONE_PERMS = PermissionOverwrite(read_messages=False)
+# Permissions overrides assigned to the shared role in all event category channels
 EVENT_CATEGORY_SHARED_ROLE_PERMS = PermissionOverwrite(read_messages=None)
+# Permissions overrides assigned to the event role in all event category channels
 EVENT_CATEGORY_EVENT_ROLE_PERMS = PermissionOverwrite(read_messages=True)
+# Permissions overrides assigned to the event role in event signin channels
 EVENT_SIGNIN_CHANNEL_EVENT_PERMS = PermissionOverwrite(read_messages=True, read_message_history=True, add_reactions=False, send_messages=False, use_slash_commands=False)
 
 
 class EventCategoriesCog(commands.Cog):
+    """Cog implementing channel categories for events.
+    Event categories remain invisible until the event is "opened", at which point only a "signin" channel is revealed.
+    Users who "sign into" the event with a menu in this channel receive an event-specific role, and can then see all
+    other channels in the category.
+    When the event is "closed", the category becomes invisible again to all users, and the event role is
+    removed from all users.
+
+    :var bot: The client instance owning this cog instance
+    :vartype bot: EsportsBot
+    """
     def __init__(self, bot: "EsportsBot"):
+        """
+        :param EsportsBot bot: The client instance owning this cog instance
+        """
         self.bot: "EsportsBot" = bot
 
 
-    async def getGuildEventSettings(self, ctx, eventName):
+    async def getGuildEventSettings(self, ctx: Context, eventName: str) -> Tuple[dict, dict]:
+        """User-facing function which fetches the configuration for the named event and the owning guild from the database.
+        If an event category with the given name belonging to the calling guild can be found, the database-stored
+        guild and event configurations (dictionaries) are returned in a tuple: (guild_data, event_data)
+
+        If the guild does not have a shared role set, or an event with the given name cannot be found, a message is sent
+        to the given context indicating as such, and an empty tuple is returned: ()
+
+        :param Context ctx: A context summarising the command message which triggered the calling of this function
+        :param str eventName: The name of the event to look up
+        :return: A tuple with the guild and event db entries if the guild has a shared role and an event named eventName, () otherwise
+        :rtype: Tuple[dict, dict] if the guild has a shared role and an event named eventName, Tuple[] otherwise
+        """
         db = db_gateway()
         guildData = db.get("guild_info", params={"guild_id": ctx.guild.id})[0]
         if not guildData["shared_role_id"]:
