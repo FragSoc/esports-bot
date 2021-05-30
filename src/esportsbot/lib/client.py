@@ -125,8 +125,9 @@ class EsportsBot(commands.Bot):
     
 
     async def init(self):
-        """Load in all of the reaction menus registered in SQL.
-        This must be called upon bot.on_ready
+        """Load in all of the reaction menus registered in SQL, and also restarts all pingme role cooldown tasks
+        which were interrupted by bot shutdown. This method must be called upon bot.on_ready, since these tasks
+        cannot be performed synchronously during EsportsBot.__init__.
         """
         db = db_gateway()
         if not self.reactionMenus.initializing:
