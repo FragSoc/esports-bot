@@ -14,7 +14,7 @@ from discord import Message, VoiceClient, TextChannel, Embed, Colour, FFmpegOpus
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
 
-from ..base_functions import get_cleaned_id
+from ..base_functions import channel_id_from_mention
 from ..db_gateway import db_gateway
 from ..lib.client import EsportsBot
 
@@ -109,10 +109,13 @@ class MusicCog(commands.Cog):
             message = Embed(title="A channel id is a required argument", colour=EmbedColours.red)
             await send_timed_message(ctx.channel, embed=message, timer=30)
             return False
-
-        cleaned_channel_id = get_cleaned_id(given_channel_id)
-
-        is_valid_channel_id = (len(str(cleaned_channel_id)) == 18) and strIsInt(cleaned_channel_id)
+        
+        try:
+            cleaned_channel_id = channel_id_from_mention(given_channel_id)
+        except ValueError:
+            is_valid_channel_id = False
+        else:
+            is_valid_channel_id = len(str(cleaned_channel_id)) == 18
 
         if not is_valid_channel_id:
             # The channel id given is not valid.. exit

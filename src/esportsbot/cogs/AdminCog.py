@@ -7,7 +7,7 @@ from ..base_functions import send_to_log_channel
 class AdminCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.STRINGS = toml.load("../user_strings.toml")["admin"]
+        self.STRINGS = bot.STRINGS["admin"]
 
     @commands.command(aliases=['cls', 'purge', 'delete', 'Cls', 'Purge', 'Delete', 'Clear'])
     @commands.has_permissions(manage_messages=True)

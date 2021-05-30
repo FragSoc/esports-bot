@@ -1,6 +1,6 @@
 from discord.ext import tasks, commands
 from ..db_gateway import db_gateway
-from ..base_functions import get_cleaned_id
+from ..base_functions import channel_id_from_mention
 import snscrape.modules.twitter as sntwitter
 import time
 
@@ -22,7 +22,7 @@ class TwitterIntegrationCog(commands.Cog):
                 twitter_in_db = db_gateway().get('twitter_info', params={
                     'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle.lower()})
                 if not bool(twitter_in_db):
-                    cleaned_channel_id = get_cleaned_id(announce_channel)
+                    cleaned_channel_id = channel_id_from_mention(announce_channel)
                     channel_mention = "<#" + str(cleaned_channel_id) + ">"
                     previous_tweet_id = self.get_tweets(
                         twitter_handle)[0]['id']
@@ -63,7 +63,7 @@ class TwitterIntegrationCog(commands.Cog):
                     'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle.lower()})
                 if bool(twitter_in_db):
                     # In DB
-                    cleaned_channel_id = get_cleaned_id(announce_channel)
+                    cleaned_channel_id = channel_id_from_mention(announce_channel)
                     channel_mention = "<#" + str(cleaned_channel_id) + ">"
                     db_gateway().update('twitter_info', set_params={'channel_id': cleaned_channel_id}, where_params={
                         'guild_id': ctx.author.guild.id, 'twitter_handle': twitter_handle.lower()})
