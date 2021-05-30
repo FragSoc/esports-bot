@@ -22,7 +22,6 @@ import googleapiclient.discovery
 from urllib.parse import parse_qs, urlparse
 
 from random import shuffle
-from collections import defaultdict
 
 from ..lib.discordUtil import send_timed_message
 from ..lib.stringTyping import strIsInt
@@ -39,6 +38,7 @@ class MessageTypeEnum(IntEnum):
     url = 0
     playlist = 1
     string = 2
+    invalid = 3
 
 
 EMPTY_QUEUE_MESSAGE = "**__Queue list:__**\n" \
@@ -566,7 +566,6 @@ class MusicCog(commands.Cog):
         return False
 
     async def __check_next_song(self, guild_id: int):
-        # TODO: Check spam updates
         """
         Check if there is another song to play after the current one. If no more songs, mark the channel as in active,
         otherwise play the next song.
@@ -654,7 +653,9 @@ class MusicCog(commands.Cog):
         self.__check_loops_alive()
 
         # Splits multiline messages into a list. Single line messages return a list of [message]
-        split_message = message.content.split("\n")
+        cleaned_contents = message.content
+        cleaned_contents = re.sub(r"(`)+", "", cleaned_contents)
+        split_message = cleaned_contents.split("\n")
         split_message = [k for k in split_message if k not in ('', ' ')]
         partial_success = False
         total_success = True
@@ -693,6 +694,8 @@ class MusicCog(commands.Cog):
         elif message_type == MessageTypeEnum.string:
             queried_song = self.__find_query(request)
             return await self.__add_song_to_queue(message.guild.id, queried_song)
+        elif message_type == MessageTypeEnum.invalid:
+            return False
 
     @staticmethod
     def __get_youtube_api_info(request: str, message_type: int) -> Union[List[dict], None]:
@@ -944,8 +947,12 @@ class MusicCog(commands.Cog):
             else:
                 return MessageTypeEnum.url
         else:
-            # The message is a string
-            return MessageTypeEnum.string
+            # TODO: Better URL identification
+            if "https://" in message or "http://" in message:
+                return MessageTypeEnum.invalid
+            else:
+                # The message is a string
+                return MessageTypeEnum.string
 
     @staticmethod
     def __get_opus_stream(formats: list) -> Tuple[str, float]:
