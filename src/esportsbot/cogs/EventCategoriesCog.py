@@ -106,7 +106,7 @@ class EventCategoriesCog(commands.Cog):
         the event role from all users
 
         :param Context ctx: A context summarising the message which called this command
-        :param str args: a string containing the name of the event to open
+        :param str args: a string containing the name of the event to close
         """
         if not args:
             await ctx.message.reply(":x: Please give the name of the event you'd like to open!")
@@ -174,7 +174,7 @@ class EventCategoriesCog(commands.Cog):
         Must be a ReactionRoleMenu, granting users the event's role.
         
         :param Context ctx: A context summarising the message which called this command
-        :param str args: a string containing the name of the event to open
+        :param str args: a string containing the id of the new signin menu, followed by the name of the event to update
         """
         if len(args.split(" ")) < 2:
             await ctx.send(":x: Please provide a menu ID and event name!")
