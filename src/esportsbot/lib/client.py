@@ -21,6 +21,8 @@ StringTable = MutableMapping[str, Union[str, "StringTable"]]
 class EsportsBot(commands.Bot):
     """A discord.commands.Bot subclass, adding a dictionary of active reaction menus.
 
+    .. codeauthor:: Trimatix
+
     :var reactionMenus: A associating integer menu message IDs to ReactionMenu objects.
     :vartype reactionMenus: ReactionMenuDB
     :var unknownCommandEmoji: The emote which the bot should react to messages with, if the message attempts to call an unknown command
