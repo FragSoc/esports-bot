@@ -23,3 +23,14 @@ default_role_get = "Default role is set to {role_id}"
 
 default_role_removed = "Default role has been removed"
 default_role_removed_log = "{author_mention} has removed the default role"
+
+[event_categories]
+no_shared_role = ":x: No shared role has been set for this server! Use the {command_prefix}set-shared-role` command to set one."
+no_event_categories = ":x: This server doesn't have any event categories registered!"
+unrecognised_event = ":x: Unrecognised event. The following events exist in this server: {events}"
+
+event_name_request = ":x: Please give the name of the event you'd like to open!"
+no_channel_edit_perms = ":x: I don't have permission to edit the permissions in <#{channel_id!s}>!"
+event_channel_perms_reason = "{author} opened the {event_name} event via the {command_prefix}open-event command"
+channel_visible = "✅ <#{channel_id!s}> is now visible to **{role_name}**!"
+channel_already_open = ":x: The {event_name} signin channel is already open! <#{channel_id!s}>"

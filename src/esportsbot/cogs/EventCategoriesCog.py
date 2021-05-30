@@ -19,46 +19,46 @@ EVENT_SIGNIN_CHANNEL_EVENT_PERMS = PermissionOverwrite(read_messages=True, read_
 class EventCategoriesCog(commands.Cog):
     def __init__(self, bot: "EsportsBot"):
         self.bot: "EsportsBot" = bot
-
+        self.STRINGS = bot.STRINGS["admin"]
 
     async def getGuildEventSettings(self, ctx, eventName):
         db = db_gateway()
         guildData = db.get("guild_info", params={"guild_id": ctx.guild.id})[0]
         if not guildData["shared_role_id"]:
-            await ctx.message.reply(f":x: No shared role has been set for this server! Use the `{self.bot.command_prefix}set-shared-role` command to set one.")
+            await ctx.message.reply(self.STRINGS['no_shared_role'].format(command_prefix=self.bot.command_prefix))
         else:
             eventData = db.get("event_categories", params={"guild_id": ctx.guild.id, "event_name": eventName})[0]
             if not eventData:
                 if not (allEvents := db.get("event_categories", params={"guild_id": ctx.guild.id})):
-                    await ctx.message.reply(":x: This server doesn't have any event categories registered!")
+                    await ctx.message.reply(self.STRINGS['no_event_categories'])
                 else:
-                    await ctx.message.reply(":x: Unrecognised event. The following events exist in this server: " + ", ".join(e["event_name"].title() for e in allEvents))
+                    await ctx.message.reply(self.STRINGS['unrecognised_event'].format(events=", ".join(e["event_name"].title() for e in allEvents)))
             else:
                 return (guildData, eventData)
         return ()
 
-    
+
     @commands.command(name="open-event", usage="open-event <event name>", help="Reveal the signin channel for the named event channel.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_open_event(self, ctx: Context, *, args):
         if not args:
-            await ctx.message.reply(":x: Please give the name of the event you'd like to open!")
+            await ctx.message.reply(self.STRINGS['event_name_request'])
         elif allData := await self.getGuildEventSettings(ctx, args.lower()):
             guildData, eventData = allData
             eventName = args.lower()
             signinMenu = self.bot.reactionMenus[eventData["signin_menu_id"]]
             eventChannel = signinMenu.msg.channel
             if not eventChannel.permissions_for(ctx.guild.me).manage_permissions:
-                await ctx.send(":x: I don't have permission to edit the permissions in <#" + str(eventChannel.id) + ">!")
+                await ctx.send(self.STRINGS['no_channel_edit_perms'].format(channel_id=eventChannel.id))
             else:
                 sharedRole = ctx.guild.get_role(guildData["shared_role_id"])
                 if not eventChannel.overwrites_for(sharedRole).read_messages:
-                    await eventChannel.set_permissions(sharedRole, read_messages=True,
-                                                    reason=ctx.author.name + f" opened the {eventName} event via the {self.bot.command_prefix}open-event command")
-                    await ctx.send("✅ <#" + str(eventChannel.id) + "> is now visible to **" + sharedRole.name + "**!")
+                    reason = self.STRINGS['event_channel_perms_reason'].format(author=ctx.author.name, event_name=eventName, command_prefix=self.bot.command_prefix)
+                    await eventChannel.set_permissions(sharedRole, read_messages=True, reason=reason)
+                    await ctx.send(self.STRINGS['channel_visible'].format(channel_id=eventChannel.id, role_name=sharedRole.name))
                     await self.bot.adminLog(ctx.message, {"Event signin channel made visible": "<#" + str(eventChannel.id) + ">"})
                 else:
-                    await ctx.send(f":x: The {eventName.title()} signin channel is already open! <#{eventChannel.id!s}>")
+                    await ctx.send(self.STRINGS['channel_already_open'].format(event_name=eventName.title(), channel_id=eventChannel.id))
 
 
     @commands.command(name="close-event", usage="close-event <event name>",
@@ -108,7 +108,7 @@ class EventCategoriesCog(commands.Cog):
                         membersFutures = set()
                         for member in eventRole.members:
                             membersFutures.add(asyncio.create_task(member.remove_roles(eventRole, reason=f"{ctx.author.name} closed the {eventName} event via {self.bot.command_prefix}close-event command")))
-                        
+
                         if menuReset:
                             await signinMenu.updateMessage()
                             loadingTxts[2] = loadingTxts[2][:-1] + "✅"
@@ -231,8 +231,8 @@ class EventCategoriesCog(commands.Cog):
                             db.insert('event_categories', {"guild_id": ctx.guild.id, "event_name": eventName, "role_id": roleID, "signin_menu_id": menu.msg.id})
                             await ctx.send(f"✅ Event category '{eventName.title()}' registered successfuly!")
                             await self.bot.adminLog(ctx.message, {"Existing Event Category Registered": f"Event name: {eventName.title()}\nMenu id: {menuIDStr}\nRole: <@&{roleID!s}>\n[Menu]({menu.msg.jump_url})"})
-                        
-    
+
+
     @commands.command(name="create-event-category", usage="create-event-category <event name>",
                         help="Create a new event category with a signin channel and menu, event role, general channel and correct permissions, and automatically register them for use with `open-event` and `close-event`.")
     @commands.has_permissions(administrator=True)
@@ -255,7 +255,7 @@ class EventCategoriesCog(commands.Cog):
                         emojiSelectorMsg = await ctx.message.reply("Please react to this message within 60 seconds, with the emoji which you would like users to react with to receive the event role:")
                         def emojiSelectorCheck(data: RawReactionActionEvent) -> bool:
                             return data.message_id == emojiSelectorMsg.id and data.user_id == ctx.author.id and (data.emoji.is_unicode_emoji or self.bot.get_emoji(data.emoji.id))
-                        
+
                         try:
                             signinEmoji = lib.emotes.Emote.fromPartial((await self.bot.wait_for("raw_reaction_add", check=emojiSelectorCheck, timeout=60)).emoji, rejectInvalid=True)
                         except asyncio.TimeoutError:
@@ -309,7 +309,7 @@ class EventCategoriesCog(commands.Cog):
                 db.delete("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName})
                 await ctx.message.reply(f"✅ {eventName.title()} event category successfuly unregistered.")
                 await self.bot.adminLog(ctx.message, {"Event Category Unregistered": f"Event name: {eventName.title()}\nCategory/channels left undeleted."})
-    
+
 
     @commands.command(name="delete-event-category", usage="delete-event-category <event name>",
                         help="Delete an event category and its role and channels from the server.")
@@ -360,4 +360,3 @@ class EventCategoriesCog(commands.Cog):
 
 def setup(bot):
     bot.add_cog(EventCategoriesCog(bot))
-    
