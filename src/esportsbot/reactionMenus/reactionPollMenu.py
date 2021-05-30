@@ -1,3 +1,9 @@
+"""
+The reactionMenus package was partially copied over from the BASED template project: https://github.com/Trimatix/BASED
+It is modified and not actively synced with BASED, so will very likely be out of date.
+
+.. codeauthor:: Trimatix
+"""
 from __future__ import annotations
 from . import reactionMenu
 from .. import lib
@@ -5,6 +11,7 @@ from discord import Colour, Message, Embed, User, Member, RawReactionActionEvent
 from typing import Dict, Union
 
 
+# Used as the default author icon in poll embeds
 BALLOT_BOX_IMAGE = "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/ballot-box-with-ballot_1f5f3.png"
 
 
@@ -128,6 +135,7 @@ class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
                             vote per poll.
     :vartype multipleChoice: bool
     """
+
     def __init__(self, msg: Message, pollOptions: Dict[lib.emotes.Emote: str], timeoutSeconds: int,
                     pollStarter : Union[User, Member] = None, multipleChoice : bool = False, titleTxt : str = "",
                     desc : str = "", col : Colour = Colour.blue(), footerTxt : str = "",
@@ -197,8 +205,14 @@ class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
 
 
 class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
-    """A poll menu which automatically ends if the required number of votes are met.
+    """A single-option InlineReactionPollMenu with only one option: Yes.
+    The menu automatically expires if the required number of votes are met.
+    The menu's topic should be set through constructor kwargs.
+
+    Votes are not counted through an option's addFunc, but instead through the reactionClosesMenu override,
+    for efficiency.
     """
+
     def __init__(self, msg: Message, timeoutSeconds: int, requiredVotes: int,
                     pollStarter : Union[User, Member] = None, titleTxt : str = "", desc : str = "",
                     col : Colour = Colour.blue(), footerTxt : str = "", img : str = "", thumb : str = "",
@@ -210,7 +224,7 @@ class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
         :param discord.Member pollStarter: The user who started the poll, for printing in the menu embed.
                                             Optional. (Default None)
         :param str titleTxt: The content of the embed title (Default "")
-        :param str desc: he content of the embed description; appears at the top below the title (Default "")
+        :param str desc: The content of the embed description; appears at the top below the title (Default "")
         :param discord.Colour col: The colour of the embed's side strip (Default None)
         :param str footerTxt: Secondary description appearing in darker font at the bottom of the embed
                                 (Default time until menu expiry)
@@ -247,11 +261,10 @@ class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
 
 
     def reactionClosesMenu(self, reactPL: RawReactionActionEvent) -> bool:
-        """Decide whether a reaction should trigger the expiry of the menu.
-        The reaction should be given in the form of a RawReactionActionEvent payload, from a discord.on_raw_reaction_add event
+        """An InlineReactionMenu override which checks the number of yes votes received.
 
         :param discord.RawReactionActionEvent reactPL: The raw payload representing the reaction addition
-        :return: True if the reaction should close the menu. I.e, a returnTrigger emoji was added by the targetMember.
+        :return: True if the reaction should close the menu. I.e, requiredVotes has been reached.
         :rtype: bool
         """
         try:
