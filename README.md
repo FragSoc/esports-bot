@@ -50,8 +50,9 @@ You will need:
 
 - Python 3
 - Pip
+- Your `secrets.env` file setup as above, or the env vars within set in your environment
 - [A postgres database](https://www.postgresql.org/docs/current/admin.html).
-  You must set the `PG_HOST`, `PG_USER`, `PG_PWD` and `PG_DATABASE` environment variables according to your postgres setup, in addition to the environment variables in `secrets.env`.
+  You must set the `PG_HOST`, `PG_USER`, `PG_PWD` and `PG_DATABASE` environment variables according to your postgres setup.
 
 ```bash
 pip install -r requirements.txt
