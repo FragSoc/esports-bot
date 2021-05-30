@@ -19,7 +19,7 @@ EVENT_SIGNIN_CHANNEL_EVENT_PERMS = PermissionOverwrite(read_messages=True, read_
 class EventCategoriesCog(commands.Cog):
     def __init__(self, bot: "EsportsBot"):
         self.bot: "EsportsBot" = bot
-        self.STRINGS = bot.STRINGS["admin"]
+        self.STRINGS = bot.STRINGS["event_categories"]
 
     async def getGuildEventSettings(self, ctx, eventName):
         db = db_gateway()
@@ -53,7 +53,7 @@ class EventCategoriesCog(commands.Cog):
             else:
                 sharedRole = ctx.guild.get_role(guildData["shared_role_id"])
                 if not eventChannel.overwrites_for(sharedRole).read_messages:
-                    reason = self.STRINGS['event_channel_perms_reason'].format(author=ctx.author.name, event_name=eventName, command_prefix=self.bot.command_prefix)
+                    reason = self.STRINGS['event_channel_open_reason'].format(author=ctx.author.name, event_name=eventName, command_prefix=self.bot.command_prefix)
                     await eventChannel.set_permissions(sharedRole, read_messages=True, reason=reason)
                     await ctx.send(self.STRINGS['success_channel'].format(channel_id=eventChannel.id, role_name=sharedRole.name))
                     await self.bot.adminLog(ctx.message, {"Event signin channel made visible": "<#" + str(eventChannel.id) + ">"})
@@ -230,7 +230,6 @@ class EventCategoriesCog(commands.Cog):
                             menu = self.bot.reactionMenus[int(menuIDStr)]
                             db.insert('event_categories', {"guild_id": ctx.guild.id, "event_name": eventName, "role_id": roleID, "signin_menu_id": menu.msg.id})
                             await ctx.send(self.STRINGS['success_event_category'].format(event_name=eventName.title()))
-nothing_to_do = "Nothing to do!\n*(<#{channel_id!s}> already invisible to {shared_role}, no reactions on signin menu, no users with {event_role} role)*"
                             await self.bot.adminLog(ctx.message, {"Existing Event Category Registered": f"Event name: {eventName.title()}\nMenu id: {menuIDStr}\nRole: <@&{roleID!s}>\n[Menu]({menu.msg.jump_url})"})
 
 
@@ -264,7 +263,7 @@ nothing_to_do = "Nothing to do!\n*(<#{channel_id!s}> already invisible to {share
                         except lib.exceptions.UnrecognisedCustomEmoji:
                             await emojiSelectorMsg.reply(self.STRINGS['react_error'])
                         else:
-                            creationReason = self.STRINGS['event_category_close_reason'].format(event_name=eventName, command_prefix=self.bot.command_prefix)
+                            creationReason = self.STRINGS['event_category_create_reason'].format(event_name=eventName, command_prefix=self.bot.command_prefix)
                             eventRole = await ctx.guild.create_role(name=eventName.title(), reason=creationReason)
                             categoryOverwrites = {sharedRole: EVENT_CATEGORY_SHARED_ROLE_PERMS, eventRole: EVENT_CATEGORY_EVENT_ROLE_PERMS}
                             signinOverwrites = {sharedRole: CLOSED_EVENT_SIGNIN_CHANNEL_SHARED_PERMS, eventRole: EVENT_SIGNIN_CHANNEL_EVENT_PERMS}
