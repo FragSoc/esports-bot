@@ -1,3 +1,10 @@
+"""
+The lib package was partially copied over from the BASED template project: https://github.com/Trimatix/BASED
+It is modified and not actively synced with BASED, so will very likely be out of date.
+
+.. codeauthor:: Trimatix
+"""
+
 def strIsInt(x) -> bool:
     """Decide whether or not something is either an integer, or is castable to integer.
 
