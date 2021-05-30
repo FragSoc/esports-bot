@@ -132,6 +132,7 @@ class MusicCog(commands.Cog):
                 'channel_id': int(cleaned_channel_id), 'guild_id': int(ctx.guild.id)})
 
         await self.__setup_channel(ctx, int(cleaned_channel_id), args)
+        self._bot.update_music_channels()
         return True
 
     @commands.command()

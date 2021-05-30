@@ -207,8 +207,8 @@ async def on_message(message):
     if not message.author.bot:
         # Ignore self messages
         guild_id = message.guild.id
-        music_channel_in_db = db_gateway().get('music_channels', params={'guild_id': guild_id})
-        if len(music_channel_in_db) > 0 and message.channel.id == music_channel_in_db[0].get('channel_id'):
+        music_channel_in_db = client.MUSIC_CHANNELS.get(guild_id)
+        if music_channel_in_db is not None and message.channel.id == music_channel_in_db:
             # The message was in a music channel and a song should be found
             music_cog_instance = client.cogs.get('MusicCog')
             await music_cog_instance.on_message_handle(message)
@@ -262,6 +262,7 @@ def launch():
 
     # Generate Database Schema
     generate_schema()
+    client.update_music_channels()
 
     client.load_extension('esportsbot.cogs.VoicemasterCog')
     client.load_extension('esportsbot.cogs.DefaultRoleCog')
