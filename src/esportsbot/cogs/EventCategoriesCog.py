@@ -31,9 +31,12 @@ class EventCategoriesCog(commands.Cog):
     When the event is "closed", the category becomes invisible again to all users, and the event role is
     removed from all users.
 
+    .. codeauthor:: Trimatix
+
     :var bot: The client instance owning this cog instance
     :vartype bot: EsportsBot
     """
+    
     def __init__(self, bot: "EsportsBot"):
         """
         :param EsportsBot bot: The client instance owning this cog instance
