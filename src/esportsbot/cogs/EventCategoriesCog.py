@@ -7,7 +7,7 @@ from ..db_gateway import db_gateway
 import asyncio
 from .. import lib
 from ..lib.client import EsportsBot
-from ..reactionMenus.reactionRoleMenu import ReactionRoleMenu
+from ..reactionMenus.reactionRoleMenu import ReactionRoleMenu, ReactionRoleMenuOption
 
 # Permissions overrides assigned to the shared role in closed event signin channels
 CLOSED_EVENT_SIGNIN_CHANNEL_SHARED_PERMS = PermissionOverwrite(read_messages=False, read_message_history=True, add_reactions=False, send_messages=False, use_slash_commands=False)
@@ -73,6 +73,11 @@ class EventCategoriesCog(commands.Cog):
     @commands.command(name="open-event", usage="open-event <event name>", help="Reveal the signin channel for the named event channel.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_open_event(self, ctx: Context, *, args):
+        """Admin command: Open the named event category, revealing the signin channel to all users.
+
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing the name of the event to open
+        """
         if not args:
             await ctx.message.reply(":x: Please give the name of the event you'd like to open!")
         elif allData := await self.getGuildEventSettings(ctx, args.lower()):
@@ -97,6 +102,12 @@ class EventCategoriesCog(commands.Cog):
                         help="Hide the signin channel for the named event, reset the signin menu, and remove the event's role from users.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_close_event(self, ctx: Context, *, args):
+        """Admin command: Close the named event category, making the category invisible to all users and removing
+        the event role from all users
+
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing the name of the event to open
+        """
         if not args:
             await ctx.message.reply(":x: Please give the name of the event you'd like to open!")
         elif allData := await self.getGuildEventSettings(ctx, args.lower()):
@@ -159,6 +170,12 @@ class EventCategoriesCog(commands.Cog):
                         help="Change the event signin menu to use with `open-event` and `close-event`.")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_set_event_signin_menu(self, ctx: Context, *, args: str):
+        """Admin command: Change the signin menu associated with an event.
+        Must be a ReactionRoleMenu, granting users the event's role.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing the name of the event to open
+        """
         if len(args.split(" ")) < 2:
             await ctx.send(":x: Please provide a menu ID and event name!")
         else:
@@ -170,16 +187,25 @@ class EventCategoriesCog(commands.Cog):
             else:
                 eventName = args[len(menuID)+1:].lower()
                 db = db_gateway()
-                if not db.get("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName}):
+                if not (eventData := db.get("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName})):
                     if not (allEvents := db.get("event_categoriesevent_channels", params={"guild_id": ctx.guild.id})):
                         await ctx.message.reply(":x: This server doesn't have any event categories registered!")
                     else:
                         await ctx.message.reply(":x: Unrecognised event. The following events exist in this server: " + ", ".join(e["event_name"].title() for e in allEvents))
                 else:
+                    eventRole = ctx.guild.get_role(eventData["role_id"])
                     menu = self.bot.reactionMenus[int(menuID)]
-                    db.update('event_categories', set_params={"signin_menu_id": menu.msg.id}, where_params={"guild_id": ctx.guild.id, "event_name": eventName})
-                    await ctx.send(f"✅ The {eventName.title()} event signin menu is now: {menu.msg.jump_url}")
-                    await self.bot.adminLog(ctx.message, {"Event signin menu updated": f"Event name: {eventName.title()}\nMenu id: {menuID}\ntype: {type(menu).__name__}\n[Menu]({menu.msg.jump_url})"})
+                    if not isinstance(menu, ReactionRoleMenu):
+                        await ctx.message.reply(f":x: The event signin menu must be a role menu granting the {eventRole.name if eventRole else 'event'} role!")
+                    else:
+                        try:
+                            next(o for o in menu.options if isinstance(o, ReactionRoleMenuOption) and o.role == eventRole)
+                        except StopIteration:
+                            await ctx.message.reply(f":x: The event signin menu must granting the {eventRole.name if eventRole else 'event'} role!")
+                        else:
+                            db.update('event_categories', set_params={"signin_menu_id": menu.msg.id}, where_params={"guild_id": ctx.guild.id, "event_name": eventName})
+                            await ctx.send(f"✅ The {eventName.title()} event signin menu is now: {menu.msg.jump_url}")
+                            await self.bot.adminLog(ctx.message, {"Event signin menu updated": f"Event name: {eventName.title()}\nMenu id: {menuID}\ntype: {type(menu).__name__}\n[Menu]({menu.msg.jump_url})"})
 
 
     @commands.command(name="set-shared-role", usage="set-shared-role <role>",
