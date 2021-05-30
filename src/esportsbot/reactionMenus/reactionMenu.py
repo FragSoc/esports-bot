@@ -1,3 +1,10 @@
+"""
+The reactionMenus package was partially copied over from the BASED template project: https://github.com/Trimatix/BASED
+It is modified and not actively synced with BASED, so will very likely be out of date.
+
+.. codeauthor:: Trimatix
+"""
+
 import inspect
 from discord import Embed, Colour, NotFound, HTTPException, Forbidden, Member, User, Message, Role, RawReactionActionEvent, Client
 from .. import lib
@@ -9,6 +16,7 @@ from types import FunctionType
 
 async def deleteReactionMenu(menu: "ReactionMenu"):
     """Delete the currently active reaction menu and its message entirely.
+    If the menu message was not found, this error is ignored.
 
     :param ReactionMenu menu: The menu to remove
     """
@@ -83,7 +91,7 @@ class ReactionMenuOption:
             removeFunc).parameters) != (1 if self.removeIncludeUser else 0)
 
 
-    async def add(self, member: Union[Member, User]):
+    async def add(self, member: Union[Member, User]) -> Any:
         """Invoke this option's 'reaction added' functionality.
         This method is called by the owning reaction menu whenever this option is added by any user
         that matches the menu's restrictions, if any apply (e.g targetMember, targetRole)
@@ -103,7 +111,7 @@ class ReactionMenuOption:
             return await self.addFunc() if self.addIsCoroutine else self.addFunc()
 
 
-    async def remove(self, member: Union[Member, User]):
+    async def remove(self, member: Union[Member, User]) -> Any:
         """Invoke this option's 'reaction removed' functionality.
         This method is called by the owning reaction menu whenever this option is removed by any user
         that matches the menu's restrictions, if any apply (e.g targetMember, targetRole)
@@ -170,7 +178,7 @@ class ReactionMenuOption:
         :rtype: ReactionMenuOption
         :raise NotImplementedError: When calling on a non-saveable menu option type, such as the base ReactionMenuOption
         """
-        raise NotImplementedError("Attempted to fromDict an unserializable menu option type: " + cls.__name__)
+        raise NotImplementedError("Attempted to fromDict an unsaveable menu option type: " + cls.__name__)
 
 
 class NonSaveableReactionMenuOption(ReactionMenuOption):
@@ -210,7 +218,7 @@ class NonSaveableReactionMenuOption(ReactionMenuOption):
         :param dict data: ignored
         :raise NotImplementedError: Always
         """
-        raise NotImplementedError("Attempted to fromDict an unserializable menu option type: " + cls.__name__)
+        raise NotImplementedError("Attempted to fromDict an unsaveable menu option type: " + cls.__name__)
 
 
 class DummyReactionMenuOption(ReactionMenuOption):
@@ -256,9 +264,13 @@ class ReactionMenu:
     - You require specialized behaviour handled/triggered outside of reactions.
       For example, a menu whose content may be changed via commands.
 
+    When writing a saveable ReactionMenu subclass, you must mark your class with the @saveableMenu decorator.
+    This automatically registers instances of your class for saving and recalling across bot restarts, as long as complete
+    implementations of toDict and fromDict are provided for your class and any ReactionMenuOption instances used.
+
     How to use this class:
     1. Send a message
-    3. Pass your new message  to the ReactionMenu constructor, also specifying a dictionary of menu options
+    3. Pass your new message to the ReactionMenu constructor, also specifying a dictionary of menu options
     4. Call updateMessage on your new ReactionMenu instance
     5. Use discord's client events of either on_reaction_add and on_reaction_remove or on_raw_reaction_add and
        on_raw_reaction_remove to call your new menu's reactionAdded and reactionRemoved methods
@@ -275,7 +287,7 @@ class ReactionMenu:
     The options in your options dictionary do not have to be of the same type - each option could have completely
     different behaviour. The only consideration you may need to make when creating such an object is whether or
     not you wish for it to be saveable - in which case, you should extend ReactionMenu into a new module,
-    providing a custom toDict method and fromDict function.
+    providing custom, functionality aware toDict and fromDict methods.
 
     :var msg: the message where this menu is embedded
     :vartype msg: discord.Message
@@ -314,7 +326,7 @@ class ReactionMenu:
         :type options: dict[lib.emotes.Emote, ReactionMenuOption]
         :param str titleTxt: The content of the embed title (Default "")
         :param str desc: he content of the embed description; appears at the top below the title (Default "")
-        :param discord.Colour col: The colour of the embed's side strip (Default None)
+        :param discord.Colour col: The colour of the embed's side strip (Default blue)
         :param str footerTxt: Secondary description appearing in darker font at the bottom of the embed (Default "")
         :param str img: URL to a large icon appearing as the content of the embed, left aligned like a field (Default "")
         :param str thumb: URL to a larger image appearing to the right of the title (Default "")
@@ -362,11 +374,11 @@ class ReactionMenu:
         if member is targetMember.
         If a targetRole was specified in this reaction menu's constructor, option behaviour will only be triggered
         if member has targetRole.
-        Both may be specified and required.
+        Both may optionally be specified as a requirement during menu creation.
 
         :param lib.emotes.Emote emoji: The emoji that member reacted to the menu with
         :param discord.Member member: The member that added the emoji reaction
-        :return: The result of the corresponding menu option's addFunc, if any
+        :return: The result of the corresponding menu option's addFunc if one was called, None otherwise
         """
         if (self.targetMember is not None and \
                 member != self.targetMember):
@@ -387,11 +399,11 @@ class ReactionMenu:
         if member is targetMember.
         If a targetRole was specified in this reaction menu's constructor, option behaviour will only be triggered
         if member has targetRole.
-        Both may be specified and required.
+        Both may be specified as a requirement during menu creation.
 
         :param lib.emotes.Emote emoji: The emoji reaction that member removed from the menu
         :param discord.Member member: The member that removed the emoji reaction
-        :return: The result of the corresponding menu option's removeFunc, if any
+        :return: The result of the corresponding menu option's removeFunc if one was called, None otherwse
         """
         if self.targetMember is not None and \
                 member != self.targetMember:
@@ -407,7 +419,7 @@ class ReactionMenu:
     def getMenuEmbed(self) -> Embed:
         """Generate the discord.Embed representing the reaction menu, and that
         should be embedded into the menu's message.
-        This will usually contain a short description of the menu, its options, and its expiry time.
+        This will usually contain a short description of the menu, its options, and its expiry time if any.
 
         :return: A discord.Embed representing the menu and its options
         :rtype: discord.Embed 
@@ -427,9 +439,11 @@ class ReactionMenu:
         return menuEmbed
 
 
-    async def updateMessage(self, noRefreshOptions=False):
+    async def updateMessage(self, noRefreshOptions : bool = False):
         """Update the menu message by removing all reactions, replacing any existing embed with
-        up to date embed content, and readd all of the menu's option reactions.
+        up to date embed content, and re-add all of the menu's option reactions.
+
+        :param bool noRefreshOptions: Give True to only update the embed, and not the reactions (Default False)
         """
         await self.msg.edit(embed=self.getMenuEmbed())
 
@@ -450,7 +464,7 @@ class ReactionMenu:
 
 
     async def delete(self):
-        """Forcibly delete the menu.
+        """Forcibly delete the menu and its message.
         """
         await deleteReactionMenu(self)
 
@@ -515,18 +529,18 @@ class ReactionMenu:
         :rtype: ReactionMenu
         :raise NotImplementedError: When calling on a non-saveable menu option type, such as the base ReactionMenu
         """
-        raise NotImplementedError("Attempted to fromDict an unserializable menu type: " + cls.__name__)
+        raise NotImplementedError("Attempted to fromDict an unsaveable menu type: " + cls.__name__)
 
 
 class InlineReactionMenu(ReactionMenu):
-    """An in-place menu solution.
+    """An in-place menu solution. Example usage can be found in ReactionPollMenu.
     
     InlineReactionMenus do not need to be recorded in the reactionMenusDB, but instead have a
     doMenu coroutine which should be awaited. Once execution returns, doMenu will return a list containing all of the
     currently selected options.
     
     This menu style is only available for use by single users - hence the requirement for targetMember.
-    returnTriggers is given as a kwarg, but if no returnTriggers are given, then the menu will only expire due ot timeout.
+    returnTriggers is technically optional, but if no returnTriggers are given, then the menu will only expire due to timeout.
 
     :var returnTriggers: A list of options which, when selected, trigger the expiry of the menu.
     :vartype returnTriggers: List[ReactionMenuOption]
@@ -596,8 +610,11 @@ class InlineReactionMenu(ReactionMenu):
             return results
 
 
-saveableMenuTypeNames: Dict[type, str] = {}
-saveableNameMenuTypes: Dict[str, type] = {}
+# If you wish to look up saveable class registrations please use the helper functions provided below.
+# Register of saveable ReactionMenu subclasses to the names of those subclasses
+_saveableMenuTypeNames: Dict[type, str] = {}
+# Register of saveable ReactionMenu subclass names to those subclasses
+_saveableNameMenuTypes: Dict[str, type] = {}
 
 
 def saveableMenu(cls: type) -> type:
@@ -613,10 +630,10 @@ def saveableMenu(cls: type) -> type:
     """
     if not issubclass(cls, ReactionMenu):
         raise TypeError("Invalid use of saveableMenu decorator: " + cls.__name__ + " is not a ReactionMenu subtype")
-    if cls not in saveableMenuTypeNames:
-        saveableMenuTypeNames[cls] = cls.__name__
-    if cls.__name__ not in saveableNameMenuTypes:
-        saveableNameMenuTypes[cls.__name__] = cls
+    if cls not in _saveableMenuTypeNames:
+        _saveableMenuTypeNames[cls] = cls.__name__
+    if cls.__name__ not in _saveableNameMenuTypes:
+        _saveableNameMenuTypes[cls.__name__] = cls
     return cls
 
 
@@ -627,7 +644,7 @@ def isSaveableMenuClass(cls: type) -> bool:
     :return: True if cls is a saveable reaction menu class, False otherwise
     :rtype: bool
     """
-    return issubclass(cls, ReactionMenu) and cls in saveableNameMenuTypes
+    return issubclass(cls, ReactionMenu) and cls in _saveableNameMenuTypes
 
 def isSaveableMenuInstance(o: ReactionMenu) -> bool:
     """Decide if o is an instance of a saveable reaction menu class.
@@ -636,7 +653,7 @@ def isSaveableMenuInstance(o: ReactionMenu) -> bool:
     :return: True if o is a saveable reaction menu instance, False otherwise
     :rtype: bool
     """
-    return isinstance(o, ReactionMenu) and type(o) in saveableMenuTypeNames
+    return isinstance(o, ReactionMenu) and type(o) in _saveableMenuTypeNames
 
 def isSaveableMenuTypeName(clsName: str) -> bool:
     """Decide if clsName is the name of a saveable reaction menu class.
@@ -645,7 +662,7 @@ def isSaveableMenuTypeName(clsName: str) -> bool:
     :return: True if clsName corresponds to a a saveable reaction menu class, False otherwise
     :rtype: bool
     """
-    return clsName in saveableNameMenuTypes
+    return clsName in _saveableNameMenuTypes
 
 def saveableMenuClassFromName(clsName: str) -> type:
     """Retreive the saveable ReactionMenu subclass that as the given class name.
@@ -656,4 +673,4 @@ def saveableMenuClassFromName(clsName: str) -> type:
     :rtype: type
     :raise KeyError: If no ReactionMenu subclass with the given name has been registered as saveable
     """
-    return saveableNameMenuTypes[clsName]
+    return _saveableNameMenuTypes[clsName]
