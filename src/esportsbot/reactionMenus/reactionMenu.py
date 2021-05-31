@@ -439,7 +439,7 @@ class ReactionMenu:
         return menuEmbed
 
 
-    async def updateMessage(self, noRefreshOptions : bool = False):
+    async def updateMessage(self, noRefreshOptions: bool = False):
         """Update the menu message by removing all reactions, replacing any existing embed with
         up to date embed content, and re-add all of the menu's option reactions.
 
