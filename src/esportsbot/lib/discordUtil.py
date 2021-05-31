@@ -67,7 +67,7 @@ async def reactionFromRaw(client: Client, payload: RawReactionActionEvent) -> Tu
     return message, user, emoji
 
 
-async def send_timed_message(channel, *args, timer=15, **kwargs):
+async def send_timed_message(channel: TextChannel, *args, timer: int = 15, **kwargs):
     """Sends a message to a specific channel that gets deleted after a given amount of seconds.
 
     :param TextChannel channel: The channel to send the message to.
