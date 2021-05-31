@@ -137,9 +137,9 @@ class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
     """
 
     def __init__(self, msg: Message, pollOptions: Dict[lib.emotes.Emote: str], timeoutSeconds: int,
-                    pollStarter : Union[User, Member] = None, multipleChoice : bool = False, titleTxt : str = "",
-                    desc : str = "", col : Colour = Colour.blue(), footerTxt : str = "",
-                    img : str = "", thumb : str = "", icon : str = None, authorName : str = ""):
+                    pollStarter: Union[User, Member] = None, multipleChoice: bool = False, titleTxt: str = "",
+                    desc: str = "", col: Colour = Colour.blue(), footerTxt: str = "",
+                    img: str = "", thumb: str = "", icon: str = None, authorName: str = ""):
         """
         :param discord.Message msg: the message where this menu is embedded
         :param pollOptions: A dictionary of Emote: str, defining all of the poll options
@@ -214,9 +214,9 @@ class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
     """
 
     def __init__(self, msg: Message, timeoutSeconds: int, requiredVotes: int,
-                    pollStarter : Union[User, Member] = None, titleTxt : str = "", desc : str = "",
-                    col : Colour = Colour.blue(), footerTxt : str = "", img : str = "", thumb : str = "",
-                    icon : str = None, authorName : str = ""):
+                    pollStarter: Union[User, Member] = None, titleTxt: str = "", desc: str = "",
+                    col: Colour = Colour.blue(), footerTxt: str = "", img: str = "", thumb: str = "",
+                    icon: str = None, authorName: str = ""):
         """
         :param discord.Message msg: the message where this menu is embedded
         :param int timeoutSeconds: The number of seconds until the poll ends

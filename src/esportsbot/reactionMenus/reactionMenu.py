@@ -61,8 +61,8 @@ class ReactionMenuOption:
     :vartype removeHasArgs: bool
     """
 
-    def __init__(self, name: str, emoji: "lib.emotes.Emote", addFunc : FunctionType = None, addArgs : Any = None,
-                    removeFunc : FunctionType = None, removeArgs : Any = None):
+    def __init__(self, name: str, emoji: "lib.emotes.Emote", addFunc: FunctionType = None, addArgs: Any = None,
+                    removeFunc: FunctionType = None, removeArgs: Any = None):
         """
         :param str name: The name of this option, as displayed in the menu embed.
         :param lib.emotes.Emote emoji: The emoji that a user must react with to trigger this option
@@ -187,8 +187,8 @@ class NonSaveableReactionMenuOption(ReactionMenuOption):
     Instead, inherit directly from ReactionMenuOption or another suitable subclass that is not marked as unsaveable.
     """
 
-    def __init__(self, name: str, emoji: "lib.emotes.Emote", addFunc : FunctionType = None, addArgs : Any = None,
-                        removeFunc : FunctionType = None, removeArgs : Any = None):
+    def __init__(self, name: str, emoji: "lib.emotes.Emote", addFunc: FunctionType = None, addArgs: Any = None,
+                        removeFunc: FunctionType = None, removeArgs: Any = None):
         """
         :param str name: The name of this option, as displayed in the menu embed.
         :param lib.emotes.Emote emoji: The emoji that a user must react with to trigger this option
@@ -315,10 +315,10 @@ class ReactionMenu:
     :vartype targetRole: discord.Role
     """
 
-    def __init__(self, msg: Message, client: Client, options : Dict["lib.emotes.Emote", ReactionMenuOption] = None,
-                 titleTxt : str = "", desc : str = "", col : Colour = Colour.blue(),
-                 footerTxt : str = "", img : str = "", thumb : str = "", icon : str = None,
-                 authorName : str = "", targetMember : Member = None, targetRole : Role = None):
+    def __init__(self, msg: Message, client: Client, options: Dict["lib.emotes.Emote", ReactionMenuOption] = None,
+                 titleTxt: str = "", desc: str = "", col: Colour = Colour.blue(),
+                 footerTxt: str = "", img: str = "", thumb: str = "", icon: str = None,
+                 authorName: str = "", targetMember: Member = None, targetRole: Role = None):
         """
         :param discord.Message msg: the message where this menu is embedded
         :param discord.Client client: The client that instanced this menu
