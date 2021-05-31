@@ -47,7 +47,8 @@ async def send_to_log_channel(guild_id, msg):
 
 @client.event
 async def on_ready():
-    # Initialize the reactionMenuDB and pingme role cooldowns, since this can't be done synchronously
+    """Initialize the reactionMenuDB and pingme role cooldowns, since this can't be done synchronously
+    """
     await client.init()
     await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="your commands"))
 
