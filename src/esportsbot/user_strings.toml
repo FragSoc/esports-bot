@@ -23,3 +23,72 @@ default_role_get = "Default role is set to {role_id}"
 
 default_role_removed = "Default role has been removed"
 default_role_removed_log = "{author_mention} has removed the default role"
+
+[event_categories]
+success_channel = "✅ <#{channel_id!s}> is now visible to **{role_name}**!"
+success_event = """✅ New event category '{event_title}' created successfuly!
+The event role is {event_role_mention}, and the signin menu is ID `{signin_menu_id!s}`, in {signin_channel_mention}.
+
+The event is currently **closed**, and invisible to your shared role, `{shared_role_name}`. Open the event when you're ready with `{command_prefix}open-event {event_name}`!
+Feel free to customise the category, channels and roles, but do not synchronise the category permissions.
+
+You can create a new channel in the category with the correct permissions by either:
+- Using the `+` icon next to the category,
+- Dragging your channel into the category and synchronising **just that channel**'s permissions with the category, or
+- Duplicating {event_general_mention}."""
+success_event_category ="✅ Event category '{event_name}' registered successfuly!"
+success_event_deleted = "✅ {event_title} event category and role successfuly deleted."
+success_event_role = "✅ The {event_name} event role is now **{role_name}**."
+success_event_role_unregister = "✅ {event_title} event category successfuly unregistered."
+success_menu = "✅ The {event_namme} event signin menu is now: {menu_url}"
+success_shared_role = "✅ The shared role is now **{role_name}**."
+success_event_closed = "Done!"
+nothing_to_do = "Nothing to do!\n*(<#{channel_id!s}> already invisible to {shared_role}, no reactions on signin menu, no users with {event_role} role)*"
+
+menu_title = "Sign Into {event_name}"
+menu_description = "If you're attending this event, react to this message to get the '{event_role}' role, and access to secret event channels!"
+
+react_delete_confirm = "React within 60 seconds: Are you sure you want to delete the '{event_title}' category{event_segment} and the {num_channels!s} event channels?"
+react_error = "An error occurred when loading your reaction, please try the command again with a different emoji."
+react_event_delete_cancel = "Event category deletion cancelled."
+react_no_time = "Out of time, please try the command again."
+react_start = "Please react to this message within 60 seconds, with the emoji which you would like users to react with to receive the event role:"
+
+request_event_name = ":x: Please give the name of the event!"
+request_menu_id_event_name = ":x: Please provide a menu ID and event name!"
+request_menu_role_name = ":x: Please provide a menu ID, followed by a role, and the name of your event!"
+request_role_id = ":x: Please provide a role to set!"
+
+invalid_menu_id = ":x: Invalid menu ID!\nTo get a menu ID, enable discord's developer mode, right click on the menu, and click 'copy ID'"
+invalid_role = ":x: Invalid role! Please give your role as either a mention or an ID."
+unrecognised_event = ":x: Unrecognised event. The following events exist in this server: {events}"
+unrecognised_menu_id = ":x: Unrecognised menu ID: {menu_id}"
+unrecognised_role = ":x: Unrecognised role!"
+
+channel_already_open = ":x: The {event_name} signin channel is already open! <#{channel_id!s}>"
+event_exists = ":x: An event category with the name '{event_name}' already exists!"
+missing_shared_role = ":x: I can't find the server's shared role! Was it deleted?\nPlease use the `{command_prefix}set-shared-role` command to set a new one."
+no_event_categories = ":x: This server doesn't have any event categories registered!"
+no_shared_role = ":x: No shared role has been set for this server! Use the {command_prefix}set-shared-role` command to set one."
+
+no_channel_edit_perms = ":x: I don't have permission to edit the permissions in <#{channel_id!s}>!"
+no_role_edit_perms = ":x: I don't have permission to assign roles!\nPlease give me the 'manage roles' permission."
+role_edit_perms_bad_order = ":x: I don't have permission to unassign the **{event_role}** role!\nPlease move it below my {role_name} role."
+
+event_category_create_reason = "Creating new event category '{event_name}' requested via {command_prefix}create-event-category command"
+event_category_delete_reason = "Event category '{event_name}' deletion requested via {command_prefix}delete-event-category command"
+event_channel_close_reason = "{author} closed the {event_name} event via {command_prefix}close-event command"
+event_channel_open_reason = "{author} opened the {event_name} event via the {command_prefix}open-event command"
+
+admin_channel_invisible = ["Event Channel made invisibile", "<#{channel_id!s}>"]
+admin_event_category_deleted = ["Event Category Deleted", "Event name: {event_title}\nChannels deleted: {num_channels!s}"]
+admin_event_category_unregistered = ["Event Category Unregistered", "Event name: {event_title}\nCategory/channels left undeleted."]
+admin_event_category_updated = ["New Event Category Created", "Event name: {event_title}\nMenu ID: {menu_id!s}\nRole: <@&{role_id!s}>\n[Menu]({menu_url})"]
+admin_event_closed = ["Event Closed", "Event name: {event_title}"]
+admin_event_role_set = ["Event role set", "<@&{role_id}!s}>"]
+admin_existing_event_registered = ["Existing Event Category Registered", "Event name: {event_title}\nMenu id: {menu_id}\nRole: <@&{role_id!s}>\n[Menu]({menu_url})"]
+admin_menu_updated = ["Event signin menu updated", "Event name: {event_title}\nMenu ID: {menu_id}\nType: {menu_type}\n[Menu]({menu_url})"]
+admin_role_menu_reset = ["Role menu reset", "id: {menu_id}\ntype: {menu_type}\n[Menu]({menu_url})"]
+admin_role_removed = ["Event Role removed", "Users: {users!s}\n<@&{event_role_id!s}>"]
+admin_shared_role_set = ["Shared role set", "<@&{role_id!s}>"]
+admin_signin_visible = ["Event signin channel made visible", "<#{channel_id}>"]
