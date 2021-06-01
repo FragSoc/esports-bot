@@ -9,30 +9,71 @@ from datetime import timedelta
 from ..reactionMenus import reactionPollMenu
 
 
+# The default role colour for pingable roles
 DEFAULT_PINGABLE_COLOUR = 0x15e012 # green
+# The maximum amount of time pingable roles can be set to cool down for, for performance
 MAX_ROLE_PING_TIMEOUT = timedelta(days=30)
+# The maximum amount of time pingme role creation polls can be set to run for, for performance 
 MAX_PINGME_CREATE_POLL_LENGTH = timedelta(days=30)
+# The maximum number of votes that can be set as the role creation poll threshold, as a sanity check
 MAX_PINGME_CREATE_THRESHOLD = 100
 
 
 async def changePingablePrefix(prefix: str, guild: discord.Guild, roleID: int, roleName: str):
+    """Update the name of the role in guild with the id roleID, to the given name prefixed by prefix.
+    Used solely for parallelization. Does not throw errors if the role cannot be found.
+
+    :param str prefix: String to prefix roleName with
+    :param discord.Guild guild: The guild in which to search for the role
+    :param int roleID: The ID of the role to update
+    :param str roleName: The name of the role, without the prefix
+    """
     role = guild.get_role(roleID)
     if role:
         await role.edit(name=prefix + roleName.title(), reason="pingme role prefix updated via admin command")
 
 
 class PingablesCog(commands.Cog):
+    """Cog implementing user-created roles which are pingable by anyone, with a customisable cooldown period between pings.
+    Roles can be created immediately by admins, but users must vote for their creation by starting a poll.
+    If the server's configured minimum number of votes are reached, the role is created.
+    Users can self-assign and unassign pingme roles with the pingme for command, but role assignment works
+    through traditional means as well, or with reaction role menus.
+    Anyone can ping a pingme role, but afterwards the role becomes unpingable for a customisable period of time.
+    Pingme roles are not deleted automatically. Instead, a monthly report of each pingme role's usage is sent to the server's
+    logging channel, to allow for admins to make these decisions themselves.
+    Deleting pingme roles directly in discord is supported, or admins can use the via pingme delete command.
+    
+    .. codeauthor:: Trimatix
+
+    :var bot: The client instance owning this cog instance
+    :vartype bot: EsportsBot
+    """
+
     def __init__(self, bot: "EsportsBot"):
+        """
+        :param EsportsBot bot: The client instance owning this cog instance
+        """
         self.bot: "EsportsBot" = bot
 
     @commands.group(name="pingme", invoke_without_command=True)
     async def pingme(self, ctx: Context, *, args: str):
+        """Non-functional command, for heirarchical command grouping.
+
+        :param Context ctx: ignored
+        :param str args: ignored
+        """
         pass
 
 
     @pingme.command(name="register", usage="pingme register <@role> <name>", help="Convert an existing role into a !pingme role")
     @commands.has_permissions(administrator=True)
-    async def cmd_add_pingable_role(self, ctx: Context, *, args: str):
+    async def admin_cmd_add_pingable_role(self, ctx: Context, *, args: str):
+        """Admin command: Register an existing role for use with pingme. The role defaults to pingable (i.e not on cooldown)
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing the role's ID or mention, followed by the name to associate it with
+        """
         argsSplit = args.split(" ")
         if len(argsSplit) < 2:
             await ctx.message.reply("Please provide a role ping and a name for your `!pingme` role!")
@@ -61,7 +102,12 @@ class PingablesCog(commands.Cog):
 
     @pingme.command(name="unregister", usage="pingme unregister <@role>", help="Unregister a role from !pingme without removing it from the server")
     @commands.has_permissions(administrator=True)
-    async def cmd_remove_pingable_role(self, ctx: Context, *, args: str):
+    async def admin_cmd_remove_pingable_role(self, ctx: Context, *, args: str):
+        """Admin command: Unregister a pingme role without deleting it from the server.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing a the role's mention or ID
+        """
         if len(ctx.message.role_mentions) != 1:
             await ctx.message.reply("Please give one role mention!")
         else:
@@ -77,7 +123,12 @@ class PingablesCog(commands.Cog):
 
     @pingme.command(name="delete", usage="pingme delete <@role>", help="Delete a !pingme role from the server")
     @commands.has_permissions(administrator=True)
-    async def cmd_delete_pingable_role(self, ctx: Context, *, args: str):
+    async def admin_cmd_delete_pingable_role(self, ctx: Context, *, args: str):
+        """Admin command: Delete a pingme role from the server entirely.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing the role's mention or ID
+        """
         if len(ctx.message.role_mentions) != 1:
             await ctx.message.reply("Please give one role mention!")
         else:
@@ -94,7 +145,12 @@ class PingablesCog(commands.Cog):
 
     @pingme.command(name="reset-cooldown", usage="pingme reset-cooldown <@role>", help="Reset the pinging cooldown for a !pingme role, making it pingable again instantly")
     @commands.has_permissions(administrator=True)
-    async def cmd_reset_role_ping_cooldown(self, ctx: Context, *, args: str):
+    async def admin_cmd_reset_role_ping_cooldown(self, ctx: Context, *, args: str):
+        """Admin command: Reset the given pingme role's pinging cooldown, forcing it to become pingable again by anyone.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing the role's mention or ID
+        """
         if len(ctx.message.role_mentions) != 1:
             await ctx.message.reply("please mention one role")
         else:
@@ -115,7 +171,13 @@ class PingablesCog(commands.Cog):
 
     @pingme.command(name="set-cooldown", usage="pingme set-cooldown [seconds=seconds] [minutes=minutes] [hours=hours] [days=days]", help="Set the cooldown between !pingme role pings")
     @commands.has_permissions(administrator=True)
-    async def cmd_set_role_ping_cooldown(self, ctx: Context, *, args: str):
+    async def admin_cmd_set_role_ping_cooldown(self, ctx: Context, *, args: str):
+        """Admin command: Set the amount of time for which pingable roles are to cooldown for between pings.
+        Affects all pingme roles in the server. Currently running cooldowns will not be affected.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing the new cooldown as optional kwargs with keys: seconds, minutes, hours, days
+        """
         if not args:
             await ctx.message.reply(":x: Please give the new cooldown!")
             return
@@ -150,7 +212,12 @@ class PingablesCog(commands.Cog):
 
     @pingme.command(name="set-create-threshold", usage="pingme set-create-threshold <num_votes>", help="Set minimum number of votes required to create a new role during !pingme create")
     @commands.has_permissions(administrator=True)
-    async def cmd_set_pingme_create_threshold(self, ctx: Context, *, args: str):
+    async def admin_cmd_set_pingme_create_threshold(self, ctx: Context, *, args: str):
+        """Admin command: Set the minimum number of votes which must be reached for a pingme role creation to be approved.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing an integer number of votes
+        """
         if not args:
             await ctx.message.reply(":x: Please give the new threshold!")
         elif not lib.stringTyping.strIsInt(args):
@@ -165,7 +232,13 @@ class PingablesCog(commands.Cog):
 
     @pingme.command(name="set-create-poll-length", usage="pingme set-create-poll-length [seconds=seconds] [minutes=minutes] [hours=hours] [days=days]", help="Set the amount of time which !pingme create polls run for")
     @commands.has_permissions(administrator=True)
-    async def cmd_set_pingme_create_poll_length(self, ctx: Context, *, args: str):
+    async def admin_cmd_set_pingme_create_poll_length(self, ctx: Context, *, args: str):
+        """Admin command: Set the amount of time for which user-triggered pingable role creation polls
+        should run for. Currently running polls will not be affected.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing the new cooldown as optional kwargs with keys: seconds, minutes, hours, days
+        """
         if not args:
             await ctx.message.reply(":x: Please give the new cooldown!")
             return
@@ -200,7 +273,13 @@ class PingablesCog(commands.Cog):
 
     @pingme.command(name="set-role-emoji", usage="pingme set-role-emoji <emoji>", help="Set the emoji which appears before the names of !pingme roles. Must be a built in emoji, not custom.")
     @commands.has_permissions(administrator=True)
-    async def cmd_set_pingme_role_emoji(self, ctx: Context, *, args: str):
+    async def admin_cmd_set_pingme_role_emoji(self, ctx: Context, *, args: str):
+        """Admin command: Set an emoji to prefix all pingme role names with.
+        Existing pingme roles are updated as well.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing a single unicode moji
+        """
         if not args:
             await ctx.message.reply(":x: Please give the new emoji!")
         elif not lib.emotes.strIsUnicodeEmoji(args):
@@ -224,7 +303,13 @@ class PingablesCog(commands.Cog):
 
     @pingme.command(name="remove-role-emoji", usage="pingme remove-role-emoji <emoji>", help="Remove the emoji which appears before the names of !pingme roles.")
     @commands.has_permissions(administrator=True)
-    async def cmd_remove_pingme_role_emoji(self, ctx: Context, *, args: str):
+    async def admin_cmd_remove_pingme_role_emoji(self, ctx: Context, *, args: str):
+        """Admin command: Remove the pingme role prefix emoji set with admin_cmd_set_pingme_role_emoji
+        All existing roles are updated too.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: ignored
+        """
         db = db_gateway()
         guildData = db.get("guild_info", {"guild_id": ctx.guild.id})
         if guildData["pingme_role_emoji"] is None:
@@ -245,8 +330,16 @@ class PingablesCog(commands.Cog):
             await self.bot.adminLog(ctx.message, {"Emoji Prefix For !pingme roles Removed": "‎"})
 
 
-    @pingme.command(name="create", help="Start a poll for the creation of a new !pingme role")
+    @pingme.command(name="create", usage="pingme create <new role name>", help="Start a poll for the creation of a new !pingme role")
     async def pingme_create(self, ctx: Context, *, args: str):
+        """User command: Trigger a poll for the creation of a new pingme role with the given name.
+        If the guild's configured minimum number of votes is reached, then the role will be created automatically. If the poll
+        runs out of time, then the role is not created.
+        Anyone can vote, including admins and the poll starter.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing the name of the role to create
+        """
         if not args:
             await ctx.message.reply(":x: Please give the name of your new role!")
         else:
@@ -276,8 +369,14 @@ class PingablesCog(commands.Cog):
                 await pollMsg.edit(content="This poll has now ended.", embed=rolePoll.getMenuEmbed())
 
 
-    @pingme.command(name="for", usage="pingme for <role name or alias>", help="Get yourself a !pingme role, to be notified about events and games.")
+    @pingme.command(name="for", usage="pingme for <role name>", help="Get yourself a !pingme role, to be notified about events and games.")
     async def pingme_for(self, ctx: Context, *, args: str):
+        """User command: Self-(un)assign a pingme role.
+        Pingme roles do not have to be subscribed to through this command. For example, reaction role menus work fine.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: a string containing the name of the pingme role to (un)assign the calling user
+        """
         if not args:
             await ctx.message.reply(":x: Please give the name of the role you would like!")
         else:
@@ -298,6 +397,12 @@ class PingablesCog(commands.Cog):
 
     @pingme.command(name="list", usage="pingme list", help="List all available `!pingme` roles")
     async def pingme_for(self, ctx: Context):
+        """User command: List all available pingme roles.
+        Roles are also listed alongside their creator and total number of uses to date.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: ignored
+        """
         allRolesData = db_gateway().get("pingable_roles", {"guild_id": ctx.guild.id})
         if not allRolesData:
             await ctx.message.reply(f":x: This guild has no `!pingme` roles! Make a new one with `{self.bot.command_prefix}pingme create`.")
@@ -313,6 +418,11 @@ class PingablesCog(commands.Cog):
 
     @pingme.command(name="clear", usage="pingme clear", help="Unsubscribe from all !pingme roles, if you have any.") 
     async def pingme_clear(self, ctx: Context, *, args: str):
+        """User command: Unsubscribe from all assigned pingme roles.
+        
+        :param Context ctx: A context summarising the message which called this command
+        :param str args: ignored
+        """
         db = db_gateway()
         rolesToRemove = []
         for role in ctx.author.roles:
@@ -325,5 +435,9 @@ class PingablesCog(commands.Cog):
             await ctx.message.reply(":x: You are not subsribed to any `!pingme` roles!")
 
 
-def setup(bot):
+def setup(bot: "EsportsBot"):
+    """Create a new instance of PingablesCog, and register it to the given client instance.
+
+    :param EsportsBot bot: The client instance to register the new cog instance with
+    """
     bot.add_cog(PingablesCog(bot))

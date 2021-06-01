@@ -1,6 +1,6 @@
 from discord.ext import commands, tasks
 from ..db_gateway import db_gateway
-from ..base_functions import get_cleaned_id
+from ..base_functions import channel_id_from_mention
 import requests
 import aiohttp
 import asyncio
@@ -23,7 +23,7 @@ class TwitchIntegrationCog(commands.Cog):
             # Check if Twitch channel has already been added
             twitch_in_db = db_gateway().get('twitch_info', params={
                 'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
-            cleaned_channel_id = get_cleaned_id(
+            cleaned_channel_id = channel_id_from_mention(
                 announce_channel)
             channel_mention = "<#" + str(cleaned_channel_id) + ">"
             if not twitch_in_db:
@@ -51,7 +51,7 @@ class TwitchIntegrationCog(commands.Cog):
             # Check if Twitch channel has already been added
             twitch_in_db = db_gateway().get('twitch_info', params={
                 'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
-            cleaned_channel_id = get_cleaned_id(
+            cleaned_channel_id = channel_id_from_mention(
                 announce_channel)
             channel_mention = "<#" + str(cleaned_channel_id) + ">"
             if not twitch_in_db:
@@ -100,7 +100,7 @@ class TwitchIntegrationCog(commands.Cog):
             # Check if Twitch channel has already been added
             twitch_in_db = db_gateway().get('twitch_info', params={
                 'guild_id': ctx.author.guild.id, 'twitch_handle': twitch_handle.lower()})
-            cleaned_channel_id = get_cleaned_id(
+            cleaned_channel_id = channel_id_from_mention(
                 announce_channel)
             channel_mention = "<#" + str(cleaned_channel_id) + ">"
             if twitch_in_db:

@@ -1,3 +1,4 @@
+from typing import Dict, Any
 from dotenv import load_dotenv
 from . import lib
 from .base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
@@ -13,14 +14,26 @@ from datetime import datetime, timedelta
 import asyncio
 
 
+# Value to assign new guilds in their role_ping_cooldown_seconds attribute
 DEFAULT_ROLE_PING_COOLDOWN = timedelta(hours=5)
+# Value to assign new guilds in their pingme_create_poll_length_seconds attribute
 DEFAULT_PINGME_CREATE_POLL_LENGTH = timedelta(hours=1)
+# Value to assign new guilds in their pingme_create_threshold attribute
 DEFAULT_PINGME_CREATE_THRESHOLD = 6
+
+# EsportsBot client instance
 client = lib.client.instance()
+# TODO
 client.remove_command('help')
 
 
-def make_guild_init_data(guild: discord.Guild) -> dict:
+def make_guild_init_data(guild: discord.Guild) -> Dict[str, Any]:
+    """Construct default data for a guild database registration.
+
+    :param discord.Guild guild: The guild to be registered
+    :return: A dictionary with default guild attributes, including the guild ID
+    :rtype: Dict[str, Any]
+    """
     return {'guild_id': guild.id, 'num_running_polls': 0, 'role_ping_cooldown_seconds': int(DEFAULT_ROLE_PING_COOLDOWN.total_seconds()),
             "pingme_create_threshold": DEFAULT_PINGME_CREATE_THRESHOLD, "pingme_create_poll_length_seconds": int(DEFAULT_PINGME_CREATE_POLL_LENGTH.total_seconds())}
 
@@ -34,6 +47,8 @@ async def send_to_log_channel(guild_id, msg):
 
 @client.event
 async def on_ready():
+    """Initialize the reactionMenuDB and pingme role cooldowns, since this can't be done synchronously
+    """
     await client.init()
     await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="your commands"))
 
@@ -180,6 +195,12 @@ async def on_raw_bulk_message_delete(payload: discord.RawBulkMessageDeleteEvent)
 
 @client.event
 async def on_command_error(ctx: Context, exception: Exception):
+    """Handles printing errors to users if their command failed to call, E.g incorrect numbr of arguments
+    Also prints exceptions to stdout, since the event loop usually consumes these.
+
+    :param Context ctx: A context summarising the message which caused the error
+    :param Exception exception: The exception caused by the message in ctx
+    """
     if isinstance(exception, MissingRequiredArgument):
         await ctx.message.reply("Arguments are required for this command! See `" + client.command_prefix + "help " + ctx.invoked_with + "` for more information.")
     elif isinstance(exception, CommandNotFound):
@@ -247,6 +268,10 @@ async def initialsetup(ctx):
 
 @client.event
 async def on_guild_role_delete(role: discord.Role):
+    """Handles unregistering of pingme roles when deleted directly in discord instead of via admin command
+
+    :param Role role: The role which was removed
+    """
     db = db_gateway()
     if db.get("pingable_roles", {"role_id": role.id}):
         db.delete("pingable_roles", {"role_id": role.id})
