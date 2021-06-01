@@ -1314,7 +1314,8 @@ class MusicCog(commands.Cog):
 
         # Sort the list by view count
         top_results = sorted(results,
-                             key=lambda k: int(re.sub(r'view(s)?', '', k['viewCount']['text']).replace(',', '')),
+                             key=lambda k: 0 if k["viewCount"]["text"] is None or "No" in k["viewCount"]["text"] else
+                             int(re.sub(r'view(s)?', '', k['viewCount']['text']).replace(',', '')),
                              reverse=True)
 
         music_results = []
