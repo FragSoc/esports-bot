@@ -224,6 +224,8 @@ async def on_message(message):
                         lib.exceptions.print_exception_trace(e)
             else:
                 await client.process_commands(message)
+        else:
+            await client.process_commands(message)
 
 
 @client.command()
