@@ -195,7 +195,7 @@ class MusicCog(commands.Cog):
             return await ctx.channel.send(self.user_strings["music_channel_missing"])
 
     @commands.command(aliases=["volume"])
-    async def setvolume(self, ctx: Context, volume_level: int) -> bool:
+    async def setvolume(self, ctx: Context, volume_level) -> bool:
         """
         Sets the volume level of the bot. Does not persist if the bot disconnects.
         :param ctx: The context of the message.
@@ -239,7 +239,7 @@ class MusicCog(commands.Cog):
         return True
 
     @commands.command(aliases=["remove", "removeat"])
-    async def removesong(self, ctx: Context, song_index: int = None) -> bool:
+    async def removesong(self, ctx: Context, song_index=None) -> bool:
         """
         Remove a song at an index from the current queue.
         :param ctx: The context of the message.
