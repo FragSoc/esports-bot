@@ -93,3 +93,31 @@ admin_role_menu_reset = ["Role menu reset", "id: {menu_id}\ntype: {menu_type}\n[
 admin_role_removed = ["Event Role removed", "Users: {users!s}\n<@&{event_role_id!s}>"]
 admin_shared_role_set = ["Shared role set", "<@&{role_id!s}>"]
 admin_signin_visible = ["Event signin channel made visible", "<#{channel_id}>"]
+
+[voicemaster]
+success_slave_locked = "Your VM slave has been locked 🔒"
+success_slave_unlocked = "Your VM slave has been unlocked 🔓"
+success_vm_masters_cleared = "Cleared all VM masters from this server"
+success_vm_set = "This VC has now been set as a VM master"
+success_vm_slaves_cleared = "Cleared all VM slaves from this server"
+success_vm_unset = "This VC is no longer a VM master"
+
+show_current_vcs = "Current VM master VCs in this server:\n{master_vms}"
+
+error_already_locked = "Your VM slave is already locked"
+error_already_setm = "This VC is already set as a VM master"
+error_already_sets = "This VC is already set as a VM slave"
+error_already_unlocked = "Your VM slave is already unlocked"
+error_bad_id = "The ID entered is not a VC"
+error_bad_id_format = "The ID argument is not a valid discord ID format"
+error_no_id = "You need to provide a VC ID"
+error_no_vms = "No VCs in this server currently set as VM masters"
+error_not_in_slave = "You are not currently in a VM slave"
+error_not_owned = "You are not the owner of this VM slave"
+error_not_vm = "This VC is not currently a VM master"
+
+log_vm_master_removed = "{mention} has removed {channel_name} - {channel_id} from VM master VC"
+log_vm_masters_cleared = "{mention} has removed all VM masters"
+log_vm_slaves_cleared = "{mention} has removed all VM slaves"
+log_slave_locked = "{mention} has locked their VM slave"
+log_slave_unlocked = "{mention} has unlocked their VM slave"
