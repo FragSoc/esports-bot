@@ -54,15 +54,15 @@ wrong_voice_voice_channel = "{author}, I am already in another voice channel in 
 volume_set_invalid_value = "The volume level must be between 0 and 100"
 volume_set_success = "The volume has been set to {volume_level}%"
 
-song_remove_invalid_value = """The song number must be a value in the current queue.
-                               Valid options are from {start_index} to {end_index}"""
+song_remove_invalid_value = "The song number must be a value in the current queue."
+song_remove_valid_options = "Valid options are from {start_index} to {end_index}"
 song_remove_success = "The song **{song_title}** has been removed from position **{song_position}** in the queue"
 
 song_pause_success = "Song Paused!"
 
 song_resume_success = "Song Resumed!"
 
-song_resume_success = "Song Skipped!"
+song_skipped_success = "Song Skipped!"
 
 kick_bot_success = "I have left the Voice Channel and emptied the queue"
 
