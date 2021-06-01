@@ -23,3 +23,20 @@ default_role_get = "Default role is set to {role_id}"
 
 default_role_removed = "Default role has been removed"
 default_role_removed_log = "{author_mention} has removed the default role"
+
+[music]
+music_channel_set = "The Music channel has been bound to {music_channel}"
+music_channel_set_log = "{author} has bound the Music channel to {music_channel}"
+music_channel_set_missing_channel = "You need to either use a # to mention the channel or paste the ID of the channel"
+music_channel_set_invalid_channel = "The channel given was not valid, check the ID pasted or try using a # to mention
+                                     the channel"
+music_channel_set_not_text_channel = "You must provide a text channel to bind as the Music channel"
+
+music_channel_get = "The Music channel is currently set to {music_channel}"
+music_channel_missing = "The Music channel has not been bound"
+
+music_channel_reset = "The Music channel ({music_channel}) has been reset"
+
+music_channel_removed = "The Music channel has been unbound from {music_channel}"
+music_channel_removed_log = "{author} has unbound the Music channel from {music_channel}"
+
