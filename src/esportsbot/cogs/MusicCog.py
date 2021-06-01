@@ -66,6 +66,7 @@ BOT_INACTIVE_MINUTES = 2
 
 # TODO: Change usage of db to use of bot dict of Music Channels
 # TODO: Update preview message to include volume and reaction controls
+# TODO: Add move song command to move a song from one position in the queue to another
 
 
 class MusicCog(commands.Cog):
@@ -82,7 +83,7 @@ class MusicCog(commands.Cog):
 
         self.__db_accessor = db_gateway()
 
-        self.user_strings = bot.STRINGS["music"]
+        self.user_strings: dict = bot.STRINGS["music"]
 
     @commands.command()
     @commands.has_permissions(administrator=True)
