@@ -1,13 +1,10 @@
 # UoY Esport Bot Rewrite
 
-<a href="https://travis-ci.com/FragSoc/esports-bot"><img src="https://img.shields.io/travis/com/fragsoc/esports-bot?style=flat-square" /></a>
-<a href="https://hub.docker.com/r/fragsoc/esports-bot"><img src="https://img.shields.io/docker/pulls/fragsoc/esports-bot?style=flat-square" /></a>
-<a href="https://github.com/FragSoc/esports-bot"><img src="https://img.shields.io/github/license/fragsoc/esports-bot?style=flat-square" /></a>
-
-<img src="https://img.shields.io/badge/min%20python%20version-3.8.0-green?style=flat-square" />
-<img src="https://img.shields.io/badge/min%20postgres%20version-11-lightgrey?style=flat-square" />
-<img src="https://img.shields.io/badge/min%20docker%20version-20.0.0-blue?style=flat-square" />
-<img src="https://img.shields.io/badge/min%20docker--compose%20version-1.25.0-blue?style=flat-square" />
+<div align=left>
+    <a href="https://travis-ci.com/FragSoc/esports-bot"><img src="https://img.shields.io/travis/com/fragsoc/esports-bot?style=flat-square" /></a>
+    <a href="https://hub.docker.com/r/fragsoc/esports-bot"><img src="https://img.shields.io/docker/pulls/fragsoc/esports-bot?style=flat-square" /></a>
+    <a href="https://github.com/FragSoc/esports-bot"><img src="https://img.shields.io/github/license/fragsoc/esports-bot?style=flat-square" /></a>
+</div>
 
 ## How to set up an instance of this bot
 
@@ -373,3 +370,13 @@ User command adding or removing the `!pingme` role with the given name to/from t
 User command removing all `!pingme` roles from the user.
 
 </details>
+
+<div align=left>
+    <img src="https://img.shields.io/badge/min%20python%20version-3.8.0-green?style=flat-square" />
+    <br/>
+    <img src="https://img.shields.io/badge/min%20postgres%20version-11-lightgrey?style=flat-square" />
+    <br/>
+    <img src="https://img.shields.io/badge/min%20docker%20version-20.0.0-blue?style=flat-square" />
+    <br/>
+    <img src="https://img.shields.io/badge/min%20docker--compose%20version-1.25.0-blue?style=flat-square" />
+</div>
