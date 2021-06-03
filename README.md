@@ -4,6 +4,11 @@
 <a href="https://hub.docker.com/r/fragsoc/esports-bot"><img src="https://img.shields.io/docker/pulls/fragsoc/esports-bot?style=flat-square" /></a>
 <a href="https://github.com/FragSoc/esports-bot"><img src="https://img.shields.io/github/license/fragsoc/esports-bot?style=flat-square" /></a>
 
+<img src="https://img.shields.io/badge/min%20python%20version-3.8.0-green?style=flat-square" />
+<img src="https://img.shields.io/badge/min%20postgres%20version-11-lightgrey?style=flat-square" />
+<img src="https://img.shields.io/badge/min%20docker%20version-20.0.0-blue?style=flat-square" />
+<img src="https://img.shields.io/badge/min%20docker--compose%20version-1.25.0-blue?style=flat-square" />
+
 ## How to set up an instance of this bot
 
 1. Clone this repository:
