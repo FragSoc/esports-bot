@@ -226,16 +226,32 @@ async def on_command_error(ctx: Context, exception: Exception):
 @client.event
 async def on_message(message):
     if not message.author.bot:
-        # Ignore self messages
-        guild_id = message.guild.id
-        music_channel_in_db = db_gateway().get('music_channels', params={'guild_id': guild_id})
-        if len(music_channel_in_db) > 0 and message.channel.id == music_channel_in_db[0].get('channel_id'):
-            # The message was in a music channel and a song should be found
-            music_cog_instance = client.cogs.get('MusicCog')
-            await music_cog_instance.on_message_handle(message)
+        # Process non-dm messages
+        if message.guild is not None:
+            # Start pingable role cooldowns
+            if message.role_mentions:
+                roleUpdateTasks = client.handleRoleMentions(message)
 
-    # If message was command, perform the command
-    await client.process_commands(message)
+            # Handle music channel messages
+            guild_id = message.guild.id
+            music_channel_in_db = client.MUSIC_CHANNELS.get(guild_id)
+            if music_channel_in_db:
+                # The message was in a music channel and a song should be found
+                music_cog_instance = client.cogs.get('MusicCog')
+                await music_cog_instance.on_message_handle(message)
+                await client.process_commands(message)
+                await message.delete()
+            else:
+                await client.process_commands(message)
+
+            if message.role_mentions and roleUpdateTasks:
+                await asyncio.wait(roleUpdateTasks)
+                for task in roleUpdateTasks:
+                    if e := task.exception():
+                        lib.exceptions.print_exception_trace(e)
+        # Process DM messages
+        else:
+            await client.process_commands(message)
 
 
 @client.command()
@@ -248,20 +264,6 @@ async def initialsetup(ctx):
     else:
         db_gateway().insert('guild_info', make_guild_init_data(ctx.guild))
         await ctx.channel.send("This server has now been initialised")
-
-
-@client.event
-async def on_message(message: discord.Message):
-    if message.guild is not None and message.role_mentions:
-        roleUpdateTasks = client.handleRoleMentions(message)
-        await client.process_commands(message)
-        if roleUpdateTasks:
-            await asyncio.wait(roleUpdateTasks)
-            for task in roleUpdateTasks:
-                if e := task.exception():
-                    lib.exceptions.print_exception_trace(e)
-    else:
-        await client.process_commands(message)
 
 
 @client.event
@@ -288,6 +290,7 @@ def launch():
 
     # Generate Database Schema
     generate_schema()
+    client.update_music_channels()
 
     client.load_extension('esportsbot.cogs.VoicemasterCog')
     client.load_extension('esportsbot.cogs.DefaultRoleCog')
