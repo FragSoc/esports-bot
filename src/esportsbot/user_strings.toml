@@ -139,3 +139,12 @@ admin_role_menu_reset = ["Role menu reset", "id: {menu_id}\ntype: {menu_type}\n[
 admin_role_removed = ["Event Role removed", "Users: {users!s}\n<@&{event_role_id!s}>"]
 admin_shared_role_set = ["Shared role set", "<@&{role_id!s}>"]
 admin_signin_visible = ["Event signin channel made visible", "<#{channel_id}>"]
+
+[twitter]
+webhook_created = "Created a Webhook -> Name: {name} , ID: {hook_id}"
+webhook_deleted = "Deleted a Webhook with Name: {name} and ID: {hook_id}"
+webhook_error = "Unable to {operation} Webhook because {reason}"
+account_added = "Successfully added {account} to tracked accounts"
+account_removed = "Successfully removed {account} from tracked accounts"
+account_missing_error = "Unable to {operation} {account} because there is no account with that name"
+account_exists_error = "Unable to add {account} to tracked accounts because it is already tracked"

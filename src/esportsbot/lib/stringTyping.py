@@ -32,6 +32,14 @@ def strIsRoleMention(mention: str) -> bool:
     return mention.endswith(">") and mention.startswith("<@&") and strIsInt(mention[3:-1])
 
 
+def strIsChannelMention(mention: str) -> bool:
+    """Decide whether the given string is a discord channel mention, being <@CHANNELID> where CHANNELID is an integer discord channel id.
+    :param str mention: The string to check
+    :return: True if mention matches the formatting of a discord channel mention, False otherwise
+    :rtype: bool
+    """
+    return mention[:2] == "<#" and mention[-1:] == ">" and strIsInt(mention[2:-1])
+
 # string extensions for numbers, e.g 11th, 1st, 23rd...
 NUM_EXTS = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"]
 

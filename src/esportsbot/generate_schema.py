@@ -175,9 +175,8 @@ def generate_schema():
         CREATE TABLE public.twitter_info(
             id bigint NOT NULL,
             guild_id bigint NOT NULL,
-            channel_id bigint NOT NULL,
-            twitter_handle character varying NOT NULL,
-            previous_tweet_id bigint NOT NULL
+            twitter_user_id text NOT NULL,
+            twitter_handle character varying NOT NULL
         );
         ALTER TABLE public.twitter_info ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY(
             SEQUENCE NAME public.twitter_info_id_seq
