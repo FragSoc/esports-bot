@@ -307,8 +307,8 @@ class TwitterCog(commands.Cog):
             guild_info[str(item.get("twitter_user_id"))].add(item.get("guild_id"))
         return guild_info
 
-    @commands.command()
-    async def createhook(self, ctx: commands.Context, channel=None, hook_name=None) -> bool:
+    @commands.command(alias=["addtwitterhook"])
+    async def twitterhook(self, ctx: commands.Context, channel=None, hook_name=None) -> bool:
         """
         Creates a Webhook in a guild. If the channel is specified the Webhook will be bound to that channel
         (can be changed in the Integrations panel for a guild's settings), otherwise will be bound to the channel where
@@ -415,8 +415,8 @@ class TwitterCog(commands.Cog):
 
         return None, None
 
-    @commands.command()
-    async def removehook(self, ctx: discord.ext.commands.Context, name: str) -> bool:
+    @commands.command(alias=["deltwitterhook"])
+    async def removetwitterhook(self, ctx: discord.ext.commands.Context, name: str) -> bool:
         """
         Deletes a discord Webhook from the calling guild using the name of the Webhook.
         :param ctx: The context of the command being called.
@@ -446,7 +446,7 @@ class TwitterCog(commands.Cog):
         return True
 
     @commands.command()
-    async def addaccount(self, ctx: discord.ext.commands.Context, account: str) -> bool:
+    async def addtwitter(self, ctx: discord.ext.commands.Context, account: str) -> bool:
         """
         Adds a new account to be tracked in the guild from which the command was called.
         :param ctx: The context of the command being called.
@@ -496,7 +496,7 @@ class TwitterCog(commands.Cog):
             return False
 
     @commands.command()
-    async def removeaccount(self, ctx: discord.ext.commands.Context, account: str) -> bool:
+    async def removetwitter(self, ctx: discord.ext.commands.Context, account: str) -> bool:
         """
         Removes an account from the guild from which the command was called.
         :param ctx: The context of the command being called.
