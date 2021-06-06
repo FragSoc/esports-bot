@@ -135,17 +135,23 @@ List the current number of members in the server
 
 ### Twitter Integration
 
-##### !addtwitter {twitter_handle} {#channel or channel_id}
-Add a Twitter handle to notify in the specified channel when they tweet or quote retweet
+##### !addtwitter {twitter_handle}
+* Add a Twitter handle to notify when they tweet or quote retweet.
 
 ##### !removetwitter {twitter_handle}
-Remove the given Twitter handle from notifications
+* Remove the given Twitter handle from notifications.
 
-##### !changetwitterchannel {twitter_handle} {#channel or channel_id}
-Change the notify channel for the given Twitter handle
+##### !twitterhook {channel_mention} <optional: hook_name>
+* Can be executed with `addtwitterhook`.
+* Creates a Discord Webhook where updates for tracked Twitter accounts will get posted.
 
-##### !getalltwitters
-List all the current Twitter handles configured in the server
+##### !removetwitterhook {hook_name}
+* Can be executed with `deltwitterhook`.
+* Deletes the Discord Webhook so that updates are no longer sent to that channel.
+
+##### !gettwitters
+* Can be executed with one of: `getalltwitter` or `gettwitterhandles`.
+* Returns a list of the currently tracked Twitter accounts for the server.
 </details>
 
 <details>
