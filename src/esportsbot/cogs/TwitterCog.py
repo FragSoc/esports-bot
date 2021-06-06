@@ -62,10 +62,6 @@ class TwitterWebhook(tweepy.StreamListener):
             self.logger.info("Skipping tweet, it is a retweet")
             return
 
-        if status.get("is_quote_status"):
-            self.logger.info("Skipping tweet, it is a retweet")
-            return
-
         if status.get("in_reply_to_status_id") is not None:
             self.logger.info("Skipping tweet, it is a reply")
             return
