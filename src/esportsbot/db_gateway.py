@@ -6,11 +6,12 @@ from .lib.exceptions import print_exception_trace
 
 class db_connection():
     def __init__(self, database=None):
-        self.conn = psycopg2.connect(host=os.getenv('PG_HOST'),
-                                     database=os.getenv(
-                                         'PG_DATABASE') if database is None else database,
-                                     user=os.getenv('PG_USER'),
-                                     password=os.getenv('PG_PWD'))
+        self.conn = psycopg2.connect(
+            host=os.getenv('PG_HOST'),
+            database=os.getenv('PG_DATABASE') if database is None else database,
+            user=os.getenv('PG_USER'),
+            password=os.getenv('PG_PWD')
+        )
         self.conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         self.cur = self.conn.cursor()
 

@@ -28,7 +28,6 @@ async def deleteReactionMenu(menu: "ReactionMenu"):
         menu.client.reactionMenus.remove(menu)
 
 
-
 class ReactionMenuOption:
     """An abstract class representing an option in a reaction menu.
     Reaction menu options must have a name and emoji. They may optionally have a function to call when added,
@@ -60,9 +59,15 @@ class ReactionMenuOption:
     :var removeHasArgs: Whether removeFunc takes arguments, and removeArgs should be attempt to be passed
     :vartype removeHasArgs: bool
     """
-
-    def __init__(self, name: str, emoji: "lib.emotes.Emote", addFunc: FunctionType = None, addArgs: Any = None,
-                    removeFunc: FunctionType = None, removeArgs: Any = None):
+    def __init__(
+        self,
+        name: str,
+        emoji: "lib.emotes.Emote",
+        addFunc: FunctionType = None,
+        addArgs: Any = None,
+        removeFunc: FunctionType = None,
+        removeArgs: Any = None
+    ):
         """
         :param str name: The name of this option, as displayed in the menu embed.
         :param lib.emotes.Emote emoji: The emoji that a user must react with to trigger this option
@@ -80,16 +85,15 @@ class ReactionMenuOption:
         self.addArgs = addArgs
         self.addIsCoroutine = addFunc is not None and inspect.iscoroutinefunction(addFunc)
         self.addIncludeUser = addFunc is not None and 'reactingUser' in inspect.signature(addFunc).parameters
-        self.addHasArgs = addFunc is not None and len(inspect.signature(
-            addFunc).parameters) != (1 if self.addIncludeUser else 0)
+        self.addHasArgs = addFunc is not None and len(inspect.signature(addFunc).parameters
+                                                      ) != (1 if self.addIncludeUser else 0)
 
         self.removeFunc = removeFunc
         self.removeArgs = removeArgs
         self.removeIsCoroutine = removeFunc is not None and inspect.iscoroutinefunction(removeFunc)
         self.removeIncludeUser = removeFunc is not None and 'reactingUser' in inspect.signature(addFunc).parameters
-        self.removeHasArgs = removeFunc is not None and len(inspect.signature(
-            removeFunc).parameters) != (1 if self.removeIncludeUser else 0)
-
+        self.removeHasArgs = removeFunc is not None and len(inspect.signature(removeFunc).parameters
+                                                            ) != (1 if self.removeIncludeUser else 0)
 
     async def add(self, member: Union[Member, User]) -> Any:
         """Invoke this option's 'reaction added' functionality.
@@ -110,7 +114,6 @@ class ReactionMenuOption:
                 return await self.addFunc(self.addArgs) if self.addIsCoroutine else self.addFunc(self.addArgs)
             return await self.addFunc() if self.addIsCoroutine else self.addFunc()
 
-
     async def remove(self, member: Union[Member, User]) -> Any:
         """Invoke this option's 'reaction removed' functionality.
         This method is called by the owning reaction menu whenever this option is removed by any user
@@ -130,7 +133,6 @@ class ReactionMenuOption:
                 return await self.removeFunc(self.removeArgs) if self.removeIsCoroutine else self.removeFunc(self.removeArgs)
             return await self.removeFunc() if self.removeIsCoroutine else self.removeFunc()
 
-
     def __hash__(self) -> int:
         """Calculate a hash of this menu option from its repr string.
         As of writing, this is based on the object's memory location.
@@ -139,7 +141,6 @@ class ReactionMenuOption:
         :rtype: int
         """
         return hash(repr(self))
-
 
     @abstractmethod
     def toDict(self, **kwargs) -> dict:
@@ -166,7 +167,6 @@ class ReactionMenuOption:
         """
         return {"name": self.name, "emoji": self.emoji.toDict(**kwargs)}
 
-
     @classmethod
     @abstractmethod
     def fromDict(cls, data: dict, **kwargs) -> "ReactionMenuOption":
@@ -186,9 +186,15 @@ class NonSaveableReactionMenuOption(ReactionMenuOption):
     When creating a ReactionMenuOption subclass that can be saved to file, do not inherit from this class.
     Instead, inherit directly from ReactionMenuOption or another suitable subclass that is not marked as unsaveable.
     """
-
-    def __init__(self, name: str, emoji: "lib.emotes.Emote", addFunc: FunctionType = None, addArgs: Any = None,
-                        removeFunc: FunctionType = None, removeArgs: Any = None):
+    def __init__(
+        self,
+        name: str,
+        emoji: "lib.emotes.Emote",
+        addFunc: FunctionType = None,
+        addArgs: Any = None,
+        removeFunc: FunctionType = None,
+        removeArgs: Any = None
+    ):
         """
         :param str name: The name of this option, as displayed in the menu embed.
         :param lib.emotes.Emote emoji: The emoji that a user must react with to trigger this option
@@ -198,9 +204,13 @@ class NonSaveableReactionMenuOption(ReactionMenuOption):
                         but a dict is recommended as a close replacement for keyword args.
         :param removeArgs: The arguments to pass to removeFunc.
         """
-        super(NonSaveableReactionMenuOption, self).__init__(name, emoji, addFunc=addFunc, addArgs=addArgs,
-                                                            removeFunc=removeFunc, removeArgs=removeArgs)
-
+        super(NonSaveableReactionMenuOption,
+              self).__init__(name,
+                             emoji,
+                             addFunc=addFunc,
+                             addArgs=addArgs,
+                             removeFunc=removeFunc,
+                             removeArgs=removeArgs)
 
     def toDict(self, **kwargs) -> dict:
         """Unimplemented.
@@ -209,7 +219,6 @@ class NonSaveableReactionMenuOption(ReactionMenuOption):
         :raise NotImplementedError: Always.
         """
         raise NotImplementedError("Attempted to call toDict on a non-saveable reaction menu option")
-
 
     @classmethod
     def fromDict(cls, data: dict, **kwargs):
@@ -225,14 +234,12 @@ class DummyReactionMenuOption(ReactionMenuOption):
     """A reaction menu option with no function calls.
     A prime example is ReactionPollMenu, where adding and removing options need not have any functionality.
     """
-
     def __init__(self, name: str, emoji: "lib.emotes.Emote"):
         """
         :param str name: The name of this option, as displayed in the menu embed.
         :param lib.emotes.Emote emoji: The emoji that a user must react with to trigger this option
         """
         super(DummyReactionMenuOption, self).__init__(name, emoji)
-
 
     def toDict(self, **kwargs) -> dict:
         """Serialize this menu option into dictionary format for saving to file.
@@ -243,7 +250,6 @@ class DummyReactionMenuOption(ReactionMenuOption):
         :rtype: dict
         """
         return super(DummyReactionMenuOption, self).toDict(**kwargs)
-
 
     def fromDict(cls, data: dict, **kwargs) -> "DummyReactionMenuOption":
         """Deserialize a dictionary representing a DummyReactionMenuOption into a functioning object.
@@ -314,11 +320,23 @@ class ReactionMenu:
     :var targetRole: In order to interact with this menu, users must possess this role. All other reactions are ignored
     :vartype targetRole: discord.Role
     """
-
-    def __init__(self, msg: Message, client: Client, options: Dict["lib.emotes.Emote", ReactionMenuOption] = None,
-                 titleTxt: str = "", desc: str = "", col: Colour = Colour.blue(),
-                 footerTxt: str = "", img: str = "", thumb: str = "", icon: str = None,
-                 authorName: str = "", targetMember: Member = None, targetRole: Role = None):
+    def __init__(
+        self,
+        msg: Message,
+        client: Client,
+        options: Dict["lib.emotes.Emote",
+                      ReactionMenuOption] = None,
+        titleTxt: str = "",
+        desc: str = "",
+        col: Colour = Colour.blue(),
+        footerTxt: str = "",
+        img: str = "",
+        thumb: str = "",
+        icon: str = None,
+        authorName: str = "",
+        targetMember: Member = None,
+        targetRole: Role = None
+    ):
         """
         :param discord.Message msg: the message where this menu is embedded
         :param discord.Client client: The client that instanced this menu
@@ -355,7 +373,6 @@ class ReactionMenu:
         self.targetMember = targetMember
         self.targetRole = targetRole
 
-
     def hasEmojiRegistered(self, emoji: "lib.emotes.Emote") -> bool:
         """Decide whether or not the given emoji is an option in this menu
 
@@ -364,7 +381,6 @@ class ReactionMenu:
         :rtype: bool
         """
         return emoji in self.options
-
 
     async def reactionAdded(self, emoji: "lib.emotes.Emote", member: Union[Member, User]):
         """Invoke an option's behaviour when it is selected by a user.
@@ -390,7 +406,6 @@ class ReactionMenu:
 
         return await self.options[emoji].add(member)
 
-
     async def reactionRemoved(self, emoji: "lib.emotes.Emote", member: Union[Member, User]):
         """Invoke an option's behaviour when it is deselected by a user.
         This method should be called during your discord client's on_reaction_remove or on_raw_reaction_remove event.
@@ -415,7 +430,6 @@ class ReactionMenu:
 
         return await self.options[emoji].remove(member)
 
-
     def getMenuEmbed(self) -> Embed:
         """Generate the discord.Embed representing the reaction menu, and that
         should be embedded into the menu's message.
@@ -437,7 +451,6 @@ class ReactionMenu:
             menuEmbed.add_field(name=option.sendable + " : " + self.options[option].name, value="‎", inline=False)
 
         return menuEmbed
-
 
     async def updateMessage(self, noRefreshOptions: bool = False):
         """Update the menu message by removing all reactions, replacing any existing embed with
@@ -462,12 +475,10 @@ class ReactionMenu:
             for option in self.options:
                 await self.msg.add_reaction(option.sendable)
 
-
     async def delete(self):
         """Forcibly delete the menu and its message.
         """
         await deleteReactionMenu(self)
-
 
     def toDict(self, **kwargs) -> dict:
         """Serialize this ReactionMenu into dictionary format for saving to file.
@@ -482,8 +493,13 @@ class ReactionMenu:
         for reaction in self.options:
             optionsDict[reaction.sendable] = self.options[reaction].toDict(**kwargs)
 
-        data = {"channel": self.msg.channel.id, "msg": self.msg.id, "options": optionsDict,
-                "type": self.__class__.__name__, "guild": self.msg.channel.guild.id}
+        data = {
+            "channel": self.msg.channel.id,
+            "msg": self.msg.id,
+            "options": optionsDict,
+            "type": self.__class__.__name__,
+            "guild": self.msg.channel.guild.id
+        }
 
         if self.titleTxt != "":
             data["titleTxt"] = self.titleTxt
@@ -517,7 +533,6 @@ class ReactionMenu:
 
         return data
 
-
     @classmethod
     @abstractmethod
     def fromDict(cls, data: dict, **kwargs) -> "ReactionMenu":
@@ -547,12 +562,25 @@ class InlineReactionMenu(ReactionMenu):
     :var timeoutSeconds: The number of seconds that this menu should last before timing out
     :vartype timeoutSeconds: int
     """
-
-    def __init__(self, client: Client, msg: Message, targetMember: Union[Member, User], timeoutSeconds: int,
-                 options: Dict["lib.emotes.Emote", ReactionMenuOption] = None,
-                 returnTriggers: List[ReactionMenuOption] = [], titleTxt: str = "", desc: str = "",
-                 col: Colour = Colour.blue(), footerTxt: str = "", img: str = "", thumb: str = "",
-                 icon: str = None, authorName: str = ""):
+    def __init__(
+        self,
+        client: Client,
+        msg: Message,
+        targetMember: Union[Member,
+                            User],
+        timeoutSeconds: int,
+        options: Dict["lib.emotes.Emote",
+                      ReactionMenuOption] = None,
+        returnTriggers: List[ReactionMenuOption] = [],
+        titleTxt: str = "",
+        desc: str = "",
+        col: Colour = Colour.blue(),
+        footerTxt: str = "",
+        img: str = "",
+        thumb: str = "",
+        icon: str = None,
+        authorName: str = ""
+    ):
         """
         :param returnTriggers: A list of options which, when selected, trigger the expiry of the menu.
         :type returnTriggers: List[ReactionMenuOption]
@@ -560,11 +588,22 @@ class InlineReactionMenu(ReactionMenu):
         """
         if footerTxt == "":
             footerTxt = "This menu will expire in " + str(timeoutSeconds) + " seconds."
-        super().__init__(msg, client, targetMember=targetMember, options=options, titleTxt=titleTxt, desc=desc, col=col,
-                            footerTxt=footerTxt, img=img, thumb=thumb, icon=icon, authorName=authorName)
+        super().__init__(
+            msg,
+            client,
+            targetMember=targetMember,
+            options=options,
+            titleTxt=titleTxt,
+            desc=desc,
+            col=col,
+            footerTxt=footerTxt,
+            img=img,
+            thumb=thumb,
+            icon=icon,
+            authorName=authorName
+        )
         self.returnTriggers = returnTriggers
         self.timeoutSeconds = timeoutSeconds
-
 
     def reactionClosesMenu(self, reactPL: RawReactionActionEvent) -> bool:
         """Decide whether a reaction should trigger the expiry of the menu.
@@ -580,7 +619,6 @@ class InlineReactionMenu(ReactionMenu):
         except lib.exceptions.UnrecognisedCustomEmoji:
             return False
 
-
     async def doMenu(self) -> List["lib.emotes.Emote"]:
         """Coroutine that executes the menu.
 
@@ -593,8 +631,11 @@ class InlineReactionMenu(ReactionMenu):
         """
         await self.updateMessage()
         try:
-            await lib.client.instance().wait_for("raw_reaction_add",
-                                                    check=self.reactionClosesMenu, timeout=self.timeoutSeconds)
+            await lib.client.instance().wait_for(
+                "raw_reaction_add",
+                check=self.reactionClosesMenu,
+                timeout=self.timeoutSeconds
+            )
             self.msg.embeds[0].set_footer(text="This menu has now expired.")
             await self.msg.edit(embed=self.msg.embeds[0])
         except asyncio.TimeoutError:
@@ -646,6 +687,7 @@ def isSaveableMenuClass(cls: type) -> bool:
     """
     return issubclass(cls, ReactionMenu) and cls in _saveableNameMenuTypes
 
+
 def isSaveableMenuInstance(o: ReactionMenu) -> bool:
     """Decide if o is an instance of a saveable reaction menu class.
 
@@ -655,6 +697,7 @@ def isSaveableMenuInstance(o: ReactionMenu) -> bool:
     """
     return isinstance(o, ReactionMenu) and type(o) in _saveableMenuTypeNames
 
+
 def isSaveableMenuTypeName(clsName: str) -> bool:
     """Decide if clsName is the name of a saveable reaction menu class.
 
@@ -663,6 +706,7 @@ def isSaveableMenuTypeName(clsName: str) -> bool:
     :rtype: bool
     """
     return clsName in _saveableNameMenuTypes
+
 
 def saveableMenuClassFromName(clsName: str) -> type:
     """Retreive the saveable ReactionMenu subclass that as the given class name.

@@ -4,14 +4,16 @@ from .db_gateway import db_gateway
 def generate_schema():
     # Does the esportsbot DB exist?
     esportsbot_exists = db_gateway().pure_return(
-        "SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('esportsbot')", "postgres")
+        "SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('esportsbot')",
+        "postgres"
+    )
     if not esportsbot_exists:
         # Esportsbot DB doesn't exist
         db_gateway().pure_query("CREATE DATABASE esportsbot", "postgres")
 
     # Does the guild_id table exist?
-    guild_id_exists = db_gateway().pure_return(
-        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'guild_info'")
+    guild_id_exists = db_gateway(
+    ).pure_return("SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'guild_info'")
     if not guild_id_exists:
         # Does not exist
         query_string = """
@@ -33,7 +35,8 @@ def generate_schema():
 
     # Does the pingable_roles table exist?
     pingable_roles_exists = db_gateway().pure_return(
-        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'pingable_roles'")
+        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'pingable_roles'"
+    )
     if not pingable_roles_exists:
         # Does not exist
         query_string = """
@@ -57,7 +60,8 @@ def generate_schema():
 
     # Does the event_categories exist?
     event_categories_exists = db_gateway().pure_return(
-        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'event_categories'")
+        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'event_categories'"
+    )
     if not event_categories_exists:
         # Does not exist
         query_string = """
@@ -76,7 +80,8 @@ def generate_schema():
 
     # Does the reaction_menus table exist?
     reaction_menus_exists = db_gateway().pure_return(
-        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'reaction_menus'")
+        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'reaction_menus'"
+    )
     if not reaction_menus_exists:
         # Does not exist
         query_string = """
@@ -91,7 +96,8 @@ def generate_schema():
 
     # Does the voicemaster_master table exist?
     voicemaster_master_exists = db_gateway().pure_return(
-        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'voicemaster_master'")
+        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'voicemaster_master'"
+    )
     if not voicemaster_master_exists:
         # Does not exist
         query_string = """
@@ -115,7 +121,8 @@ def generate_schema():
 
     # Does the voicemaster_slave table exist?
     voicemaster_slave_exists = db_gateway().pure_return(
-        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'voicemaster_slave'")
+        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'voicemaster_slave'"
+    )
     if not voicemaster_slave_exists:
         # Does not exist
         query_string = """
@@ -140,8 +147,8 @@ def generate_schema():
         db_gateway().pure_query(query_string)
 
     # Does the twitch_info table exist?
-    twitch_info_exists = db_gateway().pure_return(
-        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'twitch_info'")
+    twitch_info_exists = db_gateway(
+    ).pure_return("SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'twitch_info'")
     if not twitch_info_exists:
         # Does not exist
         query_string = """
@@ -167,8 +174,8 @@ def generate_schema():
         db_gateway().pure_query(query_string)
 
     # Does the twitter_info table exist?
-    twitter_info_exists = db_gateway().pure_return(
-        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'twitter_info'")
+    twitter_info_exists = db_gateway(
+    ).pure_return("SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'twitter_info'")
     if not twitter_info_exists:
         # Does not exist
         query_string = """
@@ -194,7 +201,8 @@ def generate_schema():
 
     # Does the music_channels_info table exist?
     music_channels_info_exists = db_gateway().pure_return(
-        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'music_channels'")
+        "SELECT true::BOOLEAN FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename = 'music_channels'"
+    )
     if not music_channels_info_exists:
         query_string = """
         CREATE TABLE public.music_channels(

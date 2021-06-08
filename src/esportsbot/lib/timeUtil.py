@@ -20,12 +20,7 @@ def td_format_noYM(td_object: timedelta) -> str:
     :rtype: str
     """
     seconds = int(td_object.total_seconds())
-    periods = [
-        ('day', 60 * 60 * 24),
-        ('hour', 60 * 60),
-        ('minute', 60),
-        ('second', 1)
-    ]
+    periods = [('day', 60 * 60 * 24), ('hour', 60 * 60), ('minute', 60), ('second', 1)]
 
     strings = []
     for period_name, period_seconds in periods:
@@ -46,10 +41,12 @@ def timeDeltaFromDict(timeDict: Dict[str, int]) -> timedelta:
     :return: a timedelta with all of the attributes requested in the dictionary.
     :rtype: datetime.timedelta
     """
-    return timedelta(weeks=timeDict["weeks"] if "weeks" in timeDict else 0,
-                     days=timeDict["days"] if "days" in timeDict else 0,
-                     hours=timeDict["hours"] if "hours" in timeDict else 0,
-                     minutes=timeDict["minutes"] if "minutes" in timeDict else 0,
-                     seconds=timeDict["seconds"] if "seconds" in timeDict else 0,
-                     microseconds=timeDict["microseconds"] if "microseconds" in timeDict else 0,
-                     milliseconds=timeDict["milliseconds"] if "milliseconds" in timeDict else 0)
+    return timedelta(
+        weeks=timeDict["weeks"] if "weeks" in timeDict else 0,
+        days=timeDict["days"] if "days" in timeDict else 0,
+        hours=timeDict["hours"] if "hours" in timeDict else 0,
+        minutes=timeDict["minutes"] if "minutes" in timeDict else 0,
+        seconds=timeDict["seconds"] if "seconds" in timeDict else 0,
+        microseconds=timeDict["microseconds"] if "microseconds" in timeDict else 0,
+        milliseconds=timeDict["milliseconds"] if "milliseconds" in timeDict else 0
+    )
