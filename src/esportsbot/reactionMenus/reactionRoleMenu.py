@@ -1,10 +1,16 @@
+"""
+The reactionMenus package was partially copied over from the BASED template project: https://github.com/Trimatix/BASED
+It is modified and not actively synced with BASED, so will very likely be out of date.
+
+.. codeauthor:: Trimatix
+"""
 from . import reactionMenu
 from .. import lib
 from discord import Colour, Guild, Role, Message, User, Client, Member, PartialMessage
 from typing import List, Union, Dict
 
 
-async def giveRole(args : List[Union[Guild, Role, int]], reactingUser : Union[User, Member] = None) -> bool:
+async def giveRole(args: List[Union[Guild, Role, int]], reactingUser: Union[User, Member] = None) -> bool:
     """Grant the given user the role described in args.
     if reactingUser already has the requested role, do nothing.
 
@@ -23,7 +29,7 @@ async def giveRole(args : List[Union[Guild, Role, int]], reactingUser : Union[Us
     return True
 
 
-async def removeRole(args : List[Union[Guild, Role, int]], reactingUser : Union[User, Member] = None) -> bool:
+async def removeRole(args: List[Union[Guild, Role, int]], reactingUser: Union[User, Member] = None) -> bool:
     """remove the role described in args from the given user.
     if reactingUser already lacks the requested role, do nothing.
 
@@ -43,13 +49,19 @@ async def removeRole(args : List[Union[Guild, Role, int]], reactingUser : Union[
 
 
 class ReactionRoleMenuOption(reactionMenu.ReactionMenuOption):
-    """A reaction menu option that stores a role, granting the reacting user the role when added, and removing the role when the reaction is removed.
+    """A saveable reaction menu option that stores a role, granting the reacting user the role when added,
+    and removing the role when the reaction is removed.
+    Constraining eligible users can be done through the ReactionMenu kwargs targetMember and targetRole.
 
     :var role: The role to toggle on reactions
     :vartype role: discord.Role 
     """
 
-    def __init__(self, emoji : lib.emotes.Emote, role : Role, menu : reactionMenu.ReactionMenu):
+    def __init__(self, emoji: lib.emotes.Emote, role: Role, menu: reactionMenu.ReactionMenu):
+        """
+        :param lib.emotes.Emote emoji: The emoji to react to the menu with to trigger role updates
+        :param Role role: The role to (un)assign reacting users
+        """
         self.role = role
         super(ReactionRoleMenuOption, self).__init__(self.role.name, emoji, addFunc=giveRole, addArgs=(menu.msg.guild, self.role, menu.msg.id), removeFunc=removeRole, removeArgs=(menu.msg.guild, self.role, menu.msg.id))
 
@@ -86,13 +98,13 @@ class ReactionRoleMenuOption(reactionMenu.ReactionMenuOption):
 
 @reactionMenu.saveableMenu
 class ReactionRoleMenu(reactionMenu.ReactionMenu):
-    """A reaction menu that grants and removes roles when interacted with.
+    """A saveable reaction menu that grants and removes roles when interacted with.
     """
 
-    def __init__(self, msg : Message, client: Client, reactionRoles : Dict[lib.emotes.Emote, Role],
-            titleTxt : str = "", desc : str = "", col : Colour = None,
-            footerTxt : str = "", img : str = "", thumb : str = "", icon : str = "", authorName : str = "",
-            targetMember : Member = None, targetRole : Role = None):
+    def __init__(self, msg: Message, client: Client, reactionRoles: Dict[lib.emotes.Emote, Role],
+            titleTxt: str = "", desc: str = "", col: Colour = None,
+            footerTxt: str = "", img: str = "", thumb: str = "", icon: str = "", authorName: str = "",
+            targetMember: Member = None, targetRole: Role = None):
         """
         :param discord.Message msg: the message where this menu is embedded
         :param discord.Client client: The client that instanced this menu
@@ -135,7 +147,7 @@ class ReactionRoleMenu(reactionMenu.ReactionMenu):
 
 
     @classmethod
-    def fromDict(csl, client: Client, rmDict : dict) -> "ReactionRoleMenu":
+    def fromDict(csl, client: Client, rmDict: dict) -> "ReactionRoleMenu":
         """Reconstruct a ReactionRolePicker from its dictionary-serialized representation.
 
         :param dict rmDict: A dictionary containing all information needed to construct the desired ReactionRolePicker

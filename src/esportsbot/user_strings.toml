@@ -64,6 +64,7 @@ invalid_role = ":x: Invalid role! Please give your role as either a mention or a
 unrecognised_event = ":x: Unrecognised event. The following events exist in this server: {events}"
 unrecognised_menu_id = ":x: Unrecognised menu ID: {menu_id}"
 unrecognised_role = ":x: Unrecognised role!"
+invalid_signin_menu = ":x: The event signin menu must be a role menu granting the {role_name} role!"
 
 channel_already_open = ":x: The {event_name} signin channel is already open! <#{channel_id!s}>"
 event_exists = ":x: An event category with the name '{event_name}' already exists!"

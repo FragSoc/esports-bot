@@ -1,3 +1,10 @@
+"""
+The lib package was partially copied over from the BASED template project: https://github.com/Trimatix/BASED
+It is modified and not actively synced with BASED, so will very likely be out of date.
+
+.. codeauthor:: Trimatix
+"""
+
 from datetime import timedelta
 from typing import Dict
 

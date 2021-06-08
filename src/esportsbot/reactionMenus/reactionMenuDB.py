@@ -1,3 +1,10 @@
+"""
+The reactionMenus package was partially copied over from the BASED template project: https://github.com/Trimatix/BASED
+It is modified and not actively synced with BASED, so will very likely be out of date.
+
+.. codeauthor:: Trimatix
+"""
+
 from typing import Union
 from .reactionMenu import ReactionMenu, isSaveableMenuInstance
 from psycopg2.extras import Json
@@ -9,6 +16,13 @@ class ReactionMenuDB(dict):
     When a message is interacted with through reactions, that message should be cross referenced with this database.
     If a menu exists for that message, the menu's reaction behaviour should be called.
     ReactionMenuDB will also save saveable menu instances to SQL automatically.
+
+    To help with loading in existing menu instances from file after a restart, the initializing flag has been added.
+    Messages cannot be loaded synchronously, and so the database cannot be loaded completely from the EsportsBot constructor.
+    Instead, messages are fetched asynchronously during the EsportsBot.init coroutine, which also sets the initializing
+    flag to false once it's done.
+
+    :var initializing: Whether or not the DB has been initialized yet
     """
 
     def __init__(self):
