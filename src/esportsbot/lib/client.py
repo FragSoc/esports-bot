@@ -18,6 +18,7 @@ from .emotes import Emote
 # Type alias to be used for user facing strings. Allows for multi-level tables.
 StringTable = MutableMapping[str, Union[str, "StringTable"]]
 
+
 class EsportsBot(commands.Bot):
     """A discord.commands.Bot subclass, adding a dictionary of active reaction menus.
 
@@ -31,7 +32,6 @@ class EsportsBot(commands.Bot):
                     The second level is another dict-like object, mapping string names to parameter-formattable user-facing strings.
     :vartype STRINGS: str
     """
-
     def __init__(self, command_prefix: str, unknownCommandEmoji: Emote, userStringsFile: str, **options):
         """
         :param str command_prefix: The prefix to use for bot commands when evoking from discord.
@@ -44,8 +44,8 @@ class EsportsBot(commands.Bot):
         self.STRINGS: StringTable = toml.load(userStringsFile)
         self.MUSIC_CHANNELS = {}
 
-        signal.signal(signal.SIGINT, self.interruptReceived) # keyboard interrupt
-        signal.signal(signal.SIGTERM, self.interruptReceived) # graceful exit request
+        signal.signal(signal.SIGINT, self.interruptReceived)  # keyboard interrupt
+        signal.signal(signal.SIGTERM, self.interruptReceived)  # graceful exit request
 
     def update_music_channels(self):
         self.MUSIC_CHANNELS = {}
@@ -64,13 +64,11 @@ class EsportsBot(commands.Bot):
         print("[EsportsBot] Interrupt received.")
         asyncio.ensure_future(self.shutdown())
 
-
     async def shutdown(self):
         """Shut down the bot gracefully.
         """
         print("[EsportsBot] Shutting down...")
         await self.logout()
-
 
     async def rolePingCooldown(self, role: Role, cooldownSeconds: int):
         """wait cooldownSeconds seconds, then set role back to pingable.
@@ -87,7 +85,6 @@ class EsportsBot(commands.Bot):
         if role.guild.get_role(role.id) is not None:
             await role.edit(mentionable=True, colour=roleData[0]["colour"], reason="role ping cooldown complete")
 
-
     @tasks.loop(hours=24)
     async def monthlyPingablesReport(self):
         """Send a report to all joined servers, summarising the number of times each !pingme
@@ -96,8 +93,10 @@ class EsportsBot(commands.Bot):
         """
         if datetime.now().day == 1:
             loggingTasks = set()
-            baseEmbed = Embed(title="Monthly !pingme Report",
-                                description="The number of times each !pingme role was pinged last month:")
+            baseEmbed = Embed(
+                title="Monthly !pingme Report",
+                description="The number of times each !pingme role was pinged last month:"
+            )
             baseEmbed.colour = Colour.random()
             baseEmbed.set_thumbnail(url=self.user.avatar_url_as(size=128))
             baseEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y"))
@@ -107,7 +106,10 @@ class EsportsBot(commands.Bot):
                 if pingableRoles:
                     guild = self.get_guild(guildData["guild_id"])
                     if guild is None:
-                        print("[Esportsbot.monthlyPingablesReport] Unknown guild id in guild_info table: #" + str(guildData["guild_id"]))
+                        print(
+                            "[Esportsbot.monthlyPingablesReport] Unknown guild id in guild_info table: #"
+                            + str(guildData["guild_id"])
+                        )
                     elif guildData["log_channel_id"] is not None:
                         reportEmbed = baseEmbed.copy()
                         rolesAdded = False
@@ -118,18 +120,22 @@ class EsportsBot(commands.Bot):
                                         + str(roleData["role_id"]) + " in guild #" + str(guildData["guild_id"]))
                                 db.delete("pingable_roles", {"role_id": roleData["role_id"]})
                             else:
-                                reportEmbed.add_field(name=role.name, value=role.mention + "\n" + str(roleData["monthly_ping_count"]) + " pings")
+                                reportEmbed.add_field(
+                                    name=role.name,
+                                    value=role.mention + "\n" + str(roleData["monthly_ping_count"]) + " pings"
+                                )
                                 db.update("pingable_roles", {"monthly_ping_count": 0}, {"role_id": role.id})
                                 rolesAdded = True
                         if rolesAdded:
-                            loggingTasks.add(asyncio.create_task(guild.get_channel(guildData['log_channel_id']).send(embed=reportEmbed)))
+                            loggingTasks.add(
+                                asyncio.create_task(guild.get_channel(guildData['log_channel_id']).send(embed=reportEmbed))
+                            )
 
             if loggingTasks:
                 await asyncio.wait(loggingTasks)
                 for task in loggingTasks:
                     if e := task.exception():
                         exceptions.print_exception_trace(e)
-    
 
     async def init(self):
         """Load in all of the reaction menus registered in SQL, and also restarts all pingme role cooldown tasks
@@ -142,19 +148,25 @@ class EsportsBot(commands.Bot):
         try:
             menusData = db.getall('reaction_menus')
         except Exception as e:
-            print("failed to load menus from SQL",e)
+            print("failed to load menus from SQL", e)
             raise e
         for menuData in menusData:
             msgID, menuDict = menuData['message_id'], menuData['menu']
             if 'type' in menuDict:
                 if reactionMenu.isSaveableMenuTypeName(menuDict['type']):
                     try:
-                        self.reactionMenus.add(reactionMenu.saveableMenuClassFromName(menuDict['type']).fromDict(self, menuDict))
+                        self.reactionMenus.add(
+                            reactionMenu.saveableMenuClassFromName(menuDict['type']).fromDict(self,
+                                                                                              menuDict)
+                        )
                     except UnrecognisedReactionMenuMessage:
-                        print("Unrecognised message for " + menuDict['type'] + ", removing from the database: " + str(menuDict["msg"]))
+                        print(
+                            "Unrecognised message for " + menuDict['type'] + ", removing from the database: "
+                            + str(menuDict["msg"])
+                        )
                         db.delete('reaction_menus', where_params={'message_id': msgID})
                 else:
-                    print("Non saveable menu in database:",msgID,menuDict["type"])
+                    print("Non saveable menu in database:", msgID, menuDict["type"])
             else:
                 print("no type for menu " + str(msgID))
 
@@ -177,7 +189,10 @@ class EsportsBot(commands.Bot):
                                 + str(roleData["role_id"]) + " in guild #" + str(guildData["guild_id"]))
                         db.delete("pingable_roles", {"role_id": roleData["role_id"]})
                     else:
-                        remainingCooldown = max(0, int((datetime.fromtimestamp(roleData["last_ping"]) + guildPingCooldown - now).total_seconds()))
+                        remainingCooldown = max(
+                            0,
+                            int((datetime.fromtimestamp(roleData["last_ping"]) + guildPingCooldown - now).total_seconds())
+                        )
                         roleUpdateTasks.add(asyncio.create_task(self.rolePingCooldown(role, remainingCooldown)))
 
         if not self.monthlyPingablesReport.is_running():
@@ -190,7 +205,6 @@ class EsportsBot(commands.Bot):
                 if e := task.exception():
                     exceptions.print_exception_trace(e)
 
-    
     async def adminLog(self, message: Message, actions: Dict[str, str], *args, guildID=None, **kwargs):
         """Log an event or series of events to the server's admin logging channel.
         To log an administration action which was not due to a user command, give message as None, and specify the guild in
@@ -212,7 +226,12 @@ class EsportsBot(commands.Bot):
                 if message is None:
                     logEmbed = Embed(description="Responsible user unknown. Check the server's audit log.")
                 else:
-                    logEmbed = Embed(description=" | ".join((message.author.mention, "#" + message.channel.name, "[message](" + message.jump_url + ")")))
+                    logEmbed = Embed(
+                        description=" | ".
+                        join((message.author.mention,
+                              "#" + message.channel.name,
+                              "[message](" + message.jump_url + ")"))
+                    )
                 logEmbed.set_author(icon_url=self.user.avatar_url_as(size=64), name="Admin Log")
                 logEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
                 logEmbed.colour = Colour.random()
@@ -220,7 +239,6 @@ class EsportsBot(commands.Bot):
                     logEmbed.add_field(name=str(aTitle), value=str(aDesc), inline=False)
                 kwargs["embed"] = logEmbed
             await self.get_channel(db_logging_call[0]['log_channel_id']).send(*args, **kwargs)
-
 
     def handleRoleMentions(self, message: Message) -> Set[asyncio.Task]:
         """Handle !pingme behaviour for the given message.
@@ -238,18 +256,41 @@ class EsportsBot(commands.Bot):
             for role in message.role_mentions:
                 roleData = db.get('pingable_roles', params={'role_id': role.id})
                 if roleData and not roleData[0]["on_cooldown"]:
-                    roleUpdateTasks.add(asyncio.create_task(role.edit(mentionable=False, colour=Colour.darker_grey(), reason="placing pingable role on ping cooldown")))
+                    roleUpdateTasks.add(
+                        asyncio.create_task(
+                            role.edit(
+                                mentionable=False,
+                                colour=Colour.darker_grey(),
+                                reason="placing pingable role on ping cooldown"
+                            )
+                        )
+                    )
                     db.update('pingable_roles', {'on_cooldown': True}, {'role_id': role.id})
                     db.update('pingable_roles', {"last_ping": datetime.now().timestamp()}, {'role_id': role.id})
                     db.update('pingable_roles', {"ping_count": roleData[0]["ping_count"] + 1}, {'role_id': role.id})
-                    db.update('pingable_roles', {"monthly_ping_count": roleData[0]["monthly_ping_count"] + 1}, {'role_id': role.id})
-                    roleUpdateTasks.add(asyncio.create_task(self.rolePingCooldown(role, guildInfo[0]["role_ping_cooldown_seconds"])))
-                    roleUpdateTasks.add(asyncio.create_task(self.adminLog(message, {"!pingme Role Pinged": "Role: " + role.mention + "\nUser: " + message.author.mention})))
+                    db.update(
+                        'pingable_roles',
+                        {"monthly_ping_count": roleData[0]["monthly_ping_count"] + 1},
+                        {'role_id': role.id}
+                    )
+                    roleUpdateTasks.add(
+                        asyncio.create_task(self.rolePingCooldown(role,
+                                                                  guildInfo[0]["role_ping_cooldown_seconds"]))
+                    )
+                    roleUpdateTasks.add(
+                        asyncio.create_task(
+                            self.adminLog(
+                                message,
+                                {"!pingme Role Pinged": "Role: " + role.mention + "\nUser: " + message.author.mention}
+                            )
+                        )
+                    )
         return roleUpdateTasks
 
 
 # Singular class instance of EsportsBot
 _instance: EsportsBot = None
+
 
 def instance() -> EsportsBot:
     """Get the singular instance of the discord client.

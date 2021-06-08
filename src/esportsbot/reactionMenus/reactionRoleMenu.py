@@ -56,15 +56,25 @@ class ReactionRoleMenuOption(reactionMenu.ReactionMenuOption):
     :var role: The role to toggle on reactions
     :vartype role: discord.Role 
     """
-
     def __init__(self, emoji: lib.emotes.Emote, role: Role, menu: reactionMenu.ReactionMenu):
         """
         :param lib.emotes.Emote emoji: The emoji to react to the menu with to trigger role updates
         :param Role role: The role to (un)assign reacting users
         """
         self.role = role
-        super(ReactionRoleMenuOption, self).__init__(self.role.name, emoji, addFunc=giveRole, addArgs=(menu.msg.guild, self.role, menu.msg.id), removeFunc=removeRole, removeArgs=(menu.msg.guild, self.role, menu.msg.id))
-
+        super(ReactionRoleMenuOption,
+              self).__init__(
+                  self.role.name,
+                  emoji,
+                  addFunc=giveRole,
+                  addArgs=(menu.msg.guild,
+                           self.role,
+                           menu.msg.id),
+                  removeFunc=removeRole,
+                  removeArgs=(menu.msg.guild,
+                              self.role,
+                              menu.msg.id)
+              )
 
     def toDict(self) -> dict:
         """Serialize the option into dictionary format for saving.
@@ -75,7 +85,6 @@ class ReactionRoleMenuOption(reactionMenu.ReactionMenuOption):
         """
         return {"role": self.role.id}
 
-    
     @classmethod
     def fromDict(self, data: dict, **kwargs) -> "ReactionRoleMenuOption":
         """Deserialize a dictionary representation of a ReactionRoleMenuOption into a functioning object.
@@ -92,7 +101,11 @@ class ReactionRoleMenuOption(reactionMenu.ReactionMenuOption):
         params = {"dcGuild": Guild, "emoji": lib.emotes.Emote, "menu": reactionMenu.ReactionMenu}
         for oName, oType in params.items():
             if oName not in kwargs: raise NameError("Missing required kwarg: " + oName)
-            if not isinstance(kwargs[oName], oType): raise TypeError("Expected type " + oType.__name__ + " for parameter " + oName + ", received " + type(kwargs[oName]).__name__)
+            if not isinstance(kwargs[oName], oType):
+                raise TypeError(
+                    "Expected type " + oType.__name__ + " for parameter " + oName + ", received "
+                    + type(kwargs[oName]).__name__
+                )
         return ReactionRoleMenuOption(kwargs["emoji"], kwargs["dcGuild"].get_role(data["role"]), kwargs["menu"])
 
 
@@ -100,11 +113,23 @@ class ReactionRoleMenuOption(reactionMenu.ReactionMenuOption):
 class ReactionRoleMenu(reactionMenu.ReactionMenu):
     """A saveable reaction menu that grants and removes roles when interacted with.
     """
-
-    def __init__(self, msg: Message, client: Client, reactionRoles: Dict[lib.emotes.Emote, Role],
-            titleTxt: str = "", desc: str = "", col: Colour = None,
-            footerTxt: str = "", img: str = "", thumb: str = "", icon: str = "", authorName: str = "",
-            targetMember: Member = None, targetRole: Role = None):
+    def __init__(
+        self,
+        msg: Message,
+        client: Client,
+        reactionRoles: Dict[lib.emotes.Emote,
+                            Role],
+        titleTxt: str = "",
+        desc: str = "",
+        col: Colour = None,
+        footerTxt: str = "",
+        img: str = "",
+        thumb: str = "",
+        icon: str = "",
+        authorName: str = "",
+        targetMember: Member = None,
+        targetRole: Role = None
+    ):
         """
         :param discord.Message msg: the message where this menu is embedded
         :param discord.Client client: The client that instanced this menu
@@ -131,8 +156,22 @@ class ReactionRoleMenu(reactionMenu.ReactionMenu):
         if desc == "":
             desc = "React for your desired role!"
 
-        super(ReactionRoleMenu, self).__init__(msg, client, options=roleOptions, titleTxt=titleTxt, desc=desc, col=col if col is not None else Colour.blue(), footerTxt=footerTxt, img=img, thumb=thumb, icon=icon, authorName=authorName, targetMember=targetMember, targetRole=targetRole)
-
+        super(ReactionRoleMenu,
+              self).__init__(
+                  msg,
+                  client,
+                  options=roleOptions,
+                  titleTxt=titleTxt,
+                  desc=desc,
+                  col=col if col is not None else Colour.blue(),
+                  footerTxt=footerTxt,
+                  img=img,
+                  thumb=thumb,
+                  icon=icon,
+                  authorName=authorName,
+                  targetMember=targetMember,
+                  targetRole=targetRole
+              )
 
     def toDict(self) -> dict:
         """Serialize this menu to dictionary format for saving to file.
@@ -144,7 +183,6 @@ class ReactionRoleMenu(reactionMenu.ReactionMenu):
         baseDict = super(ReactionRoleMenu, self).toDict()
         baseDict["guild"] = self.msg.guild.id
         return baseDict
-
 
     @classmethod
     def fromDict(csl, client: Client, rmDict: dict) -> "ReactionRoleMenu":
@@ -165,15 +203,20 @@ class ReactionRoleMenu(reactionMenu.ReactionMenu):
         for reaction in rmDict["options"]:
             reactionRoles[lib.emotes.Emote.fromStr(reaction)] = dcGuild.get_role(rmDict["options"][reaction]["role"])
 
-
-        return ReactionRoleMenu(msg, client, reactionRoles,
-                                    titleTxt=rmDict["titleTxt"] if "titleTxt" in rmDict else "",
-                                    desc=rmDict["desc"] if "desc" in rmDict else "",
-                                    col=Colour.from_rgb(rmDict["col"][0], rmDict["col"][1], rmDict["col"][2]) if "col" in rmDict else Colour.blue(),
-                                    footerTxt=rmDict["footerTxt"] if "footerTxt" in rmDict else "",
-                                    img=rmDict["img"] if "img" in rmDict else "",
-                                    thumb=rmDict["thumb"] if "thumb" in rmDict else "",
-                                    icon=rmDict["icon"] if "icon" in rmDict else "",
-                                    authorName=rmDict["authorName"] if "authorName" in rmDict else "",
-                                    targetMember=dcGuild.get_member(rmDict["targetMember"]) if "targetMember" in rmDict else None,
-                                    targetRole=dcGuild.get_role(rmDict["targetRole"]) if "targetRole" in rmDict else None)
+        return ReactionRoleMenu(
+            msg,
+            client,
+            reactionRoles,
+            titleTxt=rmDict["titleTxt"] if "titleTxt" in rmDict else "",
+            desc=rmDict["desc"] if "desc" in rmDict else "",
+            col=Colour.from_rgb(rmDict["col"][0],
+                                rmDict["col"][1],
+                                rmDict["col"][2]) if "col" in rmDict else Colour.blue(),
+            footerTxt=rmDict["footerTxt"] if "footerTxt" in rmDict else "",
+            img=rmDict["img"] if "img" in rmDict else "",
+            thumb=rmDict["thumb"] if "thumb" in rmDict else "",
+            icon=rmDict["icon"] if "icon" in rmDict else "",
+            authorName=rmDict["authorName"] if "authorName" in rmDict else "",
+            targetMember=dcGuild.get_member(rmDict["targetMember"]) if "targetMember" in rmDict else None,
+            targetRole=dcGuild.get_role(rmDict["targetRole"]) if "targetRole" in rmDict else None
+        )

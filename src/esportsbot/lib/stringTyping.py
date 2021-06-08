@@ -5,6 +5,7 @@ It is modified and not actively synced with BASED, so will very likely be out of
 .. codeauthor:: Trimatix
 """
 
+
 def strIsInt(x) -> bool:
     """Decide whether or not something is either an integer, or is castable to integer.
 

@@ -14,7 +14,6 @@ from typing import Union, TYPE_CHECKING
 if TYPE_CHECKING:
     from discord import PartialEmoji, Emoji
 
-
 # Emoji to send in place of unrecognised emojis, when forced to. This should be used as a last resort as it its ambiguous.
 err_UnknownEmoji = "❓"
 # True to raise an UnrecognisedCustomEmoji exception when requesting an unknown custom emoji
@@ -106,9 +105,11 @@ class Emote:
             if logUnknownEmojis:
                 print("Unrecognised custom emoji ID in Emote constructor: " + str(self.id))
             if raiseUnkownEmojis or rejectInvalid:
-                raise exceptions.UnrecognisedCustomEmoji("Unrecognised custom emoji ID in Emote constructor: " + str(self.id), self.id)
+                raise exceptions.UnrecognisedCustomEmoji(
+                    "Unrecognised custom emoji ID in Emote constructor: " + str(self.id),
+                    self.id
+                )
             self.sendable = err_UnknownEmoji
-
 
     def toDict(self, **kwargs) -> dict:
         """Serialize this emoji to dictionary format for saving to file.
@@ -120,7 +121,6 @@ class Emote:
             return {"unicode": self.unicode}
         return {"id": self.id}
 
-
     def __repr__(self) -> str:
         """Get a string uniquely identifying this object, specifying what type of emoji it represents and the emoji itself.
 
@@ -128,7 +128,6 @@ class Emote:
         :rtype: str
         """
         return "<Emote-" + ("id" if self.isID else "unicode") + ":" + (str(self.id) if self.isID else self.unicode) + ">"
-
 
     def __hash__(self) -> int:
         """Calculate a hash of this emoji, based on its repr string.
@@ -138,7 +137,6 @@ class Emote:
         :rtype: int
         """
         return hash(repr(self))
-
 
     def __eq__(self, other: Emote) -> bool:
         """Decide if this Emote is equal to another.
@@ -150,7 +148,6 @@ class Emote:
         """
         return isinstance(other, Emote) and self.sendable == other.sendable
 
-
     def __str__(self) -> str:
         """Get the object's 'sendable' string.
 
@@ -158,7 +155,6 @@ class Emote:
         :rtype: str
         """
         return self.sendable
-
 
     @classmethod
     def fromDict(cls, emojiDict: dict, **kwargs) -> Emote:
@@ -185,7 +181,6 @@ class Emote:
         else:
             return Emote(unicode=emojiDict["unicode"], rejectInvalid=rejectInvalid)
 
-
     @classmethod
     def fromPartial(cls, e: PartialEmoji, rejectInvalid: bool = False) -> Emote:
         """Construct a new Emote object from a given discord.PartialEmoji.
@@ -203,7 +198,6 @@ class Emote:
             return Emote(unicode=e.name, rejectInvalid=rejectInvalid)
         else:
             return Emote(id=e.id, rejectInvalid=rejectInvalid)
-
 
     @classmethod
     def fromReaction(cls, e: Union[Emoji, PartialEmoji, str], rejectInvalid: bool = False) -> Emote:
@@ -231,7 +225,6 @@ class Emote:
             return Emote.fromPartial(e, rejectInvalid=rejectInvalid)
         else:
             return Emote(id=e.id, rejectInvalid=rejectInvalid)
-
 
     @classmethod
     def fromStr(cls, s: str, rejectInvalid: bool = False) -> Emote:
