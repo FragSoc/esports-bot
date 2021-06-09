@@ -1,4 +1,4 @@
-psycopg2-binary>=2.8
+sqlalchemy
 discord.py
 python-dotenv
 emoji
@@ -10,3 +10,4 @@ youtube-search-python
 PyNaCl
 aiohttp[speedups]
 toml
+psycopg2
