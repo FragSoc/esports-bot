@@ -13,7 +13,6 @@ import discord
 from datetime import datetime, timedelta
 import asyncio
 
-
 # Value to assign new guilds in their role_ping_cooldown_seconds attribute
 DEFAULT_ROLE_PING_COOLDOWN = timedelta(hours=5)
 # Value to assign new guilds in their pingme_create_poll_length_seconds attribute
@@ -34,13 +33,17 @@ def make_guild_init_data(guild: discord.Guild) -> Dict[str, Any]:
     :return: A dictionary with default guild attributes, including the guild ID
     :rtype: Dict[str, Any]
     """
-    return {'guild_id': guild.id, 'num_running_polls': 0, 'role_ping_cooldown_seconds': int(DEFAULT_ROLE_PING_COOLDOWN.total_seconds()),
-            "pingme_create_threshold": DEFAULT_PINGME_CREATE_THRESHOLD, "pingme_create_poll_length_seconds": int(DEFAULT_PINGME_CREATE_POLL_LENGTH.total_seconds())}
+    return {
+        'guild_id': guild.id,
+        'num_running_polls': 0,
+        'role_ping_cooldown_seconds': int(DEFAULT_ROLE_PING_COOLDOWN.total_seconds()),
+        "pingme_create_threshold": DEFAULT_PINGME_CREATE_THRESHOLD,
+        "pingme_create_poll_length_seconds": int(DEFAULT_PINGME_CREATE_POLL_LENGTH.total_seconds())
+    }
 
 
 async def send_to_log_channel(guild_id, msg):
-    db_logging_call = db_gateway().get(
-        'guild_info', params={'guild_id': guild_id})
+    db_logging_call = db_gateway().get('guild_info', params={'guild_id': guild_id})
     if db_logging_call and db_logging_call[0]['log_channel_id']:
         await client.get_channel(db_logging_call[0]['log_channel_id']).send(msg)
 
@@ -50,7 +53,11 @@ async def on_ready():
     """Initialize the reactionMenuDB and pingme role cooldowns, since this can't be done synchronously
     """
     await client.init()
-    await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name="your commands"))
+    await client.change_presence(
+        status=discord.Status.dnd,
+        activity=discord.Activity(type=discord.ActivityType.listening,
+                                  name="your commands")
+    )
 
 
 @client.event
@@ -67,14 +74,15 @@ async def on_guild_remove(guild):
 
 @client.event
 async def on_member_join(member):
-    default_role_exists = db_gateway().get(
-        'guild_info', params={'guild_id': member.guild.id})
+    default_role_exists = db_gateway().get('guild_info', params={'guild_id': member.guild.id})
 
     if default_role_exists[0]['default_role_id']:
-        default_role = member.guild.get_role(
-            default_role_exists[0]['default_role_id'])
+        default_role = member.guild.get_role(default_role_exists[0]['default_role_id'])
         await member.add_roles(default_role)
-        await send_to_log_channel(member.guild.id, f"{member.mention} has joined the server and received the {default_role.mention} role")
+        await send_to_log_channel(
+            member.guild.id,
+            f"{member.mention} has joined the server and received the {default_role.mention} role"
+        )
     else:
         await send_to_log_channel(member.guild.id, f"{member.mention} has joined the server")
 
@@ -89,23 +97,38 @@ async def on_voice_state_update(member, before, after):
         if not before.channel.members:
             # Nobody else in VC
             await before.channel.delete()
-            db_gateway().delete('voicemaster_slave', where_params={
-                'guild_id': member.guild.id, 'channel_id': before_channel_id})
+            db_gateway().delete(
+                'voicemaster_slave',
+                where_params={
+                    'guild_id': member.guild.id,
+                    'channel_id': before_channel_id
+                }
+            )
             await send_to_log_channel(member.guild.id, f"{member.mention} has deleted a VM slave")
         else:
             # Still others in VC
             await before.channel.edit(name=f"{before.channel.members[0].display_name}'s VC")
-            db_gateway().update('voicemaster_slave', set_params={'owner_id': before.channel.members[0].id}, where_params={
-                'guild_id': member.guild.id, 'channel_id': before_channel_id})
+            db_gateway().update(
+                'voicemaster_slave',
+                set_params={'owner_id': before.channel.members[0].id},
+                where_params={
+                    'guild_id': member.guild.id,
+                    'channel_id': before_channel_id
+                }
+            )
     elif after_channel_id and get_whether_in_vm_master(member.guild.id, after_channel_id):
         # Moved into a master VM VC
         slave_channel_name = f"{member.display_name}'s VC"
         new_slave_channel = await member.guild.create_voice_channel(slave_channel_name, category=after.channel.category)
-        db_gateway().insert('voicemaster_slave', params={'guild_id': member.guild.id,
-                                                         'channel_id': new_slave_channel.id,
-                                                         'owner_id': member.id,
-                                                         'locked': False,
-                                                         })
+        db_gateway().insert(
+            'voicemaster_slave',
+            params={
+                'guild_id': member.guild.id,
+                'channel_id': new_slave_channel.id,
+                'owner_id': member.id,
+                'locked': False,
+            }
+        )
         await member.move_to(new_slave_channel)
         await send_to_log_channel(member.guild.id, f"{member.mention} has created a VM slave")
 
@@ -202,15 +225,17 @@ async def on_command_error(ctx: Context, exception: Exception):
     :param Exception exception: The exception caused by the message in ctx
     """
     if isinstance(exception, MissingRequiredArgument):
-        await ctx.message.reply("Arguments are required for this command! See `" + client.command_prefix + "help " + ctx.invoked_with + "` for more information.")
+        await ctx.message.reply(
+            "Arguments are required for this command! See `" + client.command_prefix + "help " + ctx.invoked_with
+            + "` for more information."
+        )
     elif isinstance(exception, CommandNotFound):
         try:
             await ctx.message.add_reaction(client.unknownCommandEmoji.sendable)
         except (Forbidden, HTTPException):
             pass
         except NotFound:
-            raise ValueError("Invalid unknownCommandEmoji: "
-                             + client.unknownCommandEmoji.sendable)
+            raise ValueError("Invalid unknownCommandEmoji: " + client.unknownCommandEmoji.sendable)
     else:
         sourceStr = str(ctx.message.id)
         try:
@@ -218,50 +243,53 @@ async def on_command_error(ctx: Context, exception: Exception):
                 + "/" + ctx.guild.name + "#" + str(ctx.guild.id)
         except AttributeError:
             sourceStr += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
-        print(datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught "
-                                      + type(exception).__name__ + " '") + str(exception) + "' from message " + sourceStr)
+        print(
+            datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught " + type(exception).__name__ + " '") + str(exception)
+            + "' from message " + sourceStr
+        )
         lib.exceptions.print_exception_trace(exception)
 
 
 @client.event
 async def on_message(message):
     if not message.author.bot:
-        # Ignore self messages
-        guild_id = message.guild.id
-        music_channel_in_db = db_gateway().get('music_channels', params={'guild_id': guild_id})
-        if len(music_channel_in_db) > 0 and message.channel.id == music_channel_in_db[0].get('channel_id'):
-            # The message was in a music channel and a song should be found
-            music_cog_instance = client.cogs.get('MusicCog')
-            await music_cog_instance.on_message_handle(message)
+        # Process non-dm messages
+        if message.guild is not None:
+            # Start pingable role cooldowns
+            if message.role_mentions:
+                roleUpdateTasks = client.handleRoleMentions(message)
 
-    # If message was command, perform the command
-    await client.process_commands(message)
+            # Handle music channel messages
+            guild_id = message.guild.id
+            music_channel_in_db = client.MUSIC_CHANNELS.get(guild_id)
+            if music_channel_in_db:
+                # The message was in a music channel and a song should be found
+                music_cog_instance = client.cogs.get('MusicCog')
+                await music_cog_instance.on_message_handle(message)
+                await client.process_commands(message)
+                await message.delete()
+            else:
+                await client.process_commands(message)
+
+            if message.role_mentions and roleUpdateTasks:
+                await asyncio.wait(roleUpdateTasks)
+                for task in roleUpdateTasks:
+                    if e := task.exception():
+                        lib.exceptions.print_exception_trace(e)
+        # Process DM messages
+        else:
+            await client.process_commands(message)
 
 
 @client.command()
 @commands.has_permissions(administrator=True)
 async def initialsetup(ctx):
-    already_in_db = db_gateway().get(
-        'guild_info', params={'guild_id': ctx.author.guild.id})
+    already_in_db = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})
     if already_in_db:
         await ctx.channel.send("This server is already set up")
     else:
         db_gateway().insert('guild_info', make_guild_init_data(ctx.guild))
         await ctx.channel.send("This server has now been initialised")
-
-
-@client.event
-async def on_message(message: discord.Message):
-    if message.guild is not None and message.role_mentions:
-        roleUpdateTasks = client.handleRoleMentions(message)
-        await client.process_commands(message)
-        if roleUpdateTasks:
-            await asyncio.wait(roleUpdateTasks)
-            for task in roleUpdateTasks:
-                if e := task.exception():
-                    lib.exceptions.print_exception_trace(e)
-    else:
-        await client.process_commands(message)
 
 
 @client.event
@@ -288,6 +316,7 @@ def launch():
 
     # Generate Database Schema
     generate_schema()
+    client.update_music_channels()
 
     client.load_extension('esportsbot.cogs.VoicemasterCog')
     client.load_extension('esportsbot.cogs.DefaultRoleCog')
