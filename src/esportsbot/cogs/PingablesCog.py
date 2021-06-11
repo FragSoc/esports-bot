@@ -55,7 +55,7 @@ class PingablesCog(commands.Cog):
         self.bot: "EsportsBot" = bot
 
     @commands.group(name="pingme", invoke_without_command=True)
-    async def pingme(self, ctx: Context, *, args: str):
+    async def pingme(self, ctx: Context):
         """Non-functional command, for heirarchical command grouping.
 
         :param Context ctx: ignored
@@ -120,7 +120,7 @@ class PingablesCog(commands.Cog):
         help="Unregister a role from !pingme without removing it from the server"
     )
     @commands.has_permissions(administrator=True)
-    async def admin_cmd_remove_pingable_role(self, ctx: Context, *, args: str):
+    async def admin_cmd_remove_pingable_role(self, ctx: Context):
         """Admin command: Unregister a pingme role without deleting it from the server.
         
         :param Context ctx: A context summarising the message which called this command
@@ -140,7 +140,7 @@ class PingablesCog(commands.Cog):
 
     @pingme.command(name="delete", usage="pingme delete <@role>", help="Delete a !pingme role from the server")
     @commands.has_permissions(administrator=True)
-    async def admin_cmd_delete_pingable_role(self, ctx: Context, *, args: str):
+    async def admin_cmd_delete_pingable_role(self, ctx: Context):
         """Admin command: Delete a pingme role from the server entirely.
         
         :param Context ctx: A context summarising the message which called this command
@@ -165,7 +165,7 @@ class PingablesCog(commands.Cog):
         help="Reset the pinging cooldown for a !pingme role, making it pingable again instantly"
     )
     @commands.has_permissions(administrator=True)
-    async def admin_cmd_reset_role_ping_cooldown(self, ctx: Context, *, args: str):
+    async def admin_cmd_reset_role_ping_cooldown(self, ctx: Context):
         """Admin command: Reset the given pingme role's pinging cooldown, forcing it to become pingable again by anyone.
         
         :param Context ctx: A context summarising the message which called this command
@@ -365,7 +365,7 @@ class PingablesCog(commands.Cog):
         help="Remove the emoji which appears before the names of !pingme roles."
     )
     @commands.has_permissions(administrator=True)
-    async def admin_cmd_remove_pingme_role_emoji(self, ctx: Context, *, args: str):
+    async def admin_cmd_remove_pingme_role_emoji(self, ctx: Context):
         """Admin command: Remove the pingme role prefix emoji set with admin_cmd_set_pingme_role_emoji
         All existing roles are updated too.
         
@@ -492,7 +492,7 @@ class PingablesCog(commands.Cog):
                     await ctx.message.reply("✅ You got the " + role.name + " role!")
 
     @pingme.command(name="list", usage="pingme list", help="List all available `!pingme` roles")
-    async def pingme_for(self, ctx: Context):
+    async def pingme_list(self, ctx: Context):
         """User command: List all available pingme roles.
         Roles are also listed alongside their creator and total number of uses to date.
         
@@ -508,7 +508,7 @@ class PingablesCog(commands.Cog):
             reportEmbed = discord.Embed(title="All !pingme Roles", desc=ctx.guild.name)
             reportEmbed.colour = discord.Colour.random()
             reportEmbed.set_thumbnail(url=self.bot.user.avatar_url_as(size=128))
-            for roleData in allRolesData:
+            for roleData in sorted(allRolesData, key=lambda x: x["ping_count"], reverse=True):
                 reportEmbed.add_field(
                     name=roleData["name"].title(),
                     value="<@&" + str(roleData["role_id"]) + ">\nCreated by: <@" + str(roleData["creator_id"])
@@ -517,7 +517,7 @@ class PingablesCog(commands.Cog):
             await ctx.reply(embed=reportEmbed)
 
     @pingme.command(name="clear", usage="pingme clear", help="Unsubscribe from all !pingme roles, if you have any.")
-    async def pingme_clear(self, ctx: Context, *, args: str):
+    async def pingme_clear(self, ctx: Context):
         """User command: Unsubscribe from all assigned pingme roles.
         
         :param Context ctx: A context summarising the message which called this command
