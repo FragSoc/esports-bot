@@ -318,7 +318,7 @@ class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
         :rtype: bool
         """
         try:
-            if reactPL.message_id == self.msg.id and reactPL.user_id == self.targetMember.id and \
+            if reactPL.message_id == self.msg.id and (self.targetMember is None or reactPL.user_id == self.targetMember.id) and \
                     lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True) == self.yesOption.emoji:
                 self.yesesReceived += 1
                 return self.yesesReceived >= self.requiredVotes
