@@ -149,10 +149,59 @@ List all the current Twitter handles configured in the server
 </details>
 
 <details>
+<summary>Pingme: User-Created Roles With Ping Cooldown</summary>
+
+### Pingme: User-Created Roles With Ping Cooldown
+Users can start a vote to create a new role. If enough votes are reached, a new role is created. The role can be pinged by anyone, but is placed on cooldown afterwards.
+
+To help administrators manage the number of roles, a usage report is sent to the server's logging channel on a monthly basis.
+
+##### !pingme register {@role or role_id} {role_name}
+Admin command: Register a new role for use with `!pingme`, with the given name. This does not have to be the same as the role's name.
+
+##### !pingme unregister {@role or role_id}
+Admin command: Unregister a role from use with `!pingme`, without deleting the role from the server.
+
+##### !pingme delete {@role or role_id}
+Admin command: Unregister a `!pingme` role from the role from the server.
+
+##### !pingme reset-cooldown {@role or role_id}
+Admin command: Reset the pinging cooldown for a `!pingme` role, making it pingable again instantly.
+
+##### !pingme set-cooldown [seconds=...] [minutes=...] [hours=...] [days=...]
+Admin command: Set the cooldown between `!pingme` role pings.
+
+##### !pingme set-create-threshold {num_votes}
+Admin command: Set minimum number of votes required to create a new role during `!pingme create`.
+
+##### !pingme set-create-poll-length [seconds=...] [minutes=...] [hours=...] [days=...]
+Admin command: Set the amount of time which `!pingme create` polls run for.
+
+##### !pingme set-role-emoji {emoji}
+Admin command: Set the emoji which appears before the names of `!pingme` roles. Must be a built in emoji, not custom.
+
+##### !pingme remove-role-emoji {emoji}
+Admin command: Remove the emoji which appears before the names of `!pingme` roles.
+
+##### !pingme create {role_name}
+User command: Start a poll for the creation of a new `!pingme` role.
+
+##### !pingme for {role_name}
+User command: Get yourself a `!pingme` role, to be notified about events and games.
+
+##### !pingme list
+User command: List all available `!pingme` roles.
+
+##### !pingme clear
+User command: Unsubscribe from all `!pingme` roles, if you have any.
+</details>
+
+
+<details>
 <summary>Event Channel Management</summary>
 
 ### Event Category Management
-Each server can have any number of named event categories, each with a registered signin role menu granting an event specific role.
+Each server can have any number of named event categories, each with a registered signin role menu granting an event specific role. All commands in this cog are administrator commands.
 
 ##### !open-event {event_name}
 Set the event's signin channel as visible to the server's shared role.
@@ -211,9 +260,9 @@ List all the current Twitch handles configured in the server
 </details>
 
 <details>
-<summary>Reaction Role Menus</summary>
+<summary>Reaction Role Menus and Polls</summary>
 
-### Reaction Role Menus
+### Reaction Menus
 Esportsbot now includes a slightly stripped down version of the reaction menus implementation provided by [BASED](https://github.com/Trimatix/BASED).
 
 Making new types of reaction menus is easy - simply extend `reactionMenus.reactionMenu.ReactionMenu`.
@@ -224,20 +273,26 @@ All saveable reaction menus are automatically added and removed from Esportsbot'
 
 `ReactionMenu`s store each option in the menu as an instance of a `reactionMenu.ReactionMenuOption` subclass - each `ReactionMenuOption` has its own individual behaviour for when reactions are added and removed. This already provides a huge amount of flexibility, but you can achieve even more with a custom `ReactionMenuOption` subclass. To make your `ReactionMenuOption` saveable, provide complete `toDict` and `fromDict` implementations. For an example of this, see `reactionMenus.reactionRoleMenu.ReactionRoleMenuOption`.
 
+### Reaction Role Menus
+Allows admins to create and maintain menus which grant and remove roles from users upon interaction. Currently, anyone can interact with any role menu. However, reaction role menus are already set up to be limited to a certain role or user. To make use of this functionality, the `!make-role-menu` command must be extended to also pass a `targetRole` or `targetMember` to the menu constructor.
+
+### Reaction Polls
+Allows any user to run a time-limited poll, where voters can select one (or many) of several string options, by adding reactions to the menu. After the menu runs out of time, a bar chart of the results is edited into the menu message. Each guild may only run a limited number of polls at once.
+
 ##### !make-role-menu
 ```
 !make-role-menu {title}
 {option1 emoji} {@option1 role}
 ...    ...
 ```
-Create a reaction role menu.
+Admin command: Create a reaction role menu.
 
 Each option must be on its own new line, as an emoji, followed by a space, followed by a mention of the role to grant.
 
-The `title` is displayed at the top of the meny and is optional, to exclude your title simply give a new line.
+The `title` is displayed at the top of the menu and is optional, to exclude your title simply give a new line.
 
 ##### !add-role-menu-option {menu-id} {emoji} {@role mention}
-Add a role to a role menu.
+Admin command: Add a role to a role menu.
 
 To get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.
 
@@ -246,14 +301,35 @@ Your emoji must not be in the menu already, adding the same role more than once 
 Give your role to grant/remove as a mention.
 
 ##### !del-role-menu-option {menu-id} {emoji}
-Remove a role from a role menu.
+Admin command: Remove a role from a role menu.
 
 To get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.
 
 Your emoji must be an option in the menu.
 
+##### !poll
+```
+!poll] {title}
+{option1 emoji} {@option1 role}
+...    ...
+[multipleChoice=...]
+[seconds=...]
+[minutes=...]
+[hours=...]
+[days=...
+```
+User command: Run a reaction-based poll.
+
+Each option must be on its own new line, as an emoji, followed by a space, followed by the name, or short description, of the option.
+
+The `title` is displayed at the top of the menu and is optional, to exclude your title simply give a new line.
+
+The time to run the poll for can be specified by keywords. The number of votes allowed to each user can also be specified, with multiplechoice=yes meaning that users can submit as many votes as they like, and multiplechoice=no meaning that only one of each user's votes will be counted. This setting will be indicated to voters in the menu.
+
+The default args are: `seconds=0` `minutes=5` `hours=0` `days=0` `multipleChoice=yes`
+
 ##### !del-menu {id}
-Remove the specified reaction menu. You can also just delete the message, if you have permissions.
+Admin command: Remove the specified reaction menu. You can also just delete the message, if you have permissions. This is not restricted to role menus or polls.
 
 To get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.
 </details>
@@ -324,47 +400,47 @@ While the role takes its requested colour (default green), it is pingable by any
 Every month, a report of the use of all pingable roles will be sent to the servers logging channel, if one is set.
 
 ##### !pingme list
-User command listing out all available `!pingme` roles
+User command: list out all available `!pingme` roles
 
 ##### !pingme register {@role mention} {name}
-Admin command registering an existing role for use with `!pingme`.
+Admin command: register an existing role for use with `!pingme`.
 
 ##### !pingme unregister {@role mention}
-Admin command unregistering a role for use with `!pingme`, without deleting the role from the server.
+Admin command: unregister a role for use with `!pingme`, without deleting the role from the server.
 
 ##### !pingme delete {@role mention}
-Admin command unregistering a role for use with `!pingme`, and deleting the role from the server.
+Admin command: unregister a role for use with `!pingme`, and deleting the role from the server.
 
 Alternatively, if you have permission, you can simply delete the role from the server within discord, and the role will automatically be unregistered from `!pingme`.
 
 ##### !pingme reset-cooldown {@role mention}
-Admin command resetting the cooldown for mentioning the given `!pingme` role. The role will immediately become pingable again by anyone.
+Admin command: reset the cooldown for mentioning the given `!pingme` role. The role will immediately become pingable again by anyone.
 
 ##### !pingme set-cooldown seconds={seconds} minutes={minutes} hours={hours} days={days}
-Admin command setting the cooldown between a `!pingme` role being pinged, and it becoming pingable again. All args should be given as keyword args as shown. All args are optional.
+Admin command: set the cooldown between a `!pingme` role being pinged, and it becoming pingable again. All args should be given as keyword args as shown. All args are optional.
 This does not update the cooldown for roles that are already on cooldown.
 
 ##### !pingme set-create-threshold {num votes}
-Admin command setting the minimum number of votes required for users to create a role with `!pingme create`. This does not affect already running polls.
+Admin comman: set the minimum number of votes required for users to create a role with `!pingme create`. This does not affect already running polls.
 
 ##### !pingme set-create-poll-length seconds={seconds} minutes={minutes} hours={hours} days={days}
-Admin command setting the amount of time `!pingme create` polls run for. All args should be given as keyword args as shown. All args are optional.
+Admin command: set the amount of time `!pingme create` polls run for. All args should be given as keyword args as shown. All args are optional.
 This does not affect already running polls.
 
 ##### !pingme set-role-emoji {emoji}
-Admin command setting a single unicode emoji to be prefixed onto all `!pingme` role names. This will update the names of all existing `!pingme` roles.
+Admin command: set a single unicode emoji to be prefixed onto all `!pingme` role names. This will update the names of all existing `!pingme` roles.
 
 ##### !pingme remove-role-emoji
-Admin command removing the emoji prefix for all `!pingme` role names. This will update the names of all existing `!pingme` roles.
+Admin command: remove the emoji prefix for all `!pingme` role names. This will update the names of all existing `!pingme` roles.
 
 ##### !pingme create {name}
-User command requesting the creation of a `!pingme` role with the given name. A `!pingme` role with the given name must not already exist.
+User command: request the creation of a `!pingme` role with the given name. A `!pingme` role with the given name must not already exist.
 On command use, a poll will be created. If a minimum number of votes is reached, a role with the given name is created, and registered for `!pingme` cooldown etc.
 
 ##### !pingme for {name}
-User command adding or removing the `!pingme` role with the given name to/from the user.
+User command: add or removing the `!pingme` role with the given name to/from the user.
 
 ##### !pingme clear
-User command removing all `!pingme` roles from the user.
+User command: remove all `!pingme` roles from the user.
 
 </details>
