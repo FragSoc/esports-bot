@@ -614,7 +614,7 @@ class InlineReactionMenu(ReactionMenu):
         :rtype: bool
         """
         try:
-            return reactPL.message_id == self.msg.id and reactPL.user_id == self.targetMember.id and \
+            return reactPL.message_id == self.msg.id and (self.targetMember is None or reactPL.user_id == self.targetMember.id) and \
                     lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True) in self.returnTriggers
         except lib.exceptions.UnrecognisedCustomEmoji:
             return False
