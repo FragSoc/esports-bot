@@ -509,11 +509,19 @@ class PingablesCog(commands.Cog):
             reportEmbed.colour = discord.Colour.random()
             reportEmbed.set_thumbnail(url=self.bot.user.avatar_url_as(size=128))
             for roleData in sorted(allRolesData, key=lambda x: x["ping_count"], reverse=True):
-                reportEmbed.add_field(
-                    name=roleData["name"].title(),
-                    value="<@&" + str(roleData["role_id"]) + ">\nCreated by: <@" + str(roleData["creator_id"])
-                    + ">\nTotal pings: " + str(roleData["ping_count"])
-                )
+                if r := ctx.guild.get(roleData["role_id"]):
+                    reportEmbed.add_field(
+                        name=roleData["name"].title(),
+                        value="<@&" + str(roleData["role_id"]) + ">\nCreated by: <@" + str(roleData["creator_id"])
+                        + ">\nTotal pings: " + str(roleData["ping_count"])  + "\nTotal members: " + str(len(r.members))
+                    )
+                else:
+                    await self.bot.adminLog(ctx.message,
+                        {
+                            "Unknown !Pingme Role",
+                            f"Failed to find the '{roleData['name'].title()}' role. Was it deleted?"
+                        }
+                    )
             await ctx.reply(embed=reportEmbed)
 
     @pingme.command(name="clear", usage="pingme clear", help="Unsubscribe from all !pingme roles, if you have any.")
