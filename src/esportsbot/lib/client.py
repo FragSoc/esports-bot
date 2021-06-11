@@ -336,5 +336,10 @@ def instance() -> EsportsBot:
     if _instance is None:
         intents = Intents.default()
         intents.members = True
-        _instance = EsportsBot('!', Emote.fromStr("⁉"), "esportsbot/user_strings.toml", intents=intents)
+        _instance = EsportsBot(
+            os.environ.get("COMMAND_PREFIX", "!"),
+            Emote.fromStr("⁉"),
+            "esportsbot/user_strings.toml",
+            intents=intents
+        )
     return _instance
