@@ -95,7 +95,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="open-event",
-        usage="open-event <event name>",
+        usage="<event name>",
         help="Reveal the signin channel for the named event channel."
     )
     @commands.has_permissions(administrator=True)
@@ -137,7 +137,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="close-event",
-        usage="close-event <event name>",
+        usage="<event name>",
         help="Hide the signin channel for the named event, reset the signin menu, and remove the event's role from users."
     )
     @commands.has_permissions(administrator=True)
@@ -241,7 +241,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="set-event-signin-menu",
-        usage="set-event-signin-menu <id> <event name>",
+        usage="<id> <event name>",
         help="Change the event signin menu to use with `open-event` and `close-event`."
     )
     @commands.has_permissions(administrator=True)
@@ -309,7 +309,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="set-shared-role",
-        usage="set-shared-role <role>",
+        usage="<role>",
         help=
         "Change the role to admit/deny into *all* event signin menus. This should NOT be the same as any event role. Role can be given as either a mention or an ID."
     )
@@ -348,7 +348,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="set-event-role",
-        usage="set-event-role <role> <event name>",
+        usage="<event name>",
         help=
         "Change the role to remove during `close-event`. This should NOT be the same as your shared role. Role can be given as either a mention or an ID."
     )
@@ -405,7 +405,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="register-event-category",
-        usage="register-event-category <signin menu id> <role> <event name>",
+        usage="<signin menu id> <role> <event name>",
         help=
         "Register an existing event category, menu, and role, for use with `open-event` and `close-event`. This does not setup permissions for the category or channels."
     )
@@ -465,7 +465,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="create-event-category",
-        usage="create-event-category <event name>",
+        usage="<event name>",
         help=
         "Create a new event category with a signin channel and menu, event role, general channel and correct permissions, and automatically register them for use with `open-event` and `close-event`."
     )
@@ -596,7 +596,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="unregister-event-category",
-        usage="unregister-event-category <event name>",
+        usage="<event name>",
         help=
         "Unregister an event category and role so that it can no longer be used with `open-event` and `close-event`, but without deleting the channels."
     )
@@ -630,7 +630,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="delete-event-category",
-        usage="delete-event-category <event name>",
+        usage="<event name>",
         help="Delete an event category and its role and channels from the server."
     )
     @commands.has_permissions(administrator=True)
