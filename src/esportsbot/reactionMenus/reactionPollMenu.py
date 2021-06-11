@@ -7,8 +7,9 @@ It is modified and not actively synced with BASED, so will very likely be out of
 from __future__ import annotations
 from . import reactionMenu
 from .. import lib
-from discord import Colour, Message, Embed, User, Member, RawReactionActionEvent
-from typing import Dict, Union
+from discord import Colour, Message, Embed, User, Member, RawReactionActionEvent, RawMessageDeleteEvent, RawBulkMessageDeleteEvent
+from typing import Dict, Union, List
+import asyncio
 
 # Used as the default author icon in poll embeds
 BALLOT_BOX_IMAGE = "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/ballot-box-with-ballot_1f5f3.png"
@@ -310,28 +311,53 @@ class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
             authorName=authorName
         )
 
-    def reactionClosesMenu(self, reactPL: RawReactionActionEvent) -> bool:
+
+    def reactionClosesMenu(self, reactPL: Union[RawReactionActionEvent, RawMessageDeleteEvent, RawBulkMessageDeleteEvent]) -> bool:
         """An InlineReactionMenu override which checks the number of yes votes received.
 
-        :param discord.RawReactionActionEvent reactPL: The raw payload representing the reaction addition
+        :param discord.RawReactionActionEvent reactPL: The raw payload representing the reaction addition or removal
         :return: True if the reaction should close the menu. I.e, requiredVotes has been reached.
         :rtype: bool
+        :raise lib.exceptions.UnrecognisedReactionMenuMessage: If the menu message was deleted
         """
+        if type(reactPL) == RawMessageDeleteEvent:
+            if reactPL.message_id == self.msg.id:
+                raise lib.exceptions.UnrecognisedReactionMenuMessage(self.msg.guild.id, self.msg.channel.id, self.msg.id)
+            return False
+        elif type(reactPL) == RawBulkMessageDeleteEvent:
+            if self.msg.id in reactPL.message_ids:
+                raise lib.exceptions.UnrecognisedReactionMenuMessage(self.msg.guild.id, self.msg.channel.id, self.msg.id)
+            return False
+        
         try:
-            e = lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True)
-        except lib.exceptions.UnrecognisedCustomEmoji:
-            exceptionThrown = True
-            e = None
-        else:
-            exceptionThrown = False
-        print(f"correct message: {reactPL.message_id == self.msg.id}\ncorrect target member: {self.targetMember is None or reactPL.user_id == self.targetMember.id}" \
-                + f"\nexception thrown: {exceptionThrown}\ncorrect emoji: {e == self.yesOption.emoji}\nEmoji added: {'None' if e is None else e.sendable}")
-        try:
-            if reactPL.message_id == self.msg.id and (self.targetMember is None or reactPL.user_id == self.targetMember.id) and \
+            if reactPL.message_id == self.msg.id and reactPL.user_id != lib.client.instance().user.id and \
                     lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True) == self.yesOption.emoji:
-                self.yesesReceived += 1
-                return self.yesesReceived >= self.requiredVotes
+                if reactPL.event_type == "REACTION_ADD":
+                    self.yesesReceived += 1
+                    return self.yesesReceived >= self.requiredVotes
+                else:
+                    self.yesesReceived -= 1
             return False
 
         except lib.exceptions.UnrecognisedCustomEmoji:
             return False
+
+
+    async def doMenu(self) -> None:
+        """Overload that also handles reaction removal to allow for correct vote counting, and message deletion.
+        This overload does not return anything, unlike the original method, which returns the emotes reacted with
+        by the target user.
+        """
+        await self.updateMessage()
+        try:
+            await lib.client.instance().multiWaitFor(
+                ["raw_reaction_add", "raw_reaction_remove", "raw_message_delete", "raw_bulk_message_delete"],
+                check=self.reactionClosesMenu,
+                timeout=self.timeoutSeconds
+            )
+            self.msg.embeds[0].set_footer(text="This menu has now expired.")
+            await self.msg.edit(embed=self.msg.embeds[0])
+        except asyncio.TimeoutError:
+            await self.msg.edit(content="This menu has now expired. Please try the command again.")
+        except lib.exceptions.UnrecognisedReactionMenuMessage:
+            await self.msg.channel.send(":x: A poll was ended early, as the message was deleted.")
