@@ -551,7 +551,7 @@ class EventCategoriesCog(commands.Cog):
                                 category=newCategory,
                                 overwrites=categoryOverwrites
                             )
-                            signinMenuMsg = await signinChannel.send(embed=Embed())
+                            signinMenuMsg = await signinChannel.send("​")
                             signinMenu = ReactionRoleMenu(
                                 signinMenuMsg,
                                 self.bot,
