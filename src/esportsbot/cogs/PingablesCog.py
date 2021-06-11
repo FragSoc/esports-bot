@@ -54,7 +54,7 @@ class PingablesCog(commands.Cog):
         """
         self.bot: "EsportsBot" = bot
 
-    @commands.group(name="pingme", invoke_without_command=True)
+    @commands.group(name="pingme", help="Get and create custom, cooldown-limited, pingable roles.", invoke_without_command=True)
     async def pingme(self, ctx: Context):
         """Non-functional command, for heirarchical command grouping.
 
