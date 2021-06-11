@@ -302,7 +302,7 @@ class MenusCog(commands.Cog):
                 await ctx.send(":x: Invalid target role!")
                 return
 
-        menuMsg = await ctx.send(embed=Embed())
+        menuMsg = await ctx.send("​")
 
         menu = reactionRoleMenu.ReactionRoleMenu(menuMsg, self.bot, reactionRoles, targetRole=targetRole, titleTxt=menuSubject)
         await menu.updateMessage()
