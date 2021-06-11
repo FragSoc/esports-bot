@@ -180,7 +180,7 @@ Admin command: Set the amount of time which `!pingme create` polls run for.
 ##### !pingme set-role-emoji {emoji}
 Admin command: Set the emoji which appears before the names of `!pingme` roles. Must be a built in emoji, not custom.
 
-##### !pingme remove-role-emoji {emoji}
+##### !pingme remove-role-emoji
 Admin command: Remove the emoji which appears before the names of `!pingme` roles.
 
 ##### !pingme create {role_name}
