@@ -321,11 +321,11 @@ class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
             e = lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True)
         except lib.exceptions.UnrecognisedCustomEmoji:
             exceptionThrown = True
+            e = None
         else:
             exceptionThrown = False
-            e = None
         print(f"correct message: {reactPL.message_id == self.msg.id}\ncorrect target member: {self.targetMember is None or reactPL.user_id == self.targetMember.id}" \
-                + f"\nexception thrown: {exceptionThrown}\ncorrect emoji: {e == self.yesOption.emoji}\nEmoji added: {e.sendable or 'None'}")
+                + f"\nexception thrown: {exceptionThrown}\ncorrect emoji: {e == self.yesOption.emoji}\nEmoji added: {'None' if e is None else e.sendable}")
         try:
             if reactPL.message_id == self.msg.id and (self.targetMember is None or reactPL.user_id == self.targetMember.id) and \
                     lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True) == self.yesOption.emoji:
