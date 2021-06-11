@@ -1,11 +1,11 @@
-from types import FrameType
+from types import FrameType, FunctionType
 from discord.ext import commands, tasks
 from discord import Intents, Embed, Message, Colour, Role
 from ..reactionMenus.reactionMenuDB import ReactionMenuDB
 from ..reactionMenus import reactionMenu
 from ..db_gateway import db_gateway
 from . import exceptions
-from typing import Dict, MutableMapping, Set, Union
+from typing import Dict, MutableMapping, Set, Union, List
 from datetime import datetime, timedelta
 import os
 import signal
@@ -288,6 +288,42 @@ class EsportsBot(commands.Bot):
         return roleUpdateTasks
 
 
+    
+    async def multiWaitFor(self, eventTypes: List[str], timeout: int, check: FunctionType = None):
+        """Performs discord.Client.wait_for, but with multiple possible event types.
+
+        :param List[str] eventTypes: The types of events which trigger the end of the wait
+        :param int timeout: Maximum number of seconds to wait for
+        :param FunctionType check: A function operating on the data of the event, deciding whether the event should end the wait
+        :return: The data attached to the resulting event
+        :raise asyncio.TimeoutError: When the wait ran out of time, with no matching event triggered
+        """
+
+        if check is not None:
+            done, pending = await asyncio.wait([
+                            self.wait_for(eventType, check=check) for eventType in eventTypes
+                        ], return_when=asyncio.FIRST_COMPLETED, timeout=timeout)
+        else:
+            done, pending = await asyncio.wait([
+                            self.wait_for(eventType) for eventType in eventTypes
+                        ], return_when=asyncio.FIRST_COMPLETED, timeout=timeout)
+
+        if not done:
+            raise asyncio.TimeoutError()
+        stuff = done.pop().result()
+
+        for future in done:
+            # If any exception happened in any other done tasks
+            # we don't care about the exception, but don't want the noise of
+            # non-retrieved exceptions
+            future.exception()
+
+        for future in pending:
+            future.cancel()  # we don't need these anymore
+
+        return stuff
+
+
 # Singular class instance of EsportsBot
 _instance: EsportsBot = None
 
@@ -300,5 +336,10 @@ def instance() -> EsportsBot:
     if _instance is None:
         intents = Intents.default()
         intents.members = True
-        _instance = EsportsBot('!', Emote.fromStr("⁉"), "esportsbot/user_strings.toml", intents=intents)
+        _instance = EsportsBot(
+            os.environ.get("COMMAND_PREFIX", "!"),
+            Emote.fromStr("⁉"),
+            "esportsbot/user_strings.toml",
+            intents=intents
+        )
     return _instance
