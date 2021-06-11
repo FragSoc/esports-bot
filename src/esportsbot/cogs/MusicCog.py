@@ -711,7 +711,7 @@ class MusicCog(commands.Cog):
 
         if not message.author.voice:
             # User is not in a voice channel.. exit
-            message_title = self.user_strings["no_voice_voice_channel"].format(author=message.author.mention)
+            message_title = self.user_strings["no_voice_voice_channel"].format(author=message.author.name)
             await send_timed_message(channel=message.channel,
                                      embed=Embed(title=message_title,
                                                  colour=EmbedColours.orange), timer=10)
@@ -719,7 +719,7 @@ class MusicCog(commands.Cog):
 
         if not message.author.voice.channel.permissions_for(message.guild.me).connect:
             # The bot does not have permission to join the channel.. exit
-            message_title = self.user_strings["no_perms_voice_channel"].format(author=message.author.mention)
+            message_title = self.user_strings["no_perms_voice_channel"].format(author=message.author.name)
             await send_timed_message(channel=message.channel, embed=Embed(title=message_title,
                                                                           colour=EmbedColours.orange), timer=10)
             return True
@@ -732,7 +732,7 @@ class MusicCog(commands.Cog):
         else:
             if self._currently_active.get(message.guild.id).get('channel_id') != message.author.voice.channel.id:
                 # The bot is already being used in the current guild.
-                message_title = self.user_strings["wrong_voice_voice_channel"].format(author=message.author.mention)
+                message_title = self.user_strings["wrong_voice_voice_channel"].format(author=message.author.name)
                 await send_timed_message(channel=message.channel,
                                          embed=Embed(title=message_title,
                                                      colour=EmbedColours.orange), timer=10)
