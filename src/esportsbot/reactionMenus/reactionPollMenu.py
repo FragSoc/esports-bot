@@ -325,7 +325,7 @@ class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
             exceptionThrown = False
             e = None
         print(f"correct message: {reactPL.message_id == self.msg.id}\ncorrect target member: {self.targetMember is None or reactPL.user_id == self.targetMember.id}" \
-                + f"exception thrown: {exceptionThrown}\ncorrect emoji: {e == self.yesOption.emoji}")
+                + f"\nexception thrown: {exceptionThrown}\ncorrect emoji: {e == self.yesOption.emoji}\nEmoji added: {e.sendable or 'None'}")
         try:
             if reactPL.message_id == self.msg.id and (self.targetMember is None or reactPL.user_id == self.targetMember.id) and \
                     lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True) == self.yesOption.emoji:
