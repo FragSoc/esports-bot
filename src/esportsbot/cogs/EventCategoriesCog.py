@@ -579,7 +579,8 @@ class EventCategoriesCog(commands.Cog):
                                     shared_role_name=sharedRole.name,
                                     command_prefix=self.bot.command_prefix,
                                     event_name=eventName,
-                                    event_general_mention=eventGeneral.mention
+                                    event_general_mention=eventGeneral.mention,
+                                    event_role_mention=eventRole.mention
                                 )
                             )
                             admin_message = self.STRINGS['admin_event_category_updated'][1].format(
