@@ -262,7 +262,7 @@ async def on_message(message):
             # Handle music channel messages
             guild_id = message.guild.id
             music_channel_in_db = client.MUSIC_CHANNELS.get(guild_id)
-            if music_channel_in_db:
+            if music_channel_in_db == message.channel.id:
                 # The message was in a music channel and a song should be found
                 music_cog_instance = client.cogs.get('MusicCog')
                 await music_cog_instance.on_message_handle(message)
