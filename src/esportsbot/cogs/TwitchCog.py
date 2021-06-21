@@ -1,7 +1,8 @@
+import asyncio
 import hashlib
 import hmac
 import os
-from typing import Any
+from typing import Any, List
 
 from tornado.httpserver import HTTPServer
 import tornado.web
@@ -18,6 +19,22 @@ SUBSCRIPTION_SECRET = os.getenv("TWITCH_SUB_SECRET")
 CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
 CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET")
 WEBHOOK_PREFIX = "TwitchHook-"
+
+
+class TwitchApp(Application):
+    def __init__(self, handlers=None, default_host=None, transforms=None, **settings: Any):
+        super().__init__(handlers, default_host, transforms, **settings)
+        self.seen_ids = []
+        self.hooks = {}
+
+    def load_discord_hooks(self, guild_hooks: List[List[Webhook]], bot_user_id: int):
+        for guild in guild_hooks:
+            # For each guild in the list...
+            for g_hook in guild:
+                # And for each Webhook in the guild...
+                if WEBHOOK_PREFIX in g_hook.name and g_hook.user.id == bot_user_id:
+                    # Only if the Webhook was created for the TwitterCog and by the bot.
+                    self.hooks[g_hook.id] = {"token": g_hook.token, "name": g_hook.name, "guild_id": g_hook.guild_id}
 
 
 class TwitchListener(tornado.web.RequestHandler):
@@ -37,7 +54,7 @@ class TwitchListener(tornado.web.RequestHandler):
         message_headers = current_request.headers
         query_args = current_request.query_arguments
 
-        if message_headers.get("Twitch-Eventsub-Message-Id") in self._seen_ids:
+        if message_headers.get("Twitch-Eventsub-Message-Id") in self.application.seen_ids:
             # Filter out messages already received. If Twitch thinks we have not received the message Twitch will
             # keep sending data with the same message ID, which we do not want to process again.
             self.logger.info("The message was already received before, ignoring!")
@@ -45,7 +62,7 @@ class TwitchListener(tornado.web.RequestHandler):
             await self.finish()
             return
         else:
-            self._seen_ids.add(message_headers.get("Twitch-Eventsub-Message-Id"))
+            self.application.seen_ids.add(message_headers.get("Twitch-Eventsub-Message-Id"))
 
         # Verify the message came from Twitch
         message_signature = message_headers.get("Twitch-Eventsub-Message-Signature")
@@ -62,8 +79,10 @@ class TwitchListener(tornado.web.RequestHandler):
 
         if expected_hmac != message_signature:
             # If the calculated HMAC is not the same as the signature provided in the header, return
-            self.logger.error("The message received at %s was not a legitimate message from Twitch, ignoring!",
-                              message_headers.get("Twitch-Eventsub-Message-Timestamp"))
+            self.logger.error(
+                "The message received at %s was not a legitimate message from Twitch, ignoring!",
+                message_headers.get("Twitch-Eventsub-Message-Timestamp")
+            )
             self.set_status(403)
             await self.finish()
             return
