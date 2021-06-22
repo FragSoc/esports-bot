@@ -16,16 +16,6 @@ import discord
 from datetime import datetime, timedelta
 import asyncio
 
-from random import randint
-
-new_guild_info = Voicemaster_master(guild_id=randint(10000000, 99999999), channel_id=randint(10000000, 99999999))
-DBGatewayActions().create(new_guild_info)
-
-find_guild = Voicemaster_master(guild_id=53512500)
-response = DBGatewayActions().list(find_guild)
-print(response)
-print(type(response))
-
 # Value to assign new guilds in their role_ping_cooldown_seconds attribute
 DEFAULT_ROLE_PING_COOLDOWN = timedelta(hours=5)
 # Value to assign new guilds in their pingme_create_poll_length_seconds attribute
