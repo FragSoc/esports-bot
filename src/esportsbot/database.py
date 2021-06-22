@@ -22,26 +22,48 @@ class DBGatewayActions():
     def __init__(self):
         super().__init__()
 
-    def list(self, model, **args):
+    def list(self, db_model, **args):
         """
         Method to return a list of results that suit the model criteria
 
         Args:
-            model (database_model): [A class that contains the necessary information for a query]
+            db_model (database_model): [The model to query in the database]
+            **args (model_attributes): [The attributes specified for the query]
 
         Returns:
             [list]: [Returns a list of all models that fit the input models criteria]
         """
-        reponse_list = session.query(model.guild_id).all()
-        return reponse_list
-        # reponse_list = []
-        # mapper = inspect(model)
-        # print(mapper)
-        # result = session.query(mapper)
-        # print(result)
+        try:
+            query = session.query(db_model).filter_by(**args).all()
+            return query
+        except Exception as err:
+            raise Exception(f"Error occured when using list - {err}")
 
-    def read(self):
-        return True
+    def update(self, model):
+        """
+        Method for updating a record in the database
+
+        Args:
+            model (database_model): [A class that contains the necessary information for an entry]
+        """
+        try:
+            session.add(model)
+            session.commit()
+        except Exception as err:
+            raise Exception(f"Error occured when using update - {err}")
+
+    def delete(self, model):
+        """
+        Method for deleting a record from the database
+
+        Args:
+            model (database_model): [A class that contains the necessary information for an entry]
+        """
+        try:
+            session.delete(model)
+            session.commit()
+        except Exception as err:
+            raise Exception(f"Error occured when using delete - {err}")
 
     def create(self, model):
         """
@@ -49,19 +71,9 @@ class DBGatewayActions():
 
         Args:
             model (database_model): [A class that contains the necessary information for an entry]
-
-        Returns:
-            [Boolean]: [Returns true if successful, otherwise false]
         """
         try:
             session.add(model)
             session.commit()
-            return True
-        except:
-            return False
-
-    def update(self):
-        return True
-
-    def delete(self):
-        return True
+        except Exception as err:
+            raise Exception(f"Error occured when using create - {err}")
