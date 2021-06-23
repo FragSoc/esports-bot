@@ -521,6 +521,22 @@ class TwitchCog(commands.Cog):
         await ctx.send("Made the hook")
         return True
 
+    @commands.command(alias=["deletetwitchhook"])
+    async def removetwitchhook(self, ctx, name):
+        h_id, hook_info = self.get_webhook_by_name(name, ctx.guild.id)
+        if hook_info is None:
+            # TODO: Add user strings
+            await ctx.send("No webhook with name %s".format(name))
+            return False
+
+        async with aiohttp.ClientSession() as session:
+            webhook = Webhook.partial(id=h_id, token=hook_info.get("token"),adapter=AsyncWebhookAdapter(session))
+            await webhook.delete(reason="Deleted with removetwitchhook command")
+            self._twitch_app.hooks.pop(h_id)
+        # TODO: Add user strings
+        await ctx.send("Webhook deleted")
+        return True
+
     @commands.command()
     async def addtwitch(self, ctx, channel):
         # TODO: Accept URLs
