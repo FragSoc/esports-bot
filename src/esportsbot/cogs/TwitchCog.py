@@ -498,6 +498,9 @@ class TwitchCog(commands.Cog):
         if hook_name is None:
             hook_name = DEFAULT_HOOK_NAME
 
+        if hook_name == WEBHOOK_PREFIX:
+            hook_name = DEFAULT_HOOK_NAME
+
         # If the channel was given, get the channel instance, else get the current channel from context.
         if channel is not None:
             text_channel = await self.channel_from_mention(channel)
