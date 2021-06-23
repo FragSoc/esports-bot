@@ -5,7 +5,7 @@ from datetime import datetime
 import hashlib
 import hmac
 import os
-from typing import Any, List
+from typing import Any
 
 import aiohttp
 import coloredlogs
@@ -18,7 +18,6 @@ import ast
 
 from discord.ext import commands
 from tornado import httputil
-from tornado.ioloop import IOLoop
 from tornado.web import Application
 
 import logging
@@ -44,6 +43,7 @@ class TwitchApp(Application):
     This TwitchApp is the application which the TwitchListener is serving and handling requests for.
     Mainly used to store data that is used across requests, as well as handling any API requests that need to be made.
     """
+
     def __init__(self, handlers=None, default_host=None, transforms=None, **settings: Any):
         super().__init__(handlers, default_host, transforms, **settings)
         self.seen_ids = set()
@@ -400,6 +400,7 @@ class TwitchCog(commands.Cog):
         self._bot = bot
         self.logger = logging.getLogger(__name__)
         self._db = db_gateway()
+        self.user_strings = self._bot.STRINGS["twitch"]
         self._http_server, self._twitch_app = self.setup_http_listener()
 
     @staticmethod
@@ -504,8 +505,10 @@ class TwitchCog(commands.Cog):
             text_channel = ctx.channel
 
         if text_channel is None:
-            # TODO: Add user strings
-            await ctx.send("Unable to add hook")
+            await ctx.send(
+                self.user_strings["webhook_error"].format(operation="create",
+                                                          reason="I am unable to find that channel")
+            )
             return False
 
         hook_name = WEBHOOK_PREFIX + hook_name
@@ -519,8 +522,12 @@ class TwitchCog(commands.Cog):
                 ctx.guild.name,
                 ctx.guild.id
             )
-            # TODO: Add user strings
-            await ctx.send("Unable to make hook")
+            await ctx.send(
+                self.user_strings["webhook_error"].format(
+                    operation="create",
+                    reason=f"there is already a Webhook with the name {hook_name}"
+                )
+            )
             return False
 
         self.logger.info(
@@ -548,8 +555,7 @@ class TwitchCog(commands.Cog):
             hook.channel.id
         )
         self._twitch_app.add_hook(hook)
-        # TODO: Add user strings
-        await ctx.send("Made the hook")
+        await ctx.send(self.user_strings["webhook_created"].format(name=hook.name, hook_id=hook.id))
         return True
 
     @commands.command(alias=["deletetwitchhook"])
@@ -563,16 +569,19 @@ class TwitchCog(commands.Cog):
 
         h_id, hook_info = self.get_webhook_by_name(name, ctx.guild.id)
         if hook_info is None:
-            # TODO: Add user strings
-            await ctx.send("No webhook with name %s".format(name))
+            await ctx.send(
+                self.user_strings["webhook_error"].format(
+                    operation="remove",
+                    reason=f"there is no Webhook with name {name} or {WEBHOOK_PREFIX + name}"
+                )
+            )
             return False
 
         async with aiohttp.ClientSession() as session:
             webhook = Webhook.partial(id=h_id, token=hook_info.get("token"), adapter=AsyncWebhookAdapter(session))
             await webhook.delete(reason="Deleted with removetwitchhook command")
             self._twitch_app.hooks.pop(h_id)
-        # TODO: Add user strings
-        await ctx.send("Webhook deleted")
+        await ctx.send(self.user_strings["webhook_deleted"].format(name=hook_info.get("name"), hook_id=h_id))
         return True
 
     @commands.command()
@@ -601,8 +610,7 @@ class TwitchCog(commands.Cog):
                     ctx.guild.name,
                     ctx.guild.id
                 )
-                # TODO: Add user strings
-                await ctx.send("Not adding, already tracked")
+                await ctx.send(self.user_strings["account_exists_error"].format(channel=channel))
                 return False
             else:
                 # Channel is tracked in other guilds, but not this one, add it to the tracked channels:
@@ -616,8 +624,7 @@ class TwitchCog(commands.Cog):
                         "custom_message": custom_message
                     }
                 )
-                # TODO: Add user strings
-                await ctx.send("Now tracking {}'s channel in this guil!".format(channel))
+                await ctx.send(self.user_strings["channel_added"].format(channel=channel))
                 return True
 
         # Channel is not tracked in any guild yet:
@@ -632,13 +639,11 @@ class TwitchCog(commands.Cog):
                     "custom_message": custom_message
                 }
             )
-            # TODO: Add user strings
-            await ctx.send("Now subbed to event")
+            await ctx.send(self.user_strings["channel_added"].format(channel=channel))
             return True
         else:
             self.logger.error("Unable to create new EventSub for %s Twitch channel", channel)
-            # TODO: Add user strings
-            await ctx.send("Unable to create eventsub sub")
+            await ctx.send(self.user_strings["generic_error"].format(channel=channel))
             return False
 
     @commands.command()
@@ -655,15 +660,13 @@ class TwitchCog(commands.Cog):
         if channel_id not in self._twitch_app.tracked_channels:
             # The channel was not tracked in any guild.
             self.logger.info("No longer tracking %s Twitch channel, was not tracked before", channel)
-            # TODO: Add user strings
-            await ctx.send("%s's Twitch channel will no longer be tracked in this server!".format(channel))
+            await ctx.send(self.user_strings["channel_removed"].format(channel=channel))
             return False
 
         if ctx.guild.id not in self._twitch_app.tracked_channels.get(channel_id):
             # The channel was not tracked in the current guild.
             self.logger.info("No longer tracking %s Twitch channel, was not tracked before", channel)
-            # TODO: Add user strings
-            await ctx.send("%s's Twitch channel will no longer be tracked in this server!".format(channel))
+            await ctx.send(self.user_strings["channel_removed"].format(channel=channel))
             return False
 
         if ctx.guild.id in self._twitch_app.tracked_channels.get(channel_id) and \
@@ -672,8 +675,7 @@ class TwitchCog(commands.Cog):
             self._twitch_app.tracked_channels[channel_id].remove(ctx.guild.id)
             self._db.delete("twitch_info", where_params={"guild_id": ctx.guild.id, "twitch_channel_id": channel_id})
             self.logger.info("No longer tracking %s Twitch channel in %s(%s)", channel, ctx.guild.name, ctx.guild.id)
-            # TODO: Add user strings
-            await ctx.send("%s's Twitch channel will no longer be tracked in this server!".format(channel))
+            await ctx.send(self.user_strings["channel_removed"].format(channel=channel))
             return True
 
         event = None
@@ -689,8 +691,7 @@ class TwitchCog(commands.Cog):
         self._db.delete("twitch_info", where_params={"guild_id": ctx.guild.id, "twitch_channel_id": channel_id})
         self._twitch_app.tracked_channels.pop(channel_id)
         self.logger.info("No longer tracking %s Twitch channel in %s(%s)", channel, ctx.guild.name, ctx.guild.id)
-        # TODO: Add user strings
-        await ctx.send("%s's Twitch channel will no longer be tracked in this server!".format(channel))
+        await ctx.send(self.user_strings["channel_removed"].format(channel=channel))
         return True
 
     @commands.command()
@@ -707,8 +708,7 @@ class TwitchCog(commands.Cog):
         )
 
         if len(all_channels) == 0:
-            # TODO: Add user strings
-            await ctx.send("There are no channels tracked in this guild")
+            await ctx.send(self.user_strings["channels_empty"])
             return
 
         embed = Embed(title="**Currently Tracked Channels:**", description="​", color=TWITCH_EMBED_COLOUR)

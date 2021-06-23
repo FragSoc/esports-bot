@@ -139,3 +139,12 @@ admin_role_menu_reset = ["Role menu reset", "id: {menu_id}\ntype: {menu_type}\n[
 admin_role_removed = ["Event Role removed", "Users: {users!s}\n<@&{event_role_id!s}>"]
 admin_shared_role_set = ["Shared role set", "<@&{role_id!s}>"]
 admin_signin_visible = ["Event signin channel made visible", "<#{channel_id}>"]
+
+[twitch]
+generic_error = "There was an error while trying to add {channel} as a tracked channel"
+webhook_created = "Created a Webhook -> Name: {name} , ID: {hook_id}"
+webhook_deleted = "Deleted a Webhook with Name: {name} and ID: {hook_id}"
+webhook_error = "Unable to {operation} Webhook because {reason}"
+channel_added = "Successfully added {channel} to tracked channels"
+channel_removed = "Successfully removed {channel} from tracked channels"
+channels_empty = "There are no channels currently tracked in this server"
