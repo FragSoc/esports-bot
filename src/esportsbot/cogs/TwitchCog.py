@@ -738,6 +738,25 @@ class TwitchCog(commands.Cog):
         self._db.pure_return(f"UPDATE twitch_info SET custom_message={message} WHERE guild_id={ctx.guild.id} AND twitch_channel_id={channel_id}")
         await ctx.send(self.user_strings["set_custom_message"].format(channel=channel, message=message))
 
+    @commands.command(alias=["gettwitchmessage", "getcustommessage"])
+    async def getcustomtwitchmessage(self, ctx, channel):
+        """
+        Gets the custom message for a Twitch account.
+        :param ctx: The context of the command.
+        :param channel: The Twitch channel to get the custom message of.
+        """
+
+        channel_info = await self._twitch_app.get_channel_info(channel_name=channel)
+        channel_id = channel_info.get("id")
+
+        message = self._db.pure_return(f"SELECT custom_message from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id={channel_id}")
+        custom_message = message[0].get("custom_message")
+
+        if custom_message is None:
+            custom_message = "not set"
+
+        await ctx.send(self.user_strings["get_custom_message"].format(channel=channel, message=custom_message))
+
     # TODO: Probably best to move this to lib or some other as it is shared by TwitterCog
     async def channel_from_mention(self, c_id):
         """
