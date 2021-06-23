@@ -44,7 +44,6 @@ class TwitchApp(Application):
     This TwitchApp is the application which the TwitchListener is serving and handling requests for.
     Mainly used to store data that is used across requests, as well as handling any API requests that need to be made.
     """
-
     def __init__(self, handlers=None, default_host=None, transforms=None, **settings: Any):
         super().__init__(handlers, default_host, transforms, **settings)
         self.seen_ids = set()
@@ -122,7 +121,7 @@ class TwitchApp(Application):
     async def load_tracked_channels(self, db_channels):
         """
         From the channel data gathered from the database, check that each of them are being tracked by a subscription and
-        removes any old subscriptions that are no longer being tracked and sets the tracked_channels attribute to db_channels
+        removes any old subscriptions that are no longer being tracked and sets the tracked_channels attribute to db_channels.
         :param db_channels: The dictionary of channel IDs to set of guild IDs
         """
 
@@ -162,7 +161,7 @@ class TwitchApp(Application):
 
     async def delete_subscription(self, event_id):
         """
-        Deletes a Twitch Event Subscription given the Event's ID
+        Deletes a Twitch Event Subscription given the Event's ID.
         :param event_id: The ID of the event to delete.
         """
 
@@ -192,7 +191,7 @@ class TwitchApp(Application):
             return
 
         if channel_id is None:
-            # Get the channel ID from the channel name
+            # Get the channel ID from the channel name.
             channel_info = await self.get_channel_info(channel_name)
             channel_id = channel_info.get("id")
 
@@ -230,7 +229,7 @@ class TwitchApp(Application):
         """
         Returns the information about the given channel using its name as the lookup parameter.
         :param channel_name: The name of the channel.
-        :return:
+        :return: A dictionary containing the information about a twitch channel or None if there was an error.
         """
 
         channel_url = "https://api.twitch.tv/helix/search/channels"
@@ -269,6 +268,7 @@ class TwitchApp(Application):
         :param hook: The hook to add.
         :return: A boolean of weather the hook was added to the dictionary of hooks.
         """
+
         if hook.id in self.hooks:
             return False
         self.hooks[hook.id] = {"token": hook.token, "name": hook.name, "guild_id": hook.guild_id}
@@ -301,9 +301,7 @@ class TwitchListener(tornado.web.RequestHandler):
         calculated_signature = hmac.new(secret_bytes, hmac_message_bytes, hashlib.sha256)
         expected_signature = "sha256=" + calculated_signature.hexdigest()
 
-        if expected_signature != message_signature:
-            return False
-        return True
+        return expected_signature == message_signature
 
     async def post(self):
         """
@@ -341,7 +339,7 @@ class TwitchListener(tornado.web.RequestHandler):
         # POST requests from Twitch will either be to confirm that we own the webhook we just created or will be a notification
         # for an event we are subscribed to.
         if message_headers.get("Twitch-Eventsub-Message-Type") == "webhook_callback_verification":
-            # Received shortly after creating a new EventSub
+            # Received shortly after creating a new EventSub.
             challenge = body_dict.get("challenge")
             self.application.subscriptions.append(body_dict.get("subscription"))
             self.logger.info("Responding to Webhook Verification Callback with challenge: %s", challenge)
@@ -367,7 +365,7 @@ class TwitchListener(tornado.web.RequestHandler):
         stream_title = channel_info.get("title")
         user_icon = channel_info.get("thumbnail_url")
 
-        # Create the embed to send to the webhook
+        # Create the embed to send to the webhook.
         embed = Embed(
             title=stream_title,
             url=f"https://www.twitch.tv/{channel_name}",
@@ -377,12 +375,14 @@ class TwitchListener(tornado.web.RequestHandler):
         embed.set_author(name=channel_name, url=f"https://www.twitch.tv/{channel_name}", icon_url=user_icon)
         embed.set_thumbnail(url=user_icon)
 
+        # Get the list of guilds to send the update to.
         channel_guilds = self.application.tracked_channels.get(channel_info.get("id"))
 
         async with aiohttp.ClientSession() as session:
             hook_adapter = AsyncWebhookAdapter(session)
             for hook_id in self.application.hooks:
                 if self.application.hooks.get(hook_id).get("guild_id") not in channel_guilds:
+                    # Webhook's guild is not one in the channels guilds.
                     continue
 
                 hook_token = self.application.hooks.get(hook_id).get("token")
@@ -404,7 +404,12 @@ class TwitchCog(commands.Cog):
 
     @staticmethod
     def setup_http_listener():
-        # Setup the TwitchListener to listen for /webhook requests
+        """
+        Sets up the HTTP server to receieve the requests from Twitch.
+        :return: A tuple containing the instance of the HTTP server and the Application running in the server.
+        """
+
+        # Setup the TwitchListener to listen for /webhook requests.
         app = TwitchApp([(r"/webhook", TwitchListener)])
         http_server = HTTPServer(app, ssl_options={"certfile": "server.crt", "keyfile": "server.key"})
         http_server.listen(443)
@@ -412,7 +417,10 @@ class TwitchCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        # Wait for ready before starting to listen.
+        """
+        Is run when the Discord bot gives the signal that it is connected and ready.
+        """
+
         # TODO: Remove temp code
         with open("bearer", "r") as f:
             lines = f.readlines()
@@ -427,6 +435,7 @@ class TwitchCog(commands.Cog):
         self._http_server.start()
 
         self.logger.info("Loading Discord Webhooks...")
+
         tasks = []
         for guild in self._bot.guilds:
             self.logger.info("Loading webhooks from %s(%s)", guild.name, guild.id)
@@ -435,16 +444,28 @@ class TwitchCog(commands.Cog):
             else:
                 self.logger.error("Missing permission 'manage webhooks' in guild %s(%s)", guild.name, guild.id)
 
+        # Wait for all the tasks to finish.
         results = await asyncio.gather(*tasks)
 
+        # Add the hooks to the App.
         self._twitch_app.load_discord_hooks(results, self._bot.user.id)
 
+        # Load tracked accounts from DB.
         db_data = self.load_db_data()
         await self._twitch_app.load_tracked_channels(db_data)
         if len(db_data) > 0:
             self.logger.info("Currently tracking %d Twitch channels(s)", len(db_data))
         else:
             self.logger.warning("There are no Twitch channels that are currently tracked!")
+
+    @commands.Cog.listener()
+    async def on_disconnect(self):
+        """
+        Is executed whenever the client loses a connection to Discord. Could be when no internet or when logged out.
+        """
+
+        if self._bot.is_closed:
+            self._http_server.stop()
 
     @commands.Cog.listener()
     async def on_webhooks_update(self, channel):
@@ -454,7 +475,7 @@ class TwitchCog(commands.Cog):
     def load_db_data(self):
         """
         Loads all the currently tracked Twitch channels and which guilds they are tracked in from the database.
-        :return: A dictionary of Twitch channel ID to a set of guild IDs
+        :return: A dictionary of Twitch channel ID to a set of guild IDs.
         """
 
         db_data = self._db.pure_return("SELECT guild_id, twitch_channel_id FROM twitch_info")
@@ -465,9 +486,18 @@ class TwitchCog(commands.Cog):
 
     @commands.command(alias=["addtwitchhook", "createtwitchhook"])
     async def twitchhook(self, ctx, channel=None, hook_name=None):
+        """
+        Creates a new Discord Webhook for use of the Twitch updates.
+        :param ctx: The context of the command.
+        :param channel: The channel to bind the Webhook to if not None.
+        :param hook_name: The name of the Webhook if not None.
+        :return: Whether a Webhook was created with the given name and bound to the given channel.
+        """
+
         if hook_name is None:
             hook_name = DEFAULT_HOOK_NAME
 
+        # If the channel was given, get the channel instance, else get the current channel from context.
         if channel is not None:
             text_channel = await self.channel_from_mention(channel)
         else:
@@ -482,6 +512,7 @@ class TwitchCog(commands.Cog):
         existing, _ = self.get_webhook_by_name(hook_name, ctx.guild.id)
 
         if existing is not None:
+            # Webhook already exists with the given name.
             self.logger.warning(
                 "Attempted to create Webhook with name %s but one already exists with that name in %s(%s)",
                 hook_name,
@@ -504,7 +535,7 @@ class TwitchCog(commands.Cog):
         hook = await text_channel.create_webhook(
             name=hook_name,
             reason=f"{ctx.author.name}#{ctx.author.discriminator} "
-                   f"created a webhook for #{text_channel.name} using the twitchhook command."
+            f"created a webhook for #{text_channel.name} using the twitchhook command."
         )
 
         self.logger.info(
@@ -523,6 +554,13 @@ class TwitchCog(commands.Cog):
 
     @commands.command(alias=["deletetwitchhook"])
     async def removetwitchhook(self, ctx, name):
+        """
+        Deletes a Discord Webhook using the given name.
+        :param ctx: The context of the command.
+        :param name: The name of the Webhook to delete.
+        :return: A boolean of if the Webhook was deleted or not.
+        """
+
         h_id, hook_info = self.get_webhook_by_name(name, ctx.guild.id)
         if hook_info is None:
             # TODO: Add user strings
@@ -530,7 +568,7 @@ class TwitchCog(commands.Cog):
             return False
 
         async with aiohttp.ClientSession() as session:
-            webhook = Webhook.partial(id=h_id, token=hook_info.get("token"),adapter=AsyncWebhookAdapter(session))
+            webhook = Webhook.partial(id=h_id, token=hook_info.get("token"), adapter=AsyncWebhookAdapter(session))
             await webhook.delete(reason="Deleted with removetwitchhook command")
             self._twitch_app.hooks.pop(h_id)
         # TODO: Add user strings
@@ -539,6 +577,13 @@ class TwitchCog(commands.Cog):
 
     @commands.command()
     async def addtwitch(self, ctx, channel):
+        """
+        Add a Twitch channel to be tracked in the current guild.
+        :param ctx: The context of the command.
+        :param channel: The name of the Twitch channel to track.
+        :return: A boolean if the channel was added to the tracked channels.
+        """
+
         # TODO: Accept URLs
         # TODO: Accept custom live messages
         channel_info = await self._twitch_app.get_channel_info(channel)
@@ -593,6 +638,13 @@ class TwitchCog(commands.Cog):
 
     @commands.command()
     async def removetwitch(self, ctx, channel):
+        """
+        Remove a Twitch channel from being tracked in the current guild.
+        :param ctx: The context of the command.
+        :param channel: The Twitch channel to stop tracking.
+        :return: A boolean if the channel is no longer being tracked in the current guild.
+        """
+
         channel_info = await self._twitch_app.get_channel_info(channel_name=channel)
         channel_id = channel_info.get("id")
         if channel_id not in self._twitch_app.tracked_channels:
@@ -613,14 +665,14 @@ class TwitchCog(commands.Cog):
                 len(self._twitch_app.tracked_channels.get(channel_id)) > 1:
             # The channel is tracked in other guilds.
             self._twitch_app.tracked_channels[channel_id].remove(ctx.guild.id)
-            self._db.delete("twitch_info", where_params={"guild_id": ctx.guild.id,"twitch_channel_id": channel_id})
+            self._db.delete("twitch_info", where_params={"guild_id": ctx.guild.id, "twitch_channel_id": channel_id})
             self.logger.info("No longer tracking %s Twitch channel in %s(%s)", channel, ctx.guild.name, ctx.guild.id)
             # TODO: Add user strings
             await ctx.send("%s's Twitch channel will no longer be tracked in this server!".format(channel))
             return True
 
         event = None
-        # Find the event id to be used to delete the EventSub
+        # Find the event id to be used to delete the EventSub.
         for subscription in self._twitch_app.subscriptions:
             if subscription.get("condition").get("broadcaster_user_id") == channel_id:
                 event = subscription.get("id")
@@ -638,9 +690,16 @@ class TwitchCog(commands.Cog):
 
     @commands.command()
     async def listtwitch(self, ctx):
-        all_channels = self._db.pure_return(f"SELECT twitch_handle, custom_message "
-                                            f"FROM twitch_info "
-                                            f"WHERE guild_id={ctx.guild.id}")
+        """
+        Sends a list of the currently tracked Twitch channels in the current guild and their custom messages.
+        :param ctx: The context of the command.
+        """
+
+        all_channels = self._db.pure_return(
+            f"SELECT twitch_handle, custom_message "
+            f"FROM twitch_info "
+            f"WHERE guild_id={ctx.guild.id}"
+        )
 
         if len(all_channels) == 0:
             # TODO: Add user strings
@@ -658,6 +717,12 @@ class TwitchCog(commands.Cog):
 
     # TODO: Probably best to move this to lib or some other as it is shared by TwitterCog
     async def channel_from_mention(self, c_id):
+        """
+        Gets an instance of a channel when the channel was mentioned in the message.
+        :param c_id: The mentioned channel.
+        :return: An instance of a channel or None if there is no channel with the given mention.
+        """
+
         if not strIsChannelMention(c_id):
             # The string was not a mentioned channel.
             return None
@@ -675,10 +740,19 @@ class TwitchCog(commands.Cog):
 
     # TODO: Probably best to move this to lib or some other as it is shared by TwitterCog
     def get_webhook_by_name(self, name, guild_id):
+        """
+        Gets the information about a Discord Webhook given its name.
+        :param name: The name of the Webhook.
+        :param guild_id: The ID of the guild where the Webhook is in.
+        :return: A Tuple of hook ID and hook information.
+        """
+
         current_hooks = self._twitch_app.hooks
+        if WEBHOOK_PREFIX not in name:
+            # Only find webhooks created for this cog.
+            name = WEBHOOK_PREFIX + name
         for hook in current_hooks:
-            if current_hooks.get(hook).get("name") == name or current_hooks.get(hook).get("name") == (WEBHOOK_PREFIX + name):
-                # Check for the name as well as the name combined with the prefix.
+            if current_hooks.get(hook).get("name") == name:
                 if current_hooks.get(hook).get("guild_id") == guild_id:
                     return hook, current_hooks.get(hook)
 
