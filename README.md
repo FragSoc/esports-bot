@@ -262,7 +262,18 @@ $ openssl req -new -out reqout.txt -key server.key
 ```  
 $ openssl x509 -req -in reqout.txt -days 3650 -sha1 -CAcreateserial -CA root.crt -CAkey servercakey.pem -out server.crt  
 ```  
-6. Move the `server.crt` file and `server.key` to the root file directory of the bot (i.e., the same directory as your `secrets.env` etc.)  
+6. Move the `server.crt` file and `server.key` to the root file directory of the bot (i.e., the same directory as your `secrets.env` etc.)
+
+### Getting your Twitch Credentials:
+1. Go to the [Twitch Developers](https://dev.twitch.tv/) site.
+2. Once logged in, in the top left, go to `Your Console` or [this](https://dev.twitch.tv/console) site.
+3. Register a new application using any name and the OAuth Redirect URL of `http://localhost`.
+4. Once created, click `manage`. Copy the string that is in `Client ID` and then click the `New Secret` button to generate a new `Client Secret` and then copy the string it generates.
+
+In your `secrets.env` file the `TWITCH_SUB_SECRET` should be a string that is 10-100 characters long and should not be shared anywhere. This is used to authenticate if a message has come from Twitch or if it has been altered along the way. 
+
+The `TWITCH_CALLBACK` is the URL to your HTTPS server. For testing you can use `ngrok`: 
+- Run `ngrok http 443` and copy the `https` URL **not** the `htttp` URL and use that as your `TWITCH_CALLBACK` variable.
   
 #### !twitch createhook [optional: channel_mention] [optional: hook_name]  
 * Creates a Discord Webhook bound to the channel the command was executed in, unless a channel is given, and with a default name unless a name is given.  
