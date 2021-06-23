@@ -155,9 +155,8 @@ def generate_schema():
         CREATE TABLE public.twitch_info(
             id bigint NOT NULL,
             guild_id bigint NOT NULL,
-            channel_id bigint NOT NULL,
+            twitch_user_id text NOT NULL,
             twitch_handle character varying NOT NULL,
-            currently_live boolean NOT NULL,
             custom_message character varying
         );
         ALTER TABLE public.twitch_info ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY(
