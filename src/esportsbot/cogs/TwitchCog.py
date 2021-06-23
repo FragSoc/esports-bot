@@ -720,6 +720,24 @@ class TwitchCog(commands.Cog):
 
         await ctx.send(embed=embed)
 
+    @commands.command(alias=["edittwitchmessage", "settwitchmessage"])
+    async def twitchcustommessage(self, ctx, channel, message: str = None):
+        """
+        Sets the custom live message for a Twitch channel.
+        :param ctx: The context of the command.
+        :param channel: The Twitch channel to set the custom message for.
+        :param message: The message to set the custom message to.
+        """
+
+        channel_info = await self._twitch_app.get_channel_info(channel_name=channel)
+        channel_id = channel_info.get("id")
+
+        if message.strip() == "" or message == "":
+            message = None
+
+        self._db.pure_return(f"UPDATE twitch_info SET custom_message={message} WHERE guild_id={ctx.guild.id} AND twitch_channel_id={channel_id}")
+        await ctx.send(self.user_strings["set_custom_message"].format(channel=channel, message=message))
+
     # TODO: Probably best to move this to lib or some other as it is shared by TwitterCog
     async def channel_from_mention(self, c_id):
         """
