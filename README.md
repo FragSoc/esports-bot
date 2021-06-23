@@ -49,7 +49,7 @@ $ cd Esports-Bot-Rewrite
 3. Rename the `secrets.template` to `secrets.env` and set all the variables. Ensure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:  
 ```console  
 $ nano secrets.env  
-```  
+```
 4. Install all the requirements for python:  
 ```bash  
 pip install -r requirements.txt  
