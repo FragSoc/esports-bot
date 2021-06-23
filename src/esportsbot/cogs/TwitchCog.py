@@ -8,8 +8,6 @@ import os
 from typing import Any
 
 import aiohttp
-import coloredlogs
-import dotenv
 from discord import Webhook, Embed, AsyncWebhookAdapter, Forbidden
 from tornado.httpserver import HTTPServer
 import tornado.web
@@ -23,7 +21,6 @@ from tornado.web import Application
 import logging
 
 from src.esportsbot.db_gateway import db_gateway
-from src.esportsbot.generate_schema import generate_schema
 from src.esportsbot.lib.stringTyping import strIsChannelMention
 
 SUBSCRIPTION_SECRET = os.getenv("TWITCH_SUB_SECRET")
@@ -485,8 +482,12 @@ class TwitchCog(commands.Cog):
             guild_info[str(item.get("twitch_channel_id"))].add(item.get("guild_id"))
         return guild_info
 
-    @commands.command(alias=["addtwitchhook", "createtwitchhook"])
-    async def twitchhook(self, ctx, channel=None, hook_name=None):
+    @commands.group(pass_context=True)
+    async def twitch(self, ctx):
+        pass
+
+    @twitch.command()
+    async def createhook(self, ctx, channel=None, hook_name=None):
         """
         Creates a new Discord Webhook for use of the Twitch updates.
         :param ctx: The context of the command.
@@ -561,8 +562,8 @@ class TwitchCog(commands.Cog):
         await ctx.send(self.user_strings["webhook_created"].format(name=hook.name, hook_id=hook.id))
         return True
 
-    @commands.command(alias=["deletetwitchhook"])
-    async def removetwitchhook(self, ctx, name):
+    @twitch.command()
+    async def removehook(self, ctx, name):
         """
         Deletes a Discord Webhook using the given name.
         :param ctx: The context of the command.
@@ -587,8 +588,8 @@ class TwitchCog(commands.Cog):
         await ctx.send(self.user_strings["webhook_deleted"].format(name=hook_info.get("name"), hook_id=h_id))
         return True
 
-    @commands.command()
-    async def addtwitch(self, ctx, channel, custom_message=None):
+    @twitch.command()
+    async def add(self, ctx, channel, custom_message=None):
         """
         Add a Twitch channel to be tracked in the current guild.
         :param ctx: The context of the command.
@@ -649,8 +650,8 @@ class TwitchCog(commands.Cog):
             await ctx.send(self.user_strings["generic_error"].format(channel=channel))
             return False
 
-    @commands.command()
-    async def removetwitch(self, ctx, channel):
+    @twitch.command()
+    async def remove(self, ctx, channel):
         """
         Remove a Twitch channel from being tracked in the current guild.
         :param ctx: The context of the command.
@@ -697,8 +698,8 @@ class TwitchCog(commands.Cog):
         await ctx.send(self.user_strings["channel_removed"].format(channel=channel))
         return True
 
-    @commands.command()
-    async def listtwitch(self, ctx):
+    @twitch.command()
+    async def list(self, ctx):
         """
         Sends a list of the currently tracked Twitch channels in the current guild and their custom messages.
         :param ctx: The context of the command.
@@ -723,8 +724,8 @@ class TwitchCog(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(alias=["edittwitchmessage", "settwitchmessage"])
-    async def twitchcustommessage(self, ctx, channel, message: str = None):
+    @twitch.command()
+    async def setmessage(self, ctx, channel, message: str = None):
         """
         Sets the custom live message for a Twitch channel.
         :param ctx: The context of the command.
@@ -735,7 +736,7 @@ class TwitchCog(commands.Cog):
         channel_info = await self._twitch_app.get_channel_info(channel_name=channel)
         channel_id = channel_info.get("id")
 
-        if message.strip() == "" or message == "":
+        if message is not None and message.strip() == "" or message == "":
             message = None
 
         self._db.pure_return(
@@ -743,8 +744,8 @@ class TwitchCog(commands.Cog):
         )
         await ctx.send(self.user_strings["set_custom_message"].format(channel=channel, message=message))
 
-    @commands.command(alias=["gettwitchmessage", "getcustommessage"])
-    async def getcustomtwitchmessage(self, ctx, channel):
+    @twitch.command()
+    async def getmessage(self, ctx, channel):
         """
         Gets the custom message for a Twitch account.
         :param ctx: The context of the command.
@@ -755,7 +756,7 @@ class TwitchCog(commands.Cog):
         channel_id = channel_info.get("id")
 
         message = self._db.pure_return(
-            f"SELECT custom_message from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id={channel_id}"
+            f"SELECT custom_message from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id='{channel_id}'"
         )
         custom_message = message[0].get("custom_message")
 
