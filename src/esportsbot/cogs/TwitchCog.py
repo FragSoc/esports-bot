@@ -35,7 +35,7 @@ BEARER_PADDING = 2 * 60  # Number of minutes before expiration of bearer where t
 DATETIME_FMT = "%d/%m/%Y %H:%M:%S"
 TWITCH_EMBED_COLOUR = 0x6441a4
 TWITCH_ICON = "https://pbs.twimg.com/profile_images/1189705970164875264/oXl0Jhyd_400x400.jpg"
-CALLBACK_URL = ""  # The URL to be used as for the event callback.
+CALLBACK_URL = os.getenv("TWITCH_CALLBACK") + "/webhook"  # The URL to be used as for the event callback.
 DEFAULT_HOOK_NAME = "DefaultTwitchHook"
 
 
