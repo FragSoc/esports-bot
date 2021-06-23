@@ -576,16 +576,19 @@ class TwitchCog(commands.Cog):
         return True
 
     @commands.command()
-    async def addtwitch(self, ctx, channel):
+    async def addtwitch(self, ctx, channel, custom_message=None):
         """
         Add a Twitch channel to be tracked in the current guild.
         :param ctx: The context of the command.
         :param channel: The name of the Twitch channel to track.
+        :param custom_message: The custom message to send along with the notification.
         :return: A boolean if the channel was added to the tracked channels.
         """
 
-        # TODO: Accept URLs
-        # TODO: Accept custom live messages
+        # Accept urls and get just the channel from the url.
+        if "https://twitch.tv/" in channel:
+            channel = channel.split("tv/")[-1]
+
         channel_info = await self._twitch_app.get_channel_info(channel)
         channel_id = channel_info.get("id")
         if channel_id in self._twitch_app.tracked_channels:
@@ -609,7 +612,8 @@ class TwitchCog(commands.Cog):
                     params={
                         "guild_id": ctx.guild.id,
                         "twitch_channel_id": str(channel_id),
-                        "twitch_handle": channel
+                        "twitch_handle": channel,
+                        "custom_message": custom_message
                     }
                 )
                 # TODO: Add user strings
@@ -624,7 +628,8 @@ class TwitchCog(commands.Cog):
                 params={
                     "guild_id": ctx.guild.id,
                     "twitch_channel_id": str(channel_id),
-                    "twitch_handle": channel
+                    "twitch_handle": channel,
+                    "custom_message": custom_message
                 }
             )
             # TODO: Add user strings
@@ -632,7 +637,7 @@ class TwitchCog(commands.Cog):
             return True
         else:
             self.logger.error("Unable to create new EventSub for %s Twitch channel", channel)
-            # TODO: Add user stringsd
+            # TODO: Add user strings
             await ctx.send("Unable to create eventsub sub")
             return False
 
