@@ -735,7 +735,9 @@ class TwitchCog(commands.Cog):
         if message.strip() == "" or message == "":
             message = None
 
-        self._db.pure_return(f"UPDATE twitch_info SET custom_message={message} WHERE guild_id={ctx.guild.id} AND twitch_channel_id={channel_id}")
+        self._db.pure_return(
+            f"UPDATE twitch_info SET custom_message={message} WHERE guild_id={ctx.guild.id} AND twitch_channel_id={channel_id}"
+        )
         await ctx.send(self.user_strings["set_custom_message"].format(channel=channel, message=message))
 
     @commands.command(alias=["gettwitchmessage", "getcustommessage"])
@@ -749,7 +751,9 @@ class TwitchCog(commands.Cog):
         channel_info = await self._twitch_app.get_channel_info(channel_name=channel)
         channel_id = channel_info.get("id")
 
-        message = self._db.pure_return(f"SELECT custom_message from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id={channel_id}")
+        message = self._db.pure_return(
+            f"SELECT custom_message from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id={channel_id}"
+        )
         custom_message = message[0].get("custom_message")
 
         if custom_message is None:
