@@ -619,7 +619,7 @@ class TwitchCog(commands.Cog):
         name="add",
         usage="<channel name|channel url> [custom message]",
         help="Adds a Twitch channel to be tracked for when it goes live. If a custom 'go live' message is given it must be "
-             "surrounded by double quotes"
+        "surrounded by double quotes"
     )
     async def add(self, ctx, channel, custom_message=None):
         """
@@ -634,29 +634,37 @@ class TwitchCog(commands.Cog):
         if "https://twitch.tv/" in channel:
             channel = channel.split("tv/")[-1]
 
-        channel_info = await self._twitch_app.get_channel_info(channel)
+        if channel_id := (await self.get_channel_id(ctx, channel)):
+            if channel_id in self._twitch_app.tracked_channels:
+                # Channel is already tracked in one or more guilds:
+                if ctx.guild.id in self._twitch_app.tracked_channels.get(channel_id):
+                    # Channel is already tracked in this guild.
+                    self.logger.info(
+                        "Not adding %s to tracked Twitch channels as it is already tracked in %s(%s)",
+                        channel,
+                        ctx.guild.name,
+                        ctx.guild.id
+                    )
+                    await ctx.send(self.user_strings["channel_exists_error"].format(channel=channel))
+                    return False
+                else:
+                    # Channel is tracked in other guilds, but not this one, add it to the tracked channels:
+                    self._twitch_app.tracked_channels[channel_id].add(ctx.guild.id)
+                    self._db.insert(
+                        "twitch_info",
+                        params={
+                            "guild_id": ctx.guild.id,
+                            "twitch_channel_id": str(channel_id),
+                            "twitch_handle": channel,
+                            "custom_message": custom_message
+                        }
+                    )
+                    await ctx.send(self.user_strings["channel_added"].format(channel=channel))
+                    return True
 
-        if len(channel_info) == 0:
-            await ctx.send(self.user_strings["channel_missing_error"].format(channel=channel))
-            return False
-
-        channel_info = channel_info[0]
-        channel_id = channel_info.get("id")
-        if channel_id in self._twitch_app.tracked_channels:
-            # Channel is already tracked in one or more guilds:
-            if ctx.guild.id in self._twitch_app.tracked_channels.get(channel_id):
-                # Channel is already tracked in this guild.
-                self.logger.info(
-                    "Not adding %s to tracked Twitch channels as it is already tracked in %s(%s)",
-                    channel,
-                    ctx.guild.name,
-                    ctx.guild.id
-                )
-                await ctx.send(self.user_strings["channel_exists_error"].format(channel=channel))
-                return False
-            else:
-                # Channel is tracked in other guilds, but not this one, add it to the tracked channels:
-                self._twitch_app.tracked_channels[channel_id].add(ctx.guild.id)
+            # Channel is not tracked in any guild yet:
+            if await self._twitch_app.create_subscription("stream.online", channel_name=channel):
+                self.logger.info("Successfully created a new EventSub for %s Twitch channel", channel)
                 self._db.insert(
                     "twitch_info",
                     params={
@@ -668,25 +676,11 @@ class TwitchCog(commands.Cog):
                 )
                 await ctx.send(self.user_strings["channel_added"].format(channel=channel))
                 return True
-
-        # Channel is not tracked in any guild yet:
-        if await self._twitch_app.create_subscription("stream.online", channel_name=channel):
-            self.logger.info("Successfully created a new EventSub for %s Twitch channel", channel)
-            self._db.insert(
-                "twitch_info",
-                params={
-                    "guild_id": ctx.guild.id,
-                    "twitch_channel_id": str(channel_id),
-                    "twitch_handle": channel,
-                    "custom_message": custom_message
-                }
-            )
-            await ctx.send(self.user_strings["channel_added"].format(channel=channel))
-            return True
-        else:
-            self.logger.error("Unable to create new EventSub for %s Twitch channel", channel)
-            await ctx.send(self.user_strings["generic_error"].format(channel=channel))
-            return False
+            else:
+                self.logger.error("Unable to create new EventSub for %s Twitch channel", channel)
+                await ctx.send(self.user_strings["generic_error"].format(channel=channel))
+                return False
+        return False
 
     @twitch.command(
         name="remove",
@@ -701,55 +695,47 @@ class TwitchCog(commands.Cog):
         :return: A boolean if the channel is no longer being tracked in the current guild.
         """
 
-        channel_info = await self._twitch_app.get_channel_info(channel)
+        if channel_id := (await self.get_channel_id(ctx, channel)):
 
-        if len(channel_info) == 0:
-            await ctx.send(self.user_strings["channel_missing_error"].format(channel=channel))
-            return False
+            if channel_id not in self._twitch_app.tracked_channels:
+                # The channel was not tracked in any guild.
+                self.logger.info("No longer tracking %s Twitch channel, was not tracked before", channel)
+                await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
+                return False
 
-        channel_info = channel_info[0]
-        channel_id = channel_info.get("id")
-        if channel_id not in self._twitch_app.tracked_channels:
-            # The channel was not tracked in any guild.
-            self.logger.info("No longer tracking %s Twitch channel, was not tracked before", channel)
-            await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
-            return False
+            if ctx.guild.id not in self._twitch_app.tracked_channels.get(channel_id):
+                # The channel was not tracked in the current guild.
+                self.logger.info("No longer tracking %s Twitch channel, was not tracked before in current guild", channel)
+                await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
+                return False
 
-        if ctx.guild.id not in self._twitch_app.tracked_channels.get(channel_id):
-            # The channel was not tracked in the current guild.
-            self.logger.info("No longer tracking %s Twitch channel, was not tracked before in current guild", channel)
-            await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
-            return False
+            if ctx.guild.id in self._twitch_app.tracked_channels.get(channel_id) and \
+                    len(self._twitch_app.tracked_channels.get(channel_id)) > 1:
+                # The channel is tracked in other guilds.
+                self._twitch_app.tracked_channels[channel_id].remove(ctx.guild.id)
+                self._db.delete("twitch_info", where_params={"guild_id": ctx.guild.id, "twitch_channel_id": channel_id})
+                self.logger.info("No longer tracking %s Twitch channel in %s(%s)", channel, ctx.guild.name, ctx.guild.id)
+                await ctx.send(self.user_strings["channel_removed"].format(channel=channel))
+                return True
 
-        if ctx.guild.id in self._twitch_app.tracked_channels.get(channel_id) and \
-                len(self._twitch_app.tracked_channels.get(channel_id)) > 1:
-            # The channel is tracked in other guilds.
-            self._twitch_app.tracked_channels[channel_id].remove(ctx.guild.id)
+            event = None
+            # Find the event id to be used to delete the EventSub.
+            for subscription in self._twitch_app.subscriptions:
+                if subscription.get("condition").get("broadcaster_user_id") == channel_id:
+                    event = subscription.get("id")
+                    break
+
+            if event is not None:
+                result = await self._twitch_app.delete_subscription(event)
+
             self._db.delete("twitch_info", where_params={"guild_id": ctx.guild.id, "twitch_channel_id": channel_id})
+            self._twitch_app.tracked_channels.pop(channel_id)
             self.logger.info("No longer tracking %s Twitch channel in %s(%s)", channel, ctx.guild.name, ctx.guild.id)
             await ctx.send(self.user_strings["channel_removed"].format(channel=channel))
             return True
+        return False
 
-        event = None
-        # Find the event id to be used to delete the EventSub.
-        for subscription in self._twitch_app.subscriptions:
-            if subscription.get("condition").get("broadcaster_user_id") == channel_id:
-                event = subscription.get("id")
-                break
-
-        if event is not None:
-            result = await self._twitch_app.delete_subscription(event)
-
-        self._db.delete("twitch_info", where_params={"guild_id": ctx.guild.id, "twitch_channel_id": channel_id})
-        self._twitch_app.tracked_channels.pop(channel_id)
-        self.logger.info("No longer tracking %s Twitch channel in %s(%s)", channel, ctx.guild.name, ctx.guild.id)
-        await ctx.send(self.user_strings["channel_removed"].format(channel=channel))
-        return True
-
-    @twitch.command(
-        name="list",
-        help="Shows a list of currently tracked Twitch channels and their custom messages, if any"
-    )
+    @twitch.command(name="list", help="Shows a list of currently tracked Twitch channels and their custom messages, if any")
     async def list(self, ctx):
         """
         Sends a list of the currently tracked Twitch channels in the current guild and their custom messages.
@@ -779,7 +765,7 @@ class TwitchCog(commands.Cog):
         name="setmessage",
         usage="<channel name> [message]",
         help="Sets the custom 'go live' message for a Twitch channel. Leave the message empty if you want to remove the "
-             "custom message. If the message is not empty be sure to surround the mesasge with double quotes"
+        "custom message. If the message is not empty be sure to surround the mesasge with double quotes"
     )
     async def setmessage(self, ctx, channel, message: str = None):
         """
@@ -789,28 +775,22 @@ class TwitchCog(commands.Cog):
         :param message: The message to set the custom message to.
         """
 
-        channel_info = await self._twitch_app.get_channel_info(channel)
+        if channel_id := (await self.get_channel_id(ctx, channel)):
 
-        if len(channel_info) == 0:
-            await ctx.send(self.user_strings["channel_missing_error"].format(channel=channel))
+            db_return = self._db.pure_return(
+                f"SELECT custom_message from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id='{channel_id}'"
+            )
+            if len(db_return) == 0:
+                await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
+                return
 
-        channel_info = channel_info[0]
-        channel_id = channel_info.get("id")
+            if message is not None and message.strip() == "" or message == "":
+                message = None
 
-        db_return = self._db.pure_return(
-            f"SELECT custom_message from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id='{channel_id}'"
-        )
-        if len(db_return) == 0:
-            await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
-            return
-
-        if message is not None and message.strip() == "" or message == "":
-            message = None
-
-        self._db.pure_return(
-            f"UPDATE twitch_info SET custom_message={message} WHERE guild_id={ctx.guild.id} AND twitch_channel_id={channel_id}"
-        )
-        await ctx.send(self.user_strings["set_custom_message"].format(channel=channel, message=message))
+            self._db.pure_return(
+                f"UPDATE twitch_info SET custom_message={message} WHERE guild_id={ctx.guild.id} AND twitch_channel_id={channel_id}"
+            )
+            await ctx.send(self.user_strings["set_custom_message"].format(channel=channel, message=message))
 
     @twitch.command(
         name="getmessage",
@@ -824,27 +804,20 @@ class TwitchCog(commands.Cog):
         :param channel: The Twitch channel to get the custom message of.
         """
 
-        channel_info = await self._twitch_app.get_channel_info(channel)
+        if channel_id := (await self.get_channel_id(ctx, channel)):
 
-        if len(channel_info) == 0:
-            await ctx.send(self.user_strings["channel_missing_error"].format(channel=channel))
-            return
+            message = self._db.pure_return(
+                f"SELECT custom_message from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id='{channel_id}'"
+            )
+            if len(message) == 0:
+                await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
+                return
+            custom_message = message[0].get("custom_message")
 
-        channel_info = channel_info[0]
-        channel_id = channel_info.get("id")
+            if custom_message is None:
+                custom_message = "not set"
 
-        message = self._db.pure_return(
-            f"SELECT custom_message from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id='{channel_id}'"
-        )
-        if len(message) == 0:
-            await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
-            return
-        custom_message = message[0].get("custom_message")
-
-        if custom_message is None:
-            custom_message = "not set"
-
-        await ctx.send(self.user_strings["get_custom_message"].format(channel=channel, message=custom_message))
+            await ctx.send(self.user_strings["get_custom_message"].format(channel=channel, message=custom_message))
 
     # TODO: Probably best to move this to lib or some other as it is shared by TwitterCog
     async def channel_from_mention(self, c_id):
@@ -889,6 +862,24 @@ class TwitchCog(commands.Cog):
 
         return None, None
 
+    async def get_channel_id(self, ctx, channel):
+        """
+        Gets the Twitch Channel ID for a given channel name.
+        :param ctx: The context of the command.
+        :param channel: The name of the Twitch channel to find the ID of.
+        :returns None if there is no channel with that ID, else a string of the ID.
+        """
+
+        channel_info = await self._twitch_app.get_channel_info(channel)
+
+        if len(channel_info) == 0:
+            await ctx.send(self.user_strings["channel_missing_error"].format(channel=channel))
+            return None
+
+        channel_info = channel_info[0]
+        channel_id = channel_info.get("id")
+        return channel_id
+
 
 def setup(bot):
     logger = logging.getLogger(__name__)
@@ -907,5 +898,7 @@ def setup(bot):
             "If you don't want to use the Twitch integration, set ENABLE_TWITCH to FALSE"
         bot.add_cog(TwitchCog(bot))
     except AssertionError:
-        logger.error("There were one or more environment variables not supplied to the TwitchCog. Disabling the Cog...",
-                     exc_info=True)
+        logger.error(
+            "There were one or more environment variables not supplied to the TwitchCog. Disabling the Cog...",
+            exc_info=True
+        )
