@@ -702,13 +702,13 @@ class TwitchCog(commands.Cog):
         if channel_id not in self._twitch_app.tracked_channels:
             # The channel was not tracked in any guild.
             self.logger.info("No longer tracking %s Twitch channel, was not tracked before", channel)
-            await ctx.send(self.user_strings["channel_removed"].format(channel=channel))
+            await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
             return False
 
         if ctx.guild.id not in self._twitch_app.tracked_channels.get(channel_id):
             # The channel was not tracked in the current guild.
             self.logger.info("No longer tracking %s Twitch channel, was not tracked before", channel)
-            await ctx.send(self.user_strings["channel_removed"].format(channel=channel))
+            await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
             return False
 
         if ctx.guild.id in self._twitch_app.tracked_channels.get(channel_id) and \
@@ -787,6 +787,13 @@ class TwitchCog(commands.Cog):
         channel_info = channel_info[0]
         channel_id = channel_info.get("id")
 
+        db_return = self._db.pure_return(
+            f"SELECT custom_message from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id='{channel_id}'"
+        )
+        if len(db_return) == 0:
+            await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
+            return
+
         if message is not None and message.strip() == "" or message == "":
             message = None
 
@@ -820,7 +827,7 @@ class TwitchCog(commands.Cog):
             f"SELECT custom_message from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id='{channel_id}'"
         )
         if len(message) == 0:
-            await ctx.send(self.user_strings["channel_missing_error"].format(channel=channel))
+            await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
             return
         custom_message = message[0].get("custom_message")
 
