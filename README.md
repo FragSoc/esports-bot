@@ -25,7 +25,7 @@ $ git clone https://github.com/FragSoc/Esports-Bot-Rewrite.git
 ```console  
 $ cd Esports-Bot-Rewrite  
 ```  
-3. Rename the `secrets.template` to `secrets.env` and set all the variables. Ensure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:  
+3. Rename the `secrets.template` to `secrets.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:  
 ```console  
 $ nano secrets.env  
 ```  
@@ -46,7 +46,7 @@ $ git clone https://github.com/FragSoc/Esports-Bot-Rewrite.git
 ```console  
 $ cd Esports-Bot-Rewrite  
 ```  
-3. Rename the `secrets.template` to `secrets.env` and set all the variables. Ensure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:  
+3. Rename the `secrets.template` to `secrets.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:  
 ```console  
 $ nano secrets.env  
 ```
