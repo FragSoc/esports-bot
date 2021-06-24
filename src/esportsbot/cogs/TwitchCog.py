@@ -1,3 +1,10 @@
+"""
+The TwitchCog module implements a HTTP Server to listen for requests, as well as a Discord Cog to allow for changing of where
+Twitch notifications get sent and which accounts notifications are sent for.
+
+.. codeauthor::Fluxticks
+"""
+
 import asyncio
 import json
 from collections import defaultdict
