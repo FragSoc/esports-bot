@@ -39,6 +39,23 @@ class DBGatewayActions():
         except Exception as err:
             raise Exception(f"Error occured when using list - {err}")
 
+    def get(self, db_model, **args):
+        """
+        Method to return a record that suits the model criteria
+
+        Args:
+            db_model (database_model): [The model to query in the database]
+            **args (model_attributes): [The attributes specified for the query]
+
+        Returns:
+            [list]: [Returns a list of all models that fit the input models criteria]
+        """
+        try:
+            query = session.query(db_model).filter_by(**args).all()
+            return query[0] if query != [] else query
+        except Exception as err:
+            raise Exception(f"Error occured when using get - {err}")
+
     def update(self, model):
         """
         Method for updating a record in the database
