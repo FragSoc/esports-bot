@@ -141,14 +141,14 @@ admin_shared_role_set = ["Shared role set", "<@&{role_id!s}>"]
 admin_signin_visible = ["Event signin channel made visible", "<#{channel_id}>"]
 
 [twitch]
-generic_error = "There was an error while trying to add {channel} as a tracked channel"
+generic_error = "There was an error while trying to add `{channel}` as a tracked channel"
 webhook_created = "Created a Webhook -> Name: {name} , ID: {hook_id}"
 webhook_deleted = "Deleted a Webhook with Name: {name} and ID: {hook_id}"
 webhook_error = "Unable to {operation} Webhook because {reason}"
-channel_added = "Successfully added {channel} to tracked channels"
-channel_removed = "Successfully removed {channel} from tracked channels"
+channel_added = "Successfully added `{channel}` to tracked channels"
+channel_removed = "Successfully removed `{channel}` from tracked channels"
 channels_empty = "There are no channels currently tracked in this server"
-set_custom_message = "Set the custom live message for {channel} to `{message}`"
-get_custom_message = "The custom message for {channel} is `{message}`"
-channel_exists_error = "Unable to add {channel} to tracked channels because it is already tracked"
-channel_missing_error = "Unable to add {channel} to tracked channels because there is no Twitch channel with that name"
+set_custom_message = "Set the custom live message for `{channel}` to `{message}`"
+get_custom_message = "The custom message for `{channel}` is `{message}`"
+channel_exists_error = "Unable to add `{channel}` to tracked channels because it is already tracked"
+channel_missing_error = "Unable to add `{channel}` to tracked channels because there is no Twitch channel with that name"
