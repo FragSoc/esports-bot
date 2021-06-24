@@ -2,7 +2,7 @@
 The TwitchCog module implements a HTTP Server to listen for requests, as well as a Discord Cog to allow for changing of where
 Twitch notifications get sent and which accounts notifications are sent for.
 
-.. codeauthor::Fluxticks
+.. codeauthor:: Fluxticks
 """
 
 import asyncio
@@ -53,7 +53,7 @@ class TwitchApp(Application):
         self.seen_ids = set()
         self.hooks = {}
         self.bearer = None
-        self.tracked_channels = defaultdict(set)
+        self.tracked_channels = None
         self.subscriptions = []
         self.logger = logging.getLogger(__name__)
 
@@ -379,18 +379,8 @@ class TwitchListener(tornado.web.RequestHandler):
         stream_title = channel_info.get("title")
         user_icon = channel_info.get("thumbnail_url")
 
-        # Create the embed to send to the webhook.
-        embed = Embed(
-            title=stream_title,
-            url=f"https://www.twitch.tv/{channel_name}",
-            description=f"Playing {game_name}",
-            color=TWITCH_EMBED_COLOUR
-        )
-        embed.set_author(name=channel_name, url=f"https://www.twitch.tv/{channel_name}", icon_url=user_icon)
-        embed.set_thumbnail(url=user_icon)
-
         # Get the list of guilds to send the update to.
-        channel_guilds = self.application.tracked_channels.get(channel_info.get("id"))
+        channel_guilds = self.application.tracked_channels.get(channel_info.get("id").get("guilds"))
 
         async with aiohttp.ClientSession() as session:
             hook_adapter = AsyncWebhookAdapter(session)
@@ -401,6 +391,24 @@ class TwitchListener(tornado.web.RequestHandler):
 
                 hook_token = self.application.hooks.get(hook_id).get("token")
                 webhook = Webhook.partial(id=hook_id, token=hook_token, adapter=hook_adapter)
+
+                custom_message = self.application.tracked_channels.get(channel_info.get("id")) \
+                    .get("custom_messages") \
+                    .get(webhook.guild_id)
+
+                description = "​" if custom_message is None else custom_message
+
+                # Create the embed to send to the webhook.
+                embed = Embed(
+                    title=stream_title,
+                    url=f"https://www.twitch.tv/{channel_name}",
+                    description=description,
+                    color=TWITCH_EMBED_COLOUR
+                )
+                embed.set_author(name=channel_name, url=f"https://www.twitch.tv/{channel_name}", icon_url=user_icon)
+                embed.set_thumbnail(url=user_icon)
+                embed.add_field(name="**Current Game:**", value=f"**{game_name}**")
+
                 self.logger.info(
                     "Sending Twitch notification to Discord Webhook %s(%s) in guild %s",
                     webhook.name,
@@ -503,10 +511,13 @@ class TwitchCog(commands.Cog):
         :return: A dictionary of Twitch channel ID to a set of guild IDs.
         """
 
-        db_data = self._db.pure_return("SELECT guild_id, twitch_channel_id FROM twitch_info")
-        guild_info = defaultdict(set)
+        db_data = self._db.pure_return("SELECT guild_id, twitch_channel_id, custom_message FROM twitch_info")
+        guild_info = defaultdict(lambda: {"guilds": set(), "custom_messages": dict()})
         for item in db_data:
-            guild_info[str(item.get("twitch_channel_id"))].add(item.get("guild_id"))
+            channel_id = str(item.get("twitch_channel_id"))
+            guild_info[channel_id]["guilds"].add(item.get("guild_id"))
+            guild_info[channel_id]["custom_messages"][item.get("guild_id")] = item.get("custom_message")
+
         return guild_info
 
     @commands.group(
@@ -586,7 +597,7 @@ class TwitchCog(commands.Cog):
         hook = await text_channel.create_webhook(
             name=hook_name,
             reason=f"{ctx.author.name}#{ctx.author.discriminator} "
-            f"created a webhook for #{text_channel.name} using the twitchhook command."
+                   f"created a webhook for #{text_channel.name} using the twitchhook command."
         )
 
         self.logger.debug(
@@ -636,7 +647,7 @@ class TwitchCog(commands.Cog):
         name="add",
         usage="<channel name|channel url> [custom message]",
         help="Adds a Twitch channel to be tracked for when it goes live. If a custom 'go live' message is given it must be "
-        "surrounded by double quotes"
+             "surrounded by double quotes"
     )
     async def add(self, ctx, channel, custom_message=None):
         """
@@ -654,7 +665,7 @@ class TwitchCog(commands.Cog):
         if channel_id := (await self.get_channel_id(ctx, channel)):
             if channel_id in self._twitch_app.tracked_channels:
                 # Channel is already tracked in one or more guilds:
-                if ctx.guild.id in self._twitch_app.tracked_channels.get(channel_id):
+                if ctx.guild.id in self._twitch_app.tracked_channels.get(channel_id).get("guilds"):
                     # Channel is already tracked in this guild.
                     self.logger.info(
                         "Not adding %s to tracked Twitch channels as it is already tracked in %s(%s)",
@@ -666,7 +677,8 @@ class TwitchCog(commands.Cog):
                     return False
                 else:
                     # Channel is tracked in other guilds, but not this one, add it to the tracked channels:
-                    self._twitch_app.tracked_channels[channel_id].add(ctx.guild.id)
+                    self._twitch_app.tracked_channels[channel_id]["guilds"].add(ctx.guild.id)
+                    self._twitch_app.tracked_channels[channel_id]["custom_messages"][ctx.guild.id] = custom_message
                     self._db.insert(
                         "twitch_info",
                         params={
@@ -726,10 +738,11 @@ class TwitchCog(commands.Cog):
                 await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
                 return False
 
-            if ctx.guild.id in self._twitch_app.tracked_channels.get(channel_id) and \
-                    len(self._twitch_app.tracked_channels.get(channel_id)) > 1:
+            if ctx.guild.id in self._twitch_app.tracked_channels.get(channel_id).get("guilds") and \
+                    len(self._twitch_app.tracked_channels.get(channel_id).get("guilds")) > 1:
                 # The channel is tracked in other guilds.
-                self._twitch_app.tracked_channels[channel_id].remove(ctx.guild.id)
+                self._twitch_app.tracked_channels[channel_id]["guilds"].remove(ctx.guild.id)
+                self._twitch_app.tracked_channels[channel_id]["custom_messages"].pop(ctx.guild.id)
                 self._db.delete("twitch_info", where_params={"guild_id": ctx.guild.id, "twitch_channel_id": channel_id})
                 self.logger.info("No longer tracking %s Twitch channel in %s(%s)", channel, ctx.guild.name, ctx.guild.id)
                 await ctx.send(self.user_strings["channel_removed"].format(channel=channel))
@@ -782,7 +795,7 @@ class TwitchCog(commands.Cog):
         name="setmessage",
         usage="<channel name> [message]",
         help="Sets the custom 'go live' message for a Twitch channel. Leave the message empty if you want to remove the "
-        "custom message. If the message is not empty be sure to surround the message with double quotes"
+             "custom message. If the message is not empty be sure to surround the message with double quotes"
     )
     async def setmessage(self, ctx, channel, message: str = None):
         """
@@ -795,7 +808,7 @@ class TwitchCog(commands.Cog):
         if channel_id := (await self.get_channel_id(ctx, channel)):
 
             db_return = self._db.pure_return(
-                f"SELECT custom_message from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id='{channel_id}'"
+                f"SELECT * from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id='{channel_id}'"
             )
             if len(db_return) == 0:
                 await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
@@ -804,12 +817,14 @@ class TwitchCog(commands.Cog):
             if message is not None and message.strip() == "" or message == "":
                 message = None
 
-            self._db.pure_return(
-                f"UPDATE twitch_info "
-                f"SET custom_message={message} "
-                f"WHERE guild_id={ctx.guild.id} "
-                f"AND twitch_channel_id={channel_id}"
+            self._db.pure_query(
+                f"UPDATE twitch_info " 
+                f"SET custom_message='{message}' " 
+                f"WHERE guild_id={ctx.guild.id} " 
+                f"AND twitch_channel_id='{channel_id}'"
             )
+            if message is None:
+                message = "<empty>"
             await ctx.send(self.user_strings["set_custom_message"].format(channel=channel, message=message))
 
     @twitch.command(
@@ -827,7 +842,7 @@ class TwitchCog(commands.Cog):
         if channel_id := (await self.get_channel_id(ctx, channel)):
 
             message = self._db.pure_return(
-                f"SELECT custom_message from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id='{channel_id}'"
+                f"SELECT * from twitch_info WHERE guild_id={ctx.guild.id} AND twitch_channel_id='{channel_id}'"
             )
             if len(message) == 0:
                 await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
