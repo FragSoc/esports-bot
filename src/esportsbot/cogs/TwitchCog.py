@@ -72,7 +72,7 @@ class TwitchApp(Application):
         :return: A dictionary containing when the token was created, how long it lasts for and the token itself.
         """
 
-        self.logger.debug("Checking bearer token status...")
+        self.logger.debug("Checking Twitch bearer token status...")
         current_time = datetime.now()
         if self.bearer is not None:
             # If there is a currently active bearer, check if it is still valid.
@@ -82,8 +82,8 @@ class TwitchApp(Application):
             expires_in = self.bearer.get("expires_in")  # Number of seconds the token is valid for.
             if delta_seconds + BEARER_PADDING < expires_in:
                 # The bearer is still valid, and will be still valid for the BEARER_PADDING time.
-                self.logger.info(
-                    "Current bearer is still valid, there are %d seconds remaining!",
+                self.logger.debug(
+                    "Current Twitch bearer token is still valid, there are %d seconds remaining!",
                     (expires_in - delta_seconds)
                 )
                 return self.bearer
@@ -132,7 +132,7 @@ class TwitchApp(Application):
             if event.get("type") != "stream.online":
                 # Event isn't for a stream coming online, we don't want to track any other events so delete it...
                 self.logger.info(
-                    "Event for %s is not a Stream Online event, deleting!",
+                    "Twitch Event for %s is not a Stream Online event, deleting!",
                     event.get("condition").get("broadcaster_user_id")
                 )
                 await self.delete_subscription(event.get("id"))
@@ -142,7 +142,7 @@ class TwitchApp(Application):
             if channel_tracked not in db_channels:
                 # The channel is no longer tracked in the DB, assume we no longer want to track the channel so delete it...
                 self.logger.info(
-                    "Event for %s is no longer tracked, deleting!",
+                    "Twitch Event for %s is no longer tracked, deleting!",
                     event.get("condition").get("broadcaster_user_id")
                 )
                 await self.delete_subscription(event.get("id"))
@@ -151,7 +151,7 @@ class TwitchApp(Application):
 
         # Any channels here are ones that we want to have tracked but there is no event we are subscribed to for it.
         for channel in channels_not_tracked:
-            self.logger.warning("No event for channel %s, subscribing to new event...", channel)
+            self.logger.warning("No Twitch event for channel with ID %s, subscribing to new event...", channel)
             await self.create_subscription("stream.online", channel_id=channel)
 
         self.tracked_channels = db_channels
@@ -184,7 +184,7 @@ class TwitchApp(Application):
         """
 
         if channel_id is None and channel_name is None:
-            self.logger.error("An channel ID or channel name must be supplied. Both cannot be None.")
+            self.logger.error("A Twitch channel ID or Twitch channel name must be supplied. Both cannot be None.")
             return False
 
         if channel_id is None:
@@ -242,7 +242,7 @@ class TwitchApp(Application):
         async with aiohttp.ClientSession() as session:
             async with session.get(url=channel_url, params=params, headers=headers) as response:
                 if response.status != 200:
-                    self.logger.error("Unable to get channel info!")
+                    self.logger.error("Unable to get Twitch channel info! Response status was %d", response.status)
                     return None
                 data = await response.json()
                 return data.get("data")
@@ -259,7 +259,7 @@ class TwitchApp(Application):
         async with aiohttp.ClientSession() as session:
             async with session.get(url=events_url, headers=headers) as response:
                 if response.status != 200:
-                    self.logger.error("Unable to get subscribed event list!")
+                    self.logger.error("Unable to get subscribed event list! Response status was %d", response.status)
                     return None
                 data = await response.json()
                 return data.get("data")
@@ -312,7 +312,7 @@ class TwitchListener(tornado.web.RequestHandler):
         https://dev.twitch.tv/docs/eventsub#subscriptions.
         """
 
-        self.logger.info("Received a POST request on /webhook")
+        self.logger.debug("Received a POST request on /webhook")
         current_request = self.request
         message_body = current_request.body.decode("utf-8")
         body_dict = ast.literal_eval(message_body)
@@ -321,7 +321,7 @@ class TwitchListener(tornado.web.RequestHandler):
         # Check for messages that have already been received and processed. Twitch will repeat a mesage if it
         # thinks we have not received it.
         if message_headers.get("Twitch-Eventsub-Message-Id") in self.application.seen_ids:
-            self.logger.info("The message was already received before, ignoring!")
+            self.logger.debug("The message was already received before, ignoring!")
             self.set_status(208)
             await self.finish()
             return
@@ -389,7 +389,12 @@ class TwitchListener(tornado.web.RequestHandler):
 
                 hook_token = self.application.hooks.get(hook_id).get("token")
                 webhook = Webhook.partial(id=hook_id, token=hook_token, adapter=hook_adapter)
-                self.logger.info("Sending to Webhook %s(%s)", self.application.hooks.get(hook_id).get("name"), hook_id)
+                self.logger.info(
+                    "Sending Twitch notification to Discord Webhook %s(%s) in guild %s",
+                    webhook.name,
+                    hook_id,
+                    webhook.guild.name
+                )
                 await webhook.send(embed=embed, username=channel_name + " is Live!", avatar_url=TWITCH_ICON)
 
 
@@ -437,11 +442,11 @@ class TwitchCog(commands.Cog):
 
         self._http_server.start()
 
-        self.logger.info("Loading Discord Webhooks...")
+        self.logger.info("Loading Discord Webhooks for Twitch Cog...")
 
         tasks = []
         for guild in self._bot.guilds:
-            self.logger.info("Loading webhooks from %s(%s)", guild.name, guild.id)
+            self.logger.info("Loading webhooks from guild %s(%s)", guild.name, guild.id)
             if guild.me.guild_permissions.manage_webhooks:
                 tasks.append(guild.webhooks())
             else:
@@ -452,6 +457,11 @@ class TwitchCog(commands.Cog):
 
         # Add the hooks to the App.
         self._twitch_app.load_discord_hooks(results, self._bot.user.id)
+        self.logger.info(
+            "Currently using %d Discord Webhooks in %d guilds for Twitch notifications.",
+            len(self._twitch_app.hooks),
+            len(self._bot.guilds)
+        )
 
         # Load tracked channels from DB.
         db_data = self.load_db_data()
@@ -562,8 +572,8 @@ class TwitchCog(commands.Cog):
             f"created a webhook for #{text_channel.name} using the twitchhook command."
         )
 
-        self.logger.info(
-            "[%s] id: %s , url: %s , token: %s , channel: %s(%s)",
+        self.logger.debug(
+            "Twitch Webhook Info: [%s] id: %s , url: %s , token: %s , channel: %s(%s)",
             hook.name,
             hook.id,
             hook.url,
@@ -707,7 +717,7 @@ class TwitchCog(commands.Cog):
 
         if ctx.guild.id not in self._twitch_app.tracked_channels.get(channel_id):
             # The channel was not tracked in the current guild.
-            self.logger.info("No longer tracking %s Twitch channel, was not tracked before", channel)
+            self.logger.info("No longer tracking %s Twitch channel, was not tracked before in current guild", channel)
             await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
             return False
 
