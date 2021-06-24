@@ -1,9 +1,7 @@
 from typing import Dict, Any
 from dotenv import load_dotenv
-from . import lib
-from .base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
-from .generate_schema import generate_schema
-from .db_gateway import db_gateway
+from esportsbot import lib
+from esportsbot.base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 
 from esportsbot.db_gateway_v1 import *
 
@@ -45,7 +43,6 @@ def make_guild_init_data(guild: discord.Guild) -> Dict[str, Any]:
 
 
 async def send_to_log_channel(guild_id, msg):
-    #db_logging_call = db_gateway().get('guild_info', params={'guild_id': guild_id})
     db_logging_call = DBGatewayActions().get(Guild_info, guild_id=guild_id)
     if db_logging_call and db_logging_call.log_channel_id is not None:
         await client.get_channel(db_logging_call.log_channel_id).send(msg)
@@ -66,7 +63,6 @@ async def on_ready():
 @client.event
 async def on_guild_join(guild):
     print(f"Joined the guild: {guild.name}")
-    #db_gateway().insert('guild_info', params=make_guild_init_data(guild))
     DBGatewayActions().create(
         Guild_info(
             guild_id=guild.id,
@@ -80,7 +76,6 @@ async def on_guild_join(guild):
 
 @client.event
 async def on_guild_remove(guild):
-    #db_gateway().delete('guild_info', where_params={'guild_id': guild.id})
     guild_from_db = DBGatewayActions.get(Guild_info, guild_id=guild.id)
     if guild_from_db:
         DBGatewayActions.delete(guild_from_db)
@@ -89,7 +84,6 @@ async def on_guild_remove(guild):
 
 @client.event
 async def on_member_join(member):
-    #default_role_exists = db_gateway().get('guild_info', params={'guild_id': member.guild.id})
     guild = DBGatewayActions().get(Guild_info, guild_id=member.guild.id)
     default_role_exists = guild.default_role_id is not None
 
@@ -115,41 +109,17 @@ async def on_voice_state_update(member, before, after):
         if not before.channel.members:
             # Nobody else in VC
             await before.channel.delete()
-            # db_gateway().delete(
-            #     'voicemaster_slave',
-            #     where_params={
-            #         'guild_id': member.guild.id,
-            #         'channel_id': before_channel_id
-            #     }
-            # )
             DBGatewayActions().delete(vm_slave)
             await send_to_log_channel(member.guild.id, f"{member.mention} has deleted a VM slave")
         else:
             # Still others in VC
             await before.channel.edit(name=f"{before.channel.members[0].display_name}'s VC")
-            # db_gateway().update(
-            #     'voicemaster_slave',
-            #     set_params={'owner_id': before.channel.members[0].id},
-            #     where_params={
-            #         'guild_id': member.guild.id,
-            #         'channel_id': before_channel_id
-            #     }
-            # )
             vm_slave.owner_id = before.channel.members[0].id
             DBGatewayActions().update(vm_slave)
     elif after_channel_id and get_whether_in_vm_master(member.guild.id, after_channel_id):
         # Moved into a master VM VC
         slave_channel_name = f"{member.display_name}'s VC"
         new_slave_channel = await member.guild.create_voice_channel(slave_channel_name, category=after.channel.category)
-        # db_gateway().insert(
-        #     'voicemaster_slave',
-        #     params={
-        #         'guild_id': member.guild.id,
-        #         'channel_id': new_slave_channel.id,
-        #         'owner_id': member.id,
-        #         'locked': False,
-        #     }
-        # )
         DBGatewayActions().create(
             Voicemaster_slave(guild_id=member.guild.id,
                               channel_id=new_slave_channel.id,
@@ -335,7 +305,6 @@ async def on_guild_role_delete(role: discord.Role):
     """
     pingable_role = DBGatewayActions().get(Pingable_roles, role_id=role.id)
     if pingable_role:
-        # db.delete("pingable_roles", {"role_id": role.id})
         DBGatewayActions().delete(pingable_role)
         logEmbed = discord.Embed()
         logEmbed.set_author(icon_url=client.user.avatar_url_as(size=64), name="Admin Log")

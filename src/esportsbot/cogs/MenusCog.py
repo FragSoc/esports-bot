@@ -1,10 +1,11 @@
 from discord.ext import commands
 from discord.ext.commands.context import Context
 from discord import Embed
-from ..db_gateway import db_gateway
-from .. import lib
-from ..lib.client import EsportsBot
-from ..reactionMenus import reactionRoleMenu, reactionPollMenu
+from esportsbot.db_gateway_v1 import DBGatewayActions
+from esportsbot.models import Guild_info
+from esportsbot import lib
+from esportsbot.lib.client import EsportsBot
+from esportsbot.reactionMenus import reactionRoleMenu, reactionPollMenu
 from datetime import timedelta
 
 # Maximum number of polls which can be running at once in a given guild, for performance
@@ -350,7 +351,8 @@ class MenusCog(commands.Cog):
         :param Context ctx: A context summarising the message which called this command
         :param str args: a string containing the poll configuration as defined in this method's docstring
         """
-        currentPollsNum = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})[0]['num_running_polls'] - 1
+        guild = DBGatewayActions().get(Guild_info, guild_id=ctx.author.guild.id)
+        currentPollsNum = (guild.num_running_polls) - 1
         if currentPollsNum >= MAX_POLLS_PER_GUILD:
             await ctx.message.reply("This server already has " + str(currentPollsNum) \
                                     + " polls running! Please wait for one to finish before starting another.")
@@ -447,14 +449,16 @@ class MenusCog(commands.Cog):
                                                             + lib.timeUtil.td_format_noYM(timeoutTD) + ".")
 
         # Update guild polls counter
-        runningPolls = db_gateway().get("guild_info", {"guild_id": ctx.guild.id})[0]["num_running_polls"]
-        db_gateway().update("guild_info", {"num_running_polls": runningPolls + 1}, {"guild_id": ctx.guild.id})
+        guild = DBGatewayActions().get(Guild_info, guild_id=ctx.guild.id)
+        guild.num_running_polls += 1
+        DBGatewayActions().update(guild)
 
         await menu.doMenu()
 
         # Allow the creation of another poll
-        runningPolls = db_gateway().get("guild_info", {"guild_id": ctx.guild.id})[0]["num_running_polls"]
-        db_gateway().update("guild_info", {"num_running_polls": runningPolls - 1}, {"guild_id": ctx.guild.id})
+        guild = DBGatewayActions().get(Guild_info, guild_id=ctx.guild.id)
+        guild.num_running_polls -= 1
+        DBGatewayActions().update(guild)
 
         await reactionPollMenu.showPollResults(menu)
 
