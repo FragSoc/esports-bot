@@ -482,11 +482,19 @@ class TwitchCog(commands.Cog):
             guild_info[str(item.get("twitch_channel_id"))].add(item.get("guild_id"))
         return guild_info
 
-    @commands.group(pass_context=True)
+    @commands.group(
+        pass_context=True,
+        invoke_without_command=True,
+        help="Access the Twitch integration functions with this command"
+    )
     async def twitch(self, ctx):
         pass
 
-    @twitch.command()
+    @twitch.command(
+        name="createhook",
+        usage="[#channel] [hook name]",
+        help="Creates a new Discord Webhook that will be used to post the notifications of Twitch channels going live"
+    )
     async def createhook(self, ctx, channel=None, hook_name=None):
         """
         Creates a new Discord Webhook for use of the Twitch updates.
@@ -562,8 +570,12 @@ class TwitchCog(commands.Cog):
         await ctx.send(self.user_strings["webhook_created"].format(name=hook.name, hook_id=hook.id))
         return True
 
-    @twitch.command()
-    async def removehook(self, ctx, name):
+    @twitch.command(
+        name="deletehook",
+        usage="<hook name>",
+        help="Deletes a Discord Webhook that was created for posting Twitch notifications by supplying the name of the Webhook"
+    )
+    async def deletehook(self, ctx, name):
         """
         Deletes a Discord Webhook using the given name.
         :param ctx: The context of the command.
@@ -588,7 +600,12 @@ class TwitchCog(commands.Cog):
         await ctx.send(self.user_strings["webhook_deleted"].format(name=hook_info.get("name"), hook_id=h_id))
         return True
 
-    @twitch.command()
+    @twitch.command(
+        name="add",
+        usage="<channel name|channel url> [custom message]",
+        help="Adds a Twitch channel to be tracked for when it goes live. If a custom 'go live' message is given it must be "
+             "surrounded by double quotes"
+    )
     async def add(self, ctx, channel, custom_message=None):
         """
         Add a Twitch channel to be tracked in the current guild.
@@ -650,7 +667,11 @@ class TwitchCog(commands.Cog):
             await ctx.send(self.user_strings["generic_error"].format(channel=channel))
             return False
 
-    @twitch.command()
+    @twitch.command(
+        name="remove",
+        usage="<channel name>",
+        help="Stops tracking a Twitch channel so that notifications of when it goes live are no longer posted"
+    )
     async def remove(self, ctx, channel):
         """
         Remove a Twitch channel from being tracked in the current guild.
@@ -698,7 +719,10 @@ class TwitchCog(commands.Cog):
         await ctx.send(self.user_strings["channel_removed"].format(channel=channel))
         return True
 
-    @twitch.command()
+    @twitch.command(
+        name="list",
+        help="Shows a list of currently tracked Twitch channels and their custom messages, if any"
+    )
     async def list(self, ctx):
         """
         Sends a list of the currently tracked Twitch channels in the current guild and their custom messages.
@@ -724,7 +748,12 @@ class TwitchCog(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @twitch.command()
+    @twitch.command(
+        name="setmessage",
+        usage="<channel name> [message]",
+        help="Sets the custom 'go live' message for a Twitch channel. Leave the message empty if you want to remove the "
+             "custom message. If the message is not empty be sure to surround the mesasge with double quotes"
+    )
     async def setmessage(self, ctx, channel, message: str = None):
         """
         Sets the custom live message for a Twitch channel.
@@ -744,7 +773,11 @@ class TwitchCog(commands.Cog):
         )
         await ctx.send(self.user_strings["set_custom_message"].format(channel=channel, message=message))
 
-    @twitch.command()
+    @twitch.command(
+        name="getmessage",
+        usage="<channel name>",
+        help="Retrieves the currently set custom 'go live' message for a Twitch channel"
+    )
     async def getmessage(self, ctx, channel):
         """
         Gets the custom message for a Twitch channel.
