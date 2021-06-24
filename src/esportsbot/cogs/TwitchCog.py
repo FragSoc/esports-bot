@@ -113,6 +113,11 @@ class TwitchApp(Application):
         return self.bearer
 
     def set_bearer(self, bearer):
+        """
+        Sets the current bearer information.
+        :param bearer: The bearer information to set the bearer to .
+        """
+
         self.bearer = bearer
 
     async def load_tracked_channels(self, db_channels):
@@ -292,7 +297,7 @@ class TwitchListener(tornado.web.RequestHandler):
         Using the headers and the body of a message, confirm weather or not the incoming request came from Twitch.
         :param headers: The request's headers.
         :param body: The raw body of the request, not turned into a dict or other kind of data.
-        :return: True if the signature provided in the header is the same as the caluclated signature.
+        :return: True if the signature provided in the header is the same as the calculated signature.
         """
 
         message_signature = headers.get("Twitch-Eventsub-Message-Signature")
@@ -318,7 +323,7 @@ class TwitchListener(tornado.web.RequestHandler):
         body_dict = ast.literal_eval(message_body)
         message_headers = current_request.headers
 
-        # Check for messages that have already been received and processed. Twitch will repeat a mesage if it
+        # Check for messages that have already been received and processed. Twitch will repeat a message if it
         # thinks we have not received it.
         if message_headers.get("Twitch-Eventsub-Message-Id") in self.application.seen_ids:
             self.logger.debug("The message was already received before, ignoring!")
@@ -347,7 +352,7 @@ class TwitchListener(tornado.web.RequestHandler):
             self.logger.info("Responding to Webhook Verification Callback with challenge: %s", challenge)
             await self.finish(challenge)
         elif message_headers.get("Twitch-Eventsub-Message-Type") == "notification":
-            # Receieved once a subscribed event occurs.
+            # Received once a subscribed event occurs.
             self.logger.info("Received valid notification from Twitch!")
             self.set_status(200)
             asyncio.create_task(self.send_webhook(body_dict))
@@ -400,7 +405,7 @@ class TwitchListener(tornado.web.RequestHandler):
 
 class TwitchCog(commands.Cog):
     """
-    The TwitchCog that handles comunications from Twitch.
+    The TwitchCog that handles communications from Twitch.
     """
 
     def __init__(self, bot):
@@ -413,7 +418,7 @@ class TwitchCog(commands.Cog):
     @staticmethod
     def setup_http_listener():
         """
-        Sets up the HTTP server to receieve the requests from Twitch.
+        Sets up the HTTP server to receive the requests from Twitch.
         :return: A tuple containing the instance of the HTTP server and the Application running in the server.
         """
 
@@ -503,6 +508,11 @@ class TwitchCog(commands.Cog):
         help="Access the Twitch integration functions with this command"
     )
     async def twitch(self, ctx):
+        """
+        Empty command, purely used to organise subcommands to be under twitch <command> instead of having to ensure name
+        uniqueness.
+        """
+
         pass
 
     @twitch.command(
@@ -765,7 +775,7 @@ class TwitchCog(commands.Cog):
         name="setmessage",
         usage="<channel name> [message]",
         help="Sets the custom 'go live' message for a Twitch channel. Leave the message empty if you want to remove the "
-        "custom message. If the message is not empty be sure to surround the mesasge with double quotes"
+        "custom message. If the message is not empty be sure to surround the message with double quotes"
     )
     async def setmessage(self, ctx, channel, message: str = None):
         """
@@ -788,7 +798,10 @@ class TwitchCog(commands.Cog):
                 message = None
 
             self._db.pure_return(
-                f"UPDATE twitch_info SET custom_message={message} WHERE guild_id={ctx.guild.id} AND twitch_channel_id={channel_id}"
+                f"UPDATE twitch_info "
+                f"SET custom_message={message} "
+                f"WHERE guild_id={ctx.guild.id} "
+                f"AND twitch_channel_id={channel_id}"
             )
             await ctx.send(self.user_strings["set_custom_message"].format(channel=channel, message=message))
 
