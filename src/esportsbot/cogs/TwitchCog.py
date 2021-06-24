@@ -854,6 +854,43 @@ class TwitchCog(commands.Cog):
 
             await ctx.send(self.user_strings["get_custom_message"].format(channel=channel, message=custom_message))
 
+    @twitch.command(
+        name="preview",
+        usage="<channel name>",
+        help="Shows a preview of the Twitch channels 'go live' notification"
+    )
+    async def preview(self, ctx, channel):
+
+        channel_info = await self._twitch_app.get_channel_info(channel)
+
+        if len(channel_info) == 0:
+            await ctx.send(self.user_strings["no_channel_error"].format(channel=channel))
+            return
+
+        channel_info = channel_info[0]
+        channel_id = channel_info.get("id")
+
+        guild_id = ctx.guild.id
+        custom_message = self._twitch_app.tracked_channels.get(channel_id).get("custom_messages").get(guild_id)
+
+        description = "​" if custom_message is None else custom_message
+
+        # Create the embed to send to the webhook.
+        embed = Embed(
+            title=channel_info.get("title"),
+            url=f"https://www.twitch.tv/{channel_info.get('broadcaster_login')}",
+            description=f"**{description}**",
+            color=TWITCH_EMBED_COLOUR
+        )
+        embed.set_author(
+            name=channel_info.get("broadcaster_login"),
+            url=f"https://www.twitch.tv/{channel_info.get('broadcaster_login')}",
+            icon_url=channel_info.get("thumbnail_url"))
+        embed.set_thumbnail(url=channel_info.get("thumbnail_url"))
+        embed.add_field(name="Current Game:", value=f"{channel_info.get('game_name')}")
+
+        await ctx.send(embed=embed)
+
     # TODO: Probably best to move this to lib or some other as it is shared by TwitterCog
     async def channel_from_mention(self, c_id):
         """
