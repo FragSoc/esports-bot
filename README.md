@@ -35,9 +35,9 @@ $ docker-compose up
 ```  
 ## How to set up an instance of this bot without Docker  
 Requirements needed to run:  
-- Python 3  
+- Python 3.8  
 - Pip  
-- [A postgres database](https://www.postgresql.org/docs/current/admin.html)  
+- [A postgres 11 database](https://www.postgresql.org/docs/current/admin.html)  
 1. Clone this repository:  
 ```console  
 $ git clone https://github.com/FragSoc/Esports-Bot-Rewrite.git  
