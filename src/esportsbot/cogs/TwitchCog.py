@@ -881,4 +881,21 @@ class TwitchCog(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(TwitchCog(bot))
+    logger = logging.getLogger(__name__)
+    try:
+        assert CLIENT_ID != "" and CLIENT_ID is not None, \
+            "A CLIENT_ID must be provided in your secrets file. " \
+            "If you don't want to use the Twitch integration, set ENABLE_TWITCH to FALSE"
+        assert CLIENT_SECRET != "" and CLIENT_SECRET is not None, \
+            "A CLIENT_SECRET must be provided in your secrets file. " \
+            "If you don't want to use the Twitch integration, set ENABLE_TWITCH to FALSE"
+        assert SUBSCRIPTION_SECRET != "" and SUBSCRIPTION_SECRET is not None, \
+            "A SUBSCRIPTION_SECRET must be provided in your secrets file. " \
+            "If you don't want to use the Twitch integration, set ENABLE_TWITCH to FALSE"
+        assert CALLBACK_URL != "/webhook" and CALLBACK_URL is not None, \
+            "A CALLBACK_URL must be provided in your secrets file. " \
+            "If you don't want to use the Twitch integration, set ENABLE_TWITCH to FALSE"
+        bot.add_cog(TwitchCog(bot))
+    except AssertionError:
+        logger.error("There were one or more environment variables not supplied to the TwitchCog. Disabling the Cog...",
+                     exc_info=True)
