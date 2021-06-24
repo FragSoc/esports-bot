@@ -448,7 +448,7 @@ class TwitchCog(commands.Cog):
         # Add the hooks to the App.
         self._twitch_app.load_discord_hooks(results, self._bot.user.id)
 
-        # Load tracked accounts from DB.
+        # Load tracked channels from DB.
         db_data = self.load_db_data()
         await self._twitch_app.load_tracked_channels(db_data)
         if len(db_data) > 0:
@@ -614,7 +614,7 @@ class TwitchCog(commands.Cog):
                     ctx.guild.name,
                     ctx.guild.id
                 )
-                await ctx.send(self.user_strings["account_exists_error"].format(channel=channel))
+                await ctx.send(self.user_strings["channel_exists_error"].format(channel=channel))
                 return False
             else:
                 # Channel is tracked in other guilds, but not this one, add it to the tracked channels:
@@ -747,7 +747,7 @@ class TwitchCog(commands.Cog):
     @twitch.command()
     async def getmessage(self, ctx, channel):
         """
-        Gets the custom message for a Twitch account.
+        Gets the custom message for a Twitch channel.
         :param ctx: The context of the command.
         :param channel: The Twitch channel to get the custom message of.
         """
