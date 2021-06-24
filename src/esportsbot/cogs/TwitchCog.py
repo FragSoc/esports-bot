@@ -697,6 +697,7 @@ class TwitchCog(commands.Cog):
             await ctx.send(self.user_strings["channel_missing_error"].format(channel=channel))
             return False
 
+        channel_info = channel_info[0]
         channel_id = channel_info.get("id")
         if channel_id not in self._twitch_app.tracked_channels:
             # The channel was not tracked in any guild.
@@ -783,6 +784,7 @@ class TwitchCog(commands.Cog):
         if len(channel_info) == 0:
             await ctx.send(self.user_strings["channel_missing_error"].format(channel=channel))
 
+        channel_info = channel_info[0]
         channel_id = channel_info.get("id")
 
         if message is not None and message.strip() == "" or message == "":
@@ -811,6 +813,7 @@ class TwitchCog(commands.Cog):
             await ctx.send(self.user_strings["channel_missing_error"].format(channel=channel))
             return
 
+        channel_info = channel_info[0]
         channel_id = channel_info.get("id")
 
         message = self._db.pure_return(
