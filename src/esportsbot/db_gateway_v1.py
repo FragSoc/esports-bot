@@ -3,16 +3,18 @@ from sqlalchemy.orm import sessionmaker
 from esportsbot.models import *
 import os
 
-db_string = f"postgresql://{os.getenv('PG_USER')}:{os.getenv('PG_PWD')}@{os.getenv('PG_HOST')}:5432/{os.getenv('PG_DATABASE')}"
 
-db = create_engine(db_string)
+def DBGatewayActions_init():
+    db_string = f"postgresql://{os.getenv('PG_USER')}:{os.getenv('PG_PWD')}@{os.getenv('PG_HOST')}:5432/{os.getenv('PG_DATABASE')}"
 
-Session = sessionmaker(db)
-session = Session()
+    db = create_engine(db_string)
 
-base.metadata.create_all(db)
+    Session = sessionmaker(db)
+    session = Session()
 
-print("[DATABASE] - Models created")
+    base.metadata.create_all(db)
+
+    print("[DATABASE] - Models created")
 
 
 class DBGatewayActions():

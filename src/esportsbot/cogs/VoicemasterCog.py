@@ -1,6 +1,7 @@
 from discord.ext import commands
-from ..db_gateway import db_gateway
-from ..base_functions import send_to_log_channel
+from esportsbot.db_gateway_v1 import DBGatewayActions
+from esportsbot.models import Voicemaster_master, Voicemaster_slave
+from esportsbot.base_functions import send_to_log_channel
 
 
 class VoicemasterCog(commands.Cog):
@@ -13,31 +14,34 @@ class VoicemasterCog(commands.Cog):
         is_a_valid_id = given_channel_id and given_channel_id.isdigit() and len(given_channel_id) == 18
 
         if is_a_valid_id:
-            is_a_master = db_gateway().get(
-                'voicemaster_master',
-                params={
-                    'guild_id': ctx.author.guild.id,
-                    'channel_id': given_channel_id
-                }
-            )
+            # is_a_master = db_gateway().get(
+            #     'voicemaster_master',
+            #     params={
+            #         'guild_id': ctx.author.guild.id,
+            #         'channel_id': given_channel_id
+            #     }
+            # )
+            is_a_master = DBGatewayActions(Voicemaster_master, guild_id=ctx.author.guild.id, channel_id=given_channel_id)
             is_voice_channel = hasattr(self.bot.get_channel(int(given_channel_id)), 'voice_states')
-            is_a_slave = db_gateway().get(
-                'voicemaster_slave',
-                params={
-                    'guild_id': ctx.author.guild.id,
-                    'channel_id': given_channel_id
-                }
-            )
+            # is_a_slave = db_gateway().get(
+            #     'voicemaster_slave',
+            #     params={
+            #         'guild_id': ctx.author.guild.id,
+            #         'channel_id': given_channel_id
+            #     }
+            # )
+            is_a_slave = DBGatewayActions().get(Voicemaster_slave, guild_id=ctx.author.guild.id, channel_id=given_channel_id)
 
             if is_voice_channel and not (is_a_master or is_a_slave):
                 # Not currently a Master and is voice channel, add it
-                db_gateway().insert(
-                    'voicemaster_master',
-                    params={
-                        'guild_id': ctx.author.guild.id,
-                        'channel_id': given_channel_id
-                    }
-                )
+                # db_gateway().insert(
+                #     'voicemaster_master',
+                #     params={
+                #         'guild_id': ctx.author.guild.id,
+                #         'channel_id': given_channel_id
+                #     }
+                # )
+                DBGatewayActions().create(Voicemaster_master(guild_id=ctx.author.guild.id, channel_id=given_channel_id))
                 await ctx.channel.send("This VC has now been set as a VM master")
                 new_vm_master_channel = self.bot.get_channel(int(given_channel_id))
                 await send_to_log_channel(
@@ -65,12 +69,13 @@ class VoicemasterCog(commands.Cog):
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def getvmmasters(self, ctx):
-        master_vm_exists = db_gateway().get('voicemaster_master', params={'guild_id': ctx.author.guild.id})
+        #master_vm_exists = db_gateway().get('voicemaster_master', params={'guild_id': ctx.author.guild.id})
+        master_vm_exists = DBGatewayActions().list(Voicemaster_master, guild_id=ctx.author.guild.id)
 
         if master_vm_exists:
             master_vm_str = str()
             for record in master_vm_exists:
-                master_vm_str += f"{self.bot.get_channel(record['channel_id']).name} - {str(record['channel_id'])}\n"
+                master_vm_str += f"{self.bot.get_channel(record.channel_id).name} - {record.channel_id}\n"
             await ctx.channel.send(f"Current VM master VCs in this server:\n{master_vm_str}")
         else:
             await ctx.channel.send("No VCs in this server currently set as VM masters")
@@ -79,21 +84,27 @@ class VoicemasterCog(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def removevmmaster(self, ctx, given_channel_id=None):
         if given_channel_id:
-            channel_exists = db_gateway().get(
-                'voicemaster_master',
-                params={
-                    'guild_id': ctx.author.guild.id,
-                    'channel_id': given_channel_id
-                }
+            # channel_exists = db_gateway().get(
+            #     'voicemaster_master',
+            #     params={
+            #         'guild_id': ctx.author.guild.id,
+            #         'channel_id': given_channel_id
+            #     }
+            # )
+            channel_exists = DBGatewayActions().get(
+                Voicemaster_master,
+                guild_id=ctx.author.guild.id,
+                channel_id=given_channel_id
             )
             if channel_exists:
-                db_gateway().delete(
-                    'voicemaster_master',
-                    where_params={
-                        'guild_id': ctx.author.guild.id,
-                        'channel_id': given_channel_id
-                    }
-                )
+                # db_gateway().delete(
+                #     'voicemaster_master',
+                #     where_params={
+                #         'guild_id': ctx.author.guild.id,
+                #         'channel_id': given_channel_id
+                #     }
+                # )
+                DBGatewayActions().delete(channel_exists)
                 await ctx.channel.send("This VC is no longer a VM master")
                 await send_to_log_channel(
                     self,

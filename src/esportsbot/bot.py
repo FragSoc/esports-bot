@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from esportsbot import lib
 from esportsbot.base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 
-from esportsbot.db_gateway_v1 import *
+from esportsbot.db_gateway_v1 import DBGatewayActions, DBGatewayActions_init
 
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument
@@ -320,7 +320,8 @@ def launch():
     TOKEN = os.getenv('DISCORD_TOKEN')
 
     # Generate Database Schema
-    generate_schema()
+    DBGatewayActions_init()
+
     client.update_music_channels()
 
     client.load_extension('esportsbot.cogs.VoicemasterCog')
