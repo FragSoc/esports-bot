@@ -818,9 +818,9 @@ class TwitchCog(commands.Cog):
                 message = None
 
             self._db.pure_query(
-                f"UPDATE twitch_info " 
-                f"SET custom_message='{message}' " 
-                f"WHERE guild_id={ctx.guild.id} " 
+                f"UPDATE twitch_info "
+                f"SET custom_message='{message}' "
+                f"WHERE guild_id={ctx.guild.id} "
                 f"AND twitch_channel_id='{channel_id}'"
             )
             if message is None:
@@ -885,7 +885,8 @@ class TwitchCog(commands.Cog):
         embed.set_author(
             name=channel_info.get("broadcaster_login"),
             url=f"https://www.twitch.tv/{channel_info.get('broadcaster_login')}",
-            icon_url=channel_info.get("thumbnail_url"))
+            icon_url=channel_info.get("thumbnail_url")
+        )
         embed.set_thumbnail(url=channel_info.get("thumbnail_url"))
         embed.add_field(name="Current Game:", value=f"{channel_info.get('game_name')}")
 
