@@ -22,9 +22,6 @@ class DBGatewayActions():
     """
     Base class for handling database queries
     """
-    def __init__(self):
-        super().__init__()
-
     def list(self, db_model, **args):
         """
         Method to return a list of results that suit the model criteria
