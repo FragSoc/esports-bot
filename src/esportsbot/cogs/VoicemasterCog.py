@@ -1,5 +1,5 @@
 from discord.ext import commands
-from esportsbot.db_gateway_v1 import DBGatewayActions
+from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Voicemaster_master, Voicemaster_slave
 from esportsbot.base_functions import send_to_log_channel
 

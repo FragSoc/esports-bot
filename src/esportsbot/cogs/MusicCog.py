@@ -15,7 +15,7 @@ from discord.ext import commands, tasks
 from discord.ext.commands import Context
 
 from esportsbot.base_functions import channel_id_from_mention
-from esportsbot.db_gateway_v1 import DBGatewayActions
+from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Music_channels
 from esportsbot.lib.client import EsportsBot
 

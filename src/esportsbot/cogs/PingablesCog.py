@@ -2,7 +2,7 @@ import discord
 import asyncio
 from discord.ext import commands
 from discord.ext.commands.context import Context
-from esportsbot.db_gateway_v1 import DBGatewayActions
+from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Pingable_roles, Guild_info
 from esportsbot.lib.client import EsportsBot
 from esportsbot import lib

@@ -3,7 +3,7 @@ from discord.ext import commands, tasks
 from discord import Intents, Embed, Message, Colour, Role
 from esportsbot.reactionMenus.reactionMenuDB import ReactionMenuDB
 from esportsbot.reactionMenus import reactionMenu
-from esportsbot.db_gateway_v1 import DBGatewayActions
+from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Music_channels, Pingable_roles, Guild_info, Reaction_menus
 from esportsbot.lib import exceptions
 from typing import Dict, MutableMapping, Set, Union, List

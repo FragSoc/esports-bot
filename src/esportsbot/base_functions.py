@@ -1,4 +1,4 @@
-from esportsbot.db_gateway_v1 import DBGatewayActions
+from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Voicemaster_master, Voicemaster_slave, Guild_info
 
 
