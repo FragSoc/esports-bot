@@ -311,8 +311,12 @@ class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
             authorName=authorName
         )
 
-
-    def reactionClosesMenu(self, reactPL: Union[RawReactionActionEvent, RawMessageDeleteEvent, RawBulkMessageDeleteEvent]) -> bool:
+    def reactionClosesMenu(
+        self,
+        reactPL: Union[RawReactionActionEvent,
+                       RawMessageDeleteEvent,
+                       RawBulkMessageDeleteEvent]
+    ) -> bool:
         """An InlineReactionMenu override which checks the number of yes votes received.
 
         :param discord.RawReactionActionEvent reactPL: The raw payload representing the reaction addition or removal
@@ -328,7 +332,7 @@ class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
             if self.msg.id in reactPL.message_ids:
                 raise lib.exceptions.UnrecognisedReactionMenuMessage(self.msg.guild.id, self.msg.channel.id, self.msg.id)
             return False
-        
+
         try:
             if reactPL.message_id == self.msg.id and reactPL.user_id != lib.client.instance().user.id and \
                     lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True) == self.yesOption.emoji:
@@ -342,7 +346,6 @@ class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
         except lib.exceptions.UnrecognisedCustomEmoji:
             return False
 
-
     async def doMenu(self) -> None:
         """Overload that also handles reaction removal to allow for correct vote counting, and message deletion.
         This overload does not return anything, unlike the original method, which returns the emotes reacted with
@@ -351,7 +354,10 @@ class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
         await self.updateMessage()
         try:
             await lib.client.instance().multiWaitFor(
-                ["raw_reaction_add", "raw_reaction_remove", "raw_message_delete", "raw_bulk_message_delete"],
+                ["raw_reaction_add",
+                 "raw_reaction_remove",
+                 "raw_message_delete",
+                 "raw_bulk_message_delete"],
                 check=self.reactionClosesMenu,
                 timeout=self.timeoutSeconds
             )

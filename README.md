@@ -50,6 +50,7 @@ $ cd Esports-Bot-Rewrite
 ```console  
 $ nano .env  
 ```
+
 4. Install all the requirements for python:  
 ```bash  
 pip install -r requirements.txt  
@@ -476,4 +477,5 @@ User command: add or removing the `!pingme` role with the given name to/from the
 ##### !pingme clear  
 User command: remove all `!pingme` roles from the user.  
   
+
 </details>

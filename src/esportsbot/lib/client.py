@@ -1,10 +1,11 @@
 from types import FrameType, FunctionType
 from discord.ext import commands, tasks
 from discord import Intents, Embed, Message, Colour, Role
-from ..reactionMenus.reactionMenuDB import ReactionMenuDB
-from ..reactionMenus import reactionMenu
-from ..db_gateway import db_gateway
-from . import exceptions
+from esportsbot.reactionMenus.reactionMenuDB import ReactionMenuDB
+from esportsbot.reactionMenus import reactionMenu
+from esportsbot.db_gateway import DBGatewayActions
+from esportsbot.models import Music_channels, Pingable_roles, Guild_info, Reaction_menus
+from esportsbot.lib import exceptions
 from typing import Dict, MutableMapping, Set, Union, List
 from datetime import datetime, timedelta
 import os
@@ -12,8 +13,8 @@ import signal
 import asyncio
 import toml
 
-from .exceptions import UnrecognisedReactionMenuMessage
-from .emotes import Emote
+from esportsbot.lib.exceptions import UnrecognisedReactionMenuMessage
+from esportsbot.lib.emotes import Emote
 
 # Type alias to be used for user facing strings. Allows for multi-level tables.
 StringTable = MutableMapping[str, Union[str, "StringTable"]]
@@ -49,9 +50,9 @@ class EsportsBot(commands.Bot):
 
     def update_music_channels(self):
         self.MUSIC_CHANNELS = {}
-        temp_channels = db_gateway().pure_return("SELECT guild_id, channel_id FROM music_channels")
+        temp_channels = DBGatewayActions().list(Music_channels)
         for item in temp_channels:
-            self.MUSIC_CHANNELS[item.get("guild_id")] = item.get("channel_id")
+            self.MUSIC_CHANNELS[item.guild_id] = item.channel_id
         return self.MUSIC_CHANNELS
 
     def interruptReceived(self, signum: signal.Signals, frame: FrameType):
@@ -78,12 +79,12 @@ class EsportsBot(commands.Bot):
         :param int cooldownSeconds: The number of seconds to wait asynchronously before updating role
         """
         await asyncio.sleep(cooldownSeconds)
-        db = db_gateway()
-        roleData = db.get("pingable_roles", {"role_id": role.id})
-        if roleData and roleData[0]["on_cooldown"]:
-            db.update('pingable_roles', set_params={'on_cooldown': False}, where_params={'role_id': role.id})
+        roleData = DBGatewayActions().get(Pingable_roles, role_id=role.id)
+        if roleData and roleData.on_cooldown:
+            roleData.on_cooldown = False
+            DBGatewayActions().update(roleData)
         if role.guild.get_role(role.id) is not None:
-            await role.edit(mentionable=True, colour=roleData[0]["colour"], reason="role ping cooldown complete")
+            await role.edit(mentionable=True, colour=roleData.colour, reason="role ping cooldown complete")
 
     @tasks.loop(hours=24)
     async def monthlyPingablesReport(self):
@@ -100,35 +101,35 @@ class EsportsBot(commands.Bot):
             baseEmbed.colour = Colour.random()
             baseEmbed.set_thumbnail(url=self.user.avatar_url_as(size=128))
             baseEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y"))
-            db = db_gateway()
-            for guildData in db.getall("guild_info"):
-                pingableRoles = db.get("pingable_roles", {"guild_id": guildData["guild_id"]})
+            for guildData in DBGatewayActions().list(Guild_info):
+                pingableRoles = DBGatewayActions().list(Pingable_roles, guild_id=guildData.guild_id)
                 if pingableRoles:
-                    guild = self.get_guild(guildData["guild_id"])
+                    guild = self.get_guild(guildData.guild_id)
                     if guild is None:
                         print(
-                            "[Esportsbot.monthlyPingablesReport] Unknown guild id in guild_info table: #"
-                            + str(guildData["guild_id"])
+                            f"[Esportsbot.monthlyPingablesReport] Unknown guild id in guild_info table: #{guildData.guild_id}"
                         )
-                    elif guildData["log_channel_id"] is not None:
+                    elif guildData.log_channel_id is not None:
                         reportEmbed = baseEmbed.copy()
                         rolesAdded = False
                         for roleData in pingableRoles:
-                            role = guild.get_role(roleData["role_id"])
+                            role = guild.get_role(roleData.role_id)
                             if role is None:
-                                print("[Esportsbot.monthlyPingablesReport] Unknown pingable role id in pingable_roles table. Removing from the table: role #" \
-                                        + str(roleData["role_id"]) + " in guild #" + str(guildData["guild_id"]))
-                                db.delete("pingable_roles", {"role_id": roleData["role_id"]})
+                                print(
+                                    f"[Esportsbot.monthlyPingablesReport] Unknown pingable role id in pingable_roles table. Removing from the table: role #{roleData.role_id} in guild #{guildData.guild_id}"
+                                )
+                                DBGatewayActions().delete(roleData)
                             else:
                                 reportEmbed.add_field(
                                     name=role.name,
-                                    value=role.mention + "\n" + str(roleData["monthly_ping_count"]) + " pings"
+                                    value=f"{role.mention}\n{roleData.monthly_ping_count} pings"
                                 )
-                                db.update("pingable_roles", {"monthly_ping_count": 0}, {"role_id": role.id})
+                                roleData.monthly_ping_count = 0
+                                DBGatewayActions().update(roleData)
                                 rolesAdded = True
                         if rolesAdded:
                             loggingTasks.add(
-                                asyncio.create_task(guild.get_channel(guildData['log_channel_id']).send(embed=reportEmbed))
+                                asyncio.create_task(guild.get_channel(guildData.log_channel_id).send(embed=reportEmbed))
                             )
 
             if loggingTasks:
@@ -142,16 +143,15 @@ class EsportsBot(commands.Bot):
         which were interrupted by bot shutdown. This method must be called upon bot.on_ready, since these tasks
         cannot be performed synchronously during EsportsBot.__init__.
         """
-        db = db_gateway()
         if not self.reactionMenus.initializing:
             raise RuntimeError("This bot's ReactionMenuDB has already been initialized.")
         try:
-            menusData = db.getall('reaction_menus')
+            menusData = DBGatewayActions().list(Reaction_menus)
         except Exception as e:
             print("failed to load menus from SQL", e)
             raise e
         for menuData in menusData:
-            msgID, menuDict = menuData['message_id'], menuData['menu']
+            msgID, menuDict = menuData.message_id, menuData.menu
             if 'type' in menuDict:
                 if reactionMenu.isSaveableMenuTypeName(menuDict['type']):
                     try:
@@ -160,15 +160,13 @@ class EsportsBot(commands.Bot):
                                                                                               menuDict)
                         )
                     except UnrecognisedReactionMenuMessage:
-                        print(
-                            "Unrecognised message for " + menuDict['type'] + ", removing from the database: "
-                            + str(menuDict["msg"])
-                        )
-                        db.delete('reaction_menus', where_params={'message_id': msgID})
+                        print(f"Unrecognised message for {menuDict['type']}, removing from the database: {menuDict['msg']}")
+                        reaction_menu = DBGatewayActions().get(Reaction_menus, message_id=msgID)
+                        DBGatewayActions().delete(reaction_menu)
                 else:
                     print("Non saveable menu in database:", msgID, menuDict["type"])
             else:
-                print("no type for menu " + str(msgID))
+                print(f"no type for menu {msgID}")
 
         self.reactionMenus.initializing = False
         if "UNKNOWN_COMMAND_EMOJI" in os.environ:
@@ -176,22 +174,23 @@ class EsportsBot(commands.Bot):
 
         now = datetime.now()
         roleUpdateTasks = set()
-        for guildData in db.getall("guild_info"):
-            guild = self.get_guild(guildData["guild_id"])
+        for guildData in DBGatewayActions().list(Guild_info):
+            guild = self.get_guild(guildData.guild_id)
             if guild is None:
-                print("[Esportsbot.init] Unknown guild id in guild_info table: #" + str(guildData["guild_id"]))
+                print(f"[Esportsbot.init] Unknown guild id in guild_info table: #{guildData.guild_id}")
             else:
-                guildPingCooldown = timedelta(seconds=guildData["role_ping_cooldown_seconds"])
-                for roleData in db.get("pingable_roles", {"guild_id": guildData["guild_id"]}):
-                    role = guild.get_role(roleData["role_id"])
+                guildPingCooldown = timedelta(seconds=guildData.role_ping_cooldown_seconds)
+                for roleData in DBGatewayActions().list(Pingable_roles, guild_id=guildData.guild_id):
+                    role = guild.get_role(roleData.role_id)
                     if role is None:
-                        print("[Esportsbot.init] Unknown pingable role id in pingable_roles table. Removing from the table: role #" \
-                                + str(roleData["role_id"]) + " in guild #" + str(guildData["guild_id"]))
-                        db.delete("pingable_roles", {"role_id": roleData["role_id"]})
+                        print(
+                            f"[Esportsbot.init] Unknown pingable role id in pingable_roles table. Removing from the table: role #{roleData.role_id} in guild #{guildData.guild_id}"
+                        )
+                        DBGatewayActions().delete(roleData)
                     else:
                         remainingCooldown = max(
                             0,
-                            int((datetime.fromtimestamp(roleData["last_ping"]) + guildPingCooldown - now).total_seconds())
+                            int((datetime.fromtimestamp(roleData.last_ping) + guildPingCooldown - now).total_seconds())
                         )
                         roleUpdateTasks.add(asyncio.create_task(self.rolePingCooldown(role, remainingCooldown)))
 
@@ -220,8 +219,8 @@ class EsportsBot(commands.Bot):
                 raise ValueError("Must give at least one of message or guildID")
         else:
             guildID = message.guild.id
-        db_logging_call = db_gateway().get('guild_info', params={'guild_id': guildID})
-        if db_logging_call and db_logging_call[0]['log_channel_id']:
+        db_logging_call = DBGatewayActions().get(Guild_info, guild_id=guildID)
+        if db_logging_call and db_logging_call.log_channel_id:
             if "embed" not in kwargs:
                 if message is None:
                     logEmbed = Embed(description="Responsible user unknown. Check the server's audit log.")
@@ -238,7 +237,7 @@ class EsportsBot(commands.Bot):
                 for aTitle, aDesc in actions.items():
                     logEmbed.add_field(name=str(aTitle), value=str(aDesc), inline=False)
                 kwargs["embed"] = logEmbed
-            await self.get_channel(db_logging_call[0]['log_channel_id']).send(*args, **kwargs)
+            await self.get_channel(db_logging_call.log_channel_id).send(*args, **kwargs)
 
     def handleRoleMentions(self, message: Message) -> Set[asyncio.Task]:
         """Handle !pingme behaviour for the given message.
@@ -249,13 +248,12 @@ class EsportsBot(commands.Bot):
         :return: A potentially empty set of already scheduled tasks handling role ping cooldown
         :rtype: Set[asyncio.Task]
         """
-        db = db_gateway()
-        guildInfo = db.get('guild_info', params={'guild_id': message.guild.id})
+        guildInfo = DBGatewayActions().get(Guild_info, guild_id=message.guild.id)
         roleUpdateTasks = set()
         if guildInfo:
             for role in message.role_mentions:
-                roleData = db.get('pingable_roles', params={'role_id': role.id})
-                if roleData and not roleData[0]["on_cooldown"]:
+                roleData = DBGatewayActions().get(Pingable_roles, role_id=role.id)
+                if roleData and not roleData.on_cooldown:
                     roleUpdateTasks.add(
                         asyncio.create_task(
                             role.edit(
@@ -265,30 +263,23 @@ class EsportsBot(commands.Bot):
                             )
                         )
                     )
-                    db.update('pingable_roles', {'on_cooldown': True}, {'role_id': role.id})
-                    db.update('pingable_roles', {"last_ping": datetime.now().timestamp()}, {'role_id': role.id})
-                    db.update('pingable_roles', {"ping_count": roleData[0]["ping_count"] + 1}, {'role_id': role.id})
-                    db.update(
-                        'pingable_roles',
-                        {"monthly_ping_count": roleData[0]["monthly_ping_count"] + 1},
-                        {'role_id': role.id}
-                    )
-                    roleUpdateTasks.add(
-                        asyncio.create_task(self.rolePingCooldown(role,
-                                                                  guildInfo[0]["role_ping_cooldown_seconds"]))
-                    )
+                    roleData.on_cooldown = True
+                    roleData.last_ping = datetime.now().timestamp()
+                    roleData.ping_count = roleData.ping_count + 1
+                    roleData.monthly_ping_count = roleData.monthly_ping_count + 1
+                    DBGatewayActions().update(roleData)
+
+                    roleUpdateTasks.add(asyncio.create_task(self.rolePingCooldown(role, guildInfo.role_ping_cooldown_seconds)))
                     roleUpdateTasks.add(
                         asyncio.create_task(
                             self.adminLog(
                                 message,
-                                {"!pingme Role Pinged": "Role: " + role.mention + "\nUser: " + message.author.mention}
+                                {"!pingme Role Pinged": f"Role: {role.mention}\nUser: {message.author.mention}"}
                             )
                         )
                     )
         return roleUpdateTasks
 
-
-    
     async def multiWaitFor(self, eventTypes: List[str], timeout: int, check: FunctionType = None):
         """Performs discord.Client.wait_for, but with multiple possible event types.
 
@@ -337,7 +328,8 @@ def instance() -> EsportsBot:
         intents = Intents.default()
         intents.members = True
         _instance = EsportsBot(
-            os.environ.get("COMMAND_PREFIX", "!"),
+            os.environ.get("COMMAND_PREFIX",
+                           "!"),
             Emote.fromStr("⁉"),
             "src/esportsbot/user_strings.toml",
             intents=intents
