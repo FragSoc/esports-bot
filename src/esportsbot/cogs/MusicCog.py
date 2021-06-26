@@ -14,18 +14,17 @@ from discord import Message, VoiceClient, TextChannel, Embed, Colour, FFmpegPCMA
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
 
-from esportsbot.base_functions import channel_id_from_mention
-from esportsbot.db_gateway_v1 import DBGatewayActions
-from esportsbot.models import Music_channels
-from esportsbot.lib.client import EsportsBot
+from ..base_functions import channel_id_from_mention
+from ..db_gateway import db_gateway
+from ..lib.client import EsportsBot
 
 import googleapiclient.discovery
 from urllib.parse import parse_qs, urlparse
 
 from random import shuffle
 
-from esportsbot.lib.discordUtil import send_timed_message
-from esportsbot.lib.stringTyping import strIsInt
+from ..lib.discordUtil import send_timed_message
+from ..lib.stringTyping import strIsInt
 
 
 class EmbedColours:
@@ -81,7 +80,7 @@ class MusicCog(commands.Cog):
 
         self.__check_loops_alive()
 
-        self.__db_accessor = DBGatewayActions()
+        self.__db_accessor = db_gateway()
 
         self.user_strings: dict = bot.STRINGS["music"]
 
@@ -133,16 +132,24 @@ class MusicCog(commands.Cog):
             await send_timed_message(ctx.channel, embed=message, timer=30)
             return False
 
-        current_channel_for_guild = self.__db_accessor.get(Music_channels, guild_id=ctx.guild.id)
+        current_channel_for_guild = self.__db_accessor.get('music_channels', params={'guild_id': ctx.guild.id})
 
-        if current_channel_for_guild:
+        if len(current_channel_for_guild) > 0:
             # There is already a channel set.. update
-            music_channel = self.__db_accessor.get(Music_channels, guild_id=ctx.guild.id)
-            music_channel.channel_id = cleaned_channel_id
-            self.__db_accessor.update(music_channel)
+            self.__db_accessor.update(
+                'music_channels',
+                set_params={'channel_id': cleaned_channel_id},
+                where_params={'guild_id': ctx.guild.id}
+            )
         else:
             # No channel for guild.. insert
-            self.__db_accessor.create(Music_channels(guild_id=ctx.guild.id, channel_id=cleaned_channel_id))
+            self.__db_accessor.insert(
+                'music_channels',
+                params={
+                    'channel_id': int(cleaned_channel_id),
+                    'guild_id': int(ctx.guild.id)
+                }
+            )
 
         await self.__setup_channel(ctx, int(cleaned_channel_id), args)
         self._bot.update_music_channels()
@@ -159,11 +166,11 @@ class MusicCog(commands.Cog):
         :rtype: discord.Message
         """
 
-        current_channel_for_guild = self.__db_accessor.get(Music_channels, guild_id=ctx.guild.id)
+        current_channel_for_guild = self.__db_accessor.get('music_channels', params={'guild_id': ctx.guild.id})
 
-        if current_channel_for_guild and current_channel_for_guild.channel_id:
+        if current_channel_for_guild and current_channel_for_guild[0].get('channel_id'):
             # If the music channel has been set in the guild
-            id_as_channel = ctx.guild.get_channel(current_channel_for_guild.channel_id)
+            id_as_channel = ctx.guild.get_channel(current_channel_for_guild[0].get('channel_id'))
             message = self.user_strings["music_channel_get"].format(music_channel=id_as_channel.mention)
             return await ctx.channel.send(message)
         else:
@@ -181,15 +188,15 @@ class MusicCog(commands.Cog):
         :rtype: discord.Message
         """
 
-        current_channel_for_guild = self.__db_accessor.get(Music_channels, guild_id=ctx.guild.id)
+        current_channel_for_guild = self.__db_accessor.get('music_channels', params={'guild_id': ctx.guild.id})
 
-        if current_channel_for_guild and current_channel_for_guild.channel_id:
+        if current_channel_for_guild and current_channel_for_guild[0].get('channel_id'):
             # If the music channel has been set for the guild
-            channel_id = current_channel_for_guild.channel_id
+            channel_id = current_channel_for_guild[0].get('channel_id')
             await self.__setup_channel(ctx, arg='-c', channel_id=channel_id)
-            channel = self._bot.get_channel(channel_id)
+            channel = self._bot.get_channel(current_channel_for_guild[0].get('channel_id'))
             if channel is None:
-                channel = self._bot.fetch_channel(channel_id)
+                channel = self._bot.fetch_channel(current_channel_for_guild[0].get('channel_id'))
             message = self.user_strings["music_channel_reset"].format(music_channel=channel.mention)
             return await ctx.channel.send(message)
         else:
@@ -495,8 +502,8 @@ class MusicCog(commands.Cog):
             return ""
 
         # We don't want the song channel to be filled with the queue as it already shows it
-        music_channel_in_db = self.__db_accessor.get(Music_channels, guild_id=ctx.guild.id)
-        if ctx.message.channel.id == music_channel_in_db.channel_id:
+        music_channel_in_db = self.__db_accessor.get('music_channels', params={'guild_id': ctx.guild.id})
+        if ctx.message.channel.id == music_channel_in_db[0].get('channel_id'):
             # Message is in the songs channel
             message_title = self.user_strings["music_channel_wrong_channel"].format(command_option="cannot")
             await send_timed_message(
@@ -672,10 +679,17 @@ class MusicCog(commands.Cog):
         default_queue_message = await channel_instance.send(EMPTY_QUEUE_MESSAGE)
         default_preview_message = await channel_instance.send(embed=temp_default_preview)
 
-        music_channel = self.__db_accessor.get(Music_channels, guild_id=ctx.author.guild.id)
-        music_channel.queue_message_id = default_queue_message.id
-        music_channel.preview_message_id = default_preview_message.id
-        self.__db_accessor.update(music_channel)
+        self.__db_accessor.update(
+            'music_channels',
+            set_params={'queue_message_id': int(default_queue_message.id)},
+            where_params={'guild_id': ctx.author.guild.id}
+        )
+
+        self.__db_accessor.update(
+            'music_channels',
+            set_params={'preview_message_id': int(default_preview_message.id)},
+            where_params={'guild_id': ctx.author.guild.id}
+        )
 
     async def __remove_active_channel(self, guild_id: int) -> bool:
         """
@@ -950,17 +964,17 @@ class MusicCog(commands.Cog):
         :rtype: NoneType
         """
 
-        guild_db_data = self.__db_accessor.get(Music_channels, guild_id=guild_id)
+        guild_db_data = self.__db_accessor.get('music_channels', params={'guild_id': guild_id})[0]
 
         # Get the ids of the queue and preview messages
-        queue_message_id = guild_db_data.queue_message_id
-        preview_message_id = guild_db_data.preview_message_id
+        queue_message_id = guild_db_data.get('queue_message_id')
+        preview_message_id = guild_db_data.get('preview_message_id')
 
         # Create the updated messages
         queue_message = self.__make_updated_queue_message(guild_id)
         preview_message = self.__make_update_preview_message(guild_id)
 
-        music_channel_id = guild_db_data.channel_id
+        music_channel_id = guild_db_data.get('channel_id')
         # Get the music channel id as a discord.TextChannel object
         music_channel_instance = self._bot.get_channel(music_channel_id)
         if music_channel_instance is None:
@@ -1110,8 +1124,8 @@ class MusicCog(commands.Cog):
         :rtype: bool
         """
 
-        music_channel_in_db = self.__db_accessor.get(Music_channels, guild_id=ctx.guild.id)
-        if ctx.message.channel.id != music_channel_in_db.channel_id:
+        music_channel_in_db = self.__db_accessor.get('music_channels', params={'guild_id': ctx.guild.id})
+        if ctx.message.channel.id != music_channel_in_db[0].get('channel_id'):
             # Message is not in the songs channel
             message_title = self.user_strings["music_channel_wrong_channel"].format(command_option="can only")
             await send_timed_message(

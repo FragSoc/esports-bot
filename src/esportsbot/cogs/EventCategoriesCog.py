@@ -3,12 +3,11 @@ from typing import Tuple
 from discord.ext import commands
 from discord.ext.commands.context import Context
 from discord import PartialMessage, Forbidden, PermissionOverwrite, RawReactionActionEvent, Colour, Embed
-from esportsbot.db_gateway_v1 import DBGatewayActions
-from esportsbot.models import Guild_info, Event_categories
+from ..db_gateway import db_gateway
 import asyncio
-from esportsbot import lib
-from esportsbot.lib.client import EsportsBot, StringTable
-from esportsbot.reactionMenus.reactionRoleMenu import ReactionRoleMenu, ReactionRoleMenuOption
+from .. import lib
+from ..lib.client import EsportsBot, StringTable
+from ..reactionMenus.reactionRoleMenu import ReactionRoleMenu, ReactionRoleMenuOption
 
 # Permissions overrides assigned to the shared role in closed event signin channels
 CLOSED_EVENT_SIGNIN_CHANNEL_SHARED_PERMS = PermissionOverwrite(
@@ -75,26 +74,28 @@ class EventCategoriesCog(commands.Cog):
         :return: A tuple with the guild and event db entries if the guild has a shared role and an event named eventName, () otherwise
         :rtype: Tuple[dict, dict] if the guild has a shared role and an event named eventName, Tuple[] otherwise
         """
-        guild = DBGatewayActions().get(Guild_info, guild_id=ctx.guild.id)
-        no_shared_role = guild.shared_role_id is None
-        if no_shared_role:
+        db = db_gateway()
+        guildData = db.get("guild_info", params={"guild_id": ctx.guild.id})[0]
+        if not guildData["shared_role_id"]:
             await ctx.message.reply(self.STRINGS['no_shared_role'].format(command_prefix=self.bot.command_prefix))
         else:
-            eventData = DBGatewayActions().get(Event_categories, guild_id=ctx.guild.id, event_name=eventName)
+            eventData = db.get("event_categories", params={"guild_id": ctx.guild.id, "event_name": eventName})[0]
             if not eventData:
-                if not (allEvents := DBGatewayActions().list(Event_categories, guild_id=ctx.guild.id)):
+                if not (allEvents := db.get("event_categories", params={"guild_id": ctx.guild.id})):
                     await ctx.message.reply(self.STRINGS['no_event_categories'])
                 else:
                     await ctx.message.reply(
-                        self.STRINGS['unrecognised_event'].format(events=", ".join(e.event_name.title() for e in allEvents))
+                        self.STRINGS['unrecognised_event'].format(
+                            events=", ".join(e["event_name"].title() for e in allEvents)
+                        )
                     )
             else:
-                return (guild, eventData)
+                return (guildData, eventData)
         return ()
 
     @commands.command(
         name="open-event",
-        usage="open-event <event name>",
+        usage="<event name>",
         help="Reveal the signin channel for the named event channel."
     )
     @commands.has_permissions(administrator=True)
@@ -109,12 +110,12 @@ class EventCategoriesCog(commands.Cog):
         elif allData := await self.getGuildEventSettings(ctx, args.lower()):
             guildData, eventData = allData
             eventName = args.lower()
-            signinMenu = self.bot.reactionMenus[eventData.signin_menu_id]
+            signinMenu = self.bot.reactionMenus[eventData["signin_menu_id"]]
             eventChannel = signinMenu.msg.channel
             if not eventChannel.permissions_for(ctx.guild.me).manage_permissions:
                 await ctx.send(self.STRINGS['no_channel_edit_perms'].format(channel_id=eventChannel.id))
             else:
-                sharedRole = ctx.guild.get_role(guildData.shared_role_id)
+                sharedRole = ctx.guild.get_role(guildData["shared_role_id"])
                 if not eventChannel.overwrites_for(sharedRole).read_messages:
                     reason = self.STRINGS['event_channel_open_reason'].format(
                         author=ctx.author.name,
@@ -136,7 +137,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="close-event",
-        usage="close-event <event name>",
+        usage="<event name>",
         help="Hide the signin channel for the named event, reset the signin menu, and remove the event's role from users."
     )
     @commands.has_permissions(administrator=True)
@@ -151,7 +152,7 @@ class EventCategoriesCog(commands.Cog):
             await ctx.message.reply(self.STRINGS['request_event_name'])
         elif allData := await self.getGuildEventSettings(ctx, args.lower()):
             guildData, eventData = allData
-            signinMenu = self.bot.reactionMenus[eventData.signin_menu_id]
+            signinMenu = self.bot.reactionMenus[eventData["signin_menu_id"]]
             eventChannel = signinMenu.msg.channel
             myPerms = eventChannel.permissions_for(ctx.guild.me)
             if not myPerms.manage_permissions:
@@ -159,7 +160,7 @@ class EventCategoriesCog(commands.Cog):
             elif not myPerms.manage_roles:
                 await ctx.send(self.STRINGS['no_role_edit_perms'])
             else:
-                eventRole = ctx.guild.get_role(eventData.role_id)
+                eventRole = ctx.guild.get_role(eventData["role_id"])
                 if eventRole.position >= ctx.guild.self_role.position:
                     await ctx.send(
                         self.STRINGS['role_edit_perms_bad_order'].format(
@@ -169,7 +170,7 @@ class EventCategoriesCog(commands.Cog):
                     )
                 else:
                     eventName = args.lower()
-                    sharedRole = ctx.guild.get_role(guildData.shared_role_id)
+                    sharedRole = ctx.guild.get_role(guildData["shared_role_id"])
                     channelEdited = eventChannel.overwrites_for(sharedRole).read_messages
                     usersEdited = len(eventRole.members)
                     # signinMenu.msg = await signinMenu.msg.channel.fetch_message(signinMenu.msg.id)
@@ -240,7 +241,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="set-event-signin-menu",
-        usage="set-event-signin-menu <id> <event name>",
+        usage="<id> <event name>",
         help="Change the event signin menu to use with `open-event` and `close-event`."
     )
     @commands.has_permissions(administrator=True)
@@ -261,17 +262,18 @@ class EventCategoriesCog(commands.Cog):
                 await ctx.send(self.STRINGS['unrecognised_menu_id'].format(menu_id=menuID))
             else:
                 eventName = args[len(menuID) + 1:].lower()
-                if not (eventData := DBGatewayActions().get(Event_categories, guild_id=ctx.guild.id, event_name=eventName)):
-                    if not (allEvents := DBGatewayActions().list(Event_categories, guild_id=ctx.guild.id)):
+                db = db_gateway()
+                if not (eventData := db.get("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName})):
+                    if not (allEvents := db.get("event_categoriesevent_channels", params={"guild_id": ctx.guild.id})):
                         await ctx.message.reply(self.STRINGS['no_event_categories'])
                     else:
                         await ctx.message.reply(
                             self.STRINGS['unrecognised_event'].format(
-                                events=", ".join(e.event_name.title() for e in allEvents)
+                                events=", ".join(e["event_name"].title() for e in allEvents)
                             )
                         )
                 else:
-                    eventRole = ctx.guild.get_role(eventData.role_id)
+                    eventRole = ctx.guild.get_role(eventData["role_id"])
                     menu = self.bot.reactionMenus[int(menuID)]
                     if not isinstance(menu, ReactionRoleMenu):
                         await ctx.message.reply(
@@ -285,13 +287,14 @@ class EventCategoriesCog(commands.Cog):
                                 self.STRINGS['invalid_signin_menu'].format(role_name=eventRole.name if eventRole else 'event')
                             )
                         else:
-                            event_category = DBGatewayActions().get(
-                                Event_categories,
-                                guild_id=ctx.guild.id,
-                                event_name=eventName
+                            db.update(
+                                'event_categories',
+                                set_params={"signin_menu_id": menu.msg.id},
+                                where_params={
+                                    "guild_id": ctx.guild.id,
+                                    "event_name": eventName
+                                }
                             )
-                            event_category.signin_menu_id = menu.msg.id
-                            DBGatewayActions().update(event_category)
                             await ctx.send(
                                 self.STRINGS['success_menu'].format(event_name=eventName.title,
                                                                     menu_url=menu.msg.jump_url)
@@ -306,7 +309,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="set-shared-role",
-        usage="set-shared-role <role>",
+        usage="<role>",
         help=
         "Change the role to admit/deny into *all* event signin menus. This should NOT be the same as any event role. Role can be given as either a mention or an ID."
     )
@@ -329,9 +332,11 @@ class EventCategoriesCog(commands.Cog):
                 if role is None:
                     await ctx.send(self.STRINGS['unrecognised_role'])
                 else:
-                    guild = DBGatewayActions().get(Guild_info, guild_id=ctx.guild.id)
-                    guild.shared_role_id = roleID
-                    DBGatewayActions().update(guild)
+                    db_gateway().update(
+                        'guild_info',
+                        set_params={"shared_role_id": roleID},
+                        where_params={"guild_id": ctx.guild.id}
+                    )
                     await ctx.send(self.STRINGS['success_shared_role'].format(role_name=role.name))
                     await self.bot.adminLog(
                         ctx.message,
@@ -343,7 +348,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="set-event-role",
-        usage="set-event-role <role> <event name>",
+        usage="<event name>",
         help=
         "Change the role to remove during `close-event`. This should NOT be the same as your shared role. Role can be given as either a mention or an ID."
     )
@@ -367,19 +372,25 @@ class EventCategoriesCog(commands.Cog):
                     await ctx.send(self.STRINGS['unrecognised_role'])
                 else:
                     eventName = args[len(roleStr) + 1:].lower()
-                    if not DBGatewayActions().get(Event_categories, guild_id=ctx.guild.id, event_name=eventName):
-                        if not (allEvents := DBGatewayActions().list(Event_categories, guild_id=ctx.guild.id)):
+                    db = db_gateway()
+                    if not db.get("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName}):
+                        if not (allEvents := db.get("event_categories", params={"guild_id": ctx.guild.id})):
                             await ctx.message.reply(self.STRINGS['no_event_categories'])
                         else:
                             await ctx.message.reply(
                                 self.STRINGS['unrecognised_event'].format(
-                                    events=", ".join(e.event_name.title() for e in allEvents)
+                                    events=", ".join(e["event_name"].title() for e in allEvents)
                                 )
                             )
                     else:
-                        event_category = DBGatewayActions().get(Event_categories, guild_id=ctx.guild.id, event_name=eventName)
-                        event_category.role_id = roleID
-                        DBGatewayActions().update(event_category)
+                        db.update(
+                            'event_categories',
+                            set_params={"role_id": roleID},
+                            where_params={
+                                "guild_id": ctx.guild.id,
+                                "event_name": eventName
+                            }
+                        )
                         await ctx.send(
                             self.STRINGS['success_event_role'].format(event_name=eventName.title(),
                                                                       role_name=role.name)
@@ -394,7 +405,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="register-event-category",
-        usage="register-event-category <signin menu id> <role> <event name>",
+        usage="<signin menu id> <role> <event name>",
         help=
         "Register an existing event category, menu, and role, for use with `open-event` and `close-event`. This does not setup permissions for the category or channels."
     )
@@ -426,17 +437,19 @@ class EventCategoriesCog(commands.Cog):
                         await ctx.send(self.STRINGS['unrecognised_role'])
                     else:
                         eventName = args[len(roleStr) + len(menuIDStr) + 2:].lower()
-                        if DBGatewayActions().get(Event_categories, guild_id=ctx.guild.id, event_name=eventName):
+                        db = db_gateway()
+                        if db.get("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName}):
                             await ctx.message.reply(self.STRINGS['event_exists'].format(event_name=eventName.title()))
                         else:
                             menu = self.bot.reactionMenus[int(menuIDStr)]
-                            DBGatewayActions().create(
-                                Event_categories(
-                                    guild_id=ctx.guild.id,
-                                    event_name=eventName,
-                                    role_id=roleID,
-                                    signin_menu_id=menu.msg.id
-                                )
+                            db.insert(
+                                'event_categories',
+                                {
+                                    "guild_id": ctx.guild.id,
+                                    "event_name": eventName,
+                                    "role_id": roleID,
+                                    "signin_menu_id": menu.msg.id
+                                }
                             )
                             await ctx.send(self.STRINGS['success_event_category'].format(event_name=eventName.title()))
                             admin_message = self.STRINGS['admin_existing_event_registered'][1].format(
@@ -452,7 +465,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="create-event-category",
-        usage="create-event-category <event name>",
+        usage="<event name>",
         help=
         "Create a new event category with a signin channel and menu, event role, general channel and correct permissions, and automatically register them for use with `open-event` and `close-event`."
     )
@@ -466,15 +479,16 @@ class EventCategoriesCog(commands.Cog):
         if not args:
             await ctx.send(self.STRINGS['request_event_name'])
         else:
+            db = db_gateway()
             eventName = args.lower()
-            if DBGatewayActions().get(Event_categories, guild_id=ctx.guild.id, event_name=eventName):
+            if db.get("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName}):
                 await ctx.message.reply(self.STRINGS['event_exists'].format(event_name=eventName.title()))
             else:
-                guildData = DBGatewayActions().get(Guild_info, guild_id=ctx.guild.id)
-                if not guildData.shared_role_id:
+                guildData = db.get("guild_info", {"guild_id": ctx.guild.id})[0]
+                if not guildData["shared_role_id"]:
                     await ctx.message.reply(self.STRINGS['no_shared_role'].format(command_prefix=self.bot.command_prefix))
                 else:
-                    if not (sharedRole := ctx.guild.get_role(guildData.shared_role_id)):
+                    if not (sharedRole := ctx.guild.get_role(guildData["shared_role_id"])):
                         await ctx.message.reply(
                             self.STRINGS['missing_shared_role'].format(command_prefix=self.bot.command_prefix)
                         )
@@ -537,7 +551,7 @@ class EventCategoriesCog(commands.Cog):
                                 category=newCategory,
                                 overwrites=categoryOverwrites
                             )
-                            signinMenuMsg = await signinChannel.send(embed=Embed())
+                            signinMenuMsg = await signinChannel.send("​")
                             signinMenu = ReactionRoleMenu(
                                 signinMenuMsg,
                                 self.bot,
@@ -548,13 +562,14 @@ class EventCategoriesCog(commands.Cog):
                             )
                             await signinMenu.updateMessage()
                             self.bot.reactionMenus.add(signinMenu)
-                            DBGatewayActions().create(
-                                Event_categories(
-                                    guild_id=ctx.guild.id,
-                                    event_name=eventName,
-                                    role_id=eventRole.id,
-                                    signin_menu_id=signinMenuMsg.id
-                                )
+                            db.insert(
+                                'event_categories',
+                                {
+                                    "guild_id": ctx.guild.id,
+                                    "event_name": eventName,
+                                    "role_id": eventRole.id,
+                                    "signin_menu_id": signinMenuMsg.id
+                                }
                             )
                             await ctx.send(
                                 self.STRINGS['success_event'].format(
@@ -564,7 +579,8 @@ class EventCategoriesCog(commands.Cog):
                                     shared_role_name=sharedRole.name,
                                     command_prefix=self.bot.command_prefix,
                                     event_name=eventName,
-                                    event_general_mention=eventGeneral.mention
+                                    event_general_mention=eventGeneral.mention,
+                                    event_role_mention=eventRole.mention
                                 )
                             )
                             admin_message = self.STRINGS['admin_event_category_updated'][1].format(
@@ -580,7 +596,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="unregister-event-category",
-        usage="unregister-event-category <event name>",
+        usage="<event name>",
         help=
         "Unregister an event category and role so that it can no longer be used with `open-event` and `close-event`, but without deleting the channels."
     )
@@ -595,24 +611,26 @@ class EventCategoriesCog(commands.Cog):
         if not args:
             await ctx.send(self.STRINGS['request_event_name'])
         else:
+            db = db_gateway()
             eventName = args.lower()
-            event_category = DBGatewayActions().get(Event_categories, guild_id=ctx.guild.id, event_name=eventName)
-            if not event_category:
-                if not (allEvents := DBGatewayActions().list(Event_categories, guild_id=ctx.guild.id)):
+            if not db.get("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName}):
+                if not (allEvents := db.get("event_categories", params={"guild_id": ctx.guild.id})):
                     await ctx.message.reply(self.STRINGS['no_event_categories'])
                 else:
                     await ctx.message.reply(
-                        self.STRINGS['unrecognised_event'].format(events=", ".join(e.event_name.title() for e in allEvents))
+                        self.STRINGS['unrecognised_event'].format(
+                            events=", ".join(e["event_name"].title() for e in allEvents)
+                        )
                     )
             else:
-                DBGatewayActions().delete(event_category)
+                db.delete("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName})
                 await ctx.message.reply(self.STRINGS['success_event_role_unregister'].format(event_title=eventName.title()))
                 admin_message = self.STRINGS['admin_event_category_unregistered'].format(event_title=eventName.title())
                 await self.bot.adminLog(ctx.message, {self.STRINGS['admin_event_category_unregistered'][0]: admin_message})
 
     @commands.command(
         name="delete-event-category",
-        usage="delete-event-category <event name>",
+        usage="<event name>",
         help="Delete an event category and its role and channels from the server."
     )
     @commands.has_permissions(administrator=True)
@@ -625,19 +643,22 @@ class EventCategoriesCog(commands.Cog):
         if not args:
             await ctx.send(self.STRINGS['request_event_name'])
         else:
+            db = db_gateway()
             eventName = args.lower()
-            if not (eventData := DBGatewayActions().get(Event_categories, guild_id=ctx.guild.id, event_name=eventName)):
-                if not (allEvents := DBGatewayActions().list(Event_categories, guild_id=ctx.guild.id)):
+            if not (eventData := db.get("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName})):
+                if not (allEvents := db.get("event_categories", params={"guild_id": ctx.guild.id})):
                     await ctx.message.reply(self.STRINGS['no_event_categories'])
                 else:
                     await ctx.message.reply(
-                        self.STRINGS['unrecognised_event'].format(events=", ".join(e.event_name.title() for e in allEvents))
+                        self.STRINGS['unrecognised_event'].format(
+                            events=", ".join(e["event_name"].title() for e in allEvents)
+                        )
                     )
             else:
-                signinMenuID = eventData.signin_menu_id
+                signinMenuID = eventData[0]["signin_menu_id"]
                 eventCategory = self.bot.reactionMenus[signinMenuID].msg.channel.category
                 numChannels = len(eventCategory.channels)
-                eventRole = ctx.guild.get_role(eventData.role_id)
+                eventRole = ctx.guild.get_role(eventData[0]["role_id"])
                 confirmMsg = await ctx.message.reply(
                     self.STRINGS['react_delete_confirm'].format(
                         event_title=eventName.title(),
@@ -674,13 +695,12 @@ class EventCategoriesCog(commands.Cog):
                             deletionTasks.add(asyncio.create_task(currentCategory.delete(reason=deletionReason)))
                         deletionTasks.add(asyncio.create_task(eventCategory.delete(reason=deletionReason)))
                         await asyncio.wait(deletionTasks)
-                        event_category = DBGatewayActions().get(Event_categories, guild_id=ctx.guild.id, event_name=eventName)
-                        DBGatewayActions().delete(event_category)
+                        db.delete("event_categories", {"guild_id": ctx.guild.id, "event_name": eventName})
                         await ctx.message.reply(self.STRINGS['success_event_deleted'].format(event_title=eventName.title()))
                         admin_message = self.STRINGS['admin_event_category_deleted'][1].format(
                             event_title=eventName.title(),
                             num_channels=numChannels
-                        ) + (f"\nRole deleted: #{eventData.role_id}" if eventData.role_id else "")
+                        ) + (f"\nRole deleted: #{eventData[0]['role_id']!s}" if eventData[0]['role_id'] else "")
                         await self.bot.adminLog(ctx.message, {self.STRINGS['admin_event_category_deleted'][0]: admin_message})
 
 

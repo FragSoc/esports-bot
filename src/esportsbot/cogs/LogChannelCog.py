@@ -1,8 +1,8 @@
 import toml
 from discord.ext import commands
-from esportsbot.db_gateway_v1 import DBGatewayActions
-from esportsbot.models import Guild_info
-from esportsbot.base_functions import channel_id_from_mention, send_to_log_channel
+from ..db_gateway import db_gateway
+from ..base_functions import channel_id_from_mention
+from ..base_functions import send_to_log_channel
 
 
 class LogChannelCog(commands.Cog):
@@ -14,12 +14,14 @@ class LogChannelCog(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def setlogchannel(self, ctx, given_channel_id=None):
         cleaned_channel_id = channel_id_from_mention(given_channel_id) if given_channel_id else ctx.channel.id
-        guild = DBGatewayActions().get(Guild_info, guild_id=ctx.author.guild.id)
-        log_channel_exists = guild.log_channel_id is not None
-        if log_channel_exists:
-            if guild.log_channel_id != cleaned_channel_id:
-                guild.log_channel_id = cleaned_channel_id
-                DBGatewayActions().update(guild)
+        log_channel_exists = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})
+        if bool(log_channel_exists):
+            if log_channel_exists[0]['log_channel_id'] != cleaned_channel_id:
+                db_gateway().update(
+                    'guild_info',
+                    set_params={'log_channel_id': cleaned_channel_id},
+                    where_params={'guild_id': ctx.author.guild.id}
+                )
                 await ctx.channel.send(self.STRINGS["channel_set"].format(channel_id=cleaned_channel_id))
                 await send_to_log_channel(
                     self,
@@ -29,8 +31,7 @@ class LogChannelCog(commands.Cog):
             else:
                 await ctx.channel.send(self.STRINGS["channel_set_already"])
         else:
-            guild.log_channel_id = cleaned_channel_id
-            DBGatewayActions().update(guild)
+            db_gateway().insert('guild_info', params={'guild_id': ctx.author.guild.id, 'log_channel_id': cleaned_channel_id})
             await ctx.channel.send(self.STRINGS["channel_set"].format(channel_id=cleaned_channel_id))
             await send_to_log_channel(
                 self,
@@ -41,23 +42,24 @@ class LogChannelCog(commands.Cog):
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def getlogchannel(self, ctx):
-        guild = DBGatewayActions().get(Guild_info, guild_id=ctx.author.guild.id)
-        log_channel_exists = guild.log_channel_id is not None
+        log_channel_exists = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})
 
-        if log_channel_exists:
-            await ctx.channel.send(self.STRINGS["channel_get"].format(channel_id=guild.log_channel_id))
+        if (channel_id := log_channel_exists[0]['log_channel_id']) is not None:
+            await ctx.channel.send(self.STRINGS["channel_get"].format(channel_id=channel_id))
         else:
             await ctx.channel.send(self.STRINGS["channel_get_notfound"])
 
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def removelogchannel(self, ctx):
-        guild = DBGatewayActions().get(Guild_info, guild_id=ctx.author.guild.id)
-        log_channel_exists = guild.log_channel_id is not None
+        log_channel_exists = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})
 
-        if log_channel_exists:
-            guild.log_channel_id = None
-            DBGatewayActions().update(guild)
+        if log_channel_exists[0]['log_channel_id']:
+            db_gateway().update(
+                'guild_info',
+                set_params={'log_channel_id': 'NULL'},
+                where_params={'guild_id': ctx.author.guild.id}
+            )
             await ctx.channel.send(self.STRINGS["channel_removed"])
         else:
             await ctx.channel.send(self.STRINGS["channel_get_notfound"])

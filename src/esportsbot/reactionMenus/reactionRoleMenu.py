@@ -4,8 +4,8 @@ It is modified and not actively synced with BASED, so will very likely be out of
 
 .. codeauthor:: Trimatix
 """
-from esportsbot.reactionMenus import reactionMenu
-from esportsbot import lib
+from . import reactionMenu
+from .. import lib
 from discord import Colour, Guild, Role, Message, User, Client, Member, PartialMessage
 from typing import List, Union, Dict
 
