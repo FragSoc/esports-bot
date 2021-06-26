@@ -55,7 +55,11 @@ class PingablesCog(commands.Cog):
         """
         self.bot: "EsportsBot" = bot
 
-    @commands.group(name="pingme", help="Get and create custom, cooldown-limited, pingable roles.", invoke_without_command=True)
+    @commands.group(
+        name="pingme",
+        help="Get and create custom, cooldown-limited, pingable roles.",
+        invoke_without_command=True
+    )
     async def pingme(self, ctx: Context):
         """Non-functional command, for heirarchical command grouping.
 
@@ -64,11 +68,7 @@ class PingablesCog(commands.Cog):
         """
         pass
 
-    @pingme.command(
-        name="register",
-        usage="<@role> <name>",
-        help="Convert an existing role into a !pingme role"
-    )
+    @pingme.command(name="register", usage="<@role> <name>", help="Convert an existing role into a !pingme role")
     @commands.has_permissions(administrator=True)
     async def admin_cmd_add_pingable_role(self, ctx: Context, *, args: str):
         """Admin command: Register an existing role for use with pingme. The role defaults to pingable (i.e not on cooldown)
@@ -390,11 +390,7 @@ class PingablesCog(commands.Cog):
             await ctx.message.reply("Emoji prefix for `!pingme create` roles has been removed!")
             await self.bot.adminLog(ctx.message, {"Emoji Prefix For !pingme roles Removed": "‎"})
 
-    @pingme.command(
-        name="create",
-        usage="<new role name>",
-        help="Start a poll for the creation of a new !pingme role"
-    )
+    @pingme.command(name="create", usage="<new role name>", help="Start a poll for the creation of a new !pingme role")
     async def pingme_create(self, ctx: Context, *, args: str):
         """User command: Trigger a poll for the creation of a new pingme role with the given name.
         If the guild's configured minimum number of votes is reached, then the role will be created automatically. If the poll
@@ -500,19 +496,18 @@ class PingablesCog(commands.Cog):
             reportEmbed = discord.Embed(title="All !pingme Roles", desc=ctx.guild.name)
             reportEmbed.colour = discord.Colour.random()
             reportEmbed.set_thumbnail(url=self.bot.user.avatar_url_as(size=128))
-            for roleData in sorted(allRolesData, key=lambda x: x["ping_count"], reverse=True):
-                if r := ctx.guild.get(roleData["role_id"]):
+            for roleData in sorted(allRolesData, key=lambda x: x.ping_count, reverse=True):
+                if r := ctx.guild.get(roleData.role_id):
                     reportEmbed.add_field(
-                        name=roleData["name"].title(),
-                        value="<@&" + str(roleData["role_id"]) + ">\nCreated by: <@" + str(roleData["creator_id"])
-                        + ">\nTotal pings: " + str(roleData["ping_count"])  + "\nTotal members: " + str(len(r.members))
+                        name=roleData.name.title(),
+                        value=
+                        f"<@&{roleData.role_id}>\nCreated by: <@{roleData.creator_id}>\nTotal pings: {roleData.ping_count}\nTotal members: {len(r.members)}"
                     )
                 else:
-                    await self.bot.adminLog(ctx.message,
-                        {
-                            "Unknown !Pingme Role",
-                            f"Failed to find the '{roleData['name'].title()}' role. Was it deleted?"
-                        }
+                    await self.bot.adminLog(
+                        ctx.message,
+                        {"Unknown !Pingme Role",
+                         f"Failed to find the '{roleData.name.title()}' role. Was it deleted?"}
                     )
             await ctx.reply(embed=reportEmbed)
 
