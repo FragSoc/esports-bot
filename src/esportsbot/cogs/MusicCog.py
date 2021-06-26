@@ -764,7 +764,7 @@ class MusicCog(commands.Cog):
 
         if not message.author.voice:
             # User is not in a voice channel.. exit
-            message_title = self.user_strings["no_voice_voice_channel"].format(author=message.author.mention)
+            message_title = self.user_strings["no_voice_voice_channel"].format(author=message.author.name)
             await send_timed_message(
                 channel=message.channel,
                 embed=Embed(title=message_title,
@@ -775,7 +775,7 @@ class MusicCog(commands.Cog):
 
         if not message.author.voice.channel.permissions_for(message.guild.me).connect:
             # The bot does not have permission to join the channel.. exit
-            message_title = self.user_strings["no_perms_voice_channel"].format(author=message.author.mention)
+            message_title = self.user_strings["no_perms_voice_channel"].format(author=message.author.name)
             await send_timed_message(
                 channel=message.channel,
                 embed=Embed(title=message_title,
@@ -795,7 +795,7 @@ class MusicCog(commands.Cog):
         else:
             if self._currently_active.get(message.guild.id).get('channel_id') != message.author.voice.channel.id:
                 # The bot is already being used in the current guild.
-                message_title = self.user_strings["wrong_voice_voice_channel"].format(author=message.author.mention)
+                message_title = self.user_strings["wrong_voice_voice_channel"].format(author=message.author.name)
                 await send_timed_message(
                     channel=message.channel,
                     embed=Embed(title=message_title,
@@ -1124,7 +1124,7 @@ class MusicCog(commands.Cog):
 
         if not ctx.author.voice:
             # User is not in a voice channel
-            message_title = self.user_strings["no_voice_voice_channel"].format(author=ctx.author.mention)
+            message_title = self.user_strings["no_voice_voice_channel"].format(author=ctx.author.name)
             await send_timed_message(
                 channel=ctx.channel,
                 embed=Embed(title=message_title,
@@ -1135,7 +1135,7 @@ class MusicCog(commands.Cog):
 
         if self._currently_active.get(ctx.guild.id).get('channel_id') != ctx.author.voice.channel.id:
             # The user is not in the same voice channel as the bot
-            message_title = self.user_strings["wrong_voice_voice_channel"].format(author=ctx.author.mention)
+            message_title = self.user_strings["wrong_voice_voice_channel"].format(author=ctx.author.name)
             await send_timed_message(
                 channel=ctx.channel,
                 embed=Embed(title=message_title,

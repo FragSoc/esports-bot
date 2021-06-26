@@ -1,3 +1,9 @@
+import re
+
+MENTION_REGEX = re.compile(r"^<@!?[0-9]+>$")
+ROLE_REGEX = re.compile(r"^<@&[0-9]+>$")
+CHANNEL_REGEX = re.compile(r"^<#[0-9]+>$")
+
 """
 The lib package was partially copied over from the BASED template project: https://github.com/Trimatix/BASED
 It is modified and not actively synced with BASED, so will very likely be out of date.
@@ -30,7 +36,27 @@ def strIsRoleMention(mention: str) -> bool:
     :return: True if mention matches the formatting of a discord role mention, False otherwise
     :rtype: bool
     """
-    return mention.endswith(">") and mention.startswith("<@&") and strIsInt(mention[3:-1])
+    return ROLE_REGEX.match(mention) is not None
+
+
+def strIsUserMention(mention: str) -> bool:
+    """Decide whether the given string is a discord user mention, being <@USERID> where USERID is an integer discord user id.
+
+    :param str mention: The string to check
+    :return: True if mention matches the formatting of a discord user mention, False otherwise
+    :rtype: bool
+    """
+    return MENTION_REGEX.match(mention) is not None
+
+
+def strIsChannelMention(mention: str) -> bool:
+    """Decide whether the given string is a discord channel mention, being <@CHANNELID> where CHANNELID is an integer discord channel id.
+
+    :param str mention: The string to check
+    :return: True if mention matches the formatting of a discord channel mention, False otherwise
+    :rtype: bool
+    """
+    return CHANNEL_REGEX.match(mention) is not None
 
 
 # string extensions for numbers, e.g 11th, 1st, 23rd...

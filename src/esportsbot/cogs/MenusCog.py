@@ -37,7 +37,7 @@ class MenusCog(commands.Cog):
 
     @commands.command(
         name="del-menu",
-        usage="del-menu <id>",
+        usage="<id>",
         help=
         "Remove the specified reaction menu. You can also just delete the message, if you have permissions.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID."
     )
@@ -67,7 +67,7 @@ class MenusCog(commands.Cog):
 
     @commands.command(
         name="del-role-menu-option",
-        usage="del-role-menu-option <menu-id> <emoji>",
+        usage="<menu-id> <emoji>",
         help=
         "Remove a role from a role menu.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.\nYour emoji must be an option in the menu."
     )
@@ -120,7 +120,7 @@ class MenusCog(commands.Cog):
 
     @commands.command(
         name="add-role-menu-option",
-        usage="add-role-menu-option <menu-id> <emoji> <@role mention>",
+        usage="<menu-id> <emoji> <@role mention>",
         help=
         "Add a role to a role menu.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.\nYour emoji must not be in the menu already.\nGive your role to grant/remove as a mention."
     )
@@ -171,7 +171,7 @@ class MenusCog(commands.Cog):
 
     @commands.command(
         name="make-role-menu",
-        usage="make-role-menu <title>\n<option1 emoji> <@option1 role>\n...    ...",
+        usage="<title>\n<option1 emoji> <@option1 role>\n...    ...",
         help=
         "Create a reaction role menu. Each option must be on its own new line, as an emoji, followed by a space, followed by a mention of the role to grant. The `title` is displayed at the top of the meny and is optional, to exclude your title simply give a new line."
     )
@@ -303,7 +303,7 @@ class MenusCog(commands.Cog):
                 await ctx.send(":x: Invalid target role!")
                 return
 
-        menuMsg = await ctx.send(embed=Embed())
+        menuMsg = await ctx.send("​")
 
         menu = reactionRoleMenu.ReactionRoleMenu(menuMsg, self.bot, reactionRoles, targetRole=targetRole, titleTxt=menuSubject)
         await menu.updateMessage()
@@ -324,7 +324,7 @@ class MenusCog(commands.Cog):
 
     @commands.command(
         name="poll",
-        usage="poll <subject>\n<option1 emoji> <option1 name>\n...    ...\n<optional args>",
+        usage="<subject>\n<option1 emoji> <option1 name>\n...    ...\n<optional args>",
         help=
         "Start a reaction-based poll. Each option must be on its own new line, as an emoji, followed by a space, followed by the option name. The `subject` is the question that users answer in the poll and is optional, to exclude your subject simply give a new line.\n\n__Optional Arguments__\nOptional arguments should be given by `name=value`, with each arg on a new line.\n- Give `multiplechoice=no` to only allow one vote per person (default: yes).\n- Give the length of the poll, with each time division on a new line. Acceptable time divisions are: `seconds`, `minutes`, `hours`, `days`. (default: minutes=5)"
     )

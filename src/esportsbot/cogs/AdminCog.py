@@ -8,9 +8,9 @@ class AdminCog(commands.Cog):
         self.bot = bot
         self.STRINGS = bot.STRINGS["admin"]
 
-    @commands.command(aliases=['cls', 'purge', 'delete', 'Cls', 'Purge', 'Delete', 'Clear'])
+    @commands.command(aliases=['cls', 'purge', 'delete', 'Cls', 'Purge', 'Delete'])
     @commands.has_permissions(manage_messages=True)
-    async def clear(self, ctx, amount=5):
+    async def clear_messages(self, ctx, amount=5):
         await ctx.channel.purge(limit=int(amount) + 1)
         await send_to_log_channel(
             self,
