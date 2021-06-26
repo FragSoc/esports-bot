@@ -2,12 +2,15 @@ from discord import RawReactionActionEvent, Message, Member, User, Client, DMCha
 from typing import Tuple, Union
 from . import emotes, exceptions
 
-
 # Link to an empty image, to allow for an author name in embeds without providing an icon.
 EMPTY_IMAGE = "https://i.imgur.com/sym17F7.png"
 
 
-async def reactionFromRaw(client: Client, payload: RawReactionActionEvent) -> Tuple[Message, Union[User, Member], emotes.Emote]:
+async def reactionFromRaw(client: Client,
+                          payload: RawReactionActionEvent) -> Tuple[Message,
+                                                                    Union[User,
+                                                                          Member],
+                                                                    emotes.Emote]:
     """Retrieve complete Reaction and user info from a RawReactionActionEvent payload.
 
     :param RawReactionActionEvent payload: Payload describing the reaction action

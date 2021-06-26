@@ -1,12 +1,12 @@
 from discord.ext import commands
 from discord.ext.commands.context import Context
 from discord import Embed
-from ..db_gateway import db_gateway
-from .. import lib
-from ..lib.client import EsportsBot
-from ..reactionMenus import reactionRoleMenu, reactionPollMenu
+from esportsbot.db_gateway import DBGatewayActions
+from esportsbot.models import Guild_info
+from esportsbot import lib
+from esportsbot.lib.client import EsportsBot
+from esportsbot.reactionMenus import reactionRoleMenu, reactionPollMenu
 from datetime import timedelta
-
 
 # Maximum number of polls which can be running at once in a given guild, for performance
 MAX_POLLS_PER_GUILD = 5
@@ -32,12 +32,15 @@ class MenusCog(commands.Cog):
     :var bot: The client instance owning this cog instance
     :vartype bot: EsportsBot
     """
-
     def __init__(self, bot: "EsportsBot"):
         self.bot: "EsportsBot" = bot
 
-    
-    @commands.command(name="del-menu", usage="del-menu <id>", help="Remove the specified reaction menu. You can also just delete the message, if you have permissions.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.")
+    @commands.command(
+        name="del-menu",
+        usage="<id>",
+        help=
+        "Remove the specified reaction menu. You can also just delete the message, if you have permissions.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID."
+    )
     @commands.has_permissions(administrator=True)
     async def admin_cmd_del_reaction_menu(self, ctx: Context, *, args: str):
         """Admin command: Unregister the specified reaction menu for interactions and delete the containing message.
@@ -62,8 +65,12 @@ class MenusCog(commands.Cog):
         else:
             await ctx.send(":x: Unrecognised reaction menu!")
 
-    
-    @commands.command(name="del-role-menu-option", usage="del-role-menu-option <menu-id> <emoji>", help="Remove a role from a role menu.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.\nYour emoji must be an option in the menu.")
+    @commands.command(
+        name="del-role-menu-option",
+        usage="<menu-id> <emoji>",
+        help=
+        "Remove a role from a role menu.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.\nYour emoji must be an option in the menu."
+    )
     @commands.has_permissions(administrator=True)
     async def admin_cmd_remove_role_menu_option(self, ctx: Context, *, args: str):
         """Admin command: Remove an option from a reaction role menu, by its emoji.
@@ -84,13 +91,19 @@ class MenusCog(commands.Cog):
             try:
                 roleEmoji = lib.emotes.Emote.fromStr(argsSplit[1], rejectInvalid=True)
             except lib.exceptions.UnrecognisedCustomEmoji:
-                await ctx.send(":x: I don't know that emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
+                await ctx.send(
+                    ":x: I don't know that emoji!\nYou can only use built in emojis, or custom emojis that are in this server."
+                )
             else:
                 if not menu.hasEmojiRegistered(roleEmoji):
                     await ctx.send(":x: That emoji is not in the menu!")
                 else:
                     optionRole = menu.options[roleEmoji].role
-                    adminActions = {"Reaction menu option removed": "id: " + str(menu.msg.id) + "\ntype: " + type(menu).__name__ + "\nOption: " + roleEmoji.sendable + " <@&" + str(optionRole.id) + ">\n[Menu](" + menu.msg.jump_url + ")"}
+                    adminActions = {
+                        "Reaction menu option removed":
+                        "id: " + str(menu.msg.id) + "\ntype: " + type(menu).__name__ + "\nOption: " + roleEmoji.sendable
+                        + " <@&" + str(optionRole.id) + ">\n[Menu](" + menu.msg.jump_url + ")"
+                    }
                     if len(menu.options) == 1:
                         await menu.delete()
                         await ctx.send("The menu has no more options! Menu deleted.")
@@ -105,8 +118,12 @@ class MenusCog(commands.Cog):
                         await ctx.send("✅ Removed option " + roleEmoji.sendable + " from menu " + str(menu.msg.id) + "!")
                     await self.bot.adminLog(ctx.message, adminActions)
 
-    
-    @commands.command(name="add-role-menu-option", usage="add-role-menu-option <menu-id> <emoji> <@role mention>", help="Add a role to a role menu.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.\nYour emoji must not be in the menu already.\nGive your role to grant/remove as a mention.")
+    @commands.command(
+        name="add-role-menu-option",
+        usage="<menu-id> <emoji> <@role mention>",
+        help=
+        "Add a role to a role menu.\nTo get the ID of a reaction menu, enable discord's developer mode, right click on the menu, and click Copy ID.\nYour emoji must not be in the menu already.\nGive your role to grant/remove as a mention."
+    )
     @commands.has_permissions(administrator=True)
     async def admin_cmd_add_role_menu_option(self, ctx: Context, *, args: str):
         """Admin command: Add a new option to a reaction role menu, by its emoji and role to grant/remove.
@@ -128,7 +145,9 @@ class MenusCog(commands.Cog):
             try:
                 roleEmoji = lib.emotes.Emote.fromStr(argsSplit[1], rejectInvalid=True)
             except lib.exceptions.UnrecognisedCustomEmoji:
-                await ctx.send(":x: I don't know that emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
+                await ctx.send(
+                    ":x: I don't know that emoji!\nYou can only use built in emojis, or custom emojis that are in this server."
+                )
             except TypeError:
                 await ctx.send(":x: Invalid emoji: " + argsSplit[1])
             else:
@@ -149,10 +168,13 @@ class MenusCog(commands.Cog):
                                                                                         + "\ntype: " + type(menu).__name__ \
                                                                                         + "\nOption: " + roleEmoji.sendable + " <@&" + str(role.id)  \
                                                                                         + ">\n[Menu](" + menu.msg.jump_url + ")"})
-        
 
-
-    @commands.command(name="make-role-menu", usage="make-role-menu <title>\n<option1 emoji> <@option1 role>\n...    ...", help="Create a reaction role menu. Each option must be on its own new line, as an emoji, followed by a space, followed by a mention of the role to grant. The `title` is displayed at the top of the meny and is optional, to exclude your title simply give a new line.")
+    @commands.command(
+        name="make-role-menu",
+        usage="<title>\n<option1 emoji> <@option1 role>\n...    ...",
+        help=
+        "Create a reaction role menu. Each option must be on its own new line, as an emoji, followed by a space, followed by a mention of the role to grant. The `title` is displayed at the top of the meny and is optional, to exclude your title simply give a new line."
+    )
     @commands.has_permissions(administrator=True)
     async def admin_cmd_make_role_menu(self, ctx: Context, *, args: str):
         """Admin command: Create a reaction role menu, allowing users to self-assign or remove roles by adding and removing reactions.
@@ -179,7 +201,10 @@ class MenusCog(commands.Cog):
 
         argsSplit = args.split("\n")
         if len(argsSplit) < 2:
-            await ctx.send(":x: Invalid arguments! Please provide your menu title, followed by a new line, then a new line-separated series of options.\nFor more info, see `" + self.bot.command_prefix + "admin-help`")
+            await ctx.send(
+                ":x: Invalid arguments! Please provide your menu title, followed by a new line, then a new line-separated series of options.\nFor more info, see `"
+                + self.bot.command_prefix + "admin-help`"
+            )
             return
         menuSubject = argsSplit[0]
         argPos = 0
@@ -199,11 +224,17 @@ class MenusCog(commands.Cog):
                 await ctx.send(":x: Invalid emoji: " + e.val)
                 return
             except lib.exceptions.UnrecognisedCustomEmoji:
-                await ctx.send(":x: I don't know your " + str(argPos) + lib.stringTyping.getNumExtension(argPos) + " emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
+                await ctx.send(
+                    ":x: I don't know your " + str(argPos) + lib.stringTyping.getNumExtension(argPos)
+                    + " emoji!\nYou can only use built in emojis, or custom emojis that are in this server."
+                )
                 return
             else:
                 if dumbReact.sendable == "None":
-                    await ctx.send(":x: I don't know your " + str(argPos) + lib.stringTyping.getNumExtension(argPos) + " emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
+                    await ctx.send(
+                        ":x: I don't know your " + str(argPos) + lib.stringTyping.getNumExtension(argPos)
+                        + " emoji!\nYou can only use built in emojis, or custom emojis that are in this server."
+                    )
                     return
                 if dumbReact is None:
                     await ctx.send(":x: Invalid emoji: " + arg.strip(" ").split(" ")[0])
@@ -215,7 +246,10 @@ class MenusCog(commands.Cog):
                             localEmoji = True
                             break
                     if not localEmoji:
-                        await ctx.send(":x: I don't know your " + str(argPos) + lib.stringTyping.getNumExtension(argPos) + " emoji!\nYou can only use built in emojis, or custom emojis that are in this server.")
+                        await ctx.send(
+                            ":x: I don't know your " + str(argPos) + lib.stringTyping.getNumExtension(argPos)
+                            + " emoji!\nYou can only use built in emojis, or custom emojis that are in this server."
+                        )
                         return
 
                 if dumbReact in reactionRoles:
@@ -235,13 +269,18 @@ class MenusCog(commands.Cog):
                     await ctx.send(":x: Unrecognised role: " + roleStr)
                     return
                 elif role.position >= botRole.position:
-                    await ctx.send(":x: I can't grant the **" + role.name + "** role!\nMake sure it's below my '" + botRole.name + "' role in the server roles list.")
+                    await ctx.send(
+                        ":x: I can't grant the **" + role.name + "** role!\nMake sure it's below my '" + botRole.name
+                        + "' role in the server roles list."
+                    )
                     return
                 elif role.is_bot_managed():
                     await ctx.send(":x: I can't grant the **" + role.name + "** role!\nThis role is managed by a bot.")
                     return
                 elif role.is_integration():
-                    await ctx.send(":x: I can't grant the **" + role.name + "** role!\nThis role is managed by an integration.")
+                    await ctx.send(
+                        ":x: I can't grant the **" + role.name + "** role!\nThis role is managed by an integration."
+                    )
                     return
                 reactionRoles[dumbReact] = role
 
@@ -264,20 +303,31 @@ class MenusCog(commands.Cog):
                 await ctx.send(":x: Invalid target role!")
                 return
 
-        menuMsg = await ctx.send(embed=Embed())
+        menuMsg = await ctx.send("​")
 
         menu = reactionRoleMenu.ReactionRoleMenu(menuMsg, self.bot, reactionRoles, targetRole=targetRole, titleTxt=menuSubject)
         await menu.updateMessage()
         self.bot.reactionMenus.add(menu)
         await ctx.send("Role menu " + str(menuMsg.id) + " has been created!")
         try:
-            await self.bot.adminLog(ctx.message, {"Reaction Role Menu Created": "id: " + str(menu.msg.id) + "\ntype: " + type(menu).__name__ + "\n" + str(len(reactionRoles)) + " Options: " + "".join(e.sendable for e in reactionRoles) + "\n[Menu](" + menu.msg.jump_url + ")"})
+            await self.bot.adminLog(
+                ctx.message,
+                {
+                    "Reaction Role Menu Created":
+                    "id: " + str(menu.msg.id) + "\ntype: " + type(menu).__name__ + "\n" + str(len(reactionRoles))
+                    + " Options: " + "".join(e.sendable for e in reactionRoles) + "\n[Menu](" + menu.msg.jump_url + ")"
+                }
+            )
         except Exception as e:
             print(e)
             raise e
 
-    
-    @commands.command(name="poll", usage="poll <subject>\n<option1 emoji> <option1 name>\n...    ...\n<optional args>", help="Start a reaction-based poll. Each option must be on its own new line, as an emoji, followed by a space, followed by the option name. The `subject` is the question that users answer in the poll and is optional, to exclude your subject simply give a new line.\n\n__Optional Arguments__\nOptional arguments should be given by `name=value`, with each arg on a new line.\n- Give `multiplechoice=no` to only allow one vote per person (default: yes).\n- Give the length of the poll, with each time division on a new line. Acceptable time divisions are: `seconds`, `minutes`, `hours`, `days`. (default: minutes=5)")
+    @commands.command(
+        name="poll",
+        usage="<subject>\n<option1 emoji> <option1 name>\n...    ...\n<optional args>",
+        help=
+        "Start a reaction-based poll. Each option must be on its own new line, as an emoji, followed by a space, followed by the option name. The `subject` is the question that users answer in the poll and is optional, to exclude your subject simply give a new line.\n\n__Optional Arguments__\nOptional arguments should be given by `name=value`, with each arg on a new line.\n- Give `multiplechoice=no` to only allow one vote per person (default: yes).\n- Give the length of the poll, with each time division on a new line. Acceptable time divisions are: `seconds`, `minutes`, `hours`, `days`. (default: minutes=5)"
+    )
     async def cmd_poll(self, ctx: Context, *, args: str):
         """User command: Run a reaction-based poll, allowing users to choose between several named options.
         Users may not create more than one poll at a time, anywhere.
@@ -301,7 +351,8 @@ class MenusCog(commands.Cog):
         :param Context ctx: A context summarising the message which called this command
         :param str args: a string containing the poll configuration as defined in this method's docstring
         """
-        currentPollsNum = db_gateway().get('guild_info', params={'guild_id': ctx.author.guild.id})[0]['num_running_polls'] - 1
+        guild = DBGatewayActions().get(Guild_info, guild_id=ctx.author.guild.id)
+        currentPollsNum = (guild.num_running_polls) - 1
         if currentPollsNum >= MAX_POLLS_PER_GUILD:
             await ctx.message.reply("This server already has " + str(currentPollsNum) \
                                     + " polls running! Please wait for one to finish before starting another.")
@@ -325,7 +376,7 @@ class MenusCog(commands.Cog):
             argSplit = arg.split(" ")
             argPos += 1
             try:
-                optionName, dumbReact = arg[arg.index(" ")+1:], lib.emotes.Emote.fromStr(argSplit[0], rejectInvalid=True)
+                optionName, dumbReact = arg[arg.index(" ") + 1:], lib.emotes.Emote.fromStr(argSplit[0], rejectInvalid=True)
             except (ValueError, IndexError):
                 for kwArg in ["days=", "hours=", "seconds=", "minutes=", "multiplechoice="]:
                     if arg.lower().startswith(kwArg):
@@ -364,7 +415,7 @@ class MenusCog(commands.Cog):
             await ctx.message.reply(":x: You need to give some options to vote on!\nFor more info, see `" \
                                     + self.bot.command_prefix + "help poll`")
             return
-        
+
         timeoutDict = {}
 
         for timeName in ["days", "hours", "minutes", "seconds"]:
@@ -398,14 +449,16 @@ class MenusCog(commands.Cog):
                                                             + lib.timeUtil.td_format_noYM(timeoutTD) + ".")
 
         # Update guild polls counter
-        runningPolls = db_gateway().get("guild_info", {"guild_id": ctx.guild.id})[0]["num_running_polls"]
-        db_gateway().update("guild_info", {"num_running_polls": runningPolls + 1}, {"guild_id": ctx.guild.id})
+        guild = DBGatewayActions().get(Guild_info, guild_id=ctx.guild.id)
+        guild.num_running_polls += 1
+        DBGatewayActions().update(guild)
 
         await menu.doMenu()
 
         # Allow the creation of another poll
-        runningPolls = db_gateway().get("guild_info", {"guild_id": ctx.guild.id})[0]["num_running_polls"]
-        db_gateway().update("guild_info", {"num_running_polls": runningPolls - 1}, {"guild_id": ctx.guild.id})
+        guild = DBGatewayActions().get(Guild_info, guild_id=ctx.guild.id)
+        guild.num_running_polls -= 1
+        DBGatewayActions().update(guild)
 
         await reactionPollMenu.showPollResults(menu)
 

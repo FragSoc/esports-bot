@@ -7,9 +7,9 @@ It is modified and not actively synced with BASED, so will very likely be out of
 from __future__ import annotations
 from . import reactionMenu
 from .. import lib
-from discord import Colour, Message, Embed, User, Member, RawReactionActionEvent
-from typing import Dict, Union
-
+from discord import Colour, Message, Embed, User, Member, RawReactionActionEvent, RawMessageDeleteEvent, RawBulkMessageDeleteEvent
+from typing import Dict, Union, List
+import asyncio
 
 # Used as the default author icon in poll embeds
 BALLOT_BOX_IMAGE = "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/ballot-box-with-ballot_1f5f3.png"
@@ -60,7 +60,7 @@ async def showPollResults(menu: InlineReactionPollMenu):
         # Reject custom emojis that are not accessible to the bot
         except lib.exceptions.UnrecognisedCustomEmoji:
             continue
-        
+
         # Validate emotes
         if currentEmoji is None:
             print("[reactionPollMenu.showPollResults] Failed to fetch Emote for reaction: " + str(reaction))
@@ -76,11 +76,11 @@ async def showPollResults(menu: InlineReactionPollMenu):
             if currentOption.emoji == currentEmoji:
                 menuOption = currentOption
                 break
-        
+
         # Ignore reactions which do not correspond to poll options
         if menuOption is None:
             continue
-        
+
         # Collate votes for this poll option
         async for user in reaction.users():
             if user != client.user:
@@ -95,7 +95,7 @@ async def showPollResults(menu: InlineReactionPollMenu):
                 # Record this user's vote
                 if validVote and user not in results[menuOption]:
                     results[menuOption].append(user)
-    
+
     # Mark the poll as expired
     pollEmbed = menu.msg.embeds[0]
     pollEmbed.set_footer(text="This poll has ended.")
@@ -123,7 +123,7 @@ async def showPollResults(menu: InlineReactionPollMenu):
 
     for reaction in menu.msg.reactions:
         await reaction.remove(menu.msg.guild.me)
-    
+
 
 class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
     """A non-saveable inline reaction menu taking a vote from its participants on a selection of option strings.
@@ -135,11 +135,23 @@ class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
                             vote per poll.
     :vartype multipleChoice: bool
     """
-
-    def __init__(self, msg: Message, pollOptions: Dict[lib.emotes.Emote: str], timeoutSeconds: int,
-                    pollStarter: Union[User, Member] = None, multipleChoice: bool = False, titleTxt: str = "",
-                    desc: str = "", col: Colour = Colour.blue(), footerTxt: str = "",
-                    img: str = "", thumb: str = "", icon: str = None, authorName: str = ""):
+    def __init__(
+        self,
+        msg: Message,
+        pollOptions: Dict[lib.emotes.Emote:str],
+        timeoutSeconds: int,
+        pollStarter: Union[User,
+                           Member] = None,
+        multipleChoice: bool = False,
+        titleTxt: str = "",
+        desc: str = "",
+        col: Colour = Colour.blue(),
+        footerTxt: str = "",
+        img: str = "",
+        thumb: str = "",
+        icon: str = None,
+        authorName: str = ""
+    ):
         """
         :param discord.Message msg: the message where this menu is embedded
         :param pollOptions: A dictionary of Emote: str, defining all of the poll options
@@ -180,10 +192,21 @@ class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
 
         pollOptions = {e: reactionMenu.DummyReactionMenuOption(n, e) for e, n in pollOptions.items()}
 
-        super().__init__(lib.client.instance(), msg, pollStarter, timeoutSeconds,
-                            options=pollOptions, titleTxt=titleTxt, desc=desc, col=col, footerTxt=footerTxt, img=img,
-                            thumb=thumb, icon=icon, authorName=authorName)
-
+        super().__init__(
+            lib.client.instance(),
+            msg,
+            pollStarter,
+            timeoutSeconds,
+            options=pollOptions,
+            titleTxt=titleTxt,
+            desc=desc,
+            col=col,
+            footerTxt=footerTxt,
+            img=img,
+            thumb=thumb,
+            icon=icon,
+            authorName=authorName
+        )
 
     def getMenuEmbed(self) -> Embed:
         """Generate the discord.Embed representing the reaction menu, and that should be embedded into the menu's message.
@@ -195,11 +218,17 @@ class InlineReactionPollMenu(reactionMenu.InlineReactionMenu):
         """
         baseEmbed = super().getMenuEmbed()
         if self.multipleChoice:
-            baseEmbed.add_field(name="This is a multiple choice poll!", value="Voting for more than one option is allowed.",
-                                inline=False)
+            baseEmbed.add_field(
+                name="This is a multiple choice poll!",
+                value="Voting for more than one option is allowed.",
+                inline=False
+            )
         else:
-            baseEmbed.add_field(name="This is a single choice poll!",
-                                value="If you vote for more than one option, only one will be counted.", inline=False)
+            baseEmbed.add_field(
+                name="This is a single choice poll!",
+                value="If you vote for more than one option, only one will be counted.",
+                inline=False
+            )
 
         return baseEmbed
 
@@ -212,11 +241,22 @@ class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
     Votes are not counted through an option's addFunc, but instead through the reactionClosesMenu override,
     for efficiency.
     """
-
-    def __init__(self, msg: Message, timeoutSeconds: int, requiredVotes: int,
-                    pollStarter: Union[User, Member] = None, titleTxt: str = "", desc: str = "",
-                    col: Colour = Colour.blue(), footerTxt: str = "", img: str = "", thumb: str = "",
-                    icon: str = None, authorName: str = ""):
+    def __init__(
+        self,
+        msg: Message,
+        timeoutSeconds: int,
+        requiredVotes: int,
+        pollStarter: Union[User,
+                           Member] = None,
+        titleTxt: str = "",
+        desc: str = "",
+        col: Colour = Colour.blue(),
+        footerTxt: str = "",
+        img: str = "",
+        thumb: str = "",
+        icon: str = None,
+        authorName: str = ""
+    ):
         """
         :param discord.Message msg: the message where this menu is embedded
         :param int timeoutSeconds: The number of seconds until the poll ends
@@ -255,24 +295,75 @@ class InlineSingleOptionPollMenu(reactionMenu.InlineReactionMenu):
         self.requiredVotes = requiredVotes
         pollOptions = {self.yesOption.emoji: self.yesOption}
 
-        super().__init__(lib.client.instance(), msg, pollStarter, timeoutSeconds,
-                            options=pollOptions, titleTxt=titleTxt, desc=desc, col=col, footerTxt=footerTxt, img=img,
-                            thumb=thumb, icon=icon, authorName=authorName)
+        super().__init__(
+            lib.client.instance(),
+            msg,
+            pollStarter,
+            timeoutSeconds,
+            options=pollOptions,
+            titleTxt=titleTxt,
+            desc=desc,
+            col=col,
+            footerTxt=footerTxt,
+            img=img,
+            thumb=thumb,
+            icon=icon,
+            authorName=authorName
+        )
 
-
-    def reactionClosesMenu(self, reactPL: RawReactionActionEvent) -> bool:
+    def reactionClosesMenu(
+        self,
+        reactPL: Union[RawReactionActionEvent,
+                       RawMessageDeleteEvent,
+                       RawBulkMessageDeleteEvent]
+    ) -> bool:
         """An InlineReactionMenu override which checks the number of yes votes received.
 
-        :param discord.RawReactionActionEvent reactPL: The raw payload representing the reaction addition
+        :param discord.RawReactionActionEvent reactPL: The raw payload representing the reaction addition or removal
         :return: True if the reaction should close the menu. I.e, requiredVotes has been reached.
         :rtype: bool
+        :raise lib.exceptions.UnrecognisedReactionMenuMessage: If the menu message was deleted
         """
-        try:
-            if reactPL.message_id == self.msg.id and reactPL.user_id == self.targetMember.id and \
-                    lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True) == self.yesOption.emoji:
-                self.yesesReceived += 1
-                return self.yesesReceived >= self.requiredVotes
+        if type(reactPL) == RawMessageDeleteEvent:
+            if reactPL.message_id == self.msg.id:
+                raise lib.exceptions.UnrecognisedReactionMenuMessage(self.msg.guild.id, self.msg.channel.id, self.msg.id)
             return False
-                    
+        elif type(reactPL) == RawBulkMessageDeleteEvent:
+            if self.msg.id in reactPL.message_ids:
+                raise lib.exceptions.UnrecognisedReactionMenuMessage(self.msg.guild.id, self.msg.channel.id, self.msg.id)
+            return False
+
+        try:
+            if reactPL.message_id == self.msg.id and reactPL.user_id != lib.client.instance().user.id and \
+                    lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True) == self.yesOption.emoji:
+                if reactPL.event_type == "REACTION_ADD":
+                    self.yesesReceived += 1
+                    return self.yesesReceived >= self.requiredVotes
+                else:
+                    self.yesesReceived -= 1
+            return False
+
         except lib.exceptions.UnrecognisedCustomEmoji:
             return False
+
+    async def doMenu(self) -> None:
+        """Overload that also handles reaction removal to allow for correct vote counting, and message deletion.
+        This overload does not return anything, unlike the original method, which returns the emotes reacted with
+        by the target user.
+        """
+        await self.updateMessage()
+        try:
+            await lib.client.instance().multiWaitFor(
+                ["raw_reaction_add",
+                 "raw_reaction_remove",
+                 "raw_message_delete",
+                 "raw_bulk_message_delete"],
+                check=self.reactionClosesMenu,
+                timeout=self.timeoutSeconds
+            )
+            self.msg.embeds[0].set_footer(text="This menu has now expired.")
+            await self.msg.edit(embed=self.msg.embeds[0])
+        except asyncio.TimeoutError:
+            await self.msg.edit(content="This menu has now expired. Please try the command again.")
+        except lib.exceptions.UnrecognisedReactionMenuMessage:
+            await self.msg.channel.send(":x: A poll was ended early, as the message was deleted.")

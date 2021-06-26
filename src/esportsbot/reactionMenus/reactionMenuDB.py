@@ -6,9 +6,10 @@ It is modified and not actively synced with BASED, so will very likely be out of
 """
 
 from typing import Union
-from .reactionMenu import ReactionMenu, isSaveableMenuInstance
+from esportsbot.reactionMenus.reactionMenu import ReactionMenu, isSaveableMenuInstance
 from psycopg2.extras import Json
-from ..db_gateway import db_gateway
+from esportsbot.db_gateway import DBGatewayActions
+from esportsbot.models import Reaction_menus
 
 
 class ReactionMenuDB(dict):
@@ -24,10 +25,8 @@ class ReactionMenuDB(dict):
 
     :var initializing: Whether or not the DB has been initialized yet
     """
-
     def __init__(self):
         self.initializing = True
-
 
     def __contains__(self, menu: Union[ReactionMenu, int]) -> bool:
         """decide whether a menu or menu ID is registered in the database.
@@ -46,7 +45,6 @@ class ReactionMenuDB(dict):
         else:
             raise TypeError("ReactionMenuDB can only contain ReactionMenus, given type " + type(menu).__name__)
 
-
     def __getitem__(self, k: int) -> ReactionMenu:
         """Get the registered ReactionMenu instance for the given menu ID.
         Overrides getting through 'db[id]'
@@ -58,7 +56,6 @@ class ReactionMenuDB(dict):
         """
         return super().__getitem__(k)
 
-
     def __setitem__(self, menuID: int, menu: ReactionMenu) -> None:
         """Registers the given menu into the database.
         Overrides setting through 'db[id] = menu'
@@ -69,16 +66,20 @@ class ReactionMenuDB(dict):
         :raise KeyError: If a menu with the given ID is already registered
         """
         if menuID != menu.msg.id:
-            raise ValueError("Attempted to register a menu with key " + str(menuID) + ", but the message ID for the given menu is " + str(menu.msg.id))
-        
+            raise ValueError(
+                f"Attempted to register a menu with key {menuID}, but the message ID for the given menu is {menu.msg.id}"
+            )
+
         if menu.msg.id in self:
-            raise KeyError("A menu is already registered with the given ID: " + str(menu.msg.id))
+            raise KeyError(f"A menu is already registered with the given ID: {menu.msg.id}")
 
         super().__setitem__(menuID, menu)
 
         if not self.initializing and isSaveableMenuInstance(menu):
-            db_gateway().insert('reaction_menus', params={'message_id': menu.msg.id, 'menu': str(Json(menu.toDict())).lstrip("'").rstrip("'")})
-
+            DBGatewayActions().create(
+                Reaction_menus(message_id=menu.msg.id,
+                               menu=str(Json(menu.toDict())).lstrip("'").rstrip("'"))
+            )
 
     def __delitem__(self, menu: Union[ReactionMenu, int]) -> None:
         """Unregisters the given menu or menu ID from the database.
@@ -90,17 +91,17 @@ class ReactionMenuDB(dict):
         """
         if isinstance(menu, int):
             if menu not in self:
-                raise KeyError("No menu is registered with the given ID: " + str(menu))
+                raise KeyError(f"No menu is registered with the given ID: {menu}")
             menu = self[menu]
 
         elif menu.msg.id not in self:
-            raise KeyError("The given menu is not registered: " + str(menu.msg.id))
+            raise KeyError(f"The given menu is not registered: {menu.msg.id}")
 
         super().__delitem__(menu.msg.id)
 
         if isSaveableMenuInstance(menu):
-            db_gateway().delete('reaction_menus', where_params={'message_id': menu.msg.id})
-
+            reaction_menu = DBGatewayActions().get(Reaction_menus, message_id=menu.msg.id)
+            DBGatewayActions().delete(reaction_menu)
 
     def add(self, menu: ReactionMenu):
         """Register a ReactionMenu with the database, and save to SQL.
@@ -110,7 +111,6 @@ class ReactionMenuDB(dict):
         """
         self[menu.msg.id] = menu
 
-
     def remove(self, menu: ReactionMenu):
         """Unregister the given menu, preventing menu interaction through reactions.
 
@@ -119,7 +119,6 @@ class ReactionMenuDB(dict):
         """
         del self[menu.msg.id]
 
-
     def removeID(self, menuID: int):
         """Unregister menu with the given ID, preventing menu interaction through reactions.
 
@@ -127,9 +126,8 @@ class ReactionMenuDB(dict):
         :raise KeyError: When the given menu is not registered
         """
         if menuID not in self:
-            raise KeyError("No menu is registered with the given ID: " + str(menuID))
+            raise KeyError(f"No menu is registered with the given ID: {menuID}")
         self.remove(self[menuID])
-
 
     def updateDB(self, menu: ReactionMenu):
         """Update the database's record for the given menu, for example when changing the content of a menu.
@@ -140,4 +138,6 @@ class ReactionMenuDB(dict):
         if menu.msg.id not in self:
             raise KeyError("The given menu is not registered: " + str(menu.msg.id))
         if isSaveableMenuInstance(menu):
-            db_gateway().update('reaction_menus', set_params={'menu': str(Json(menu.toDict())).lstrip("'").rstrip("'")}, where_params={'message_id': menu.msg.id})
+            reaction_menu = DBGatewayActions().get(Reaction_menus, message_id=menu.msg.id)
+            reaction_menu.menu = str(Json(menu.toDict())).lstrip("'").rstrip("'")
+            DBGatewayActions().update(reaction_menu)

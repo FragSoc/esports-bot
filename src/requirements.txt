@@ -1,5 +1,6 @@
 psycopg2-binary>=2.8
-discord.py
+sqlalchemy
+discord.py[voice]
 python-dotenv
 emoji
 lxml
