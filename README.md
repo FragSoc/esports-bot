@@ -25,9 +25,9 @@ $ git clone https://github.com/FragSoc/Esports-Bot-Rewrite.git
 ```console  
 $ cd Esports-Bot-Rewrite  
 ```  
-3. Rename the `secrets.template` to `secrets.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:  
+3. Rename the `secrets.template` to `.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:  
 ```console  
-$ nano secrets.env  
+$ nano .env  
 ```  
 4. Run docker-compose:  
 ```console  
@@ -46,9 +46,9 @@ $ git clone https://github.com/FragSoc/Esports-Bot-Rewrite.git
 ```console  
 $ cd Esports-Bot-Rewrite  
 ```  
-3. Rename the `secrets.template` to `secrets.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:  
+3. Rename the `secrets.template` to `.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:  
 ```console  
-$ nano secrets.env  
+$ nano .env  
 ```
 4. Install all the requirements for python:  
 ```bash  
@@ -262,7 +262,7 @@ $ openssl req -new -out reqout.txt -key server.key
 ```  
 $ openssl x509 -req -in reqout.txt -days 3650 -sha1 -CAcreateserial -CA root.crt -CAkey servercakey.pem -out server.crt  
 ```  
-6. Move the `server.crt` file and `server.key` to the root file directory of the bot (i.e., the same directory as your `secrets.env` etc.)
+6. Move the `server.crt` file and `server.key` to the root file directory of the bot (i.e., the same directory as your `.env` etc.)
 
 ### Getting your Twitch Credentials:
 1. Go to the [Twitch Developers](https://dev.twitch.tv/) site.
@@ -270,7 +270,7 @@ $ openssl x509 -req -in reqout.txt -days 3650 -sha1 -CAcreateserial -CA root.crt
 3. Register a new application using any name and the OAuth Redirect URL of `http://localhost`.
 4. Once created, click `manage`. Copy the string that is in `Client ID` and then click the `New Secret` button to generate a new `Client Secret` and then copy the string it generates.
 
-In your `secrets.env` file the `TWITCH_SUB_SECRET` should be a string that is 10-100 characters long and should not be shared anywhere. This is used to authenticate if a message has come from Twitch or if it has been altered along the way. 
+In your `.env` file the `TWITCH_SUB_SECRET` should be a string that is 10-100 characters long and should not be shared anywhere. This is used to authenticate if a message has come from Twitch or if it has been altered along the way. 
 
 The `TWITCH_CALLBACK` is the URL to your HTTPS server. For testing you can use `ngrok`: 
 - Run `ngrok http 443` and copy the `https` URL **not** the `htttp` URL and use that as your `TWITCH_CALLBACK` variable.
