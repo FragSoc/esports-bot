@@ -25,23 +25,6 @@ DEFAULT_PINGME_CREATE_THRESHOLD = 6
 client = lib.client.instance()
 
 
-# To be removed?
-def make_guild_init_data(guild: discord.Guild) -> Dict[str, Any]:
-    """Construct default data for a guild database registration.
-
-    :param discord.Guild guild: The guild to be registered
-    :return: A dictionary with default guild attributes, including the guild ID
-    :rtype: Dict[str, Any]
-    """
-    return {
-        'guild_id': guild.id,
-        'num_running_polls': 0,
-        'role_ping_cooldown_seconds': int(DEFAULT_ROLE_PING_COOLDOWN.total_seconds()),
-        "pingme_create_threshold": DEFAULT_PINGME_CREATE_THRESHOLD,
-        "pingme_create_poll_length_seconds": int(DEFAULT_PINGME_CREATE_POLL_LENGTH.total_seconds())
-    }
-
-
 async def send_to_log_channel(guild_id, msg):
     db_logging_call = DBGatewayActions().get(Guild_info, guild_id=guild_id)
     if db_logging_call and db_logging_call.log_channel_id is not None:
