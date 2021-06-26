@@ -3,3 +3,4 @@ secrets.env
 test-file.py
 /src/cogs/TestCog.py
 .vscode
+.idea
