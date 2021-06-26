@@ -1,10 +1,11 @@
 from types import FrameType, FunctionType
 from discord.ext import commands, tasks
 from discord import Intents, Embed, Message, Colour, Role
-from ..reactionMenus.reactionMenuDB import ReactionMenuDB
-from ..reactionMenus import reactionMenu
-from ..db_gateway import db_gateway
-from . import exceptions
+from esportsbot.reactionMenus.reactionMenuDB import ReactionMenuDB
+from esportsbot.reactionMenus import reactionMenu
+from esportsbot.db_gateway_v1 import DBGatewayActions
+from esportsbot.models import Music_channels, Pingable_roles, Guild_info, Reaction_menus
+from esportsbot.lib import exceptions
 from typing import Dict, MutableMapping, Set, Union, List
 from datetime import datetime, timedelta
 import os
@@ -161,7 +162,7 @@ class EsportsBot(commands.Bot):
                     except UnrecognisedReactionMenuMessage:
                         print(f"Unrecognised message for {menuDict['type']}, removing from the database: {menuDict['msg']}")
                         reaction_menu = DBGatewayActions().get(Reaction_menus, message_id=msgID)
-                        DBGatewayActions.delete(reaction_menu)
+                        DBGatewayActions().delete(reaction_menu)
                 else:
                     print("Non saveable menu in database:", msgID, menuDict["type"])
             else:
@@ -280,8 +281,6 @@ class EsportsBot(commands.Bot):
                     )
         return roleUpdateTasks
 
-
-    
     async def multiWaitFor(self, eventTypes: List[str], timeout: int, check: FunctionType = None):
         """Performs discord.Client.wait_for, but with multiple possible event types.
 
@@ -330,7 +329,8 @@ def instance() -> EsportsBot:
         intents = Intents.default()
         intents.members = True
         _instance = EsportsBot(
-            os.environ.get("COMMAND_PREFIX", "!"),
+            os.environ.get("COMMAND_PREFIX",
+                           "!"),
             Emote.fromStr("⁉"),
             "esportsbot/user_strings.toml",
             intents=intents

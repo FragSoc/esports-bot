@@ -94,7 +94,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="open-event",
-        usage="<event name>",
+        usage="open-event <event name>",
         help="Reveal the signin channel for the named event channel."
     )
     @commands.has_permissions(administrator=True)
@@ -136,7 +136,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="close-event",
-        usage="<event name>",
+        usage="close-event <event name>",
         help="Hide the signin channel for the named event, reset the signin menu, and remove the event's role from users."
     )
     @commands.has_permissions(administrator=True)
@@ -240,7 +240,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="set-event-signin-menu",
-        usage="<id> <event name>",
+        usage="set-event-signin-menu <id> <event name>",
         help="Change the event signin menu to use with `open-event` and `close-event`."
     )
     @commands.has_permissions(administrator=True)
@@ -291,7 +291,7 @@ class EventCategoriesCog(commands.Cog):
                                 event_name=eventName
                             )
                             event_category.signin_menu_id = menu.msg.id
-                            DBGatewayActions.update(event_category)
+                            DBGatewayActions().update(event_category)
                             await ctx.send(
                                 self.STRINGS['success_menu'].format(event_name=eventName.title,
                                                                     menu_url=menu.msg.jump_url)
@@ -306,7 +306,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="set-shared-role",
-        usage="<role>",
+        usage="set-shared-role <role>",
         help=
         "Change the role to admit/deny into *all* event signin menus. This should NOT be the same as any event role. Role can be given as either a mention or an ID."
     )
@@ -343,7 +343,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="set-event-role",
-        usage="<event name>",
+        usage="set-event-role <role> <event name>",
         help=
         "Change the role to remove during `close-event`. This should NOT be the same as your shared role. Role can be given as either a mention or an ID."
     )
@@ -394,7 +394,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="register-event-category",
-        usage="<signin menu id> <role> <event name>",
+        usage="register-event-category <signin menu id> <role> <event name>",
         help=
         "Register an existing event category, menu, and role, for use with `open-event` and `close-event`. This does not setup permissions for the category or channels."
     )
@@ -430,7 +430,7 @@ class EventCategoriesCog(commands.Cog):
                             await ctx.message.reply(self.STRINGS['event_exists'].format(event_name=eventName.title()))
                         else:
                             menu = self.bot.reactionMenus[int(menuIDStr)]
-                            DBGatewayActions.create(
+                            DBGatewayActions().create(
                                 Event_categories(
                                     guild_id=ctx.guild.id,
                                     event_name=eventName,
@@ -452,7 +452,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="create-event-category",
-        usage="<event name>",
+        usage="create-event-category <event name>",
         help=
         "Create a new event category with a signin channel and menu, event role, general channel and correct permissions, and automatically register them for use with `open-event` and `close-event`."
     )
@@ -537,7 +537,7 @@ class EventCategoriesCog(commands.Cog):
                                 category=newCategory,
                                 overwrites=categoryOverwrites
                             )
-                            signinMenuMsg = await signinChannel.send("​")
+                            signinMenuMsg = await signinChannel.send(embed=Embed())
                             signinMenu = ReactionRoleMenu(
                                 signinMenuMsg,
                                 self.bot,
@@ -564,8 +564,7 @@ class EventCategoriesCog(commands.Cog):
                                     shared_role_name=sharedRole.name,
                                     command_prefix=self.bot.command_prefix,
                                     event_name=eventName,
-                                    event_general_mention=eventGeneral.mention,
-                                    event_role_mention=eventRole.mention
+                                    event_general_mention=eventGeneral.mention
                                 )
                             )
                             admin_message = self.STRINGS['admin_event_category_updated'][1].format(
@@ -581,7 +580,7 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.command(
         name="unregister-event-category",
-        usage="<event name>",
+        usage="unregister-event-category <event name>",
         help=
         "Unregister an event category and role so that it can no longer be used with `open-event` and `close-event`, but without deleting the channels."
     )
@@ -606,14 +605,14 @@ class EventCategoriesCog(commands.Cog):
                     )
             else:
                 event_category = DBGatewayActions().get(Event_categories, guild_id=ctx.guild.id, event_name=eventName)
-                DBGatewayActions.delete(event_category)
+                DBGatewayActions().delete(event_category)
                 await ctx.message.reply(self.STRINGS['success_event_role_unregister'].format(event_title=eventName.title()))
                 admin_message = self.STRINGS['admin_event_category_unregistered'].format(event_title=eventName.title())
                 await self.bot.adminLog(ctx.message, {self.STRINGS['admin_event_category_unregistered'][0]: admin_message})
 
     @commands.command(
         name="delete-event-category",
-        usage="<event name>",
+        usage="delete-event-category <event name>",
         help="Delete an event category and its role and channels from the server."
     )
     @commands.has_permissions(administrator=True)

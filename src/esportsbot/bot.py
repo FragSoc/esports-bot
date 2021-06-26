@@ -59,9 +59,9 @@ async def on_guild_join(guild):
 
 @client.event
 async def on_guild_remove(guild):
-    guild_from_db = DBGatewayActions.get(Guild_info, guild_id=guild.id)
+    guild_from_db = DBGatewayActions().get(Guild_info, guild_id=guild.id)
     if guild_from_db:
-        DBGatewayActions.delete(guild_from_db)
+        DBGatewayActions().delete(guild_from_db)
         print(f"Left the guild: {guild.name}")
 
 
@@ -242,7 +242,7 @@ async def on_message(message):
             # Handle music channel messages
             guild_id = message.guild.id
             music_channel_in_db = client.MUSIC_CHANNELS.get(guild_id)
-            if music_channel_in_db == message.channel.id:
+            if music_channel_in_db:
                 # The message was in a music channel and a song should be found
                 music_cog_instance = client.cogs.get('MusicCog')
                 await music_cog_instance.on_message_handle(message)

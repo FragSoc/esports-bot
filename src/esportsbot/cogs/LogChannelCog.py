@@ -19,7 +19,7 @@ class LogChannelCog(commands.Cog):
         if log_channel_exists:
             if guild.log_channel_id != cleaned_channel_id:
                 guild.log_channel_id = cleaned_channel_id
-                DBGatewayActions.update(guild)
+                DBGatewayActions().update(guild)
                 await ctx.channel.send(self.STRINGS["channel_set"].format(channel_id=cleaned_channel_id))
                 await send_to_log_channel(
                     self,
@@ -30,7 +30,7 @@ class LogChannelCog(commands.Cog):
                 await ctx.channel.send(self.STRINGS["channel_set_already"])
         else:
             guild.log_channel_id = cleaned_channel_id
-            DBGatewayActions.update(guild)
+            DBGatewayActions().update(guild)
             await ctx.channel.send(self.STRINGS["channel_set"].format(channel_id=cleaned_channel_id))
             await send_to_log_channel(
                 self,
