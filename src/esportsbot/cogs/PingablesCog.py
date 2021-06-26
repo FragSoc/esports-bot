@@ -174,7 +174,7 @@ class PingablesCog(commands.Cog):
             await ctx.message.reply("please mention one role")
         else:
             role = ctx.message.role_mentions[0]
-            roleData = DBGatewayActions.get(Pingable_roles, role_id=role.id)
+            roleData = DBGatewayActions().get(Pingable_roles, role_id=role.id)
             if not roleData:
                 await ctx.message.reply("that role is not pingable!")
             elif not roleData.on_cooldown:

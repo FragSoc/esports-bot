@@ -101,7 +101,7 @@ class ReactionMenuDB(dict):
 
         if isSaveableMenuInstance(menu):
             reaction_menu = DBGatewayActions().get(Reaction_menus, message_id=menu.msg.id)
-            DBGatewayActions.delete(reaction_menu)
+            DBGatewayActions().delete(reaction_menu)
 
     def add(self, menu: ReactionMenu):
         """Register a ReactionMenu with the database, and save to SQL.
