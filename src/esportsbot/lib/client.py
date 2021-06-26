@@ -331,7 +331,7 @@ def instance() -> EsportsBot:
             os.environ.get("COMMAND_PREFIX",
                            "!"),
             Emote.fromStr("⁉"),
-            "esportsbot/user_strings.toml",
+            "src/esportsbot/user_strings.toml",
             intents=intents
         )
     return _instance
