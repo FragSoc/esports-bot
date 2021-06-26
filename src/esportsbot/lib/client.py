@@ -5,7 +5,7 @@ from esportsbot.reactionMenus.reactionMenuDB import ReactionMenuDB
 from esportsbot.reactionMenus import reactionMenu
 from esportsbot.db_gateway_v1 import DBGatewayActions
 from esportsbot.models import Music_channels, Pingable_roles, Guild_info, Reaction_menus
-from esportsbot import exceptions
+from esportsbot.lib import exceptions
 from typing import Dict, MutableMapping, Set, Union
 from datetime import datetime, timedelta
 import os
@@ -13,8 +13,8 @@ import signal
 import asyncio
 import toml
 
-from .exceptions import UnrecognisedReactionMenuMessage
-from .emotes import Emote
+from esportsbot.lib.exceptions import UnrecognisedReactionMenuMessage
+from esportsbot.lib.emotes import Emote
 
 # Type alias to be used for user facing strings. Allows for multi-level tables.
 StringTable = MutableMapping[str, Union[str, "StringTable"]]

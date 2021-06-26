@@ -5,8 +5,8 @@ It is modified and not actively synced with BASED, so will very likely be out of
 .. codeauthor:: Trimatix
 """
 from __future__ import annotations
-from . import reactionMenu
-from .. import lib
+from esportsbot.reactionMenus import reactionMenu
+from esportsbot import lib
 from discord import Colour, Message, Embed, User, Member, RawReactionActionEvent
 from typing import Dict, Union
 

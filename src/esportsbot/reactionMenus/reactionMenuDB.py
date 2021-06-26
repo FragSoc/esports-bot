@@ -6,7 +6,7 @@ It is modified and not actively synced with BASED, so will very likely be out of
 """
 
 from typing import Union
-from esportsbot.reactionMenus import ReactionMenu, isSaveableMenuInstance
+from esportsbot.reactionMenus.reactionMenu import ReactionMenu, isSaveableMenuInstance
 from psycopg2.extras import Json
 from esportsbot.db_gateway_v1 import DBGatewayActions
 from esportsbot.models import Reaction_menus

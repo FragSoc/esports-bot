@@ -1,9 +1,9 @@
 from typing import Dict, Any
-from dotenv import load_dotenv
 from esportsbot import lib
 from esportsbot.base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 
-from esportsbot.db_gateway_v1 import DBGatewayActions, DBGatewayActions_init
+from esportsbot.db_gateway_v1 import DBGatewayActions
+from esportsbot.models import Guild_info, Voicemaster_slave, Pingable_roles
 
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument
@@ -316,11 +316,8 @@ async def on_guild_role_delete(role: discord.Role):
 
 
 def launch():
-    load_dotenv()
-    TOKEN = os.getenv('DISCORD_TOKEN')
 
-    # Generate Database Schema
-    DBGatewayActions_init()
+    TOKEN = os.getenv('DISCORD_TOKEN')
 
     client.update_music_channels()
 

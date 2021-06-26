@@ -14,7 +14,7 @@ class VoicemasterCog(commands.Cog):
         is_a_valid_id = given_channel_id and given_channel_id.isdigit() and len(given_channel_id) == 18
 
         if is_a_valid_id:
-            is_a_master = DBGatewayActions(Voicemaster_master, guild_id=ctx.author.guild.id, channel_id=given_channel_id)
+            is_a_master = DBGatewayActions().get(Voicemaster_master, guild_id=ctx.author.guild.id, channel_id=given_channel_id)
             is_voice_channel = hasattr(self.bot.get_channel(int(given_channel_id)), 'voice_states')
             is_a_slave = DBGatewayActions().get(Voicemaster_slave, guild_id=ctx.author.guild.id, channel_id=given_channel_id)
 

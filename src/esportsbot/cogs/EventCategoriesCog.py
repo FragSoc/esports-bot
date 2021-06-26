@@ -8,7 +8,7 @@ from esportsbot.models import Guild_info, Event_categories
 import asyncio
 from esportsbot import lib
 from esportsbot.lib.client import EsportsBot, StringTable
-from esportsbot.reactionMenus.reactionMenu import ReactionRoleMenu, ReactionRoleMenuOption
+from esportsbot.reactionMenus.reactionRoleMenu import ReactionRoleMenu, ReactionRoleMenuOption
 
 # Permissions overrides assigned to the shared role in closed event signin channels
 CLOSED_EVENT_SIGNIN_CHANNEL_SHARED_PERMS = PermissionOverwrite(

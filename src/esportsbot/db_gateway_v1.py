@@ -2,19 +2,20 @@ from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
 from esportsbot.models import *
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
-def DBGatewayActions_init():
-    db_string = f"postgresql://{os.getenv('PG_USER')}:{os.getenv('PG_PWD')}@{os.getenv('PG_HOST')}:5432/{os.getenv('PG_DATABASE')}"
+db_string = f"postgresql://{os.getenv('PG_USER')}:{os.getenv('PG_PWD')}@{os.getenv('PG_HOST')}:5432/{os.getenv('PG_DATABASE')}"
 
-    db = create_engine(db_string)
+db = create_engine(db_string)
 
-    Session = sessionmaker(db)
-    session = Session()
+Session = sessionmaker(db)
+session = Session()
 
-    base.metadata.create_all(db)
+base.metadata.create_all(db)
 
-    print("[DATABASE] - Models created")
+print("[DATABASE] - Models created")
 
 
 class DBGatewayActions():

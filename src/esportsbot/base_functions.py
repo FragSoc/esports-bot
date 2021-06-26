@@ -1,5 +1,5 @@
 from esportsbot.db_gateway_v1 import DBGatewayActions
-from esportsbot.models import voicemaster_master, Voicemaster_slave, Guild_info
+from esportsbot.models import Voicemaster_master, Voicemaster_slave, Guild_info
 
 
 async def send_to_log_channel(self, guild_id, msg):
@@ -49,7 +49,7 @@ def user_id_from_mention(pre_clean_data: str) -> int:
 
 
 def get_whether_in_vm_master(guild_id, channel_id):
-    in_master = DBGatewayActions().get(voicemaster_master, guild_id=guild_id, channel_id=channel_id)
+    in_master = DBGatewayActions().get(Voicemaster_master, guild_id=guild_id, channel_id=channel_id)
     return bool(in_master)
 
 
