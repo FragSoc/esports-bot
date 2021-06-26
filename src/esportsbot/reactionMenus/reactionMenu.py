@@ -7,7 +7,7 @@ It is modified and not actively synced with BASED, so will very likely be out of
 
 import inspect
 from discord import Embed, Colour, NotFound, HTTPException, Forbidden, Member, User, Message, Role, RawReactionActionEvent, Client
-from .. import lib
+from esportsbot import lib
 from abc import abstractmethod
 from typing import Union, Dict, List, Any
 import asyncio
@@ -614,7 +614,7 @@ class InlineReactionMenu(ReactionMenu):
         :rtype: bool
         """
         try:
-            return reactPL.message_id == self.msg.id and reactPL.user_id == self.targetMember.id and \
+            return reactPL.message_id == self.msg.id and (self.targetMember is None or reactPL.user_id == self.targetMember.id) and \
                     lib.emotes.Emote.fromPartial(reactPL.emoji, rejectInvalid=True) in self.returnTriggers
         except lib.exceptions.UnrecognisedCustomEmoji:
             return False

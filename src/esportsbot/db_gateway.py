@@ -1,148 +1,96 @@
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from sqlalchemy import create_engine, inspect
+from sqlalchemy.orm import sessionmaker
+from esportsbot.models import *
 import os
-from .lib.exceptions import print_exception_trace
+from dotenv import load_dotenv
+
+load_dotenv()
+
+db_string = f"postgresql://{os.getenv('PG_USER')}:{os.getenv('PG_PWD')}@{os.getenv('PG_HOST')}:5432/{os.getenv('PG_DATABASE')}"
+
+db = create_engine(db_string)
+
+Session = sessionmaker(db)
+session = Session()
+
+base.metadata.create_all(db)
+
+print("[DATABASE] - Models created")
 
 
-class db_connection():
-    def __init__(self, database=None):
-        self.conn = psycopg2.connect(
-            host=os.getenv('PG_HOST'),
-            database=os.getenv('PG_DATABASE') if database is None else database,
-            user=os.getenv('PG_USER'),
-            password=os.getenv('PG_PWD')
-        )
-        self.conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        self.cur = self.conn.cursor()
+class DBGatewayActions():
+    """
+    Base class for handling database queries
+    """
+    def list(self, db_model, **args):
+        """
+        Method to return a list of results that suit the model criteria
 
-    def commit_query(self, query):
-        self.cur.execute(query)
-        self.conn.commit()
+        Args:
+            db_model (database_model): [The model to query in the database]
+            **args (model_attributes): [The attributes specified for the query]
 
-    def return_query(self, query):
-        self.cur.execute(query)
-        columns = [desc[0] for desc in self.cur.description]
-        real_dict = [dict(zip(columns, row)) for row in self.cur.fetchall()]
-        self.conn.commit()
-        return real_dict
-
-    def close(self):
-        self.cur.close()
-        self.conn.close()
-
-
-class db_gateway():
-    @staticmethod
-    def get_param_insert_str(params):
-        key_string = str()
-        val_string = str()
-        for key, val in params.items():
-            key_string += f"{key}, "
-            val_string += f"'{val}', "
-        return (key_string[:-2], val_string[:-2])
-
-    @staticmethod
-    def get_param_select_str(params):
-        key_val_string = str()
-        for key, val in params.items():
-            if val == 'NULL':
-                key_val_string += f"{key}={val} AND "
-            else:
-                key_val_string += f"{key}='{val}' AND "
-        return key_val_string[:-5]
-
-    def insert(self, table, params):
-        # Example usage:
-        # db_gateway().insert('voicemaster', params={'guild_id': '11111131111111111',
-        #                                     'owner_id': '222222222222222222',
-        #                                     'channel_id': '333333333333333333'
-        #                                     })
+        Returns:
+            [list]: [Returns a list of all models that fit the input models criteria]
+        """
         try:
-            db = db_connection()
-            query_vals = self.get_param_insert_str(params)
-            query_string = f'INSERT INTO {table}({query_vals[0]}) VALUES ({query_vals[1]})'
-            db.commit_query(query_string)
-            db.close()
-            return True
+            query = session.query(db_model).filter_by(**args).all()
+            return query
         except Exception as err:
-            print_exception_trace(err)
-            raise RuntimeError('Error occurred using INSERT') from err
+            raise Exception(f"Error occured when using list - {err}")
 
-    def get(self, table, params):
-        # Example usage:
-        # returned_val = db_gateway().get('voicemaster', params={
-        #                                     'channel_id': '333333333333333333'
-        #                                     })
-        try:
-            db = db_connection()
-            query_string = f'SELECT * FROM {table} WHERE {self.get_param_select_str(params)}'
-            returned_data = db.return_query(query_string)
-            db.close()
-            return returned_data
-        except Exception as err:
-            print_exception_trace(err)
-            raise RuntimeError('Error occurred using SELECT') from err
+    def get(self, db_model, **args):
+        """
+        Method to return a record that suits the model criteria
 
-    def getall(self, table):
-        # Example usage:
-        # returned_val = db_gateway().getall('voicemaster')
-        try:
-            db = db_connection()
-            query_string = f'SELECT * FROM {table}'
-            returned_data = db.return_query(query_string)
-            db.close()
-            return returned_data
-        except Exception as err:
-            print_exception_trace(err)
-            raise RuntimeError('Error occurred using SELECT ALL') from err
+        Args:
+            db_model (database_model): [The model to query in the database]
+            **args (model_attributes): [The attributes specified for the query]
 
-    def update(self, table, set_params, where_params):
-        # Example usage:
-        # db_gateway().update('loggingchannel', set_params={'guild_id': '44'}, where_params={'channel_id': '795761577705078808'})
+        Returns:
+            [list]: [Returns a list of all models that fit the input models criteria]
+        """
         try:
-            db = db_connection()
-            query_string = f'UPDATE {table} SET {self.get_param_select_str(set_params)} WHERE {self.get_param_select_str(where_params)}'
-            db.commit_query(query_string)
-            db.close()
-            return True
+            query = session.query(db_model).filter_by(**args).all()
+            return query[0] if query != [] else query
         except Exception as err:
-            print_exception_trace(err)
-            raise RuntimeError('Error occurred using UPDATE') from err
+            raise Exception(f"Error occured when using get - {err}")
 
-    def delete(self, table, where_params):
-        # Example usage:
-        # db_gateway().delete('loggingchannel', where_params={'guild_id': 44})
-        try:
-            db = db_connection()
-            query_string = f'DELETE FROM {table} WHERE {self.get_param_select_str(where_params)}'
-            db.commit_query(query_string)
-            db.close()
-            return True
-            # return query_string
-        except Exception as err:
-            print_exception_trace(err)
-            raise RuntimeError('Error occurred using DELETE') from err
+    def update(self, model):
+        """
+        Method for updating a record in the database
 
-    def pure_return(self, sql_query, database=None):
-        # Example usage:
-        # db_gateway().pure("SELECT * FROM 'guild_info'"")
+        Args:
+            model (database_model): [A class that contains the necessary information for an entry]
+        """
         try:
-            db = db_connection(database)
-            returned_data = db.return_query(sql_query)
-            db.close()
-            return returned_data
+            session.add(model)
+            session.commit()
         except Exception as err:
-            print_exception_trace(err)
-            raise RuntimeError('Error occurred using PURE') from err
+            raise Exception(f"Error occured when using update - {err}")
 
-    def pure_query(self, sql_query, database=None):
-        # Example usage:
-        # db_gateway().pure('SELECT * FROM 'guild_info'')
+    def delete(self, model):
+        """
+        Method for deleting a record from the database
+
+        Args:
+            model (database_model): [A class that contains the necessary information for an entry]
+        """
         try:
-            db = db_connection(database)
-            returned_data = db.commit_query(sql_query)
-            db.close()
-            return returned_data
+            session.delete(model)
+            session.commit()
         except Exception as err:
-            print_exception_trace(err)
-            raise RuntimeError('Error occurred using PURE') from err
+            raise Exception(f"Error occured when using delete - {err}")
+
+    def create(self, model):
+        """
+        Method for adding a record to the database
+
+        Args:
+            model (database_model): [A class that contains the necessary information for an entry]
+        """
+        try:
+            session.add(model)
+            session.commit()
+        except Exception as err:
+            raise Exception(f"Error occured when using create - {err}")
