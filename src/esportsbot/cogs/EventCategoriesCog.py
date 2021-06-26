@@ -82,7 +82,7 @@ class EventCategoriesCog(commands.Cog):
         else:
             eventData = DBGatewayActions().get(Event_categories, guild_id=ctx.guild.id, event_name=eventName)
             if not eventData:
-                if not (allEvent := DBGatewayActions().list(Event_categories, guild_id=ctx.guild.id)):
+                if not (allEvents := DBGatewayActions().list(Event_categories, guild_id=ctx.guild.id)):
                     await ctx.message.reply(self.STRINGS['no_event_categories'])
                 else:
                     await ctx.message.reply(
@@ -596,7 +596,8 @@ class EventCategoriesCog(commands.Cog):
             await ctx.send(self.STRINGS['request_event_name'])
         else:
             eventName = args.lower()
-            if not DBGatewayActions().get(Event_categories, guild_id=ctx.guild.id, event_name=eventName):
+            event_category = DBGatewayActions().get(Event_categories, guild_id=ctx.guild.id, event_name=eventName)
+            if not event_category:
                 if not (allEvents := DBGatewayActions().list(Event_categories, guild_id=ctx.guild.id)):
                     await ctx.message.reply(self.STRINGS['no_event_categories'])
                 else:
@@ -604,7 +605,6 @@ class EventCategoriesCog(commands.Cog):
                         self.STRINGS['unrecognised_event'].format(events=", ".join(e.event_name.title() for e in allEvents))
                     )
             else:
-                event_category = DBGatewayActions().get(Event_categories, guild_id=ctx.guild.id, event_name=eventName)
                 DBGatewayActions().delete(event_category)
                 await ctx.message.reply(self.STRINGS['success_event_role_unregister'].format(event_title=eventName.title()))
                 admin_message = self.STRINGS['admin_event_category_unregistered'].format(event_title=eventName.title())

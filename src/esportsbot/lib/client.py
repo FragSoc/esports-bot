@@ -186,8 +186,7 @@ class EsportsBot(commands.Bot):
                         print(
                             f"[Esportsbot.init] Unknown pingable role id in pingable_roles table. Removing from the table: role #{roleData.role_id} in guild #{guildData.guild_id}"
                         )
-                        pingable_role = DBGatewayActions().get(Pingable_roles, role_id=roleData.role_id)
-                        DBGatewayActions().delete(pingable_role)
+                        DBGatewayActions().delete(roleData)
                     else:
                         remainingCooldown = max(
                             0,
