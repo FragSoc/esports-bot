@@ -2,12 +2,11 @@ import discord
 import asyncio
 from discord.ext import commands
 from discord.ext.commands.context import Context
-from esportsbot.db_gateway_v1 import DBGatewayActions
-from esportsbot.models import Pingable_roles, Guild_info
-from esportsbot.lib.client import EsportsBot
-from esportsbot import lib
+from ..db_gateway import db_gateway
+from ..lib.client import EsportsBot
+from .. import lib
 from datetime import timedelta
-from esportsbot.reactionMenus import reactionPollMenu
+from ..reactionMenus import reactionPollMenu
 
 # The default role colour for pingable roles
 DEFAULT_PINGABLE_COLOUR = 0x15e012  # green
@@ -55,11 +54,7 @@ class PingablesCog(commands.Cog):
         """
         self.bot: "EsportsBot" = bot
 
-    @commands.group(
-        name="pingme",
-        help="Get and create custom, cooldown-limited, pingable roles.",
-        invoke_without_command=True
-    )
+    @commands.group(name="pingme", help="Get and create custom, cooldown-limited, pingable roles.", invoke_without_command=True)
     async def pingme(self, ctx: Context):
         """Non-functional command, for heirarchical command grouping.
 
@@ -68,7 +63,11 @@ class PingablesCog(commands.Cog):
         """
         pass
 
-    @pingme.command(name="register", usage="<@role> <name>", help="Convert an existing role into a !pingme role")
+    @pingme.command(
+        name="register",
+        usage="<@role> <name>",
+        help="Convert an existing role into a !pingme role"
+    )
     @commands.has_permissions(administrator=True)
     async def admin_cmd_add_pingable_role(self, ctx: Context, *, args: str):
         """Admin command: Register an existing role for use with pingme. The role defaults to pingable (i.e not on cooldown)
@@ -86,23 +85,25 @@ class PingablesCog(commands.Cog):
         else:
             roleName = args[len(argsSplit[0]) + 1:].lower()
             role = ctx.message.role_mentions[0]
-            if DBGatewayActions().get(Pingable_roles, role_id=role.id):
+            db = db_gateway()
+            if db.get("pingable_roles", {"role_id": role.id}):
                 await ctx.message.reply("that role is already pingable!")
-            elif DBGatewayActions().get(Pingable_roles, name=roleName):
-                await ctx.message.reply(f"A `!pingme` role already exists with the name '{roleName}'!")
+            elif db.get("pingable_roles", {"name": roleName}):
+                await ctx.message.reply("A `!pingme` role already exists with the name '" + roleName + "'!")
             else:
-                DBGatewayActions().create(
-                    Pingable_roles(
-                        guild_id=ctx.guild.id,
-                        role_id=role.id,
-                        on_cooldown=False,
-                        last_ping=-1,
-                        ping_count=0,
-                        monthly_ping_count=0,
-                        creator_id=ctx.author.id,
-                        colour=DEFAULT_PINGABLE_COLOUR,
-                        name=roleName
-                    )
+                db.insert(
+                    "pingable_roles",
+                    {
+                        "guild_id": ctx.guild.id,
+                        "role_id": role.id,
+                        "on_cooldown": False,
+                        "last_ping": -1,
+                        "ping_count": 0,
+                        "monthly_ping_count": 0,
+                        "creator_id": ctx.author.id,
+                        "colour": DEFAULT_PINGABLE_COLOUR,
+                        "name": roleName
+                    }
                 )
                 if not role.mentionable:
                     await role.edit(mentionable=True, colour=discord.Colour.green(), reason="setting up new pingable role")
@@ -110,7 +111,7 @@ class PingablesCog(commands.Cog):
                 await self.bot.adminLog(
                     ctx.message,
                     {"New !pingme Role Registered",
-                     f"Name: {roleName}\nRole: {role.mention}"}
+                     "Name: " + roleName + "\nRole: " + role.mention}
                 )
 
     @pingme.command(
@@ -128,14 +129,14 @@ class PingablesCog(commands.Cog):
         if len(ctx.message.role_mentions) != 1:
             await ctx.message.reply("Please give one role mention!")
         else:
+            db = db_gateway()
             role = ctx.message.role_mentions[0]
-            pingable_role = DBGatewayActions().get(Pingable_roles, role_id=role.id)
-            if not pingable_role:
+            if not db.get("pingable_roles", {"role_id": role.id}):
                 await ctx.message.reply("that role is not pingable!")
             else:
-                DBGatewayActions().delete(pingable_role)
+                db.delete("pingable_roles", {"role_id": role.id})
                 await ctx.message.reply("✅ Role successfully unregistered for `!pingme`.")
-                await self.bot.adminLog(ctx.message, {"!pingme Role Unregistered", f"Role: {role.mention}"})
+                await self.bot.adminLog(ctx.message, {"!pingme Role Unregistered", "Role: " + role.mention})
 
     @pingme.command(name="delete", usage="<@role>", help="Delete a !pingme role from the server")
     @commands.has_permissions(administrator=True)
@@ -148,15 +149,15 @@ class PingablesCog(commands.Cog):
         if len(ctx.message.role_mentions) != 1:
             await ctx.message.reply("Please give one role mention!")
         else:
+            db = db_gateway()
             role = ctx.message.role_mentions[0]
-            pingable_role = DBGatewayActions().get(Pingable_roles, role_id=role.id)
-            if not pingable_role:
+            if not db.get("pingable_roles", {"role_id": role.id}):
                 await ctx.message.reply("that role is not pingable!")
             else:
-                DBGatewayActions().delete(pingable_role)
+                db.delete("pingable_roles", {"role_id": role.id})
                 await role.delete(reason="role deletion requested via admin command")
                 await ctx.message.reply("The role as been deleted!")
-                await self.bot.adminLog(ctx.message, {"!pingme Role Deleted", f"Name: {role.name}\nID: {role.id}"})
+                await self.bot.adminLog(ctx.message, {"!pingme Role Deleted", "Name: " + role.name + "\nID: " + str(role.id)})
 
     @pingme.command(
         name="reset-cooldown",
@@ -174,22 +175,21 @@ class PingablesCog(commands.Cog):
             await ctx.message.reply("please mention one role")
         else:
             role = ctx.message.role_mentions[0]
-            roleData = DBGatewayActions().get(Pingable_roles, role_id=role.id)
+            db = db_gateway()
+            roleData = db.get("pingable_roles", {"role_id": role.id})
             if not roleData:
                 await ctx.message.reply("that role is not pingable!")
-            elif not roleData.on_cooldown:
+            elif not roleData[0]["on_cooldown"]:
                 await ctx.message.reply("that role is not on cooldown!")
             else:
-                pingable_role = DBGatewayActions().get(Pingable_roles, role_id=role.id)
-                pingable_role.on_cooldown = False
-                DBGatewayActions().update(pingable_role)
+                db.update("pingable_roles", {"on_cooldown": False}, {"role_id": role.id})
                 if not role.mentionable:
                     await role.edit(
                         mentionable=True,
                         colour=discord.Colour.green(),
-                        reason=f"manual cooldown reset by user {ctx.author.name}#{ctx.author.id}"
+                        reason="manual cooldown reset by user " + str(ctx.author.name) + "#" + str(ctx.author.id)
                     )
-                await ctx.message.reply(f"The {role.name} role is now pingable again!")
+                await ctx.message.reply("The " + role.name + " role is now pingable again!")
                 await self.bot.adminLog(ctx.message, {"Ping Cooldown Manually Reset For !pingme Role": role.mention})
 
     @pingme.command(
@@ -222,20 +222,22 @@ class PingablesCog(commands.Cog):
         for timeName in ["days", "hours", "minutes", "seconds"]:
             if timeName in kwArgs:
                 if not lib.stringTyping.strIsInt(kwArgs[timeName]) or int(kwArgs[timeName]) < 1:
-                    await ctx.message.reply(f":x: Invalid number of {timeName}!")
+                    await ctx.message.reply(":x: Invalid number of " + timeName + "!")
                     return
 
                 timeoutDict[timeName] = int(kwArgs[timeName])
 
         timeoutTD = lib.timeUtil.timeDeltaFromDict(timeoutDict)
         if timeoutTD > MAX_ROLE_PING_TIMEOUT:
-            await ctx.message.reply(f":x: The maximum ping cooldown is {lib.timeUtil.td_format_noYM(MAX_ROLE_PING_TIMEOUT)}")
+            await ctx.message.reply(":x: The maximum ping cooldown is " + lib.timeUtil.td_format_noYM(MAX_ROLE_PING_TIMEOUT))
             return
 
-        guild = DBGatewayActions().get(Guild_info, guild_id=ctx.guild.id)
-        guild.role_ping_cooldown_seconds = int(timeoutTD.total_seconds())
-        DBGatewayActions().update(guild)
-        await ctx.message.reply(f"Cooldown for !pingme roles now updated to {lib.timeUtil.td_format_noYM(timeoutTD)}!")
+        db_gateway().update(
+            "guild_info",
+            {"role_ping_cooldown_seconds": int(timeoutTD.total_seconds())},
+            {"guild_id": ctx.guild.id}
+        )
+        await ctx.message.reply("Cooldown for !pingme roles now updated to " + lib.timeUtil.td_format_noYM(timeoutTD) + "!")
         await self.bot.adminLog(
             ctx.message,
             {"Cooldown For !pingme Role Pings Updated": lib.timeUtil.td_format_noYM(timeoutTD)}
@@ -259,16 +261,14 @@ class PingablesCog(commands.Cog):
             await ctx.message.reply(":x: Invalid threshold! It must be a number.")
         elif int(args) < 1 or int(args) > MAX_PINGME_CREATE_THRESHOLD:
             await ctx.message.reply(
-                f":x: Invalid threshold! It must be between 1 and {MAX_PINGME_CREATE_THRESHOLD}, inclusive."
+                ":x: Invalid threshold! It must be between 1 and " + str(MAX_PINGME_CREATE_THRESHOLD) + ", inclusive."
             )
         else:
-            guild = DBGatewayActions().get(Guild_info, guild_id=ctx.guild.id)
-            guild.pingme_create_threshold = int(args)
-            DBGatewayActions().update(guild)
-            await ctx.message.reply(f"✅ Minimum votes for `!pingme create` successfully updated to {args} users.")
+            db_gateway().update("guild_info", {"pingme_create_threshold": int(args)}, {"guild_id": ctx.guild.id})
+            await ctx.message.reply("✅ Minimum votes for `!pingme create` successfully updated to " + args + " users.")
             await self.bot.adminLog(
                 ctx.message,
-                {f"Votes Required For !pingme create Updated": "Minimum votes for new roles: {args}"}
+                {"Votes Required For !pingme create Updated": "Minimum votes for new roles: " + args}
             )
 
     @pingme.command(
@@ -301,7 +301,7 @@ class PingablesCog(commands.Cog):
         for timeName in ["days", "hours", "minutes", "seconds"]:
             if timeName in kwArgs:
                 if not lib.stringTyping.strIsInt(kwArgs[timeName]) or int(kwArgs[timeName]) < 1:
-                    await ctx.message.reply(f":x: Invalid number of {timeName}!")
+                    await ctx.message.reply(":x: Invalid number of " + timeName + "!")
                     return
 
                 timeoutDict[timeName] = int(kwArgs[timeName])
@@ -309,15 +309,17 @@ class PingablesCog(commands.Cog):
         timeoutTD = lib.timeUtil.timeDeltaFromDict(timeoutDict)
         if timeoutTD > MAX_PINGME_CREATE_POLL_LENGTH:
             await ctx.message.reply(
-                f":x: The maximum `!pingme create` poll length is {lib.timeUtil.td_format_noYM(MAX_ROLE_PING_TIMEOUT)}"
+                ":x: The maximum `!pingme create` poll length is " + lib.timeUtil.td_format_noYM(MAX_ROLE_PING_TIMEOUT)
             )
             return
 
-        guild = DBGatewayActions().get(Guild_info, guild_id=ctx.guild.id)
-        guild.pingme_create_poll_length_seconds = int(timeoutTD.total_seconds())
-        DBGatewayActions().update(guild)
+        db_gateway().update(
+            "guild_info",
+            {"pingme_create_poll_length_seconds": int(timeoutTD.total_seconds())},
+            {"guild_id": ctx.guild.id}
+        )
         await ctx.message.reply(
-            f"✅ Poll length for `!pingme create` successfully updated to {lib.timeUtil.td_format_noYM(timeoutTD)}."
+            "✅ Poll length for `!pingme create` successfully updated to " + lib.timeUtil.td_format_noYM(timeoutTD) + "."
         )
         await self.bot.adminLog(
             ctx.message,
@@ -342,21 +344,20 @@ class PingablesCog(commands.Cog):
         elif not lib.emotes.strIsUnicodeEmoji(args):
             await ctx.message.reply(":x: Invalid emoji! Make sure it's a built in one rather than custom.")
         else:
-            guild = DBGatewayActions().get(Guild_info, guild_id=ctx.guild.id)
-            guild.pingme_role_emoji = args
-            DBGatewayActions().update(guild)
-            rolesData = DBGatewayActions().list(Pingable_roles, guild_id=ctx.guild.id)
+            db = db_gateway()
+            db.update("guild_info", {"pingme_role_emoji": args}, {"guild_id": ctx.guild.id})
+            rolesData = db.get("pingable_roles", {"guild_id": ctx.guild.id})
             if rolesData:
-                progressMsg = await ctx.send(f"Renaming {len(rolesData)} roles... ⏳")
+                progressMsg = await ctx.send("Renaming " + str(len(rolesData)) + " roles... ⏳")
                 renamerTasks = set()
                 for roleData in rolesData:
-                    renamerTasks.add(changePingablePrefix(args, ctx.guild, roleData.role_id, roleData.name))
+                    renamerTasks.add(changePingablePrefix(args, ctx.guild, roleData["role_id"], roleData["name"]))
 
                 await asyncio.wait(renamerTasks)
-                await progressMsg.edit(content=f"Renaming {len(rolesData)} roles... ✅")
+                await progressMsg.edit(content="Renaming " + str(len(rolesData)) + " roles... ✅")
 
-            await ctx.message.reply(f"Emoji prefix for `!pingme create` roles now updated to {args}!")
-            await self.bot.adminLog(ctx.message, {"Emoji Prefix For !pingme roles Updated": f"New emoji: {args}"})
+            await ctx.message.reply("Emoji prefix for `!pingme create` roles now updated to " + args + "!")
+            await self.bot.adminLog(ctx.message, {"Emoji Prefix For !pingme roles Updated": "New emoji: " + args})
 
     @pingme.command(
         name="remove-role-emoji",
@@ -371,26 +372,30 @@ class PingablesCog(commands.Cog):
         :param Context ctx: A context summarising the message which called this command
         :param str args: ignored
         """
-        guildData = DBGatewayActions().get(Guild_info, guild_id=ctx.guild.id)
-        if guildData.pingme_role_emoji is None:
+        db = db_gateway()
+        guildData = db.get("guild_info", {"guild_id": ctx.guild.id})
+        if guildData["pingme_role_emoji"] is None:
             await ctx.message.reply(":x: There is no `!pingme` role emoji set!")
         else:
-            guildData.pingme_role_emoji = None
-            DBGatewayActions().update(guildData)
-            rolesData = DBGatewayActions().list(Pingable_roles, guild_id=ctx.guild.id)
+            db.update("guild_info", {"pingme_role_emoji": None}, {"guild_id": ctx.guild.id})
+            rolesData = db.get("pingable_roles", {"guild_id": ctx.guild.id})
             if rolesData:
-                progressMsg = await ctx.send(f"Renaming {len(rolesData)} roles... ⏳")
+                progressMsg = await ctx.send("Renaming " + str(len(rolesData)) + " roles... ⏳")
                 renamerTasks = set()
                 for roleData in rolesData:
-                    renamerTasks.add(changePingablePrefix("", ctx.guild, roleData.role_id, roleData.name))
+                    renamerTasks.add(changePingablePrefix("", ctx.guild, roleData["role_id"], roleData["name"]))
 
                 await asyncio.wait(renamerTasks)
-                await progressMsg.edit(content=f"Renaming {len(rolesData)} roles... ✅")
+                await progressMsg.edit(content="Renaming " + str(len(rolesData)) + " roles... ✅")
 
             await ctx.message.reply("Emoji prefix for `!pingme create` roles has been removed!")
             await self.bot.adminLog(ctx.message, {"Emoji Prefix For !pingme roles Removed": "‎"})
 
-    @pingme.command(name="create", usage="<new role name>", help="Start a poll for the creation of a new !pingme role")
+    @pingme.command(
+        name="create",
+        usage="<new role name>",
+        help="Start a poll for the creation of a new !pingme role"
+    )
     async def pingme_create(self, ctx: Context, *, args: str):
         """User command: Trigger a poll for the creation of a new pingme role with the given name.
         If the guild's configured minimum number of votes is reached, then the role will be created automatically. If the poll
@@ -403,47 +408,54 @@ class PingablesCog(commands.Cog):
         if not args:
             await ctx.message.reply(":x: Please give the name of your new role!")
         else:
-            roleData = DBGatewayActions().get(Pingable_roles, name=args.lower())
-            if roleData and roleData.guild_id == ctx.guild.id:
+            db = db_gateway()
+            roleData = db.get("pingable_roles", {"name": args.lower()})
+            if roleData and roleData[0]["guild_id"] == ctx.guild.id:
                 await ctx.message.reply(":x: A `!pingme` role already exists with that name!")
             else:
                 pollMsg = await ctx.send("‎")
-                guildData = DBGatewayActions().get(Guild_info, guild_id=ctx.guild.id)
-                requiredVotes = guildData.pingme_create_threshold
+                guildData = db.get("guild_info", {"guild_id": ctx.guild.id})[0]
+                requiredVotes = guildData["pingme_create_threshold"]
                 rolePoll = reactionPollMenu.InlineSingleOptionPollMenu(
                     pollMsg,
-                    guildData.pingme_create_poll_length_seconds,
+                    guildData["pingme_create_poll_length_seconds"],
                     requiredVotes,
                     pollStarter=ctx.author,
-                    authorName=f"{ctx.author.display_name} wants to make a new !pingme role!",
-                    desc=f"Name: {args}\nRequired votes: {requiredVotes}\n\nReact if you want the role to be created!",
-                    footerTxt=
-                    f"This menu will expire in {lib.timeUtil.td_format_noYM(timedelta(seconds=guildData.pingme_create_poll_length_seconds))}."
+                    authorName=ctx.author.display_name + " wants to make a new !pingme role!",
+                    desc="Name: " + args + "\nRequired votes: " + str(requiredVotes)
+                    + "\n\nReact if you want the role to be created!",
+                    footerTxt="This menu will expire in "
+                    + lib.timeUtil.td_format_noYM(timedelta(seconds=guildData["pingme_create_poll_length_seconds"])) + "."
                 )
                 await rolePoll.doMenu()
                 if rolePoll.yesesReceived >= requiredVotes:
-                    roleName = (guildData.pingme_role_emoji + args.title()) if guildData.pingme_role_emoji else args.title()
+                    roleName = (guildData["pingme_role_emoji"]
+                                + args.title()) if guildData["pingme_role_emoji"] else args.title()
                     newRole = await ctx.guild.create_role(
                         name=roleName,
                         colour=DEFAULT_PINGABLE_COLOUR,
                         mentionable=True,
                         reason="New !pingme role creation requested via poll"
                     )
-                    DBGatewayActions().create(
-                        Pingable_roles(
-                            name=args.lower(),
-                            guild_id=ctx.guild.id,
-                            role_id=newRole.id,
-                            on_cooldown=False,
-                            last_ping=-1,
-                            ping_count=0,
-                            monthly_ping_count=0,
-                            creator_id=ctx.author.id,
-                            colour=DEFAULT_PINGABLE_COLOUR
-                        )
+                    db.insert(
+                        "pingable_roles",
+                        {
+                            "name": args.lower(),
+                            "guild_id": ctx.guild.id,
+                            "role_id": newRole.id,
+                            "on_cooldown": False,
+                            "last_ping": -1,
+                            "ping_count": 0,
+                            "monthly_ping_count": 0,
+                            "creator_id": ctx.author.id,
+                            "colour": DEFAULT_PINGABLE_COLOUR
+                        }
                     )
                     await ctx.message.reply("✅ The role has been created! Get it with `!pingme for " + args.lower() + "`")
-                    await self.bot.adminLog(pollMsg, {"New !pingme Role Created": f"Role: {newRole.mention}\nName: {args}"})
+                    await self.bot.adminLog(
+                        pollMsg,
+                        {"New !pingme Role Created": "Role: " + newRole.mention + "\nName: " + args}
+                    )
                 else:
                     await pollMsg.reply(
                         ctx.author.mention + " The role has not been created, as the poll did not receive enough votes."
@@ -465,19 +477,19 @@ class PingablesCog(commands.Cog):
         if not args:
             await ctx.message.reply(":x: Please give the name of the role you would like!")
         else:
-            roleData = DBGatewayActions().get(Pingable_roles, name=args.lower())
-            if not roleData or roleData.guild_id != ctx.guild.id:
+            roleData = db_gateway().get("pingable_roles", {"name": args.lower()})
+            if not roleData or roleData[0]["guild_id"] != ctx.guild.id:
                 await ctx.message.reply(":x: Unrecognised role name!")
             else:
-                role = ctx.guild.get_role(roleData.role_id)
+                role = ctx.guild.get_role(roleData[0]["role_id"])
                 if role is None:
                     await ctx.message.reply(":x: I couldn't find the role! Please contact an administrator.")
                 elif role in ctx.author.roles:
                     await ctx.author.remove_roles(role, reason="User unsubscribed from !pingme role via command")
-                    await ctx.message.reply(f"✅ You removed the {role.name} role!")
+                    await ctx.message.reply("✅ You removed the " + role.name + " role!")
                 else:
                     await ctx.author.add_roles(role, reason="User subscribed to !pingme role via command")
-                    await ctx.message.reply(f"✅ You got the {role.name} role!")
+                    await ctx.message.reply("✅ You got the " + role.name + " role!")
 
     @pingme.command(name="list", help="List all available `!pingme` roles")
     async def pingme_list(self, ctx: Context):
@@ -487,7 +499,7 @@ class PingablesCog(commands.Cog):
         :param Context ctx: A context summarising the message which called this command
         :param str args: ignored
         """
-        allRolesData = DBGatewayActions().list(Pingable_roles, guild_id=ctx.guild.id)
+        allRolesData = db_gateway().get("pingable_roles", {"guild_id": ctx.guild.id})
         if not allRolesData:
             await ctx.message.reply(
                 f":x: This guild has no `!pingme` roles! Make a new one with `{self.bot.command_prefix}pingme create`."
@@ -496,18 +508,19 @@ class PingablesCog(commands.Cog):
             reportEmbed = discord.Embed(title="All !pingme Roles", desc=ctx.guild.name)
             reportEmbed.colour = discord.Colour.random()
             reportEmbed.set_thumbnail(url=self.bot.user.avatar_url_as(size=128))
-            for roleData in sorted(allRolesData, key=lambda x: x.ping_count, reverse=True):
-                if r := ctx.guild.get(roleData.role_id):
+            for roleData in sorted(allRolesData, key=lambda x: x["ping_count"], reverse=True):
+                if r := ctx.guild.get(roleData["role_id"]):
                     reportEmbed.add_field(
-                        name=roleData.name.title(),
-                        value=
-                        f"<@&{roleData.role_id}>\nCreated by: <@{roleData.creator_id}>\nTotal pings: {roleData.ping_count}\nTotal members: {len(r.members)}"
+                        name=roleData["name"].title(),
+                        value="<@&" + str(roleData["role_id"]) + ">\nCreated by: <@" + str(roleData["creator_id"])
+                        + ">\nTotal pings: " + str(roleData["ping_count"])  + "\nTotal members: " + str(len(r.members))
                     )
                 else:
-                    await self.bot.adminLog(
-                        ctx.message,
-                        {"Unknown !Pingme Role",
-                         f"Failed to find the '{roleData.name.title()}' role. Was it deleted?"}
+                    await self.bot.adminLog(ctx.message,
+                        {
+                            "Unknown !Pingme Role",
+                            f"Failed to find the '{roleData['name'].title()}' role. Was it deleted?"
+                        }
                     )
             await ctx.reply(embed=reportEmbed)
 
@@ -518,13 +531,14 @@ class PingablesCog(commands.Cog):
         :param Context ctx: A context summarising the message which called this command
         :param str args: ignored
         """
+        db = db_gateway()
         rolesToRemove = []
         for role in ctx.author.roles:
-            if DBGatewayActions().get(Pingable_roles, role_id=role.id):
+            if db.get("pingable_roles", {"role_id": role.id}):
                 rolesToRemove.append(role)
         if rolesToRemove:
             await ctx.author.remove_roles(*rolesToRemove, reason="User unsubscribed from !pingme role via command")
-            await ctx.message.reply(f"✅ You unsubscribed from {len(rolesToRemove)} roles!")
+            await ctx.message.reply("✅ You unsubscribed from " + str(len(rolesToRemove)) + " roles!")
         else:
             await ctx.message.reply(":x: You are not subsribed to any `!pingme` roles!")
 

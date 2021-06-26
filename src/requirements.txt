@@ -1,8 +1,8 @@
 psycopg2-binary>=2.8
-sqlalchemy
-discord.py[voice]
+discord.py
 python-dotenv
 emoji
+git+git://github.com/JustAnotherArchivist/snscrape.git#egg=snscrape
 lxml
 google-api-python-client
 youtube-dl

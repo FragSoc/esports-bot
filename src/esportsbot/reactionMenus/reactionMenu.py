@@ -7,7 +7,7 @@ It is modified and not actively synced with BASED, so will very likely be out of
 
 import inspect
 from discord import Embed, Colour, NotFound, HTTPException, Forbidden, Member, User, Message, Role, RawReactionActionEvent, Client
-from esportsbot import lib
+from .. import lib
 from abc import abstractmethod
 from typing import Union, Dict, List, Any
 import asyncio
