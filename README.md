@@ -25,9 +25,9 @@ $ git clone https://github.com/FragSoc/Esports-Bot-Rewrite.git
 ```console  
 $ cd Esports-Bot-Rewrite  
 ```  
-3. Rename the `secrets.template` to `.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:  
+3. Rename the `secrets.template` to `secrets.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:  
 ```console  
-$ nano .env  
+$ nano secrets.env  
 ```  
 4. Run docker-compose:  
 ```console  
@@ -46,18 +46,22 @@ $ git clone https://github.com/FragSoc/Esports-Bot-Rewrite.git
 ```console  
 $ cd Esports-Bot-Rewrite  
 ```  
-3. Rename the `secrets.template` to `.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:  
+3. Rename the `secrets.template` to `secrets.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:  
 ```console  
-$ nano .env  
+$ nano secrets.env  
+$ source secrets.env
 ```
-
-4. Install all the requirements for python:  
+4. Change into the bot directory:
+```bash
+$ cd src
+```
+5. Install all the requirements for python:  
 ```bash  
 pip install -r requirements.txt  
 ```  
-5. Run the bot:  
+6. Run the bot:  
 ```bash  
-python3 src/main.py  
+python3 main.py  
 ```  
   
 ## Current Functions  
