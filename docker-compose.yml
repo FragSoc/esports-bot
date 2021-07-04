@@ -2,9 +2,9 @@ version: "3"
 
 services:
   db:
-    image: "postgres:11"
     environment:
       - POSTGRES_PASSWORD=Pass2020!
+    image: "postgres:11"
     restart: unless-stopped
     volumes:
       - "db_data:/var/lib/postgresql/data"
@@ -24,13 +24,15 @@ services:
     restart: unless-stopped
 
   pg_admin:
-    image: "dpage/pgadmin4"
-    restart: unless-stopped
+    depends_on:
+      - db
     env_file: secrets.env
-    environment: 
+    environment:
       - PGADMIN_LISTEN_PORT=80
-    ports: 
+    image: "dpage/pgadmin4"
+    ports:
       - "8080:80"
+    restart: unless-stopped
 
 volumes:
   db_data:
