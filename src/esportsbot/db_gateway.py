@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy_utils import database_exists, create_database
 from esportsbot.models import *
 import os
 from dotenv import load_dotenv
@@ -9,6 +10,9 @@ load_dotenv()
 db_string = f"postgresql://{os.getenv('PG_USER')}:{os.getenv('PG_PWD')}@{os.getenv('PG_HOST')}:5432/{os.getenv('PG_DATABASE')}"
 
 db = create_engine(db_string)
+
+if not database_exists(db.url):
+    create_database(db.url)
 
 Session = sessionmaker(db)
 session = Session()
