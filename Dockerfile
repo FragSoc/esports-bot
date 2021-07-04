@@ -9,7 +9,6 @@ RUN apt install ffmpeg -y
 COPY ./src/requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt && rm /tmp/requirements.txt
 
-COPY ./src /code
+COPY ./src /src
 
-WORKDIR /code
-ENTRYPOINT ["python", "./main.py"]
+ENTRYPOINT ["python", "./src/main.py"]
