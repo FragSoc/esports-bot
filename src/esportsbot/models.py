@@ -9,13 +9,19 @@ class Guild_info(base):
     __tablename__ = 'guild_info'
     guild_id = Column(BigInteger, primary_key=True, nullable=False)
     log_channel_id = Column(BigInteger, nullable=True)
-    default_role_id = Column(BigInteger, nullable=True)
     num_running_polls = Column(BigInteger, nullable=False)
     role_ping_cooldown_seconds = Column(BigInteger, nullable=False)
     pingme_create_threshold = Column(BigInteger, nullable=False)
     pingme_create_poll_length_seconds = Column(BigInteger, nullable=False)
     pingme_role_emoji = Column(String, nullable=True)
     shared_role_id = Column(BigInteger, nullable=True)
+
+
+class Default_roles(base):
+    __tablename__ = 'default_roles'
+    default_roles_id = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
+    guild_id = Column(BigInteger, nullable=False)
+    role_id = Column(BigInteger, nullable=False)
 
 
 class Pingable_roles(base):

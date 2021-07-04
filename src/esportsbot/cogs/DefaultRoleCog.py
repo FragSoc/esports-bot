@@ -1,7 +1,7 @@
 import toml
 from discord.ext import commands
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.models import Guild_info
+from esportsbot.models import Guild_info, Default_roles
 from esportsbot.base_functions import role_id_from_mention, send_to_log_channel
 
 
@@ -28,6 +28,39 @@ class DefaultRoleCog(commands.Cog):
             )
         else:
             await ctx.channel.send(self.STRINGS['default_role_set_missing_params'])
+
+    @commands.command(
+        name="setdefaultroles",
+        usage="<@role> <@role> <@role> ...",
+        help="Sets the roles that the server gives to members when they join the server"
+    )
+    @commands.has_permissions(administrator=True)
+    async def setdefaultroles(self, ctx, *, args: str):
+        role_list = args.split(" ")
+        if len(role_list) == 0:
+            print("No roles passed")
+        else:
+            checked_roles = []
+            checking_error = False
+            # Loop through the roles to check the input formatting is correct and that roles exist
+            for role in role_list:
+                try:
+                    # Clean the inputted role to just the id
+                    cleaned_role_id = role_id_from_mention(role)
+                    # Obtain role object from the guild to check it exists
+                    role_obj = ctx.author.guild.get_role(cleaned_role_id)
+                    # Add role to array to add post checks
+                    checked_roles.append(cleaned_role_id)
+                except Exception as err:
+                    print(err)
+                    checking_error = True
+            if not checking_error:
+                for role in checked_roles:
+                    DBGatewayActions().create(Default_roles(guild_id=ctx.author.guild.id, role_id=role))
+            else:
+                await ctx.channel.send(
+                    "Error occurred during this operation, please check that you have formatted these inputs correctly"
+                )
 
     @commands.command()
     @commands.has_permissions(administrator=True)

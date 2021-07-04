@@ -3,7 +3,7 @@ from esportsbot import lib
 from esportsbot.base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.models import Guild_info, Voicemaster_slave, Pingable_roles
+from esportsbot.models import Guild_info, Voicemaster_slave, Pingable_roles, Default_roles
 
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument
@@ -67,18 +67,14 @@ async def on_guild_remove(guild):
 
 @client.event
 async def on_member_join(member):
-    guild = DBGatewayActions().get(Guild_info, guild_id=member.guild.id)
-    default_role_exists = guild.default_role_id is not None
-
-    if default_role_exists:
-        default_role = member.guild.get_role(guild.default_role_id)
-        await member.add_roles(default_role)
-        await send_to_log_channel(
-            member.guild.id,
-            f"{member.mention} has joined the server and received the {default_role.mention} role"
-        )
-    else:
-        await send_to_log_channel(member.guild.id, f"{member.mention} has joined the server")
+    # Get all the default role for the server from database
+    guild_default_roles = DBGatewayActions().list(Default_roles, guild_id=member.guild.id)
+    # Check to see if any roles exist
+    if guild_default_roles:
+        # Create list of roles from database response
+        apply_roles = [member.guild.get_role(role.role_id) for role in guild_default_roles]
+        # Add all the roles to the user, we don't check if they're valid as we do this on input
+        await member.add_roles(*apply_roles)
 
 
 @client.event
