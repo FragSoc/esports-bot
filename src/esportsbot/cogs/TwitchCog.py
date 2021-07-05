@@ -15,7 +15,7 @@ import os
 from typing import Any
 
 import aiohttp
-from discord import Webhook, Embed, AsyncWebhookAdapter, Forbidden
+from discord import Webhook, Embed, AsyncWebhookAdapter
 from tornado.httpserver import HTTPServer
 import tornado.web
 
@@ -28,8 +28,7 @@ from tornado.web import Application
 import logging
 
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.lib.discordUtil import load_discord_hooks
-from esportsbot.lib.stringTyping import strIsChannelMention
+from esportsbot.lib.discordUtil import channel_from_mention, get_webhook_by_name, load_discord_hooks
 from esportsbot.models import Twitch_info
 
 SUBSCRIPTION_SECRET = os.getenv("TWITCH_SUB_SECRET")
@@ -541,7 +540,7 @@ class TwitchCog(commands.Cog):
 
         # If the channel was given, get the channel instance, else get the current channel from context.
         if channel is not None:
-            text_channel = await self.channel_from_mention(channel)
+            text_channel = await channel_from_mention(self._bot, channel)
         else:
             text_channel = ctx.channel
 
@@ -553,7 +552,7 @@ class TwitchCog(commands.Cog):
             return False
 
         hook_name = WEBHOOK_PREFIX + hook_name
-        existing, _ = self.get_webhook_by_name(hook_name, ctx.guild.id)
+        existing, _ = get_webhook_by_name(self._twitch_app.hooks, hook_name, ctx.guild.id, WEBHOOK_PREFIX)
 
         if existing is not None:
             # Webhook already exists with the given name.
@@ -612,7 +611,7 @@ class TwitchCog(commands.Cog):
         :return: A boolean of if the Webhook was deleted or not.
         """
 
-        h_id, hook_info = self.get_webhook_by_name(name, ctx.guild.id)
+        h_id, hook_info = get_webhook_by_name(self._twitch_app.hooks, name, ctx.guild.id, WEBHOOK_PREFIX)
         if hook_info is None:
             await ctx.send(
                 self.user_strings["webhook_error"].format(
@@ -861,49 +860,6 @@ class TwitchCog(commands.Cog):
         embed.add_field(name="Current Game:", value=f"{channel_info.get('game_name')}")
 
         await ctx.send(embed=embed)
-
-    # TODO: Probably best to move this to lib or some other as it is shared by TwitterCog
-    async def channel_from_mention(self, c_id):
-        """
-        Gets an instance of a channel when the channel was mentioned in the message.
-        :param c_id: The mentioned channel.
-        :return: An instance of a channel or None if there is no channel with the given mention.
-        """
-
-        if not strIsChannelMention(c_id):
-            # The string was not a mentioned channel.
-            return None
-
-        # Gets just the ID of the channel.
-        cleaned_id = c_id[2:-1]
-        channel = self._bot.get_channel(cleaned_id)
-        if channel is None:
-            try:
-                channel = await self._bot.fetch_channel(cleaned_id)
-            except Forbidden as e:
-                self.logger.error("Unable to access channel with id %s due to permission errors: %s", cleaned_id, e.text)
-                return None
-        return channel
-
-    # TODO: Probably best to move this to lib or some other as it is shared by TwitterCog
-    def get_webhook_by_name(self, name, guild_id):
-        """
-        Gets the information about a Discord Webhook given its name.
-        :param name: The name of the Webhook.
-        :param guild_id: The ID of the guild where the Webhook is in.
-        :return: A Tuple of hook ID and hook information.
-        """
-
-        current_hooks = self._twitch_app.hooks
-        if WEBHOOK_PREFIX not in name:
-            # Only find webhooks created for this cog.
-            name = WEBHOOK_PREFIX + name
-        for hook in current_hooks:
-            if current_hooks.get(hook).get("name") == name:
-                if current_hooks.get(hook).get("guild_id") == guild_id:
-                    return hook, current_hooks.get(hook)
-
-        return None, None
 
     async def get_channel_id(self, ctx, channel):
         """
