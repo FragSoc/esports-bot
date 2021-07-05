@@ -293,8 +293,9 @@ class TwitchListener(tornado.web.RequestHandler):
     This TwitchListener is the webserver that listens for requests.
     """
 
-    def __init__(self, application: "Application", request: httputil.HTTPServerRequest, **kwargs: Any):
+    def __init__(self, application: "TwitchApp", request: httputil.HTTPServerRequest, **kwargs: Any):
         super().__init__(application, request, **kwargs)
+        self.application: TwitchApp = application
         self.logger = logging.getLogger(__name__)
 
     @staticmethod
