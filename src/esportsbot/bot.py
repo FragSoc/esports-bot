@@ -257,7 +257,11 @@ async def on_message(message):
             await client.process_commands(message)
 
 
-@client.command()
+@client.command(
+    name="initialsetup",
+    usage="",
+    help="Initiates the server config in the database for servers where the bot is already present"
+)
 @commands.has_permissions(administrator=True)
 async def initialsetup(ctx):
     already_in_db = DBGatewayActions().get(Guild_info, guild_id=ctx.author.guild.id)

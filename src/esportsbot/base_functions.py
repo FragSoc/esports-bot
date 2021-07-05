@@ -4,7 +4,7 @@ from esportsbot.models import Voicemaster_master, Voicemaster_slave, Guild_info
 
 async def send_to_log_channel(self, guild_id, msg):
     db_logging_call = DBGatewayActions().get(Guild_info, guild_id=guild_id)
-    if db_logging_call and db_logging_call.log_channel_id is not None:
+    if db_logging_call.log_channel_id:
         await self.bot.get_channel(db_logging_call.log_channel_id).send(msg)
 
 

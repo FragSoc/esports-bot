@@ -8,7 +8,17 @@ class AdminCog(commands.Cog):
         self.bot = bot
         self.STRINGS = bot.STRINGS["admin"]
 
-    @commands.command(aliases=['cls', 'purge', 'delete', 'Cls', 'Purge', 'Delete'])
+    @commands.command(
+        name="clear_messages",
+        aliases=['cls',
+                 'purge',
+                 'delete',
+                 'Cls',
+                 'Purge',
+                 'Delete'],
+        usage="<number_of_messages>",
+        help="Clears the specified number of messages from the channel. Default value of 5."
+    )
     @commands.has_permissions(manage_messages=True)
     async def clear_messages(self, ctx, amount=5):
         await ctx.channel.purge(limit=int(amount) + 1)
@@ -19,7 +29,12 @@ class AdminCog(commands.Cog):
                                                    message_amount=amount)
         )
 
-    @commands.command(aliases=['Members'])
+    @commands.command(
+        name="members",
+        aliases=['Members'],
+        usage="",
+        help="Calculates the number of members in the current server"
+    )
     @commands.has_permissions(manage_messages=True)
     async def members(self, ctx):
         await ctx.channel.send(self.STRINGS['members'].format(member_count=ctx.guild.member_count))
