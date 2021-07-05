@@ -228,9 +228,7 @@ class TwitchApp(Application):
         body_json = json.dumps(body)
         async with aiohttp.ClientSession() as session:
             async with session.post(url=subscription_url, data=body_json, headers=headers) as response:
-                if response.status == 202:
-                    return True
-                return False
+                return response.status == 202
 
     async def get_channel_info(self, channel_name):
         """
@@ -790,7 +788,7 @@ class TwitchCog(commands.Cog):
                 await ctx.send(self.user_strings["channel_not_added_error"].format(channel=channel))
                 return
 
-            if message is not None and message.strip() == "" or message == "":
+            if message is not None and message.strip() == "":
                 message = None
 
             db_entry.custom_message = message
