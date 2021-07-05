@@ -28,6 +28,7 @@ from tornado.web import Application
 import logging
 
 from esportsbot.db_gateway import DBGatewayActions
+from esportsbot.lib.discordUtil import load_discord_hooks
 from esportsbot.lib.stringTyping import strIsChannelMention
 from esportsbot.models import Twitch_info
 
@@ -57,22 +58,6 @@ class TwitchApp(Application):
         self.tracked_channels = None
         self.subscriptions = []
         self.logger = logging.getLogger(__name__)
-
-    # TODO: Probably best to move this to lib or some other as it is shared by TwitterCog
-    def load_discord_hooks(self, guild_hooks, bot_user_id: int):
-        """
-        Loads the list of Discord Webhooks which are where the Event Notifications are sent to.
-        :param guild_hooks: The list of lists of Webhooks, where each index is for a different Guild.
-        :param bot_user_id: The Discord user ID of the bot that is running.
-        """
-
-        for guild in guild_hooks:
-            # For each guild in the list...
-            for g_hook in guild:
-                # And for each Webhook in the guild...
-                if WEBHOOK_PREFIX in g_hook.name and g_hook.user.id == bot_user_id:
-                    # Only if the Webhook was created for the TwitterCog and by the bot.
-                    self.hooks[g_hook.id] = {"token": g_hook.token, "name": g_hook.name, "guild_id": g_hook.guild_id}
 
     async def get_bearer(self):
         """
@@ -289,6 +274,9 @@ class TwitchApp(Application):
         self.hooks[hook.id] = {"token": hook.token, "name": hook.name, "guild_id": hook.guild_id}
         return True
 
+    def set_hooks(self, hooks):
+        self.hooks = hooks
+
 
 class TwitchListener(tornado.web.RequestHandler):
     """
@@ -477,7 +465,8 @@ class TwitchCog(commands.Cog):
         results = await asyncio.gather(*tasks)
 
         # Add the hooks to the App.
-        self._twitch_app.load_discord_hooks(results, self._bot.user.id)
+        hooks = load_discord_hooks(WEBHOOK_PREFIX, results, self._bot.user.id)
+        self._twitch_app.set_hooks(hooks)
         self.logger.info(
             "Currently using %d Discord Webhooks in %d guilds for Twitch notifications.",
             len(self._twitch_app.hooks),

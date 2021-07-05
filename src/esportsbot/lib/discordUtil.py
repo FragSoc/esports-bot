@@ -78,3 +78,24 @@ async def send_timed_message(channel: TextChannel, *args, timer: int = 15, **kwa
     """
     timed_message = await channel.send(*args, **kwargs)
     await timed_message.delete(delay=timer)
+
+
+def load_discord_hooks(prefix_to_filter, guild_hooks, bot_user_id: int):
+    """
+    Loads the list of Discord Webhooks which are where the Event Notifications are sent to.
+    :param prefix_to_filter: The Prefix to use to filter Webhooks to just the specific cog.
+    :param guild_hooks: The list of lists of Webhooks, where each index is for a different Guild.
+    :param bot_user_id: The Discord user ID of the bot that is running.
+    """
+
+    hooks = {}
+
+    for guild in guild_hooks:
+        # For each guild in the list...
+        for g_hook in guild:
+            # And for each Webhook in the guild...
+            if prefix_to_filter in g_hook.name and g_hook.user.id == bot_user_id:
+                # Only if the Webhook was created for the TwitterCog and by the bot.
+                hooks[g_hook.id] = {"token": g_hook.token, "name": g_hook.name, "guild_id": g_hook.guild_id}
+
+    return hooks
