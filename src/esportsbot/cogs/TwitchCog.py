@@ -119,8 +119,11 @@ class TwitchApp(Application):
 
     async def load_tracked_channels(self, db_channels):
         """
+        Set the tracked_channels attribute to db_channels param, and perform checks to ensure all the information is still
+        needed or if any information is missing:
+
         From the channel data gathered from the database, check that each of them are being tracked by a subscription and
-        removes any old subscriptions that are no longer being tracked and sets the tracked_channels attribute to db_channels.
+        remove any old subscriptions that are no longer being tracked.
         :param db_channels: The dictionary of channel IDs to set of guild IDs
         """
 
