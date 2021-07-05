@@ -384,10 +384,7 @@ class TwitchListener(tornado.web.RequestHandler):
 
         async with aiohttp.ClientSession() as session:
             hook_adapter = AsyncWebhookAdapter(session)
-            for hook_id in self.application.hooks:
-                if self.application.hooks.get(hook_id).get("guild_id") not in channel_guilds:
-                    # Webhook's guild is not one in the channels guilds.
-                    continue
+            for hook_id, hook in filter(lambda h: h.get("guild_id") in channel_guilds, self.application.hooks.items()):
 
                 hook_token = self.application.hooks.get(hook_id).get("token")
                 webhook = Webhook.partial(id=hook_id, token=hook_token, adapter=hook_adapter)
