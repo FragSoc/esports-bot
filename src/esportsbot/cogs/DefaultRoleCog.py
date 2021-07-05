@@ -11,29 +11,6 @@ class DefaultRoleCog(commands.Cog):
         self.STRINGS = bot.STRINGS["default_role"]
 
     @commands.command(
-        name="setdefaultrole",
-        usage="<role_id> or <@role>",
-        help="Sets the role that the server gives to members when they join the server"
-    )
-    @commands.has_permissions(administrator=True)
-    async def setdefaultrole(self, ctx, given_role_id=None):
-        cleaned_role_id = role_id_from_mention(given_role_id) if given_role_id else False
-        if cleaned_role_id:
-            guild = DBGatewayActions().get(Guild_info, guild_id=ctx.author.guild.id)
-            guild.default_role_id = cleaned_role_id
-            DBGatewayActions().update(guild)
-            await ctx.channel.send(self.STRINGS['default_role_set'].format(role_id=cleaned_role_id))
-            default_role = ctx.author.guild.get_role(cleaned_role_id)
-            await send_to_log_channel(
-                self,
-                ctx.author.guild.id,
-                self.STRINGS['default_role_set_log'].format(author=ctx.author.mention,
-                                                            role_mention=default_role.mention)
-            )
-        else:
-            await ctx.channel.send(self.STRINGS['default_role_set_missing_params'])
-
-    @commands.command(
         name="setdefaultroles",
         usage="<@role> <@role> <@role> ...",
         help="Sets the roles that the server gives to members when they join the server"
@@ -42,7 +19,7 @@ class DefaultRoleCog(commands.Cog):
     async def setdefaultroles(self, ctx, *, args: str):
         role_list = args.split(" ")
         if len(role_list) == 0:
-            print("No roles passed")
+            await ctx.channel.send(self.STRINGS['default_roles_set_empty'])
         else:
             checked_roles = []
             checking_error = False
@@ -61,23 +38,26 @@ class DefaultRoleCog(commands.Cog):
             if not checking_error:
                 for role in checked_roles:
                     DBGatewayActions().create(Default_roles(guild_id=ctx.author.guild.id, role_id=role))
+                await ctx.channel.send(self.STRINGS['default_roles_set'].format(roles=args))
             else:
-                await ctx.channel.send(
-                    "Error occurred during this operation, please check that you have formatted these inputs correctly"
-                )
+                await ctx.channel.send(self.STRINGS['default_roles_set_error'])
 
     @commands.command(
-        name="getdefaultrole",
+        name="getdefaultroles",
         usage="",
-        help="Gets the role that the server gives to members when they join the server"
+        help="Gets the roles that the server gives to members when they join the server"
     )
     @commands.has_permissions(administrator=True)
-    async def getdefaultrole(self, ctx):
-        guild = DBGatewayActions().get(Guild_info, guild_id=ctx.author.guild.id)
-        default_role_exists = guild.default_role_id is not None
-
-        if default_role_exists:
-            await ctx.channel.send(self.STRINGS['default_role_get'].format(role_id=guild.default_role_id))
+    async def getdefaultroles(self, ctx):
+        # Get all the default role for the server from database
+        guild_default_roles = DBGatewayActions().list(Default_roles, guild_id=ctx.author.guild.id)
+        # Check to see if any roles exist
+        if guild_default_roles:
+            # Create list of roles from database response
+            apply_roles = [ctx.author.guild.get_role(role.role_id) for role in guild_default_roles]
+            # Return all the default roles to the user
+            #await ctx.channel.send(f"Default roles are set to {*apply_roles,}") " ".join(str(x) for x in a)
+            await ctx.channel.send(f"Default role(s) are set to {' '.join(f'<@&{x.id}>' for x in apply_roles)}")
         else:
             await ctx.channel.send(self.STRINGS['default_role_missing'])
 
