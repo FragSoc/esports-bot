@@ -35,6 +35,7 @@ from esportsbot.models import Twitch_info
 SUBSCRIPTION_SECRET = os.getenv("TWITCH_SUB_SECRET")
 CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
 CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET")
+BEARER_TEMP_FILE = os.getenv("TEMP_BEARER_FILE")
 WEBHOOK_PREFIX = "TwitchHook-"
 BEARER_PADDING = 2 * 60  # Number of minutes before expiration of bearer where the same bearer will still be used.
 DATETIME_FMT = "%d/%m/%Y %H:%M:%S"
@@ -97,21 +98,24 @@ class TwitchApp(Application):
                         "access_token": data.get("access_token")
                     }
 
-        # TODO: Remove temp code
+        self.save_bearer()
+        return self.bearer
+
+    def load_bearer(self):
+        with open(BEARER_TEMP_FILE, "r") as f:
+            lines = f.readlines()
+        self.bearer = {
+                "granted_on": lines[0].replace("\n", ""),
+                "expires_in": int(lines[1].replace("\n", "")),
+                "access_token": lines[2].replace("\n", "")
+        }
+
+    def save_bearer(self):
         if self.bearer is not None:
-            with open("bearer", "w") as f:
+            with open(BEARER_TEMP_FILE, "w") as f:
                 f.write(str(self.bearer.get("granted_on")) + "\n")
                 f.write(str(self.bearer.get("expires_in")) + "\n")
                 f.write(str(self.bearer.get("access_token")))
-        return self.bearer
-
-    def set_bearer(self, bearer):
-        """
-        Sets the current bearer information.
-        :param bearer: The bearer information to set the bearer to .
-        """
-
-        self.bearer = bearer
 
     async def load_tracked_channels(self, db_channels):
         """
@@ -438,16 +442,7 @@ class TwitchCog(commands.Cog):
         Is run when the Discord bot gives the signal that it is connected and ready.
         """
 
-        # TODO: Remove temp code
-        with open("bearer", "r") as f:
-            lines = f.readlines()
-        bearer = {
-            "granted_on": lines[0].replace("\n", ""),
-            "expires_in": int(lines[1].replace("\n", "")),
-            "access_token": lines[2].replace("\n", "")
-        }
-        self._twitch_app.set_bearer(bearer)
-        # TODO: Temp code above
+        self._twitch_app.load_bearer()
 
         self._http_server.start()
 
