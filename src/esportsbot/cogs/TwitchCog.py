@@ -43,6 +43,12 @@ TWITCH_ICON = "https://pbs.twimg.com/profile_images/1189705970164875264/oXl0Jhyd
 CALLBACK_URL = os.getenv("TWITCH_CALLBACK") + "/webhook"  # The URL to be used as for the event callback.
 DEFAULT_HOOK_NAME = "DefaultTwitchHook"
 
+TWITCH_HELIX_BASE = "https://api.twitch.tv/helix/"
+TWITCH_EVENT_BASE = TWITCH_HELIX_BASE + "eventsub/"
+TWITCH_SUB_BASE = TWITCH_EVENT_BASE + "subscriptions/"
+TWITCH_ID_BASE = "https://id.twitch.tv/"
+TWITCH_BASE = "https://twitch.tv/"
+
 
 class TwitchApp(Application):
     """
@@ -81,7 +87,7 @@ class TwitchApp(Application):
                 )
                 return self.bearer
 
-        bearer_url = "https://id.twitch.tv/oauth2/token"
+        bearer_url = TWITCH_ID_BASE + "/oauth2/token"
         params = {"client_id": CLIENT_ID, "client_secret": CLIENT_SECRET, "grant_type": "client_credentials"}
 
         # Get a new bearer:
@@ -166,7 +172,7 @@ class TwitchApp(Application):
         :param event_id: The ID of the event to delete.
         """
 
-        delete_url = "https://api.twitch.tv/helix/eventsub/subscriptions"
+        delete_url = TWITCH_SUB_BASE
         params = {"id": event_id}
         bearer_info = await self.get_bearer()
         headers = {"Client-ID": CLIENT_ID, "Authorization": "Bearer " + bearer_info.get("access_token")}
@@ -201,7 +207,7 @@ class TwitchApp(Application):
             channel_info = channel_info[0]
             channel_id = channel_info.get("id")
 
-        subscription_url = "https://api.twitch.tv/helix/eventsub/subscriptions"
+        subscription_url = TWITCH_SUB_BASE
         bearer_info = await self.get_bearer()
         headers = {
             "Client-ID": CLIENT_ID,
@@ -236,7 +242,7 @@ class TwitchApp(Application):
         :return: A dictionary containing the information about a twitch channel or None if there was an error.
         """
 
-        channel_url = "https://api.twitch.tv/helix/search/channels"
+        channel_url = TWITCH_HELIX_BASE + "search/channels"
         params = {"query": channel_name}
         bearer_info = await self.get_bearer()
         headers = {"Client-ID": CLIENT_ID, "Authorization": "Bearer " + bearer_info.get("access_token")}
@@ -255,7 +261,7 @@ class TwitchApp(Application):
         :return: A list of dictionaries.
         """
 
-        events_url = "https://api.twitch.tv/helix/eventsub/subscriptions"
+        events_url = TWITCH_SUB_BASE
         bearer_info = await self.get_bearer()
         headers = {"Client-ID": CLIENT_ID, "Authorization": "Bearer " + bearer_info.get("access_token")}
         async with aiohttp.ClientSession() as session:
@@ -394,11 +400,11 @@ class TwitchListener(tornado.web.RequestHandler):
                 # Create the embed to send to the webhook.
                 embed = Embed(
                     title=stream_title,
-                    url=f"https://www.twitch.tv/{channel_name}",
+                    url=f"{TWITCH_BASE}{channel_name}",
                     description=description,
                     color=TWITCH_EMBED_COLOUR
                 )
-                embed.set_author(name=channel_name, url=f"https://www.twitch.tv/{channel_name}", icon_url=user_icon)
+                embed.set_author(name=channel_name, url=f"{TWITCH_BASE}{channel_name}", icon_url=user_icon)
                 embed.set_thumbnail(url=user_icon)
                 embed.add_field(name="**Current Game:**", value=f"**{game_name}**")
 
@@ -644,7 +650,7 @@ class TwitchCog(commands.Cog):
         """
 
         # Accept urls and get just the channel from the url.
-        if "https://twitch.tv/" in channel:
+        if TWITCH_BASE in channel:
             channel = channel.split("tv/")[-1]
 
         if channel_id := (await self.get_channel_id(ctx, channel)):
@@ -847,13 +853,13 @@ class TwitchCog(commands.Cog):
         # Create the embed to send to the webhook.
         embed = Embed(
             title=channel_info.get("title"),
-            url=f"https://www.twitch.tv/{channel_info.get('broadcaster_login')}",
+            url=f"{TWITCH_BASE}{channel_info.get('broadcaster_login')}",
             description=f"**{description}**",
             color=TWITCH_EMBED_COLOUR
         )
         embed.set_author(
             name=channel_info.get("broadcaster_login"),
-            url=f"https://www.twitch.tv/{channel_info.get('broadcaster_login')}",
+            url=f"{TWITCH_BASE}{channel_info.get('broadcaster_login')}",
             icon_url=channel_info.get("thumbnail_url")
         )
         embed.set_thumbnail(url=channel_info.get("thumbnail_url"))
