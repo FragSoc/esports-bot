@@ -1,5 +1,6 @@
 psycopg2-binary>=2.8
 sqlalchemy
+sqlalchemy-utils
 discord.py[voice]
 python-dotenv
 emoji
@@ -11,3 +12,4 @@ PyNaCl
 aiohttp[speedups]
 toml
 tornado
+tweepy

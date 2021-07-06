@@ -182,3 +182,15 @@ channel_exists_error = "Unable to add `{channel}` to tracked channels because it
 channel_missing_error = "Unable to add `{channel}` to tracked channels because there is no Twitch channel with that name"
 channel_not_added_error = "Unable to perform that action as `{channel}` is not tracked in this server"
 no_channel_error = "There is no Twitch channel with the name `{channel}`"
+
+[twitter]
+webhook_created = "Created a Webhook -> Name: {name} , ID: {hook_id}"
+webhook_deleted = "Deleted a Webhook with Name: {name} and ID: {hook_id}"
+webhook_error = "Unable to {operation} Webhook because {reason}"
+account_added = "Successfully added {account} to tracked accounts"
+account_removed = "Successfully removed {account} from tracked accounts"
+accounts_empty = "There are no accounts currently tracked in this server"
+accounts_list = "Currently tracked accounts are: {tracked_accounts}"
+account_missing_error = "Unable to {operation} {account} because there is no account with that name"
+account_exists_error = "Unable to add {account} to tracked accounts because it is already tracked"
+

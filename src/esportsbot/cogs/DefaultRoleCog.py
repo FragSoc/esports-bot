@@ -10,7 +10,11 @@ class DefaultRoleCog(commands.Cog):
         self.bot = bot
         self.STRINGS = bot.STRINGS["default_role"]
 
-    @commands.command()
+    @commands.command(
+        name="setdefaultrole",
+        usage="<role_id> or <@role>",
+        help="Sets the role that the server gives to members when they join the server"
+    )
     @commands.has_permissions(administrator=True)
     async def setdefaultrole(self, ctx, given_role_id=None):
         cleaned_role_id = role_id_from_mention(given_role_id) if given_role_id else False
@@ -29,7 +33,11 @@ class DefaultRoleCog(commands.Cog):
         else:
             await ctx.channel.send(self.STRINGS['default_role_set_missing_params'])
 
-    @commands.command()
+    @commands.command(
+        name="getdefaultrole",
+        usage="",
+        help="Gets the role that the server gives to members when they join the server"
+    )
     @commands.has_permissions(administrator=True)
     async def getdefaultrole(self, ctx):
         guild = DBGatewayActions().get(Guild_info, guild_id=ctx.author.guild.id)
@@ -40,7 +48,11 @@ class DefaultRoleCog(commands.Cog):
         else:
             await ctx.channel.send(self.STRINGS['default_role_missing'])
 
-    @commands.command()
+    @commands.command(
+        name="removedefaultrole",
+        usage="",
+        help="Removes the role that the server gives to members when they join the server"
+    )
     @commands.has_permissions(administrator=True)
     async def removedefaultrole(self, ctx):
         guild = DBGatewayActions().get(Guild_info, guild_id=ctx.author.guild.id)
