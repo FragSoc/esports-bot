@@ -9,6 +9,22 @@ class DefaultRoleCog(commands.Cog):
         self.bot = bot
         self.STRINGS = bot.STRINGS["default_role"]
 
+    @commands.Cog.listener
+    async def on_member_join(self, member):
+        guild = DBGatewayActions().get(Guild_info, guild_id=member.guild.id)
+        default_role_exists = guild.default_role_id is not None
+
+        if default_role_exists:
+            default_role = member.guild.get_role(guild.default_role_id)
+            await member.add_roles(default_role)
+            await send_to_log_channel(
+                    self,
+                    member.guild.id,
+                    f"{member.mention} has joined the server and received the {default_role.mention} role"
+            )
+        else:
+            await send_to_log_channel(self, member.guild.id, f"{member.mention} has joined the server")
+
     @commands.command(
         name="setdefaultrole",
         usage="<role_id> or <@role>",

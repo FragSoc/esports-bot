@@ -65,22 +65,6 @@ async def on_guild_remove(guild):
 
 
 @client.event
-async def on_member_join(member):
-    guild = DBGatewayActions().get(Guild_info, guild_id=member.guild.id)
-    default_role_exists = guild.default_role_id is not None
-
-    if default_role_exists:
-        default_role = member.guild.get_role(guild.default_role_id)
-        await member.add_roles(default_role)
-        await send_to_log_channel(
-            member.guild.id,
-            f"{member.mention} has joined the server and received the {default_role.mention} role"
-        )
-    else:
-        await send_to_log_channel(member.guild.id, f"{member.mention} has joined the server")
-
-
-@client.event
 async def on_voice_state_update(member, before, after):
     before_channel_id = before.channel.id if before.channel != None else False
     after_channel_id = after.channel.id if after.channel != None else False
