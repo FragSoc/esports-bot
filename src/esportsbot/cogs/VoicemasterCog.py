@@ -1,13 +1,44 @@
 from discord.ext import commands
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Voicemaster_master, Voicemaster_slave
-from esportsbot.base_functions import send_to_log_channel
+from esportsbot.base_functions import get_whether_in_vm_master, get_whether_in_vm_slave, send_to_log_channel
 
 
 class VoicemasterCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.STRINGS = bot.STRINGS['voicemaster']
+
+    @commands.Cog.listener
+    async def on_voice_state_update(self, member, before, after):
+        before_channel_id = before.channel.id if before.channel else False
+        after_channel_id = after.channel.id if after.channel else False
+
+        if before_channel_id and get_whether_in_vm_slave(member.guild.id, before_channel_id):
+            vm_slave = DBGatewayActions().get(Voicemaster_slave, guild_id=member.guild.id, channel_id=before_channel_id)
+            # If you were in a slave VM VC
+            if not before.channel.members:
+                # Nobody else in VC
+                await before.channel.delete()
+                DBGatewayActions().delete(vm_slave)
+                await send_to_log_channel(self, member.guild.id, f"{member.mention} has deleted a VM slave")
+            else:
+                # Still others in VC
+                await before.channel.edit(name=f"{before.channel.members[0].display_name}'s VC")
+                vm_slave.owner_id = before.channel.members[0].id
+                DBGatewayActions().update(vm_slave)
+        elif after_channel_id and get_whether_in_vm_master(member.guild.id, after_channel_id):
+            # Moved into a master VM VC
+            slave_channel_name = f"{member.display_name}'s VC"
+            new_slave_channel = await member.guild.create_voice_channel(slave_channel_name, category=after.channel.category)
+            DBGatewayActions().create(
+                    Voicemaster_slave(guild_id=member.guild.id,
+                                      channel_id=new_slave_channel.id,
+                                      owner_id=member.id,
+                                      locked=False)
+            )
+            await member.move_to(new_slave_channel)
+            await send_to_log_channel(self, member.guild.id, f"{member.mention} has created a VM slave")
 
     @commands.command(
         name="setvmmaster",
