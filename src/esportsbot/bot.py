@@ -1,4 +1,3 @@
-from typing import Dict, Any
 from esportsbot import lib
 from esportsbot.base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 

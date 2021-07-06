@@ -1,4 +1,3 @@
-import toml
 from discord.ext import commands
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Guild_info

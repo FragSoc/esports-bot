@@ -1,4 +1,3 @@
-import toml
 from discord.ext import commands
 from esportsbot.base_functions import send_to_log_channel
 

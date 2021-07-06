@@ -2,7 +2,7 @@ from asyncio import tasks
 from typing import Tuple
 from discord.ext import commands
 from discord.ext.commands.context import Context
-from discord import PartialMessage, Forbidden, PermissionOverwrite, RawReactionActionEvent, Colour, Embed
+from discord import PermissionOverwrite, RawReactionActionEvent, Colour, Embed
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Guild_info, Event_categories
 import asyncio
