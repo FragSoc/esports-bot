@@ -85,6 +85,25 @@ class MusicCog(commands.Cog):
 
         self.user_strings: dict = bot.STRINGS["music"]
 
+        self.music_channels = self.update_music_channels()
+
+    @commands.Cog.listener
+    async def on_message(self, message):
+        if not message.author.bot and message.guild is not None:
+            guild_id = message.guild.id
+            music_channel_in_db = self.music_channels.get(guild_id)
+            if music_channel_in_db:
+                if await self.on_message_handle(message):
+                    await message.delete()
+
+    def update_music_channels(self):
+        self.music_channels = {}
+        temp_channels = DBGatewayActions().list(Music_channels)
+        for item in temp_channels:
+            self.music_channels[item.guild_id] = item.channel_id
+        return self.music_channels
+
+
     @commands.command(
         name="setmusicchannel",
         usage="<channel_id> or <@channel>",
@@ -149,7 +168,7 @@ class MusicCog(commands.Cog):
             self.__db_accessor.create(Music_channels(guild_id=ctx.guild.id, channel_id=cleaned_channel_id))
 
         await self.__setup_channel(ctx, int(cleaned_channel_id), args)
-        self._bot.update_music_channels()
+        self.update_music_channels()
         return True
 
     @commands.command(name="getmusicchannel", usage="", help="Gets the server music channel for music requests")

@@ -43,17 +43,9 @@ class EsportsBot(commands.Bot):
         self.reactionMenus = ReactionMenuDB()
         self.unknownCommandEmoji = unknownCommandEmoji
         self.STRINGS: StringTable = toml.load(userStringsFile)
-        self.MUSIC_CHANNELS = {}
 
         signal.signal(signal.SIGINT, self.interruptReceived)  # keyboard interrupt
         signal.signal(signal.SIGTERM, self.interruptReceived)  # graceful exit request
-
-    def update_music_channels(self):
-        self.MUSIC_CHANNELS = {}
-        temp_channels = DBGatewayActions().list(Music_channels)
-        for item in temp_channels:
-            self.MUSIC_CHANNELS[item.guild_id] = item.channel_id
-        return self.MUSIC_CHANNELS
 
     def interruptReceived(self, signum: signal.Signals, frame: FrameType):
         """Shut down the bot gracefully.

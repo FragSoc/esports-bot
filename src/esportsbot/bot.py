@@ -24,12 +24,6 @@ DEFAULT_PINGME_CREATE_THRESHOLD = 6
 client = lib.client.instance()
 
 
-async def send_to_log_channel(guild_id, msg):
-    db_logging_call = DBGatewayActions().get(Guild_info, guild_id=guild_id)
-    if db_logging_call and db_logging_call.log_channel_id is not None:
-        await client.get_channel(db_logging_call.log_channel_id).send(msg)
-
-
 @client.event
 async def on_ready():
     """Initialize the reactionMenuDB and pingme role cooldowns, since this can't be done synchronously
@@ -190,17 +184,7 @@ async def on_message(message):
             if message.role_mentions:
                 roleUpdateTasks = client.handleRoleMentions(message)
 
-            # Handle music channel messages
-            guild_id = message.guild.id
-            music_channel_in_db = client.MUSIC_CHANNELS.get(guild_id)
-            if music_channel_in_db:
-                # The message was in a music channel and a song should be found
-                music_cog_instance = client.cogs.get('MusicCog')
-                await music_cog_instance.on_message_handle(message)
-                await client.process_commands(message)
-                await message.delete()
-            else:
-                await client.process_commands(message)
+            await client.process_commands(message)
 
             if message.role_mentions and roleUpdateTasks:
                 await asyncio.wait(roleUpdateTasks)
@@ -256,8 +240,6 @@ async def on_guild_role_delete(role: discord.Role):
 def launch():
 
     TOKEN = os.getenv('DISCORD_TOKEN')
-
-    client.update_music_channels()
 
     client.load_extension('esportsbot.cogs.VoicemasterCog')
     client.load_extension('esportsbot.cogs.DefaultRoleCog')
