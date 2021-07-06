@@ -480,6 +480,6 @@ User command: add or removing the `!pingme` role with the given name to/from the
   
 ##### !pingme clear  
 User command: remove all `!pingme` roles from the user.  
-  
+
 
 </details>
