@@ -9,7 +9,7 @@ class VoicemasterCog(commands.Cog):
         self.bot = bot
         self.STRINGS = bot.STRINGS['voicemaster']
 
-    @commands.Cog.listener
+    @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         before_channel_id = before.channel.id if before.channel else False
         after_channel_id = after.channel.id if after.channel else False

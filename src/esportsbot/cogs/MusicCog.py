@@ -87,7 +87,7 @@ class MusicCog(commands.Cog):
 
         self.music_channels = self.update_music_channels()
 
-    @commands.Cog.listener
+    @commands.Cog.listener()
     async def on_message(self, message):
         if not message.author.bot and message.guild is not None:
             guild_id = message.guild.id

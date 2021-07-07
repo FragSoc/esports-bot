@@ -9,7 +9,7 @@ class DefaultRoleCog(commands.Cog):
         self.bot = bot
         self.STRINGS = bot.STRINGS["default_role"]
 
-    @commands.Cog.listener
+    @commands.Cog.listener()
     async def on_member_join(self, member):
         guild = DBGatewayActions().get(Guild_info, guild_id=member.guild.id)
         default_role_exists = guild.default_role_id is not None
