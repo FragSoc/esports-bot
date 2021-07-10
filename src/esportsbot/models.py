@@ -33,10 +33,10 @@ class Pingable_roles(base):
 
 class Event_categories(base):
     __tablename__ = 'event_categories'
-    guild_id = Column(BigInteger, ForeignKey("guild_info.guild_id"), primary_key=True, nullable=False)
-    event_name = Column(String, primary_key=True, nullable=False)
-    role_id = Column(BigInteger, nullable=False)
-    signin_menu = Column(BigInteger, nullable=False)
+    guild_id = Column(BigInteger, primary_key=True, nullable=False)
+    event_id = Column(BigInteger, primary_key=True, nullable=False)
+    event_name = Column(String, nullable=False)
+    event_menu = Column(JSONB, nullable=False)
 
 
 class Reaction_menus(base):
