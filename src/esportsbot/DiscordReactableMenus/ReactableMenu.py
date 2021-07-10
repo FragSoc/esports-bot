@@ -11,7 +11,6 @@ DISABLED_STRING = " (Currently Disabled)"
 
 
 class ReactableMenu:
-
     def __init__(self, add_func=None, remove_func=None, show_ids=True, auto_enable=False, **kwargs):
         self.react_add_func = add_func
         self.react_remove_func = remove_func
@@ -102,7 +101,9 @@ class ReactableMenu:
 
         guild_id = int(data.get("guild_id"))
         channel_id = int(data.get("channel_id"))
-        kwargs["message"] = await bot.get_guild(guild_id).get_channel(channel_id).fetch_message(kwargs["id"])
+        guild = bot.get_guild(guild_id)
+        channel = guild.get_channel(channel_id)
+        kwargs["message"] = await channel.fetch_message(kwargs["id"])
         if kwargs["message"] is None:
             raise ValueError("The message for this reaction menu has been deleted!")
 
