@@ -208,34 +208,22 @@ To help administrators manage the number of roles, a usage report is sent to the
 <summary>Event Channel Management</summary>  
   
 ### Event Category Management  
-Each server can have any number of named event categories, each with a registered signin role menu granting an event specific role. All commands in this cog are administrator commands.  
+Each server can have any number of named event categories, where each category creates a sign-in channel, a general chat, a voice chat and a role for the event. All commands in this cog required the `administrator` permission in Discord.  
   
+#### !create-event <event_name> <role_mention | role_id>  
+* Creates the text channels, and voice channel for the event. The role given is used to later expose the sign-in channel to members. Upon creation the event is set to `closed`.
+* See the `open-event` and `close-event` for more information regarding which members can see which channels.
+* The role created for this event will have the same as the event name.
+
 #### !open-event <event_name>  
-* Set the event's signin channel as visible to the server's shared role.  
+* Allows the role given in the `create-event` command to see the sign-in channel, and add reactions to the sign-in message.
+* The sign-in message grants the role created by the bot for the event. 
   
-#### !close-event <event_name>  
-* Set the event's signin channel as invisible, remove the event's role from all users, and reset the event's signin menu.  
+#### !close-event <event_name>
+* Stops any member who is not an administrator from being able to see any of the event channels. 
   
-#### !register-event-category <menu_id> <role_mention | role_id> <event_name>  
-* Register an existing category and role as an event category, allowing you to use `!open-event` and `!close-event` with it.  
-  
-#### !create-event-category <event_name>  
-* Create a new event category with a signin menu, general text and voice channels, and an event role. This category will automatically be registered for use with `!open-event` and `!close-event`  
-  
-#### !unregister-event-category <event_name>  
-* Unregister an event category and role, without deleting them from the server.  
-  
-#### !delete-event-category <event_name>  
-* Delete an event category from the server, including the category, channels and role. You will be asked for confirmation first.  
-  
-#### !set-event-signin-menu <menu_id> <event_name>  
-* Change the reaction menu to clear during `!close-event`. This will also tell the bot which channel to set visibility for during `!open-event`.  
-  
-#### !set-shared-role <role_mention | role_id>  
-* Change the role to deny signin channel visibility to during `!close-event`. All users should have ths role.  
-  
-#### !set-event-role <role_mention | role_id> <event_name>  
-* Change the role to remove from users during `!close-event`.  
+#### !delete-event <event_name>  
+* Deletes all the channels in the category for the event and deletes the role created by the bot for the event.
 </details>  
   
 <details>  
