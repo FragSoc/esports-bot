@@ -210,19 +210,19 @@ To help administrators manage the number of roles, a usage report is sent to the
 ### Event Category Management  
 Each server can have any number of named event categories, where each category creates a sign-in channel, a general chat, a voice chat and a role for the event. All commands in this cog required the `administrator` permission in Discord.  
   
-#### !create-event <event_name> <role_mention | role_id>  
+#### !events create-event <event_name> <role_mention | role_id>  
 * Creates the text channels, and voice channel for the event. The role given is used to later expose the sign-in channel to members. Upon creation the event is set to `closed`.
 * See the `open-event` and `close-event` for more information regarding which members can see which channels.
-* The role created for this event will have the same as the event name.
+* The role created for this event will have the same as the event name, it is not the role given in the command.
 
-#### !open-event <event_name>  
+#### !events open-event <event_name>  
 * Allows the role given in the `create-event` command to see the sign-in channel, and add reactions to the sign-in message.
 * The sign-in message grants the role created by the bot for the event. 
   
-#### !close-event <event_name>
+#### !events close-event <event_name>
 * Stops any member who is not an administrator from being able to see any of the event channels. 
   
-#### !delete-event <event_name>  
+#### !events delete-event <event_name>  
 * Deletes all the channels in the category for the event and deletes the role created by the bot for the event.
 </details>  
   
