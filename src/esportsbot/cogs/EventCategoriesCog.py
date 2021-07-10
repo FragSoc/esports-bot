@@ -170,9 +170,17 @@ class EventCategoriesCog(commands.Cog):
         voice_channel = list(filter(lambda x: VOICE_CHANNEL_SUFFIX in x.name, event_menu.event_category.voice_channels))[0]
         return general_channel, sign_in_channel, voice_channel
 
-    @commands.command(
+    @commands.group(
+            name="events",
+            help="Create events with sign in menus dedicated event roles, and event channels.",
+            invoke_without_command=True
+    )
+    async def event_command_group(self, context: commands.context):
+        pass
+
+    @event_command_group.command(
         name="create-event",
-        usage="create-event <event name> <shared role>",
+        usage="events create-event <event name> <shared role>",
         help="Creates a new category, text channel, voice channel and sign-in menu with the given name, and "
         "once opened will, the sign-in channel will be available to the given role."
     )
@@ -264,9 +272,9 @@ class EventCategoriesCog(commands.Cog):
         )
         return True
 
-    @commands.command(
+    @event_command_group.command(
         name="open-event",
-        usage="open-event <event name>",
+        usage="events open-event <event name>",
         help="Reveal the sign-in channel for the name event channel."
     )
     @commands.has_permissions(administrator=True)
@@ -305,9 +313,9 @@ class EventCategoriesCog(commands.Cog):
         )
         return True
 
-    @commands.command(
+    @event_command_group.command(
         name="close-event",
-        usage="close-event <event name>",
+        usage="events close-event <event name>",
         help="Close off the event channels to everyone that isn't an admin"
     )
     @commands.has_permissions(administrator=True)
@@ -344,9 +352,9 @@ class EventCategoriesCog(commands.Cog):
         await context.reply(self.user_strings["success_event_closed"])
         return True
 
-    @commands.command(
+    @event_command_group.command(
         name="delete-event",
-        usage="delete-event <event name>",
+        usage="events delete-event <event name>",
         help="Deletes the event channels and the temporary event role"
     )
     @commands.has_permissions(administrator=True)

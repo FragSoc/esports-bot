@@ -86,7 +86,8 @@ success_event_closed = "✅ All event channels are longer visible to anyone"
 success_event_deleted = "✅ {event_name} event and role successfully deleted."
 unrecognised_event = ":x: Unrecognised event. The following events exist in this server: {events}"
 invalid_role = ":x: Invalid role! Please give your Role as either a mention or an ID."
-missing_permission_generic = ":x: I am unable to perform that action as I am missing the `{permission}` permission in this server!"
+user_missing_perms = ":x: I am unable to perform that action as you are missing the `{permission}` permission in this server!"
+bot_missing_perms = ":x: I am unable to perform that action as I may be missing one of the following permissions: `{permissions}`"
 missing_arguments = ":x: There were key arguments missing in the supplied command. Try using `{prefix}help {command}` to find how to use this command"
 
 [voicemaster]
