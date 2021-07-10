@@ -66,7 +66,7 @@ class EventCategoriesCog(commands.Cog):
         for event in loaded_events:
             if isinstance(event, dict):
                 self.delete_event_data(event.get("guild_id"), event.get("id"))
-            else:
+            elif isinstance(event, EventReactMenu):
                 events[event.id] = event
 
         return events
@@ -180,7 +180,7 @@ class EventCategoriesCog(commands.Cog):
 
     @event_command_group.command(
         name="create-event",
-        usage="events create-event <event name> <shared role>",
+        usage="<event name> <shared role>",
         help="Creates a new category, text channel, voice channel and sign-in menu with the given name, and "
         "once opened will, the sign-in channel will be available to the given role."
     )
@@ -274,7 +274,7 @@ class EventCategoriesCog(commands.Cog):
 
     @event_command_group.command(
         name="open-event",
-        usage="events open-event <event name>",
+        usage="<event name>",
         help="Reveal the sign-in channel for the name event channel."
     )
     @commands.has_permissions(administrator=True)
@@ -315,7 +315,7 @@ class EventCategoriesCog(commands.Cog):
 
     @event_command_group.command(
         name="close-event",
-        usage="events close-event <event name>",
+        usage="<event name>",
         help="Close off the event channels to everyone that isn't an admin"
     )
     @commands.has_permissions(administrator=True)
@@ -354,7 +354,7 @@ class EventCategoriesCog(commands.Cog):
 
     @event_command_group.command(
         name="delete-event",
-        usage="events delete-event <event name>",
+        usage="<event name>",
         help="Deletes the event channels and the temporary event role"
     )
     @commands.has_permissions(administrator=True)
