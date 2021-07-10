@@ -8,7 +8,6 @@ from esportsbot.DiscordReactableMenus.reactable_lib import clean_mentioned_role
 
 
 class EventReactMenu(RoleReactMenu):
-
     @classmethod
     async def from_dict(cls, bot, data) -> ReactableMenu:
         kwargs = await cls.load_dict(bot, data)
@@ -26,12 +25,12 @@ class EventReactMenu(RoleReactMenu):
 
         shared_role_mentionable = data.get("shared_role")
         shared_role_id = clean_mentioned_role(shared_role_mentionable)
-        shared_role = bot.get_guild(data.get("guild_id")).get_role(shared_role_id)
+        shared_role = bot.get_guild(kwargs.get("guild_id")).get_role(shared_role_id)
         kwargs["shared_role"] = shared_role
 
         role_mentionable = list(data.get("options").values())[0].get("descriptor")
         role_id = clean_mentioned_role(role_mentionable)
-        event_role = bot.get_guild(data.get("guild_id")).get_role(role_id)
+        event_role = bot.get_guild(kwargs.get("guild_id")).get_role(role_id)
         kwargs["event_role"] = event_role
 
         if kwargs["message"]:

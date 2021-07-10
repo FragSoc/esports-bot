@@ -18,7 +18,6 @@ AUTO_ENABLE_POLL_REACT = False
 
 
 class RoleReactMenu(ReactableMenu):
-
     @classmethod
     async def from_dict(cls, bot, data) -> ReactableMenu:
         kwargs = await super().load_dict(bot, data)
@@ -96,7 +95,6 @@ class RoleReactMenu(ReactableMenu):
 
 
 class PollReactMenu(ReactableMenu):
-
     def __init__(self, **kwargs):
         if kwargs.get("title") is None:
             kwargs["title"] = DEFAULT_PING_TITLE
@@ -131,7 +129,7 @@ class PollReactMenu(ReactableMenu):
             if self.votes.get(option).get("votes") > winner[-1]:
                 winner = ([option], self.votes.get(option).get("votes"))
             elif self.votes.get(option).get("votes") == winner[-1]:
-                winner = (winner[0]+[option], winner[-1])
+                winner = (winner[0] + [option], winner[-1])
         return winner
 
     def generate_results(self):
