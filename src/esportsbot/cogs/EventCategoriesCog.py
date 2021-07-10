@@ -12,10 +12,6 @@ from esportsbot.DiscordReactableMenus.reactable_lib import get_menu
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Event_categories
 
-import coloredlogs
-
-coloredlogs.install()
-
 denied_perms = PermissionOverwrite(read_messages=False, send_messages=False, connect=False)
 read_only_perms = PermissionOverwrite(read_messages=True, send_messages=False, connect=False)
 writable_perms = PermissionOverwrite(read_messages=True, send_messages=True, connect=True)
