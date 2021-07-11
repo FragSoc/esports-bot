@@ -85,7 +85,7 @@ class ReactableMenu:
             options = ast.literal_eval(options)
         for option in options:
             option_data = options.get(option)
-            emoji = MultiEmoji(emoji_string=option_data.get("emoji"))
+            emoji = MultiEmoji(option_data.get("emoji"))
             descriptor = option_data.get("descriptor")
             data[option] = {"emoji": emoji, "descriptor": descriptor}
         return data
@@ -122,9 +122,13 @@ class ReactableMenu:
     def add_option(self, emoji: Union[Emoji, PartialEmoji, MultiEmoji, str], descriptor: Any) -> bool:
         if isinstance(descriptor, Role):
             descriptor = descriptor.mention
+        elif isinstance(descriptor, TextChannel):
+            descriptor = descriptor.mention
+        else:
+            descriptor = str(descriptor)
 
         try:
-            formatted_emoji = MultiEmoji.get_emoji_from_input(emoji)
+            formatted_emoji = MultiEmoji(emoji)
 
             emoji_id = formatted_emoji.emoji_id if formatted_emoji.emoji_id else formatted_emoji.name
 
@@ -138,7 +142,7 @@ class ReactableMenu:
 
     def remove_option(self, emoji: Union[Emoji, PartialEmoji, MultiEmoji, str]) -> bool:
         try:
-            formatted_emoji = MultiEmoji.get_emoji_from_input(emoji)
+            formatted_emoji = MultiEmoji(emoji)
             return self.options.pop(formatted_emoji.emoji_id, None) is not None
         except ValueError:
             return False

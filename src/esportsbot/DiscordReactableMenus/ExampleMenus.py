@@ -185,14 +185,14 @@ class PollReactMenu(ReactableMenu):
 
     def add_option(self, emoji: Union[Emoji, PartialEmoji, MultiEmoji, str], descriptor: Any) -> bool:
         if super().add_option(emoji, descriptor):
-            formatted_emoji = MultiEmoji.get_emoji_from_input(emoji)
+            formatted_emoji = MultiEmoji(emoji)
             self.votes[formatted_emoji.emoji_id] = {"emoji": formatted_emoji, "votes": 0}
             return True
         return False
 
     def remove_option(self, emoji: Union[Emoji, PartialEmoji, str]) -> bool:
         if super().remove_option(emoji):
-            formatted_emoji = MultiEmoji.get_emoji_from_input(emoji)
+            formatted_emoji = MultiEmoji(emoji)
             return self.votes.pop(formatted_emoji.emoji_id, None) is not None
         return False
 
