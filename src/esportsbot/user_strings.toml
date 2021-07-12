@@ -84,6 +84,7 @@ event_exists = ":x: An event category with the name '{event_name}' already exist
 no_events = ":x: This server doesn't have any event categories registered!"
 success_event_closed = "✅ All event channels are longer visible to anyone"
 success_event_deleted = "✅ {event_name} event and role successfully deleted."
+delete_cancelled = "✅ {event_name} event and role will not be deleted"
 unrecognised_event = ":x: Unrecognised event. The following events exist in this server: {events}"
 invalid_role = ":x: Invalid role! Please give your Role as either a mention or an ID."
 user_missing_perms = ":x: I am unable to perform that action as you are missing the `{permission}` permission in this server!"

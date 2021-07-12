@@ -8,6 +8,7 @@ from discord import Forbidden, PermissionOverwrite, Role
 from discord.ext import commands
 
 from esportsbot.DiscordReactableMenus.EventReactMenu import EventReactMenu
+from esportsbot.DiscordReactableMenus.ExampleMenus import ActionConfirmationMenu
 from esportsbot.DiscordReactableMenus.reactable_lib import get_menu
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Event_categories
@@ -308,7 +309,7 @@ class EventCategoriesCog(commands.Cog):
         await context.reply(
             self.user_strings["success_channel"].format(
                 channel_id=event_menu.message.channel.id,
-                role_name=event_menu.event_role.name
+                role_name=event_menu.shared_role.name
             )
         )
         return True
@@ -358,10 +359,8 @@ class EventCategoriesCog(commands.Cog):
         help="Deletes the event channels and the temporary event role"
     )
     @commands.has_permissions(administrator=True)
-    async def delete_event(self, context: commands.Context, event_name: str) -> bool:
+    async def delete_event(self, context: commands.Context, event_name: str):
         self.logger.info(f"Attempting to close event with name {event_name}, if this is none, searching for latest event menu")
-
-        audit_reason = "Done with `delete-event` command"
 
         event_menu = self.get_event_by_name(context.guild.id, event_name)
 
@@ -371,6 +370,13 @@ class EventCategoriesCog(commands.Cog):
             await self.send_current_events(context)
             return False
 
+        confirm_menu = ActionConfirmationMenu(title=f"Confirm that you want to delete {event_name} event", auto_enable=True)
+        confirm_menu.set_confirm_func(self.confirm_delete_event, event_menu, confirm_menu, context)
+        confirm_menu.set_cancel_func(self.cancel_delete_event, event_menu.title, confirm_menu, context)
+        await confirm_menu.finalise_and_send(self.bot, context.channel)
+
+    async def confirm_delete_event(self, event_menu, confirm_menu, context):
+        audit_reason = "Done with `delete-event` command"
         event_category = event_menu.event_category
         event_role = event_menu.event_role
 
@@ -382,9 +388,19 @@ class EventCategoriesCog(commands.Cog):
         await event_role.delete(reason=audit_reason)
         self.event_menus[context.guild.id].pop(event_menu.id)
         self.delete_event_data(guild_id=context.guild.id, event_id=event_menu.id)
-        self.logger.info(f"Successfully deleted an event with the name {event_name} in {context.guild.name}")
+
+        self.logger.info(f"Successfully deleted an event with the name {event_menu.title} in {context.guild.name}")
         await context.reply(self.user_strings["success_event_deleted"].format(event_name=event_menu.title))
-        return True
+
+        if not confirm_menu.delete_after:
+            await confirm_menu.disable_menu(self.bot)
+
+    async def cancel_delete_event(self, event_name, confirm_menu, context):
+        if not confirm_menu.delete_after:
+            await confirm_menu.disable_menu(self.bot)
+
+        self.logger.info(f"Deletion of {event_name} menu cancelled by {context.author.name}#{context.author.discriminator}")
+        await context.reply(self.user_strings["delete_cancelled"].format(event_name=event_name))
 
     @create_event.error
     async def on_create_event_error(self, context: commands.Context, error: commands.CommandError):

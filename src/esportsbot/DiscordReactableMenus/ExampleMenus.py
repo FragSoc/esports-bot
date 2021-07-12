@@ -1,6 +1,8 @@
 import datetime
-from typing import Any, Union
+import inspect
+from typing import Any, Dict, Union
 
+import discord
 from discord import Embed, PartialEmoji, Emoji, RawReactionActionEvent, Role
 
 from esportsbot.DiscordReactableMenus.EmojiHandler import MultiEmoji
@@ -15,6 +17,13 @@ DEFAULT_PING_DESCRIPTION = "React with the specified emoji to make a vote!"
 DEFAULT_PING_TITLE = "Vote in This Poll"
 NO_VOTES = "No votes received!"
 AUTO_ENABLE_POLL_REACT = False
+DATE_FORMAT = "yyyy-mm-dd hh:mm"
+
+CONFIRM_EMOJI = MultiEmoji("✅")
+# CANCEL_EMOJI = MultiEmoji("❎")
+CANCEL_EMOJI = MultiEmoji("❌")
+CONFIRM_DESC = "Confirm"
+CANCEL_DESC = "Cancel"
 
 
 class RoleReactMenu(ReactableMenu):

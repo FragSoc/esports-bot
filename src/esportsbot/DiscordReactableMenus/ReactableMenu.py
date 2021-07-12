@@ -7,7 +7,7 @@ from emoji import emojize
 
 from esportsbot.DiscordReactableMenus.EmojiHandler import MultiEmoji, partial_from_emoji, partial_from_string
 
-DISABLED_STRING = " (Currently Disabled)"
+DISABLED_STRING = "(Currently Disabled)"
 
 
 class ReactableMenu:
@@ -50,6 +50,8 @@ class ReactableMenu:
             p_emoji = item
         elif isinstance(item, Emoji):
             p_emoji = partial_from_emoji(item)
+        elif isinstance(item, MultiEmoji):
+            p_emoji = item.discord_emoji
         else:
             return None
 
@@ -85,7 +87,7 @@ class ReactableMenu:
             options = ast.literal_eval(options)
         for option in options:
             option_data = options.get(option)
-            emoji = MultiEmoji(option_data.get("emoji"))
+            emoji = MultiEmoji(option_data.get("emoji").get("name"))
             descriptor = option_data.get("descriptor")
             data[option] = {"emoji": emoji, "descriptor": descriptor}
         return data

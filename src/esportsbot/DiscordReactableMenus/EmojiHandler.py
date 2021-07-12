@@ -52,7 +52,7 @@ class MultiEmoji:
             raise ValueError("The given emoji input must of type str, discord.Emoji or discord.PartialEmoji")
 
         self._name = self._partial.name
-        self._emoji_id = self._partial.id
+        self._emoji_id = self._partial.id if self._partial.id else self._name
         self._animated = self._partial.animated
 
     # @classmethod
@@ -77,6 +77,12 @@ class MultiEmoji:
 
     def __repr__(self):
         return emoji.demojize(self.name, use_aliases=True)
+
+    def __eq__(self, other):
+        if not isinstance(other, MultiEmoji):
+            return False
+        else:
+            return self._emoji_id == other._emoji_id
 
     @property
     def name(self):
