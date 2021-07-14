@@ -55,22 +55,9 @@ class MultiEmoji:
         self._emoji_id = self._partial.id if self._partial.id else self._name
         self._animated = self._partial.animated
 
-    # @classmethod
-    # def get_emoji_from_input(cls, emoji_input):
-    #     if isinstance(emoji_input, str):
-    #         formatted_emoji = MultiEmoji(emoji_string=emoji_input)
-    #     elif isinstance(emoji_input, PartialEmoji):
-    #         formatted_emoji = MultiEmoji(partial_emoji=emoji_input)
-    #     elif isinstance(emoji_input, Emoji):
-    #         formatted_emoji = MultiEmoji(full_emoji=emoji_input)
-    #     elif isinstance(emoji_input, MultiEmoji):
-    #         return emoji_input
-    #     else:
-    #         raise ValueError(
-    #             f"The supplied emoji must be of type: Union[Emoji, PartialEmoji, MultiEmoji, str]. "
-    #             f"Given type was: {type(emoji_input).__name__}"
-    #         )
-    #     return formatted_emoji
+    @classmethod
+    def from_dict(cls, data):
+        return MultiEmoji(PartialEmoji.from_dict(data))
 
     def __str__(self):
         return emoji.emojize(self.name, use_aliases=True)

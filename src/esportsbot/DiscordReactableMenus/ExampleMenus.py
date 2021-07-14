@@ -17,7 +17,7 @@ DEFAULT_PING_DESCRIPTION = "React with the specified emoji to make a vote!"
 DEFAULT_PING_TITLE = "Vote in This Poll"
 NO_VOTES = "No votes received!"
 AUTO_ENABLE_POLL_REACT = False
-DATE_FORMAT = "yyyy-mm-dd hh:mm"
+DATE_FORMAT = "%m-%d-%Y %H:%M:%S"
 
 CONFIRM_EMOJI = MultiEmoji("✅")
 # CANCEL_EMOJI = MultiEmoji("❎")
@@ -123,7 +123,27 @@ class PollReactMenu(ReactableMenu):
         super().__init__(**kwargs)
         self.votes = {}
         self.total_votes = 0
-        self.start_time = None
+        self.end_time = kwargs.get("end_time", None)
+        self.poll_length = kwargs["poll_length"]
+
+    @classmethod
+    async def load_dict(cls, bot, data) -> Dict:
+        kwargs = await super(PollReactMenu, cls).load_dict(bot, data)
+        kwargs["poll_length"] = data.get("length")
+        kwargs["end_time"] = data.get("end_time")
+        return kwargs
+
+    @classmethod
+    async def from_dict(cls, bot, data):
+        kwargs = await cls.load_dict(bot, data)
+        kwargs["poll_length"] = data.get("length")
+        kwargs["end_time"] = datetime.datetime.strptime(data.get("end_time"), DATE_FORMAT)
+
+    def to_dict(self) -> Dict:
+        kwargs = super(PollReactMenu, self).to_dict()
+        kwargs["end_time"] = self.end_time.strftime(DATE_FORMAT)
+        kwargs["length"] = self.poll_length
+        return kwargs
 
     def get_longest_option(self):
         longest = -1
@@ -182,13 +202,15 @@ class PollReactMenu(ReactableMenu):
 
     async def enable_menu(self, bot) -> bool:
         if await super().enable_menu(bot):
-            self.start_time = datetime.datetime.now()
+            self.end_time = datetime.datetime.now() + datetime.timedelta(seconds=self.poll_length)
             return True
         return False
 
     async def disable_menu(self, bot) -> bool:
+        self.total_votes = 0
+        self.votes = {}
         if await super().disable_menu(bot):
-            self.start_time = None
+            self.end_time = None
             return True
         return False
 
@@ -216,7 +238,9 @@ class PollReactMenu(ReactableMenu):
             await message.remove_reaction(triggering_emoji, triggering_member)
             return False
 
-        self.votes[triggering_emoji.id]["votes"] += 1
+        formatted_emoji = MultiEmoji(triggering_emoji)
+
+        self.votes[formatted_emoji.emoji_id]["votes"] += 1
         self.total_votes += 1
 
         return True
@@ -227,6 +251,88 @@ class PollReactMenu(ReactableMenu):
         if triggering_emoji not in self:
             return False
 
-        self.votes[triggering_emoji.id]["votes"] -= 1
+        formatted_emoji = MultiEmoji(triggering_emoji)
+
+        self.votes[formatted_emoji.emoji_id]["votes"] -= 1
         self.total_votes -= 1
         return True
+
+
+class ActionConfirmationMenu(ReactableMenu):
+    def __init__(self, **kwargs):
+        if not kwargs.get("use_inline"):
+            kwargs["use_inline"] = True
+
+        if not kwargs.get("add_func"):
+            kwargs["add_func"] = self.react_add_func
+
+        super().__init__(**kwargs)
+
+        self.confirm_func = None
+        self.confirm_args = None
+        self.confirm_kwargs = None
+        self.confirm_is_coro = False
+
+        self.cancel_func = None
+        self.cancel_args = None
+        self.cancel_kwargs = None
+        self.cancel_is_coro = False
+
+        self.was_confirmed = False
+        self.delete_after = kwargs.get("delete_after", False)
+        self.add_option(CONFIRM_EMOJI, CONFIRM_DESC)
+        self.add_option(CANCEL_EMOJI, CANCEL_DESC)
+
+    async def update_visuals(self):
+        if self.enabled:
+            self.title_suffix = ""
+            self.colour = discord.Colour.green()
+        else:
+            self.title_suffix = "(Action Confirmed)" if self.was_confirmed else "(Action Cancelled)"
+            self.colour = discord.Colour.red()
+        await self.update_message()
+
+    def set_confirm_func(self, func, *args, **kwargs):
+        self.confirm_func = func
+        self.confirm_is_coro = inspect.iscoroutinefunction(func)
+        self.confirm_args = args
+        self.confirm_kwargs = kwargs
+
+    def set_cancel_func(self, func, *args, **kwargs):
+        self.cancel_func = func
+        self.cancel_is_coro = inspect.iscoroutinefunction(func)
+        self.cancel_args = args
+        self.cancel_kwargs = kwargs
+
+    async def react_add_func(self, payload):
+        triggering_member = payload.member
+        guild_from_react = payload.member.guild
+        triggering_emoji = payload.emoji
+
+        formatted_emoji = MultiEmoji(triggering_emoji)
+
+        if formatted_emoji not in self:
+            channel = guild_from_react.get_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+            await message.remove_reaction(triggering_emoji, triggering_member)
+            return False
+
+        if formatted_emoji == CONFIRM_EMOJI:
+            if self.confirm_is_coro:
+                await self.confirm_func(*self.confirm_args, **self.confirm_kwargs)
+            else:
+                self.confirm_func(*self.confirm_args, **self.confirm_kwargs)
+            self.description = f"Event deletion confirmed by {triggering_member.name}#{triggering_member.discriminator}"
+            self.was_confirmed = True
+        elif formatted_emoji == CANCEL_EMOJI:
+            if self.cancel_is_coro:
+                await self.cancel_func(*self.cancel_args, **self.cancel_kwargs)
+            else:
+                self.cancel_func(*self.cancel_args, **self.cancel_kwargs)
+            self.description = f"Event deletion cancelled by {triggering_member.name}#{triggering_member.discriminator}"
+            self.was_confirmed = False
+
+        if self.delete_after:
+            await self.message.delete()
+        else:
+            await self.update_visuals()
