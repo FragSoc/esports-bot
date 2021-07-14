@@ -59,6 +59,9 @@ class ReactableMenu:
 
         return self.options.get(emoji_id)
 
+    def __dict__(self):
+        return self.to_dict()
+
     def to_dict(self):
         data = {
             "id": self.id,
