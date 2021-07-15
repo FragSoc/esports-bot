@@ -32,10 +32,10 @@ class VoicemasterCog(commands.Cog):
             slave_channel_name = f"{member.display_name}'s VC"
             new_slave_channel = await member.guild.create_voice_channel(slave_channel_name, category=after.channel.category)
             DBGatewayActions().create(
-                    Voicemaster_slave(guild_id=member.guild.id,
-                                      channel_id=new_slave_channel.id,
-                                      owner_id=member.id,
-                                      locked=False)
+                Voicemaster_slave(guild_id=member.guild.id,
+                                  channel_id=new_slave_channel.id,
+                                  owner_id=member.id,
+                                  locked=False)
             )
             await member.move_to(new_slave_channel)
             await send_to_log_channel(self, member.guild.id, f"{member.mention} has created a VM slave")

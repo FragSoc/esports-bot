@@ -18,17 +18,43 @@ class Guild_info(base):
     shared_role_id = Column(BigInteger, nullable=True)
 
 
+# class Pingable_roles(base):
+#     __tablename__ = 'pingable_roles'
+#     name = Column(String, nullable=False)
+#     guild_id = Column(BigInteger, primary_key=True, nullable=False)
+#     role_id = Column(BigInteger, primary_key=True, nullable=False)
+#     on_cooldown = Column(Boolean, nullable=False)
+#     last_ping = Column(Float, nullable=False)
+#     ping_count = Column(BigInteger, nullable=False)
+#     monthly_ping = Column(BigInteger, nullable=False)
+#     creator_id = Column(BigInteger, nullable=False)
+#     colour = Column(BigInteger, nullable=False)
+
+
+class Pingable_polls(base):
+    __tablename__ = 'pingable_polls'
+    guild_id = Column(BigInteger, primary_key=True, nullable=False)
+    pingable_name = Column(String, primary_key=True, nullable=False)
+    poll_id = Column(BigInteger, nullable=False)
+    poll = Column(JSONB, nullable=False)
+
+
 class Pingable_roles(base):
     __tablename__ = 'pingable_roles'
-    name = Column(String, nullable=False)
-    guild_id = Column(BigInteger, ForeignKey("guild_info.guild_id"), nullable=False)
+    guild_id = Column(BigInteger, primary_key=True, nullable=False)
     role_id = Column(BigInteger, primary_key=True, nullable=False)
-    on_cooldown = Column(Boolean, nullable=False)
-    last_ping = Column(Float, nullable=False)
-    ping_count = Column(BigInteger, nullable=False)
-    monthly_ping = Column(BigInteger, nullable=False)
-    creator_id = Column(BigInteger, nullable=False)
-    colour = Column(BigInteger, nullable=False)
+    menu_id = Column(BigInteger, nullable=False)
+    menu = Column(JSONB, nullable=False)
+
+
+class Pingable_settings(base):
+    __tablename__ = 'pingable_settings'
+    guild_id = Column(BigInteger, primary_key=True, nullable=False)
+    default_cooldown_length = Column(BigInteger, nullable=False)
+    default_poll_length = Column(BigInteger, nullable=False)
+    default_poll_threshold = Column(BigInteger, nullable=False)
+    default_poll_emoji = Column(JSONB, nullable=False)
+    default_role_emoji = Column(JSONB, nullable=False)
 
 
 class Event_categories(base):

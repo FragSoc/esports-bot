@@ -91,6 +91,10 @@ user_missing_perms = ":x: I am unable to perform that action as you are missing 
 bot_missing_perms = ":x: I am unable to perform that action as I may be missing one of the following permissions: `{permissions}`"
 missing_arguments = ":x: There were key arguments missing in the supplied command. Try using `{prefix}help {command}` to find how to use this command"
 
+[pingable_roles]
+already_exists = "There is already a pingable role with the name {role} in this server"
+create_success = "Successfully created a poll for your pingable role"
+
 [voicemaster]
 success_slave_locked = "Your VM slave has been locked 🔒"
 success_slave_unlocked = "Your VM slave has been unlocked 🔓"

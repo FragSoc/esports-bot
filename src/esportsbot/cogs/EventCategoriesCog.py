@@ -172,9 +172,9 @@ class EventCategoriesCog(commands.Cog):
         return general_channel, sign_in_channel, voice_channel
 
     @commands.group(
-            name="events",
-            help="Create events with sign in menus dedicated event roles, and event channels.",
-            invoke_without_command=True
+        name="events",
+        help="Create events with sign in menus dedicated event roles, and event channels.",
+        invoke_without_command=True
     )
     async def event_command_group(self, context: commands.context):
         pass
