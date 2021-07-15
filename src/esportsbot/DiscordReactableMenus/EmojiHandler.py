@@ -71,6 +71,9 @@ class MultiEmoji:
         else:
             return self._emoji_id == other._emoji_id
 
+    def __dict__(self):
+        return self.to_dict()
+
     @property
     def name(self):
         return self._name
