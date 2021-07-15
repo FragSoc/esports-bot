@@ -27,18 +27,6 @@ PINGABLE_POLL_EMOJI = MultiEmoji("📋")
 PINGABLE_POLL_TITLE = "Vote to create {} Pingable Role"
 PINGABLE_POLL_DESCRIPTION = "If the vote is successful you will be given the role"
 
-# Minimum length of the poll:
-MIN_POLL_LENGTH = 60
-
-# Values to be stored in the DB:
-
-# The number of votes required for a poll to be successful
-PINGABLE_POLL_THRESHOLD = 2
-# The length of the poll:
-PINGABLE_POLL_LENGTH = 20
-# Number of seconds before role can be pinged again
-PINGABLE_COOLDOWN = 60
-
 
 class PingableRolesCog(commands.Cog):
     def __init__(self, bot):
@@ -278,8 +266,8 @@ class PingableRolesCog(commands.Cog):
     )
     async def create_role(self, context: commands.Context, role_name: str, poll_length: int = None) -> bool:
 
-        if poll_length is None or poll_length < MIN_POLL_LENGTH:
-            poll_length = PINGABLE_POLL_LENGTH
+        if poll_length is None:
+            poll_length = self.guild_settings.get(context.guild.id).get("default_poll_length")
 
         role_poll = PingableVoteMenu(
             pingable_name=role_name,
