@@ -1,8 +1,7 @@
 from esportsbot import lib
-from esportsbot.base_functions import get_whether_in_vm_master, get_whether_in_vm_slave
 
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.models import Guild_info, Voicemaster_slave, Pingable_roles
+from esportsbot.models import Guild_info
 
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument
@@ -11,7 +10,6 @@ from discord import NotFound, HTTPException, Forbidden
 import os
 import discord
 from datetime import datetime, timedelta
-import asyncio
 
 # Value to assign new guilds in their role_ping_cooldown_seconds attribute
 DEFAULT_ROLE_PING_COOLDOWN = timedelta(hours=5)
@@ -59,89 +57,6 @@ async def on_guild_remove(guild):
 
 
 @client.event
-async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
-    """Called every time a reaction is added to a message.
-    If the message is a reaction menu, and the reaction is an option for that menu, trigger the menu option's behaviour.
-
-    :param discord.RawReactionActionEvent payload: An event describing the message and the reaction added
-    """
-    # ignore bot reactions
-    if payload.user_id != client.user.id:
-        # Get rich, useable reaction data
-        _, user, emoji = await lib.discordUtil.reactionFromRaw(client, payload)
-        if None in [user, emoji]:
-            return
-
-        # If the message reacted to is a reaction menu
-        if payload.message_id in client.reactionMenus and \
-                client.reactionMenus[payload.message_id].hasEmojiRegistered(emoji):
-            # Envoke the reacted option's behaviour
-            await client.reactionMenus[payload.message_id].reactionAdded(emoji, user)
-
-
-@client.event
-async def on_raw_reaction_remove(payload: discord.RawReactionActionEvent):
-    """Called every time a reaction is removed from a message.
-    If the message is a reaction menu, and the reaction is an option for that menu, trigger the menu option's behaviour.
-
-    :param discord.RawReactionActionEvent payload: An event describing the message and the reaction removed
-    """
-    # ignore bot reactions
-    if payload.user_id != client.user.id:
-        # Get rich, useable reaction data
-        _, user, emoji = await lib.discordUtil.reactionFromRaw(client, payload)
-        if None in [user, emoji]:
-            return
-
-        # If the message reacted to is a reaction menu
-        if payload.message_id in client.reactionMenus and \
-                client.reactionMenus[payload.message_id].hasEmojiRegistered(emoji):
-            # Envoke the reacted option's behaviour
-            await client.reactionMenus[payload.message_id].reactionRemoved(emoji, user)
-
-
-@client.event
-async def on_raw_message_delete(payload: discord.RawMessageDeleteEvent):
-    """Called every time a message is deleted.
-    If the message was a reaction menu, deactivate and unschedule the menu.
-
-    :param discord.RawMessageDeleteEvent payload: An event describing the message deleted.
-    """
-    if payload.message_id in client.reactionMenus:
-        menu = client.reactionMenus[payload.message_id]
-        try:
-            client.reactionMenus.removeID(payload.message_id)
-        except KeyError:
-            pass
-        else:
-            await client.adminLog(None, {"Reaction menu deleted": "id: " + str(payload.message_id) \
-                                                + "\nchannel: <#" + str(menu.msg.channel.id) + ">"
-                                                + "\ntype: " + type(menu).__name__},
-                                    guildID=payload.guild_id)
-
-
-@client.event
-async def on_raw_bulk_message_delete(payload: discord.RawBulkMessageDeleteEvent):
-    """Called every time a group of messages is deleted.
-    If any of the messages were a reaction menus, deactivate and unschedule those menus.
-
-    :param discord.RawBulkMessageDeleteEvent payload: An event describing all messages deleted.
-    """
-    for msgID in payload.message_ids:
-        if msgID in client.reactionMenus:
-            menu = client.reactionMenus[payload.message_id]
-            try:
-                client.reactionMenus.removeID(msgID)
-            except KeyError:
-                pass
-            else:
-                await client.adminLog(None, {"Reaction menu deleted": "id: " + str(payload.message_id) \
-                                                    + "\nchannel: <#" + str(menu.msg.channel.id) + ">"
-                                                    + "\ntype: " + type(menu).__name__},
-                                        guildID=payload.guild_id)
-
-
-@client.event
 async def on_command_error(ctx: Context, exception: Exception):
     """Handles printing errors to users if their command failed to call, E.g incorrect numbr of arguments
     Also prints exceptions to stdout, since the event loop usually consumes these.
@@ -178,22 +93,7 @@ async def on_command_error(ctx: Context, exception: Exception):
 @client.event
 async def on_message(message):
     if not message.author.bot:
-        # Process non-dm messages
-        if message.guild is not None:
-            # Start pingable role cooldowns
-            if message.role_mentions:
-                roleUpdateTasks = client.handleRoleMentions(message)
-
-            await client.process_commands(message)
-
-            if message.role_mentions and roleUpdateTasks:
-                await asyncio.wait(roleUpdateTasks)
-                for task in roleUpdateTasks:
-                    if e := task.exception():
-                        lib.exceptions.print_exception_trace(e)
-        # Process DM messages
-        else:
-            await client.process_commands(message)
+        await client.process_commands(message)
 
 
 @client.command(
@@ -217,24 +117,6 @@ async def initialsetup(ctx):
             )
         )
         await ctx.channel.send("This server has now been initialised")
-
-
-@client.event
-async def on_guild_role_delete(role: discord.Role):
-    """Handles unregistering of pingme roles when deleted directly in discord instead of via admin command
-
-    :param Role role: The role which was removed
-    """
-    pingable_role = DBGatewayActions().get(Pingable_roles, role_id=role.id)
-    if pingable_role:
-        DBGatewayActions().delete(pingable_role)
-        logEmbed = discord.Embed()
-        logEmbed.set_author(icon_url=client.user.avatar_url_as(size=64), name="Admin Log")
-        logEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-        logEmbed.colour = discord.Colour.random()
-        for aTitle, aDesc in {"!pingme Role Deleted": "Role: " + role.mention + "\nName: " + role.name + "\nDeleting user unknown, please see the server's audit log."}.items():
-            logEmbed.add_field(name=str(aTitle), value=str(aDesc), inline=False)
-        await client.adminLog(None, embed=logEmbed)
 
 
 def launch():
