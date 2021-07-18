@@ -34,14 +34,13 @@ class PingableRolesCog(commands.Cog):
         self.db = DBGatewayActions()
         self.user_strings = self.bot.STRINGS["pingable_roles"]
         self.command_error_message = bot.STRINGS["command_error_generic"]
+        self.logger = logging.getLogger(__name__)
 
         self.guild_settings = self.load_guild_settings()  # Guild ID: Pingable_settings as dict
         self.polls = None  # Menu ID: {name: pingable name, menu: poll menu instance}
         self.roles = None  # Menu ID: {role id: pingable role id, menu: role menu instance}
         self.all_role_ids = None  # Guild ID: {role id : menu id}
         self.roles_on_cooldown = []  # List of roles that are on cooldown
-
-        self.logger = logging.getLogger(__name__)
 
         self.current_poll = None
         self.current_menu = None
@@ -77,6 +76,31 @@ class PingableRolesCog(commands.Cog):
                 await role.edit(mentionable=False)
                 self.roles_on_cooldown.append(role)
                 self.ensure_tasks()
+
+    @commands.Cog.listener()
+    async def on_guild_role_delete(self, role):
+        guild_roles = self.all_role_ids.get(role.guild.id)
+        if not guild_roles:
+            return
+
+        menu_id = guild_roles.get(role.id)
+        if not menu_id:
+            return
+        # TODO: Change to debug
+        self.logger.info(f"{role.name} pingable role was just deleted from {role.guild.name}")
+        db_item = self.db.get(Pingable_roles, guild_id=role.guild.id, role_id=role.id)
+        menu_id = db_item.menu_id
+        self.roles.pop(menu_id)
+        self.db.delete(db_item)
+        self.all_role_ids.get(role.guild.id).pop(role.id)
+
+        if role.id in self.roles_on_cooldown:
+            self.roles_on_cooldown.remove(role.id)
+
+        if len(self.all_role_ids.get(role.guild.id)) == 0:
+            self.all_role_ids.pop(role.guild.id)
+
+        self.logger.info(f"Deleted {role.name} for the guild {role.guild.name} from DB")
 
     async def initialise_menus(self):
 
@@ -240,7 +264,8 @@ class PingableRolesCog(commands.Cog):
     async def ping_me(self, context: commands.Context):
         pass
 
-    @ping_me.command(name="default-settings", help="Sets the default value for the poll length, threshold and emojis")
+    @ping_me.command(name="default-settings", help="Sets the default value for the poll length, threshold and emojis.")
+    @commands.has_permissions(administrator=True)
     async def default_settings(self, context: commands.Context):
         guild_id = context.guild.id
 
@@ -259,15 +284,103 @@ class PingableRolesCog(commands.Cog):
         else:
             self.db.create(current_item)
 
+        # TODO: Change to debug
+        self.logger.info(f"{context.guild.name} has had its pingable settings set back to defaults!")
+
+    @ping_me.command(
+        name="poll-length",
+        usage="<poll length in seconds>",
+        help="Used to set the default length of a poll for this Server. "
+        "Poll lengths can still be overridden by giving the poll length in the `create-poll` command!"
+    )
+    @commands.has_permissions(administrator=True)
+    async def set_poll_length(self, context: commands.Context, poll_length: int):
+        db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        db_item.default_poll_length = poll_length
+        self.db.update(db_item)
+
+        self.guild_settings[context.guild.id]["poll_length"] = poll_length
+
+        await context.reply(self.user_strings["set_poll_length"].format(poll_length=poll_length))
+        # TODO: Change to debug
+        self.logger.info(f"Set {context.guild.name} default poll length to {poll_length}s")
+
+    @ping_me.command(
+        name="poll-threshold",
+        usage="<number of votes threshold>",
+        help="Used to set the number of votes required to create a role."
+    )
+    @commands.has_permissions(administrator=True)
+    async def set_poll_threshold(self, context: commands.Context, vote_threshold: int):
+        db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        db_item.default_poll_threshold = vote_threshold
+        self.db.update(db_item)
+
+        self.guild_settings[context.guild.id]["poll_threshold"] = vote_threshold
+
+        await context.reply(self.user_strings["set_poll_threshold"].format(vote_threshold=vote_threshold))
+        # TODO: Change to debug
+        self.logger.info(f"Set {context.guild.name} poll threshold to {vote_threshold} votes")
+
+    @ping_me.command(
+        name="role-cooldown",
+        usage="<ping cooldown in seconds>",
+        help="Used to set the cooldown for pingable roles."
+    )
+    @commands.has_permissions(administrator=True)
+    async def set_role_cooldown(self, context: commands.Context, role_cooldown: int):
+        db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        db_item.default_cooldown_length = role_cooldown
+        self.db.update(db_item)
+
+        self.guild_settings[context.guild.id]["default_cooldown_length"] = role_cooldown
+
+        await context.reply(self.user_strings["set_role_cooldown"].format(cooldown=role_cooldown))
+        # TODO: Change to debug
+        self.logger.info(f"Set {context.guild.name} pingable role cooldown to {role_cooldown}s")
+
+    @ping_me.command(name="poll-emoji", usage="<emoji>", help="Used to set the emoji that is used in the `create-role` polls.")
+    @commands.has_permissions(administrator=True)
+    async def set_poll_emoji(self, context: commands.Context, poll_emoji: MultiEmoji):
+        db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        db_item.default_poll_emoji = poll_emoji.to_dict()
+        self.db.update(db_item)
+
+        self.guild_settings[context.guild.id]["poll_emoji"] = poll_emoji
+
+        await context.reply(self.user_strings["set_poll_emoji"].format(emoji=poll_emoji.discord_emoji))
+        # TODO: Change to debug
+        self.logger.info(f"Set {context.guild.name} poll emoji to {poll_emoji.name}")
+
+    @ping_me.command(
+        name="role-emoji",
+        usage="<emoji>",
+        help="Used to set the emoji that is used in the `create-role` role reaction menu if the poll is successful."
+    )
+    @commands.has_permissions(administrator=True)
+    async def set_role_emoji(self, context: commands.Context, role_emoji: MultiEmoji):
+        db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        db_item.default_role_emoji = role_emoji.to_dict()
+        self.db.update(db_item)
+
+        self.guild_settings[context.guild.id]["role_emoji"] = role_emoji
+
+        await context.reply(self.user_strings["set_role_emoji"].format(emoji=role_emoji.discord_emoji))
+        # TODO: Change to debug
+        self.logger.info(f"Set {context.guild.name} role emoji to {role_emoji.name}")
+
     @ping_me.command(
         name="create-role",
         usage="<role_name> [poll length seconds]",
         help="Starts a poll to determine if a new role with the given name should be created."
     )
-    async def create_role(self, context: commands.Context, role_name: str, poll_length: int = None) -> bool:
+    async def create_role(self, context: commands.Context, role_name: str, poll_length: int = None):
+        if self.role_exists(role_name):
+            await context.reply(self.user_strings["already_exists"].format(role=role_name))
+            return
 
         if poll_length is None:
-            poll_length = self.guild_settings.get(context.guild.id).get("default_poll_length")
+            poll_length = self.guild_settings.get(context.guild.id).get("poll_length")
 
         role_poll = PingableVoteMenu(
             pingable_name=role_name,
@@ -290,10 +403,38 @@ class PingableRolesCog(commands.Cog):
         self.logger.info(f"Created a poll for role with name {role_name}")
         self.ensure_tasks()
         await context.reply(self.user_strings["create_success"])
-        return True
+        self.logger.info(f"Created a new poll for a pingable role with the name {role_name} in guild {context.guild.name}")
 
+    @ping_me.command(
+        name="delete-role",
+        usage="<One or many role mentions>",
+        help="Deletes a pingable role. Cannot be used to delete non-pingable roles."
+    )
+    @commands.has_permissions(administrator=True)
+    async def delete_role(self, context: commands.Context):
+        if not context.message.role_mentions:
+            await context.reply(self.user_strings["no_roles_given"])
+            return
+
+        deleted_roles = []
+
+        for role in context.message.role_mentions:
+            db_item = self.db.get(Pingable_roles, guild_id=context.guild.id, role_id=role.id)
+            if not db_item:
+                await context.send(self.user_strings["not_pingable_role"])
+            else:
+                deleted_roles.append(role.name)
+                await role.delete()
+
+        deleted_string = str(deleted_roles).replace("]", "").replace("[", "")
+
+        await context.reply(self.user_strings["role_delete_success"].format(delete_roles=deleted_string))
+        self.logger.info(f"Deleted pingable roles: {deleted_string} in guild {context.guild.name}")
+
+    @set_poll_threshold.error
+    @set_poll_length.error
     @create_role.error
-    async def on_create_error(self, context: commands.Context, error: commands.CommandError):
+    async def integer_parse_error(self, context: commands.Context, error: commands.CommandError):
         if isinstance(error, ValueError):
             self.logger.warning(
                 "User attempted to give non-integer value as poll length in the following message: %s",

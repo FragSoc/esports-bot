@@ -92,8 +92,16 @@ bot_missing_perms = ":x: I am unable to perform that action as I may be missing 
 missing_arguments = ":x: There were key arguments missing in the supplied command. Try using `{prefix}help {command}` to find how to use this command"
 
 [pingable_roles]
-already_exists = "There is already a pingable role with the name {role} in this server"
-create_success = "Successfully created a poll for your pingable role"
+already_exists = ":warning: There is already a pingable role with the name {role} in this server"
+create_success = "✅ Successfully created a poll for your pingable role"
+set_poll_length = "✅ The default poll length is now set to `{poll_length} seconds`"
+set_poll_threshold = "✅ The default number of votes required to create a role is now set to `{vote_threshold} votes`"
+set_role_cooldown = "✅ The cooldown for pingable roles is now set to `{cooldown} seconds`"
+set_poll_emoji = "✅ The emoji used to role creation polls is now set to {emoji}"
+set_role_emoji = "✅ The emoji used in pingable role reaction menus is now set to {emoji}"
+no_roles_given = ":x: You must mention one or more roles to use this command"
+not_pingable_role = ":warning: Only pingable roles can be deleted with this command"
+role_delete_success = "✅ The following role(s) were deleted: {deleted_roles}"
 
 [voicemaster]
 success_slave_locked = "Your VM slave has been locked 🔒"
