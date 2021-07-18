@@ -70,6 +70,8 @@ class PingableRolesCog(commands.Cog):
         # Check each role mentioned in the message:
         for role in message.role_mentions:
             if role.id in self.all_role_ids.get(message.guild.id):
+                # TODO: Change to debug
+                self.logger.info(f"{role.name} pingable role was just mentioned in {message.guild.name}")
                 menu_id = self.all_role_ids.get(message.guild.id).get(role.id)
                 menu = self.roles.get(menu_id).get("menu")
                 menu.last_pinged = datetime.datetime.now()
@@ -103,6 +105,8 @@ class PingableRolesCog(commands.Cog):
         self.logger.info(f"Deleted {role.name} for the guild {role.guild.name} from DB")
 
     async def initialise_menus(self):
+        # TODO: Change to debug
+        self.logger.info("Initialising menus into actual menu objects from data base info")
 
         # Load role menus:
         for menu_id in self.roles:
@@ -114,7 +118,11 @@ class PingableRolesCog(commands.Cog):
             menu_data = self.polls.get(poll_id).get("menu")
             self.polls[poll_id]["menu"] = await PingableVoteMenu.from_dict(self.bot, menu_data)
 
+        self.logger.info("All menus initialised!")
+
     def load_guild_settings(self) -> Dict:
+        # TODO: Change to debug
+        self.logger.info("Loading menu guild settings for all guilds")
         db_data: [Pingable_settings] = self.db.list(Pingable_settings)
 
         loaded_data = {}
@@ -127,18 +135,26 @@ class PingableRolesCog(commands.Cog):
                 "role_emoji": MultiEmoji.from_dict(item.default_role_emoji)
             }
 
+        self.logger.info(f"Loaded settings for {len(loaded_data)} guild(s)!")
+
         return loaded_data
 
     def load_all_polls(self, guild_ids: List[int]) -> Dict:
+        # TODO: Change to debug
+        self.logger.info("Loading pingable polls interrupted by shutdown")
         loaded_data = {}
 
         for guild in guild_ids:
             guild_data = self.load_guild_polls(guild)
             loaded_data = {**guild_data, **loaded_data}
 
+        self.logger.info(f"Loaded {len(loaded_data)} pingable poll(s)!")
+
         return loaded_data
 
     def load_guild_polls(self, guild_id: int) -> Dict:
+        # TODO: Change to debug
+        self.logger.info(f"Loading pingable polls for guild with id: {guild_id}")
         guild_polls: [Pingable_polls] = self.db.list(Pingable_polls, guild_id=guild_id)
 
         guild_data = {}
@@ -146,18 +162,27 @@ class PingableRolesCog(commands.Cog):
         for item in guild_polls:
             guild_data[item.poll_id] = {"name": item.pingable_name, "menu": item.poll}
 
+        # TODO: Change to debug
+        self.logger.info(f"Loaded {len(guild_data)} pingable polls for guild with id: {guild_id}")
+
         return guild_data
 
     def load_all_roles(self, guild_ids: List[int]) -> Dict:
+        # TODO: Change to debug
+        self.logger.info("Loading pingable react menus from DB")
         loaded_data = {}
 
         for guild in guild_ids:
             guild_data = self.load_guild_roles(guild)
             loaded_data = {**guild_data, **loaded_data}
 
+        self.logger.info(f"Loaded {len(loaded_data)} pingable react menu(s) for {len(guild_ids)} guild(s)")
+
         return loaded_data
 
     def load_guild_roles(self, guild_id: int) -> Dict:
+        # TODO: Change to debug
+        self.logger.info(f"Loading pingable react menus for guild with id: {guild_id}")
         guild_roles: [Pingable_roles] = self.db.list(Pingable_roles, guild_id=guild_id)
 
         guild_data = {}
@@ -165,10 +190,14 @@ class PingableRolesCog(commands.Cog):
         for item in guild_roles:
             guild_data[item.menu_id] = {"role_id": item.role_id, "menu": item.menu}
 
+        # TODO: Change to debug
+        self.logger.info(f"Loaded {len(guild_data)} pingable reaction menus for guild with id {guild_id}")
+
         return guild_data
 
-    @staticmethod
-    def all_roles_from_guild_data(role_data: Dict) -> Dict:
+    def all_roles_from_guild_data(self, role_data: Dict) -> Dict:
+        # TODO: Change to debug
+        self.logger.info("Getting all pingable roles as dict of Guild->[Role->Menu ID]")
         roles = defaultdict(dict)
 
         for menu_id in role_data:
@@ -176,6 +205,8 @@ class PingableRolesCog(commands.Cog):
             guild_id = menu_data.get("menu").get("guild_id")
             role_id = menu_data.get("role_id")
             roles[guild_id][role_id] = menu_id
+
+        self.logger.info(f"Found roles for {len(roles)} guild(s)")
 
         return roles
 
@@ -199,6 +230,10 @@ class PingableRolesCog(commands.Cog):
 
         for poll_id in self.polls:
             if self.polls.get(poll_id).get("menu").end_time <= current_time:
+                self.logger.info(
+                    f"Poll for pingable role %s is over, checking results!",
+                    self.polls.get(poll_id).get('menu').name
+                )
                 polls_ids_to_remove.append(poll_id)
                 await self.finish_poll(self.polls.get(poll_id).get("menu"))
 
@@ -220,6 +255,7 @@ class PingableRolesCog(commands.Cog):
             menu_id = self.all_role_ids.get(role.guild.id).get(role.id)
             menu = self.roles.get(menu_id).get("menu")
             if current_time - menu.last_pinged >= datetime.timedelta(seconds=menu.cooldown):
+                self.logger.info(f"{role.name} is no longer on cooldown!")
                 await role.edit(mentionable=True)
 
         for role in roles_to_remove:
@@ -234,6 +270,7 @@ class PingableRolesCog(commands.Cog):
         await channel.send(embed=embed)
 
         if poll_to_finish.total_votes >= threshold:
+            self.logger.info(f"Pingable poll with name {poll_to_finish.name} had more votes than the voting threshold!")
             role = await channel.guild.create_role(name=poll_to_finish.name + PINGABLE_ROLE_SUFFIX, mentionable=True)
             current_menu = PingableRoleMenu(
                 pingable_role=role,
@@ -244,6 +281,7 @@ class PingableRolesCog(commands.Cog):
 
             current_menu.add_option(self.guild_settings.get(channel.guild.id).get("role_emoji"), role)
             await current_menu.finalise_and_send(self.bot, channel)
+            self.logger.info(f"Created a new reaction menu and role for the role: {role.name}")
             if not self.all_role_ids.get(channel.guild.id):
                 self.all_role_ids[channel.guild.id] = {}
             self.all_role_ids[channel.guild.id][role.id] = current_menu.id
@@ -255,10 +293,26 @@ class PingableRolesCog(commands.Cog):
                 menu=current_menu.to_dict()
             )
             self.db.create(db_item)
+            # TODO: Change to debug
+            self.logger.info(f"Saved new pingable role information for {role.name} to DB!")
 
         db_item = self.db.get(Pingable_polls, guild_id=channel.guild.id, poll_id=poll_to_finish.id)
         self.db.delete(db_item)
         await poll_to_finish.message.delete()
+
+    def role_exists(self, name: str) -> bool:
+        # Check current polls:
+        for menu_id in self.polls:
+            menu_name = self.polls.get(menu_id).get("name")
+            if name.lower() in menu_name.lower():
+                return True
+
+        for menu_id in self.roles:
+            menu = self.roles.get(menu_id).get("menu")
+            if name.lower() in menu.role.name.lower():
+                return True
+
+        return False
 
     @commands.group(name="pingme", help="Get and create custom roles with ping cooldown timers.", invoke_without_command=True)
     async def ping_me(self, context: commands.Context):
