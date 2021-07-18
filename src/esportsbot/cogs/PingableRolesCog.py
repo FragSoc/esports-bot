@@ -206,7 +206,7 @@ class PingableRolesCog(commands.Cog):
             role_id = menu_data.get("role_id")
             roles[guild_id][role_id] = menu_id
 
-        self.logger.info(f"Found roles for {len(roles)} guild(s)")
+        self.logger.info(f"Found pingable roles in {len(roles)} guild(s)")
 
         return roles
 
@@ -338,7 +338,6 @@ class PingableRolesCog(commands.Cog):
         else:
             self.db.create(current_item)
 
-        # TODO: Change to debug
         self.logger.info(f"{context.guild.name} has had its pingable settings set back to defaults!")
 
     @ping_me.command(
@@ -356,7 +355,6 @@ class PingableRolesCog(commands.Cog):
         self.guild_settings[context.guild.id]["poll_length"] = poll_length
 
         await context.reply(self.user_strings["set_poll_length"].format(poll_length=poll_length))
-        # TODO: Change to debug
         self.logger.info(f"Set {context.guild.name} default poll length to {poll_length}s")
 
     @ping_me.command(
@@ -373,7 +371,6 @@ class PingableRolesCog(commands.Cog):
         self.guild_settings[context.guild.id]["poll_threshold"] = vote_threshold
 
         await context.reply(self.user_strings["set_poll_threshold"].format(vote_threshold=vote_threshold))
-        # TODO: Change to debug
         self.logger.info(f"Set {context.guild.name} poll threshold to {vote_threshold} votes")
 
     @ping_me.command(
@@ -390,7 +387,6 @@ class PingableRolesCog(commands.Cog):
         self.guild_settings[context.guild.id]["default_cooldown_length"] = role_cooldown
 
         await context.reply(self.user_strings["set_role_cooldown"].format(cooldown=role_cooldown))
-        # TODO: Change to debug
         self.logger.info(f"Set {context.guild.name} pingable role cooldown to {role_cooldown}s")
 
     @ping_me.command(name="poll-emoji", usage="<emoji>", help="Used to set the emoji that is used in the `create-role` polls.")
@@ -403,7 +399,6 @@ class PingableRolesCog(commands.Cog):
         self.guild_settings[context.guild.id]["poll_emoji"] = poll_emoji
 
         await context.reply(self.user_strings["set_poll_emoji"].format(emoji=poll_emoji.discord_emoji))
-        # TODO: Change to debug
         self.logger.info(f"Set {context.guild.name} poll emoji to {poll_emoji.name}")
 
     @ping_me.command(
@@ -420,7 +415,6 @@ class PingableRolesCog(commands.Cog):
         self.guild_settings[context.guild.id]["role_emoji"] = role_emoji
 
         await context.reply(self.user_strings["set_role_emoji"].format(emoji=role_emoji.discord_emoji))
-        # TODO: Change to debug
         self.logger.info(f"Set {context.guild.name} role emoji to {role_emoji.name}")
 
     @ping_me.command(
