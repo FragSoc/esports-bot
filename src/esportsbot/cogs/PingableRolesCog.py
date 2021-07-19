@@ -545,7 +545,7 @@ class PingableRolesCog(commands.Cog):
 
         deleted_string = str(deleted_roles).replace("]", "").replace("[", "")
 
-        await context.reply(self.user_strings["role_delete_success"].format(delete_roles=deleted_string))
+        await context.reply(self.user_strings["role_delete_success"].format(deleted_roles=deleted_string))
         self.logger.info(f"Deleted pingable roles: {deleted_string} in guild {context.guild.name}")
 
     @ping_me.command(
