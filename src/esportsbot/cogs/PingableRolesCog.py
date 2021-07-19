@@ -351,7 +351,7 @@ class PingableRolesCog(commands.Cog):
     async def ping_me_settings(self, context: commands.Context):
         pass
 
-    @ping_me_settings.command(name="get-settings", help="Gets the current settings of this server.")
+    @ping_me_settings.command(name="get-settings", help="Returns an embed of the current default settings for the server.")
     async def get_guild_settings(self, context: commands.Context):
         guild_settings = self.guild_settings.get(context.guild.id)
         if not guild_settings:
@@ -385,7 +385,7 @@ class PingableRolesCog(commands.Cog):
 
     @ping_me_settings.command(
         name="default-settings",
-        help="Sets the default value for the poll length, threshold and emojis."
+        help="Resets all settings for this guild to the bot-defined defaults defined in the .env file."
     )
     async def default_settings(self, context: commands.Context):
         guild_id = context.guild.id
@@ -410,7 +410,7 @@ class PingableRolesCog(commands.Cog):
     @ping_me_settings.command(
         name="poll-length",
         usage="<poll length in seconds>",
-        help="Used to set the default length of a poll for this Server. "
+        help="Sets the default poll length to the given time in seconds. "
         "Poll lengths can still be overridden by giving the poll length in the `create-poll` command!"
     )
     async def set_poll_length(self, context: commands.Context, poll_length: int):
@@ -426,7 +426,7 @@ class PingableRolesCog(commands.Cog):
     @ping_me_settings.command(
         name="poll-threshold",
         usage="<number of votes threshold>",
-        help="Used to set the number of votes required to create a role."
+        help="Sets the number of votes required in a poll for the role to be created."
     )
     async def set_poll_threshold(self, context: commands.Context, vote_threshold: int):
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
@@ -440,8 +440,8 @@ class PingableRolesCog(commands.Cog):
 
     @ping_me_settings.command(
         name="ping-cooldown",
-        usage="<ping cooldown in seconds>",
-        help="Used to set the default cooldown for pingable roles."
+        usage="<cooldown in seconds>",
+        help="Sets the default ping cooldown for any pingable role created with this cog."
     )
     async def set_role_cooldown(self, context: commands.Context, role_cooldown: int):
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
@@ -456,7 +456,7 @@ class PingableRolesCog(commands.Cog):
     @ping_me_settings.command(
         name="poll-emoji",
         usage="<emoji>",
-        help="Used to set the emoji that is used in the `create-role` polls."
+        help="Sets the emoji to be used when creating a poll to vote in."
     )
     async def set_poll_emoji(self, context: commands.Context, poll_emoji: MultiEmoji):
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
@@ -471,7 +471,7 @@ class PingableRolesCog(commands.Cog):
     @ping_me_settings.command(
         name="role-emoji",
         usage="<emoji>",
-        help="Used to set the emoji that is used in the `create-role` role reaction menu if the poll is successful."
+        help="Sets the default emoji to be used in the role reaction menu for the pingable role once it has been created."
     )
     async def set_role_emoji(self, context: commands.Context, role_emoji: MultiEmoji):
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
@@ -485,8 +485,9 @@ class PingableRolesCog(commands.Cog):
 
     @ping_me.command(
         name="create-role",
-        usage="<role_name> [poll length seconds]",
-        help="Starts a poll to determine if a new role with the given name should be created."
+        usage="<role name> [Optional: poll length in seconds]",
+        help="Creates a new poll to create a role if the number of votes has surpassed the server's threshold after the"
+        " poll length has passed."
     )
     async def create_role(self, context: commands.Context, role_name: str, poll_length: int = None):
         if self.role_exists(role_name):
@@ -521,8 +522,8 @@ class PingableRolesCog(commands.Cog):
 
     @ping_me.command(
         name="delete-role",
-        usage="<One or many role mentions>",
-        help="Deletes a pingable role. Cannot be used to delete non-pingable roles."
+        usage="<one or many role mentions>",
+        help="Deletes the mentioned roles from the server. Cannot be used to delete non-pingable roles."
     )
     @commands.has_permissions(administrator=True)
     async def delete_role(self, context: commands.Context):
@@ -547,7 +548,11 @@ class PingableRolesCog(commands.Cog):
         await context.reply(self.user_strings["role_delete_success"].format(delete_roles=deleted_string))
         self.logger.info(f"Deleted pingable roles: {deleted_string} in guild {context.guild.name}")
 
-    @ping_me.command(name="convert-role", usage="<One or many role mentions>", help="Converts a role into pingable role.")
+    @ping_me.command(
+            name="convert-role",
+            usage="<One or many role mentions>",
+            help="Converts the mentioned roles into pingable roles and creates their reaction menus."
+    )
     @commands.has_permissions(administrator=True)
     async def convert_role(self, context: commands.Context):
         if not context.message.role_mentions:
@@ -573,8 +578,8 @@ class PingableRolesCog(commands.Cog):
 
     @ping_me.command(
         name="convert-pingable",
-        usage="<One or many role mentions>",
-        help="Converts mentioned pingable roles into normal roles."
+        usage="<one or many role mentions>",
+        help="Converts the mentioned roles from pingable roles into normal roles and deletes their reaction menus."
     )
     @commands.has_permissions(administrator=True)
     async def convert_pingable(self, context: commands.Context):
@@ -601,8 +606,8 @@ class PingableRolesCog(commands.Cog):
 
     @ping_me.command(
         name="role-cooldown",
-        usage="<role mention | role ID> <new cooldown in seconds>",
-        help="Sets the ping cooldown for an existing pingable role."
+        usage="<role mention | role ID> <cooldown in seconds>",
+        help="Sets the ping cooldown for a specific role which overrides the server default for that role."
     )
     @commands.has_permissions(administrator=True)
     async def change_pingable_role_cooldown(self, context: commands.Context, pingable_role: Role, cooldown_seconds: int):
@@ -629,8 +634,8 @@ class PingableRolesCog(commands.Cog):
 
     @ping_me.command(
         name="role-emoji",
-        usage="<role mention | role ID> <new react emoji>",
-        help="Sets the emoji for the reaction menu for the given role."
+        usage="<role mention | role ID> <emoji>",
+        help="Sets the emoji to use in the reaction menu for the given role."
     )
     @commands.has_permissions(administrator=True)
     async def change_pingable_role_emoji(self, context: commands.Context, pingable_role: Role, role_emoji: MultiEmoji):
@@ -650,9 +655,8 @@ class PingableRolesCog(commands.Cog):
 
     @ping_me.command(
         name="disable-role",
-        usage="<One or many role mentions>",
-        help="Stops the mentioned roles from being mentioned and disables their reaction menus. "
-        "Only works for pingable roles."
+        usage="<one or many role mentions>",
+        help="Disables the roles mentioned from being mentioned by non-administrators and disables their reaction menus."
     )
     @commands.has_permissions(administrator=True)
     async def disable_pingable_role(self, context: commands.Context):
@@ -675,8 +679,9 @@ class PingableRolesCog(commands.Cog):
 
     @ping_me.command(
         name="enable-role",
-        usage="<One or many role mentions>",
-        help="Allows a pingable role to be mentioned again, and allows users to react to their reaction menus."
+        usage="<one or many role mentions>",
+        help="Enabled the roles mentioned to be mentioned by non-administrators and "
+        "allows their reaction menus to be reacted to."
     )
     @commands.has_permissions(administrator=True)
     async def enabled_pingable_roles(self, context: commands.Context):

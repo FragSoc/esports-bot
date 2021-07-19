@@ -145,64 +145,7 @@ Requires the `ENABLE_TWITTER` variable to be set to `TRUE` in order to function.
 #### !gettwitters  
 * Aliases: `getalltwitter, gettwitterhandles`.  
 * Returns a list of the currently tracked Twitter accounts for the server.  
-</details>  
-  
-<details>  
-<summary>Pingme: User-Created Roles With Ping Cooldown</summary>  
-  
-### Pingme: User-Created Roles With Ping Cooldown  
-Users can start a vote to create a new role. If enough votes are reached, a new role is created. The role can be pinged by anyone, but is placed on cooldown afterwards.  
-  
-To help administrators manage the number of roles, a usage report is sent to the server's logging channel on a monthly basis.  
-  
-#### !pingme register <role_mention | role_id> <role_name>  
-* Register a new role for use with `!pingme`, with the given name. This does not have to be the same as the role's name.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme unregister <role_mention | role_id>  
-* Unregister a role from use with `!pingme`, without deleting the role from the server.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme delete <role_mention | role_id>  
-* Unregister a `!pingme` role from the role from the server.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme reset-cooldown <role_mention | role_id>  
-* Reset the pinging cooldown for a `!pingme` role, making it pingable again instantly.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme set-cooldown [seconds=...] [minutes=...] [hours=...] [days=...]  
-* Set the cooldown between `!pingme` role pings.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme set-create-threshold <num_votes>  
-* Set minimum number of votes required to create a new role during `!pingme create`.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme set-create-poll-length [seconds=...] [minutes=...] [hours=...] [days=...]  
-* Set the amount of time which `!pingme create` polls run for.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme set-role-emoji <emoji>  
-* Set the emoji which appears before the names of `!pingme` roles. Must be a built-in emoji, not custom.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme remove-role-emoji  
-* Remove the emoji which appears before the names of `!pingme` roles.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme create <role_name>  
-* Start a poll for the creation of a new `!pingme` role.  
-  
-#### !pingme for <role_name>  
-* Get yourself a `!pingme` role, to be notified about events and games.  
-  
-#### !pingme list  
-* List all available `!pingme` roles.  
-  
-#### !pingme clear  
-* Unsubscribe from all `!pingme` roles, if you have any.  
-</details>  
+</details>
   
 <details>  
 <summary>Event Channel Management</summary>  
@@ -413,61 +356,83 @@ preview messages will be sent. Any messages sent to this channel get deleted aft
 </details>  
   
 <details>  
-<summary>User Created Roles w/ Cooldown-Limited Pings</summary>  
+<summary>Pingable Roles</summary>  
   
-### User Created Pingable Roles  
+### Pingable Roles  
   
-Roles which may be voted into existence by anyone.  
-  
-On creation request, a poll will be triggered. If the poll receives a certain number of votes, the role will be created.  
-  
-While the role takes its requested colour (default green), it is pingable by anyone. If the role is pinged, its colour will be changed the grey, and the role is no longer pingable by anyone. Once a cooldown period has passed (default 5 hours), the colour and pingable status will be reverted.  
-  
-Every month, a report of the use of all pingable roles will be sent to the servers logging channel, if one is set.  
-  
-##### !pingme list  
-User command: list out all available `!pingme` roles  
-  
-##### !pingme register {@role mention} {name}  
-Admin command: register an existing role for use with `!pingme`.  
-  
-##### !pingme unregister {@role mention}  
-Admin command: unregister a role for use with `!pingme`, without deleting the role from the server.  
-  
-##### !pingme delete {@role mention}  
-Admin command: unregister a role for use with `!pingme`, and deleting the role from the server.  
-  
-Alternatively, if you have permission, you can simply delete the role from the server within discord, and the role will automatically be unregistered from `!pingme`.  
-  
-##### !pingme reset-cooldown {@role mention}  
-Admin command: reset the cooldown for mentioning the given `!pingme` role. The role will immediately become pingable again by anyone.  
-  
-##### !pingme set-cooldown seconds={seconds} minutes={minutes} hours={hours} days={days}  
-Admin command: set the cooldown between a `!pingme` role being pinged, and it being pingable again. All args should be given as keyword args as shown. All args are optional.  
-This does not update the cooldown for roles that are already on cooldown.  
-  
-##### !pingme set-create-threshold {num votes}  
-Admin command: set the minimum number of votes required for users to create a role with `!pingme create`. This does not affect already running polls.  
-  
-##### !pingme set-create-poll-length seconds={seconds} minutes={minutes} hours={hours} days={days}  
-Admin command: set the amount of time `!pingme create` polls run for. All args should be given as keyword args as shown. All args are optional.  
-This does not affect already running polls.  
-  
-##### !pingme set-role-emoji {emoji}  
-Admin command: set a single unicode emoji to be prefixed onto all `!pingme` role names. This will update the names of all existing `!pingme` roles.  
-  
-##### !pingme remove-role-emoji  
-Admin command: remove the emoji prefix for all `!pingme` role names. This will update the names of all existing `!pingme` roles.  
-  
-##### !pingme create {name}  
-User command: request the creation of a `!pingme` role with the given name. A `!pingme` role with the given name must not already exist.  
-On command use, a poll will be created. If a minimum number of votes is reached, a role with the given name is created, and registered for `!pingme` cooldown etc.  
-  
-##### !pingme for {name}  
-User command: add or removing the `!pingme` role with the given name to/from the user.  
-  
-##### !pingme clear  
-User command: remove all `!pingme` roles from the user.  
+Pingable roles are roles that can be voted in to be created by any user, and that once created have a cooldown tied to how often that role can be pinged.
 
+A user can create a poll where if there are enough votes by the time the poll ends, a role will be created. The length of the poll and the number of votes required are customisable by server admins.
+
+After the poll finishes, a reaction menu gets created, allowing *any* user to react and receive the role. Initially the role will have the default cooldown of the server, but can be overridden.  
+  
+#### !pingme settings get-settings
+* Returns an embed of the current default settings for the server.
+* *Requires `administrator` permission in Discord*
+  
+#### !pingme settings default-settings
+* Resets all settings for this guild to the bot-defined defaults defined in the `.env` file.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme settings poll-length <poll length in seconds>
+* Sets the default poll length to the given time in seconds.
+* Polls can have a custom length by specifying it when using the [`!pingme create-role`](#pingme-create-role-role-name-optional-poll-length-in-seconds) command. 
+* *Requires `administrator` permission in Discord*
+
+#### !pingme settings poll-threshold <number of votes threshold>
+* Sets the number of votes required in a poll for the role to be created.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme settings ping-cooldown <cooldown in seconds>
+* Sets the default ping cooldown for any pingable role created with this cog.
+* Roles can have their cooldown altered individually with the [`!pingme role-cooldown`](#pingme-role-cooldown-role-mention--role-id-cooldown-in-seconds) command.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme settings poll-emoji <emoji>
+* Sets the emoji to be used when creating a poll to vote in.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme settings role-emoji <emoji>
+* Sets the default emoji to be used in the role reaction menu for the pingable role once it has been created.
+* Roles can have their reactable emoji altered individually with the [`!pingme role-emoji`](#pingme-role-emoji-role-mention--role-id-emoji) command.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme disable-role <one or many role mentions>
+* Disables the roles mentioned from being mentioned by non-administrators and disables their reaction menus.
+* The roles provided __must__ be pingable roles created with this cog.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme enable-role <one or many role mentions>
+* Enabled the roles mentioned to be mentioned by non-administrators and allows their reaction menus to be reacted to.
+* The roles provided __must__ be pingable roles created with this cog.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme create-role <role name> [Optional: poll length in seconds]
+* Creates a new poll to create a role if the number of votes has surpassed the server's threshold after the poll length has passed.
+
+#### !pingme delete-role <one or many role mentions>
+* Deletes the mentioned roles from the server.
+* The roles provided __must__ be pingable roles created with this cog.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme convert-role <one or many role mentions>
+* Converts the mentioned roles into pingable roles and creates their reaction menus.
+* The roles provided __cannot__ be roles that are already pingable roles.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme convert-pingable <one or many role mentions>
+* Converts the mentioned roles from pingable roles into normal roles and deletes their reaction menus.
+* The roles provided __must__ be pingable roles created with this cog.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme role-cooldown <role mention | role ID> <cooldown in seconds>
+* Sets the ping cooldown for a specific role which overrides the server default for that role.
+* The role provided __must__ be a pingable role created with this cog.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme role-emoji <role mention | role ID> <emoji>
+* Sets the emoji to use in the reaction menu for the given role.
+* The role provided __must__ be a pingable role created with this cog.
+* *Requires `administrator` permission in Discord*
 
 </details>
