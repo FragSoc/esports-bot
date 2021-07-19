@@ -1,5 +1,7 @@
+import shlex
+
 from discord import RawReactionActionEvent, Message, Member, User, Client, DMChannel, GroupChannel, TextChannel
-from typing import Tuple, Union
+from typing import List, Tuple, Union
 from . import emotes, exceptions
 
 # Link to an empty image, to allow for an author name in embeds without providing an icon.
@@ -78,3 +80,10 @@ async def send_timed_message(channel: TextChannel, *args, timer: int = 15, **kwa
     """
     timed_message = await channel.send(*args, **kwargs)
     await timed_message.delete(delay=timer)
+
+
+def get_attempted_arg(message: str, arg_index: int) -> [str, List]:
+    command_args = shlex.split(message)
+    command_args.pop(0)
+    attempted_arg = command_args[arg_index]
+    return attempted_arg, command_args

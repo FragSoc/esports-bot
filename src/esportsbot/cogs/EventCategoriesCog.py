@@ -1,8 +1,6 @@
 import asyncio
 import logging
-import shlex
 from collections import defaultdict
-from typing import List
 
 from discord import Forbidden, PermissionOverwrite, Role
 from discord.ext import commands
@@ -11,6 +9,7 @@ from esportsbot.DiscordReactableMenus.EventReactMenu import EventReactMenu
 from esportsbot.DiscordReactableMenus.ExampleMenus import ActionConfirmationMenu
 from esportsbot.DiscordReactableMenus.reactable_lib import get_menu
 from esportsbot.db_gateway import DBGatewayActions
+from esportsbot.lib.discordUtil import get_attempted_arg
 from esportsbot.models import Event_categories
 
 denied_perms = PermissionOverwrite(read_messages=False, send_messages=False, connect=False)
@@ -156,13 +155,6 @@ class EventCategoriesCog(commands.Cog):
         current_sign_in[shared_role] = read_only_perms
         current_sign_in[default_role] = denied_perms
         await sign_in.edit(overwrites=current_sign_in, reason=reason)
-
-    @staticmethod
-    def get_attempted_arg(message: str, arg_index: int) -> [str, List]:
-        command_args = shlex.split(message)
-        command_args.pop(0)
-        attempted_arg = command_args[arg_index]
-        return attempted_arg, command_args
 
     @staticmethod
     def get_event_channels(event_menu):
@@ -408,7 +400,7 @@ class EventCategoriesCog(commands.Cog):
         if isinstance(error, commands.RoleNotFound):
             self.logger.warning("The argument parsed was not a Role, trying to find a role with the given value")
             arg_index = 1
-            attempted_role, command_args = self.get_attempted_arg(context.message.content, arg_index)
+            attempted_role, command_args = get_attempted_arg(context.message.content, arg_index)
             try:
                 role_id = int(attempted_role)
                 for role in context.guild.roles:

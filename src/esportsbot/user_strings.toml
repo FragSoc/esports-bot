@@ -104,6 +104,8 @@ not_pingable_role = ":warning: Only pingable roles can be used with this command
 role_delete_success = "✅ The following role(s) were deleted: `{deleted_roles}`"
 role_convert_success = "✅ The following role(s) were converted to pingable roles: `{converted_roles}`"
 pingable_convert_success= "✅ The following role(s) were converted to normal roles: `{converted_roles}`"
+invalid_role = ":x: The role or role ID is not a valid role or pingable role"
+role_cooldown_updated = "✅ The ping cooldown for the role `{role}` has been set to `{seconds} seconds`"
 
 [voicemaster]
 success_slave_locked = "Your VM slave has been locked 🔒"

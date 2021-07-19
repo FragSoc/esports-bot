@@ -4,7 +4,7 @@ import os
 from collections import defaultdict
 from typing import Dict, List
 
-from discord import Embed
+from discord import Embed, Role
 from discord.ext import commands, tasks
 
 from esportsbot.DiscordReactableMenus.EmojiHandler import MultiEmoji
@@ -12,6 +12,7 @@ from esportsbot.DiscordReactableMenus.PingableMenus import PingableRoleMenu, Pin
 from esportsbot.db_gateway import DBGatewayActions
 
 # The emoji to use in the role menu:
+from esportsbot.lib.discordUtil import get_attempted_arg
 from esportsbot.models import Pingable_polls, Pingable_roles, Pingable_settings
 
 # The default role emoji to use on the role react menus:
@@ -27,6 +28,8 @@ PINGABLE_POLL_EMOJI = MultiEmoji("📋")
 # The title and description of the poll:
 PINGABLE_POLL_TITLE = "Vote to create {} Pingable Role"
 PINGABLE_POLL_DESCRIPTION = "If the vote is successful you will be given the role"
+
+TASK_INTERVAL = 10
 
 
 class PingableRolesCog(commands.Cog):
@@ -225,7 +228,7 @@ class PingableRolesCog(commands.Cog):
         if not self.check_cooldown.is_running() or self.check_cooldown.is_being_cancelled():
             self.check_cooldown.start()
 
-    @tasks.loop(seconds=10)
+    @tasks.loop(seconds=TASK_INTERVAL)
     async def check_poll(self):
         if len(self.polls) == 0:
             self.check_poll.cancel()
@@ -248,7 +251,7 @@ class PingableRolesCog(commands.Cog):
         for poll_id in polls_ids_to_remove:
             self.polls.pop(poll_id)
 
-    @tasks.loop(seconds=10)
+    @tasks.loop(seconds=TASK_INTERVAL)
     async def check_cooldown(self):
         if not self.roles_on_cooldown:
             self.check_cooldown.cancel()
@@ -263,7 +266,8 @@ class PingableRolesCog(commands.Cog):
             menu_id = self.all_role_ids.get(role.guild.id).get(role.id)
             menu = self.roles.get(menu_id).get("menu")
             if current_time - menu.last_pinged >= datetime.timedelta(seconds=menu.cooldown):
-                self.logger.info(f"{role.name} is no longer on cooldown!")
+                roles_to_remove.append(role)
+                self.logger.info(f"{role.name} role is no longer on cooldown!")
                 await role.edit(mentionable=True)
 
         for role in roles_to_remove:
@@ -417,9 +421,9 @@ class PingableRolesCog(commands.Cog):
         self.logger.info(f"Set {context.guild.name} poll threshold to {vote_threshold} votes")
 
     @ping_me.command(
-        name="role-cooldown",
+        name="default-cooldown",
         usage="<ping cooldown in seconds>",
-        help="Used to set the cooldown for pingable roles."
+        help="Used to set the default cooldown for pingable roles."
     )
     @commands.has_permissions(administrator=True)
     async def set_role_cooldown(self, context: commands.Context, role_cooldown: int):
@@ -582,6 +586,45 @@ class PingableRolesCog(commands.Cog):
         await context.reply(self.user_strings["pingable_convert_success"].format(converted_roles=converted_string))
         self.logger.info(f"Converted pingable roles: {converted_string} in guild {context.guild.name}")
 
+    @ping_me.command(
+        name="set-cooldown",
+        usage="<role mention | role ID> <new cooldown in seconds>",
+        help="Sets the ping cooldown for an existing pingable role."
+    )
+    @commands.has_permissions(administrator=True)
+    async def change_pingable_role_cooldown(self, context: commands.Context, pingable_role: Role, cooldown_seconds: int):
+        guild_id = context.guild.id
+        if not self.all_role_ids.get(guild_id):
+            await context.reply(self.user_strings["invalid_role"])
+            return
+
+        menu_id = self.all_role_ids.get(guild_id).get(pingable_role.id)
+        if not menu_id:
+            await context.reply(self.user_strings["invalid_role"])
+            return
+
+        role_menu = self.roles.get(menu_id).get("menu")
+        role_menu.cooldown = cooldown_seconds
+
+        db_item = self.db.get(Pingable_roles, guild_id=guild_id, role_id=pingable_role.id)
+        if db_item:
+            db_item.menu = role_menu.to_dict()
+            self.db.update(db_item)
+        else:
+            db_item = Pingable_roles(
+                guild_id=guild_id,
+                role_id=pingable_role.id,
+                menu_id=role_menu.id,
+                menu=role_menu.to_dict()
+            )
+            self.db.create(db_item)
+
+        await context.reply(
+            self.user_strings["role_cooldown_updated"].format(role=pingable_role.name,
+                                                              seconds=cooldown_seconds)
+        )
+
+    @change_pingable_role_cooldown.error
     @set_poll_threshold.error
     @set_poll_length.error
     @create_role.error
@@ -596,6 +639,28 @@ class PingableRolesCog(commands.Cog):
 
         await context.reply(self.command_error_message)
         raise error
+
+    @change_pingable_role_cooldown.error
+    async def role_parse_error(self, context: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.RoleNotFound):
+            self.logger.warning("The argument parsed was not a Role, trying to find a role with the given value")
+            # The position of the role arg in the change_pingable_role_cooldown command
+            arg_pos = 0
+            attempted_arg, command_args = get_attempted_arg(context.args, arg_pos)
+            try:
+                role_id = int(attempted_arg)
+                for role in context.guild.roles:
+                    if role.id == role_id:
+                        # Retry the command and parse the given role_id as an actual role object.
+                        self.logger.info(f"Retrying {context.command.name} with found role: {role.name}")
+                        command_args[arg_pos] = role
+                        await self.change_pingable_role_cooldown(context, *command_args)
+                        return
+                raise ValueError
+            except ValueError:
+                self.logger.error(f"Unable to find a role with id: {attempted_arg}")
+                await context.reply(self.user_strings["invalid_role"])
+                return
 
 
 def setup(bot):
