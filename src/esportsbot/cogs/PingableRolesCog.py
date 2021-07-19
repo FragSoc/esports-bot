@@ -332,8 +332,12 @@ class PingableRolesCog(commands.Cog):
     async def ping_me(self, context: commands.Context):
         pass
 
-    @ping_me.command(name="get-settings", help="Gets the current settings of this server.")
+    @ping_me.group(name="settings", help="Set default values for this server.")
     @commands.has_permissions(administrator=True)
+    async def ping_me_settings(self, context: commands.Context):
+        pass
+
+    @ping_me_settings.command(name="get-settings", help="Gets the current settings of this server.")
     async def get_guild_settings(self, context: commands.Context):
         guild_settings = self.guild_settings.get(context.guild.id)
         if not guild_settings:
@@ -365,8 +369,7 @@ class PingableRolesCog(commands.Cog):
         embed.add_field(name=f"• Role Cooldown Seconds: {guild_settings.get('role_cooldown')}", value="​", inline=False)
         await context.send(embed=embed)
 
-    @ping_me.command(name="default-settings", help="Sets the default value for the poll length, threshold and emojis.")
-    @commands.has_permissions(administrator=True)
+    @ping_me_settings.command(name="default-settings", help="Sets the default value for the poll length, threshold and emojis.")
     async def default_settings(self, context: commands.Context):
         guild_id = context.guild.id
 
@@ -387,13 +390,12 @@ class PingableRolesCog(commands.Cog):
 
         self.logger.info(f"{context.guild.name} has had its pingable settings set back to defaults!")
 
-    @ping_me.command(
+    @ping_me_settings.command(
         name="poll-length",
         usage="<poll length in seconds>",
         help="Used to set the default length of a poll for this Server. "
         "Poll lengths can still be overridden by giving the poll length in the `create-poll` command!"
     )
-    @commands.has_permissions(administrator=True)
     async def set_poll_length(self, context: commands.Context, poll_length: int):
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
         db_item.default_poll_length = poll_length
@@ -404,12 +406,11 @@ class PingableRolesCog(commands.Cog):
         await context.reply(self.user_strings["set_poll_length"].format(poll_length=poll_length))
         self.logger.info(f"Set {context.guild.name} default poll length to {poll_length}s")
 
-    @ping_me.command(
+    @ping_me_settings.command(
         name="poll-threshold",
         usage="<number of votes threshold>",
         help="Used to set the number of votes required to create a role."
     )
-    @commands.has_permissions(administrator=True)
     async def set_poll_threshold(self, context: commands.Context, vote_threshold: int):
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
         db_item.default_poll_threshold = vote_threshold
@@ -420,12 +421,11 @@ class PingableRolesCog(commands.Cog):
         await context.reply(self.user_strings["set_poll_threshold"].format(vote_threshold=vote_threshold))
         self.logger.info(f"Set {context.guild.name} poll threshold to {vote_threshold} votes")
 
-    @ping_me.command(
-        name="default-cooldown",
+    @ping_me_settings.command(
+        name="ping-cooldown",
         usage="<ping cooldown in seconds>",
         help="Used to set the default cooldown for pingable roles."
     )
-    @commands.has_permissions(administrator=True)
     async def set_role_cooldown(self, context: commands.Context, role_cooldown: int):
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
         db_item.default_cooldown_length = role_cooldown
@@ -436,8 +436,11 @@ class PingableRolesCog(commands.Cog):
         await context.reply(self.user_strings["set_role_cooldown"].format(cooldown=role_cooldown))
         self.logger.info(f"Set {context.guild.name} pingable role cooldown to {role_cooldown}s")
 
-    @ping_me.command(name="poll-emoji", usage="<emoji>", help="Used to set the emoji that is used in the `create-role` polls.")
-    @commands.has_permissions(administrator=True)
+    @ping_me_settings.command(
+            name="poll-emoji",
+            usage="<emoji>",
+            help="Used to set the emoji that is used in the `create-role` polls."
+    )
     async def set_poll_emoji(self, context: commands.Context, poll_emoji: MultiEmoji):
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
         db_item.default_poll_emoji = poll_emoji.to_dict()
@@ -448,12 +451,11 @@ class PingableRolesCog(commands.Cog):
         await context.reply(self.user_strings["set_poll_emoji"].format(emoji=poll_emoji.discord_emoji))
         self.logger.info(f"Set {context.guild.name} poll emoji to {poll_emoji.name}")
 
-    @ping_me.command(
+    @ping_me_settings.command(
         name="role-emoji",
         usage="<emoji>",
         help="Used to set the emoji that is used in the `create-role` role reaction menu if the poll is successful."
     )
-    @commands.has_permissions(administrator=True)
     async def set_role_emoji(self, context: commands.Context, role_emoji: MultiEmoji):
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
         db_item.default_role_emoji = role_emoji.to_dict()
@@ -587,7 +589,7 @@ class PingableRolesCog(commands.Cog):
         self.logger.info(f"Converted pingable roles: {converted_string} in guild {context.guild.name}")
 
     @ping_me.command(
-        name="set-cooldown",
+        name="role-cooldown",
         usage="<role mention | role ID> <new cooldown in seconds>",
         help="Sets the ping cooldown for an existing pingable role."
     )
