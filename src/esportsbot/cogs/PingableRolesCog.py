@@ -74,8 +74,7 @@ class PingableRolesCog(commands.Cog):
         # Check each role mentioned in the message:
         for role in message.role_mentions:
             if role.id in self.all_role_ids.get(message.guild.id):
-                # TODO: Change to debug
-                self.logger.info(f"{role.name} pingable role was just mentioned in {message.guild.name}")
+                self.logger.debug(f"{role.name} pingable role was just mentioned in {message.guild.name}")
                 menu_id = self.all_role_ids.get(message.guild.id).get(role.id)
                 menu = self.roles.get(menu_id).get("menu")
                 menu.last_pinged = datetime.datetime.now()
@@ -98,8 +97,7 @@ class PingableRolesCog(commands.Cog):
         self.logger.info(f"Deleted {role.name} for the guild {role.guild.name} from DB")
 
     async def remove_pingable_role(self, role):
-        # TODO: Change to debug
-        self.logger.info(f"{role.name} pingable role was just removed from {role.guild.name}")
+        self.logger.debug(f"{role.name} pingable role was just removed from {role.guild.name}")
         db_item = self.db.get(Pingable_roles, guild_id=role.guild.id, role_id=role.id)
         menu_id = db_item.menu_id
         menu_data = self.roles.pop(menu_id)
@@ -115,8 +113,7 @@ class PingableRolesCog(commands.Cog):
             self.all_role_ids.pop(role.guild.id)
 
     async def initialise_menus(self):
-        # TODO: Change to debug
-        self.logger.info("Initialising menus into actual menu objects from data base info")
+        self.logger.debug("Initialising menus into actual menu objects from data base info")
 
         # Load role menus:
         for menu_id in self.roles:
@@ -131,8 +128,7 @@ class PingableRolesCog(commands.Cog):
         self.logger.info("All menus initialised!")
 
     def load_guild_settings(self) -> Dict:
-        # TODO: Change to debug
-        self.logger.info("Loading menu guild settings for all guilds")
+        self.logger.debug("Loading menu guild settings for all guilds")
         db_data: [Pingable_settings] = self.db.list(Pingable_settings)
 
         loaded_data = {}
@@ -151,8 +147,7 @@ class PingableRolesCog(commands.Cog):
         return loaded_data
 
     def load_all_polls(self, guild_ids: List[int]) -> Dict:
-        # TODO: Change to debug
-        self.logger.info("Loading pingable polls interrupted by shutdown")
+        self.logger.debug("Loading pingable polls interrupted by shutdown")
         loaded_data = {}
 
         for guild in guild_ids:
@@ -164,8 +159,7 @@ class PingableRolesCog(commands.Cog):
         return loaded_data
 
     def load_guild_polls(self, guild_id: int) -> Dict:
-        # TODO: Change to debug
-        self.logger.info(f"Loading pingable polls for guild with id: {guild_id}")
+        self.logger.debug(f"Loading pingable polls for guild with id: {guild_id}")
         guild_polls: [Pingable_polls] = self.db.list(Pingable_polls, guild_id=guild_id)
 
         guild_data = {}
@@ -173,14 +167,12 @@ class PingableRolesCog(commands.Cog):
         for item in guild_polls:
             guild_data[item.poll_id] = {"name": item.pingable_name, "menu": item.poll}
 
-        # TODO: Change to debug
-        self.logger.info(f"Loaded {len(guild_data)} pingable polls for guild with id: {guild_id}")
+        self.logger.debug(f"Loaded {len(guild_data)} pingable polls for guild with id: {guild_id}")
 
         return guild_data
 
     def load_all_roles(self, guild_ids: List[int]) -> Dict:
-        # TODO: Change to debug
-        self.logger.info("Loading pingable react menus from DB")
+        self.logger.debug("Loading pingable react menus from DB")
         loaded_data = {}
 
         for guild in guild_ids:
@@ -192,8 +184,7 @@ class PingableRolesCog(commands.Cog):
         return loaded_data
 
     def load_guild_roles(self, guild_id: int) -> Dict:
-        # TODO: Change to debug
-        self.logger.info(f"Loading pingable react menus for guild with id: {guild_id}")
+        self.logger.debug(f"Loading pingable react menus for guild with id: {guild_id}")
         guild_roles: [Pingable_roles] = self.db.list(Pingable_roles, guild_id=guild_id)
 
         guild_data = {}
@@ -201,14 +192,12 @@ class PingableRolesCog(commands.Cog):
         for item in guild_roles:
             guild_data[item.menu_id] = {"role_id": item.role_id, "menu": item.menu}
 
-        # TODO: Change to debug
-        self.logger.info(f"Loaded {len(guild_data)} pingable reaction menus for guild with id {guild_id}")
+        self.logger.debug(f"Loaded {len(guild_data)} pingable reaction menus for guild with id {guild_id}")
 
         return guild_data
 
     def all_roles_from_guild_data(self, role_data: Dict) -> Dict:
-        # TODO: Change to debug
-        self.logger.info("Getting all pingable roles as dict of Guild->[Role->Menu ID]")
+        self.logger.debug("Getting all pingable roles as dict of Guild->[Role->Menu ID]")
         roles = defaultdict(dict)
 
         for menu_id in role_data:
@@ -311,8 +300,7 @@ class PingableRolesCog(commands.Cog):
             self.logger.info(f"Pingable poll with name {poll_to_finish.name} had more votes than the voting threshold!")
             role = await channel.guild.create_role(name=poll_to_finish.name + PINGABLE_ROLE_SUFFIX, mentionable=True)
             await self.create_reaction_menu(role, channel)
-            # TODO: Change to debug
-            self.logger.info(f"Saved new pingable role information for {role.name} to DB!")
+            self.logger.debug(f"Saved new pingable role information for {role.name} to DB!")
 
         db_item = self.db.get(Pingable_polls, guild_id=channel.guild.id, poll_id=poll_to_finish.id)
         self.db.delete(db_item)
@@ -661,10 +649,10 @@ class PingableRolesCog(commands.Cog):
         )
 
     @ping_me.command(
-            name="disable-role",
-            usage="<One or many role mentions>",
-            help="Stops the mentioned roles from being mentioned and disables their reaction menus. "
-                 "Only works for pingable roles."
+        name="disable-role",
+        usage="<One or many role mentions>",
+        help="Stops the mentioned roles from being mentioned and disables their reaction menus. "
+        "Only works for pingable roles."
     )
     @commands.has_permissions(administrator=True)
     async def disable_pingable_role(self, context: commands.Context):
@@ -686,9 +674,9 @@ class PingableRolesCog(commands.Cog):
         await context.reply(self.user_strings["roles_disabled"].format(disabled_roles=disabled_string))
 
     @ping_me.command(
-            name="enable-role",
-            usage="<One or many role mentions>",
-            help="Allows a pingable role to be mentioned again, and allows users to react to their reaction menus."
+        name="enable-role",
+        usage="<One or many role mentions>",
+        help="Allows a pingable role to be mentioned again, and allows users to react to their reaction menus."
     )
     @commands.has_permissions(administrator=True)
     async def enabled_pingable_roles(self, context: commands.Context):
