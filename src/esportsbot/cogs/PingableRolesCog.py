@@ -221,6 +221,20 @@ class PingableRolesCog(commands.Cog):
 
         return roles
 
+    async def get_menu_from_role_ping(self, context: commands.Context, role: Role):
+        guild_id = context.guild.id
+        if not self.all_role_ids.get(guild_id):
+            await context.reply(self.user_strings["invalid_role"])
+            return None
+
+        menu_id = self.all_role_ids.get(guild_id).get(role.id)
+        if not menu_id:
+            await context.reply(self.user_strings["invalid_role"])
+            return None
+
+        role_menu = self.roles.get(menu_id).get("menu")
+        return role_menu
+
     def ensure_tasks(self):
         if not self.check_poll.is_running() or self.check_poll.is_being_cancelled():
             self.check_poll.start()
@@ -369,7 +383,10 @@ class PingableRolesCog(commands.Cog):
         embed.add_field(name=f"• Role Cooldown Seconds: {guild_settings.get('role_cooldown')}", value="​", inline=False)
         await context.send(embed=embed)
 
-    @ping_me_settings.command(name="default-settings", help="Sets the default value for the poll length, threshold and emojis.")
+    @ping_me_settings.command(
+        name="default-settings",
+        help="Sets the default value for the poll length, threshold and emojis."
+    )
     async def default_settings(self, context: commands.Context):
         guild_id = context.guild.id
 
@@ -437,9 +454,9 @@ class PingableRolesCog(commands.Cog):
         self.logger.info(f"Set {context.guild.name} pingable role cooldown to {role_cooldown}s")
 
     @ping_me_settings.command(
-            name="poll-emoji",
-            usage="<emoji>",
-            help="Used to set the emoji that is used in the `create-role` polls."
+        name="poll-emoji",
+        usage="<emoji>",
+        help="Used to set the emoji that is used in the `create-role` polls."
     )
     async def set_poll_emoji(self, context: commands.Context, poll_emoji: MultiEmoji):
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
@@ -595,26 +612,16 @@ class PingableRolesCog(commands.Cog):
     )
     @commands.has_permissions(administrator=True)
     async def change_pingable_role_cooldown(self, context: commands.Context, pingable_role: Role, cooldown_seconds: int):
-        guild_id = context.guild.id
-        if not self.all_role_ids.get(guild_id):
-            await context.reply(self.user_strings["invalid_role"])
-            return
-
-        menu_id = self.all_role_ids.get(guild_id).get(pingable_role.id)
-        if not menu_id:
-            await context.reply(self.user_strings["invalid_role"])
-            return
-
-        role_menu = self.roles.get(menu_id).get("menu")
+        role_menu = await self.get_menu_from_role_ping(context, pingable_role)
         role_menu.cooldown = cooldown_seconds
 
-        db_item = self.db.get(Pingable_roles, guild_id=guild_id, role_id=pingable_role.id)
+        db_item = self.db.get(Pingable_roles, guild_id=context.guild.id, role_id=pingable_role.id)
         if db_item:
             db_item.menu = role_menu.to_dict()
             self.db.update(db_item)
         else:
             db_item = Pingable_roles(
-                guild_id=guild_id,
+                guild_id=context.guild.id,
                 role_id=pingable_role.id,
                 menu_id=role_menu.id,
                 menu=role_menu.to_dict()
@@ -624,6 +631,27 @@ class PingableRolesCog(commands.Cog):
         await context.reply(
             self.user_strings["role_cooldown_updated"].format(role=pingable_role.name,
                                                               seconds=cooldown_seconds)
+        )
+
+    @ping_me.command(
+        name="role-emoji",
+        usage="<role mention | role ID> <new react emoji>",
+        help="Sets the emoji for the reaction menu for the given role."
+    )
+    @commands.has_permissions(administrator=True)
+    async def change_pingable_role_emoji(self, context: commands.Context, pingable_role: Role, role_emoji: MultiEmoji):
+        role_menu = await self.get_menu_from_role_ping(context, pingable_role)
+        if not role_menu:
+            return
+        await role_menu.disable(self.bot)
+        current_emoji_id = list(role_menu.options.keys())[0]
+        current_emoji = role_menu.options.get(current_emoji_id).get("emoji")
+        role_menu.remove_option(current_emoji)
+        role_menu.add_option(role_emoji, role_menu.role)
+        await role_menu.enable(self.bot)
+        await context.reply(
+            self.user_strings["role_emoji_updated"].format(role=pingable_role.name,
+                                                           emoji=role_emoji.discord_emoji)
         )
 
     @change_pingable_role_cooldown.error
@@ -643,26 +671,37 @@ class PingableRolesCog(commands.Cog):
         raise error
 
     @change_pingable_role_cooldown.error
-    async def role_parse_error(self, context: commands.Context, error: commands.CommandError):
+    async def role_cooldown_error(self, context: commands.Context, error: commands.CommandError):
         if isinstance(error, commands.RoleNotFound):
-            self.logger.warning("The argument parsed was not a Role, trying to find a role with the given value")
             # The position of the role arg in the change_pingable_role_cooldown command
-            arg_pos = 0
-            attempted_arg, command_args = get_attempted_arg(context.args, arg_pos)
-            try:
-                role_id = int(attempted_arg)
-                for role in context.guild.roles:
-                    if role.id == role_id:
-                        # Retry the command and parse the given role_id as an actual role object.
-                        self.logger.info(f"Retrying {context.command.name} with found role: {role.name}")
-                        command_args[arg_pos] = role
-                        await self.change_pingable_role_cooldown(context, *command_args)
-                        return
-                raise ValueError
-            except ValueError:
-                self.logger.error(f"Unable to find a role with id: {attempted_arg}")
-                await context.reply(self.user_strings["invalid_role"])
-                return
+            role_arg_index = 0
+            await self.invalid_role_error(context, role_arg_index, self.change_pingable_role_cooldown)
+
+    @change_pingable_role_emoji.error
+    async def role_emoji_error(self, context: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.RoleNotFound):
+            # The position of the role arg in the change_pingable_role_emoji command
+            role_arg_index = 0
+            await self.invalid_role_error(context, role_arg_index, self.change_pingable_role_emoji)
+
+    async def invalid_role_error(self, context: commands.Context, role_arg_index: int, command):
+        self.logger.warning("The argument parsed was not a Role, trying to find a role with the given value")
+
+        attempted_arg, command_args = get_attempted_arg(context.args, role_arg_index)
+        try:
+            role_id = int(attempted_arg)
+            for role in context.guild.roles:
+                if role.id == role_id:
+                    # Retry the command and parse the given role_id as an actual role object.
+                    self.logger.info(f"Retrying {context.command.name} with found role: {role.name}")
+                    command_args[role_arg_index] = role
+                    await command(context, *command_args)
+                    return
+            raise ValueError
+        except ValueError:
+            self.logger.error(f"Unable to find a role with id: {attempted_arg}")
+            await context.reply(self.user_strings["invalid_role"])
+            return
 
 
 def setup(bot):

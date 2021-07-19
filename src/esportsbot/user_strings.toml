@@ -106,6 +106,7 @@ role_convert_success = "✅ The following role(s) were converted to pingable rol
 pingable_convert_success= "✅ The following role(s) were converted to normal roles: `{converted_roles}`"
 invalid_role = ":x: The role or role ID is not a valid role or pingable role"
 role_cooldown_updated = "✅ The ping cooldown for the role `{role}` has been set to `{seconds} seconds`"
+role_emoji_updated = "✅ The emoji for the role `{role}` has been set to {emoji}"
 
 [voicemaster]
 success_slave_locked = "Your VM slave has been locked 🔒"
