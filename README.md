@@ -128,17 +128,17 @@ The list below describes the different "Cogs" of the bot, their associated comma
 Enables forwarding tweets when they are tweeted to a discord channel for specific Twitter accounts.  
   
 Requires the `ENABLE_TWITTER` variable to be set to `TRUE` in order to function.  
-#### !addtwitter <twitter_handle>  
+#### !addtwitter \<twitter handle>  
 * Add a Twitter handle to notify when they tweet or quote retweet.  
   
-#### !removetwitter <twitter_handle>  
+#### !removetwitter \<twitter handle>  
 * Remove the given Twitter handle from notifications.  
   
-#### !twitterhook [optional: channel_mention] [optional: hook_name]  
+#### !twitterhook [optional: channel mention] [optional: hook name]  
 * Aliases:  `addtwitterhook`  
 * Creates a Discord Webhook bound to the channel the command was executed in, unless a channel is given, and with a default name unless a name is given.  
   
-#### !removetwitterhook <hook_name>  
+#### !removetwitterhook \<hook name>  
 * Aliases: `deltwitterhook`  
 * Deletes the Discord Webhook so that updates are no longer sent to that channel  
   
@@ -153,19 +153,19 @@ Requires the `ENABLE_TWITTER` variable to be set to `TRUE` in order to function.
 ### Event Category Management  
 Each server can have any number of named event categories, where each category creates a sign-in channel, a general chat, a voice chat and a role for the event. All commands in this cog required the `administrator` permission in Discord.  
   
-#### !events create-event <event_name> <role_mention | role_id>  
+#### !events create-event \<event name> \<role mention | role ID>  
 * Creates the text channels, and voice channel for the event. The role given is used to later expose the sign-in channel to members. Upon creation the event is set to `closed`.
 * See the `open-event` and `close-event` for more information regarding which members can see which channels.
 * The role created for this event will have the same as the event name, it is not the role given in the command.
 
-#### !events open-event <event_name>  
+#### !events open-event \<event name>  
 * Allows the role given in the `create-event` command to see the sign-in channel, and add reactions to the sign-in message.
 * The sign-in message grants the role created by the bot for the event. 
   
-#### !events close-event <event_name>
+#### !events close-event \<event name>
 * Stops any member who is not an administrator from being able to see any of the event channels. 
   
-#### !events delete-event <event_name>  
+#### !events delete-event \<event name>  
 * Deletes all the channels in the category for the event and deletes the role created by the bot for the event.
 </details>  
   
@@ -211,27 +211,27 @@ In your `.env` file the `TWITCH_SUB_SECRET` should be a string that is 10-100 ch
 The `TWITCH_CALLBACK` is the URL to your HTTPS server. For testing you can use `ngrok`: 
 - Run `ngrok http 443` and copy the `https` URL **not** the `htttp` URL and use that as your `TWITCH_CALLBACK` variable.
   
-#### !twitch createhook [optional: channel_mention] [optional: hook_name]  
+#### !twitch createhook [optional: channel_mention] [optional: hook name]  
 * Creates a Discord Webhook bound to the channel the command was executed in, unless a channel is given, and with a default name unless a name is given.  
   
-#### !twitch deletehook <hook_name>  
+#### !twitch deletehook \<hook name>  
 * Deletes the given Discord Webhook.  
   
-#### !twitch add <twitch_handle | twitch_url> [optional: custom_message]  
+#### !twitch add \<twitch handle | twitch url> [optional: custom message]  
 * Adds a Twitch channel to be tracked in the current Discord server.  
 * *__If a custom message is given, it must be surrounded by double quotes__*: `!twitch add <twitch_handle> "custom_message"`  
   
-#### !twitch remove <twitch_handle>  
+#### !twitch remove \<twitch handle>  
 * Removes a Twitch channel from being tracked in the current Discord server.  
   
 #### !twitch list  
 * Shows a list of all the currently tracked Twitch accounts and their custom messages.  
   
-#### !twitch setmessage <twitch_handle> [optional: custom_message]  
+#### !twitch setmessage \<twitch handle> [optional: custom message]  
 * Sets the custom message of a Twitch channel. Can be left empty if the custom message is to be removed.  
 * *__If a custom message is given, it must be surrounded by double quotes__*: `!twitch setmessage <twitch_handle> "custom_message"`  
   
-#### !twitch getmessage <twitch_handle>  
+#### !twitch getmessage \<twitch handle>  
 * Gets the currently set custom message for a Twitch channel.  
   
 </details>  
@@ -321,7 +321,7 @@ preview messages will be sent. Any messages sent to this channel get deleted aft
 * This clears the current music channel and resets the preview and queue messages.  
 * *__Does not need to be sent in the music channel__*  
   
-#### !removesong <index>  
+#### !removesong \<index>  
 * Aliases: `remove, removeat`  
 * Removes a song from the queue at the given index.  
   
@@ -374,63 +374,63 @@ After the poll finishes, a reaction menu gets created, allowing *any* user to re
 * Resets all settings for this guild to the bot-defined defaults defined in the `.env` file.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme settings poll-length <poll length in seconds>
+#### !pingme settings poll-length \<poll length in seconds>
 * Sets the default poll length to the given time in seconds.
 * Polls can have a custom length by specifying it when using the [`!pingme create-role`](#pingme-create-role-role-name-optional-poll-length-in-seconds) command. 
 * *Requires `administrator` permission in Discord*
 
-#### !pingme settings poll-threshold <number of votes threshold>
+#### !pingme settings poll-threshold \<number of votes threshold>
 * Sets the number of votes required in a poll for the role to be created.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme settings ping-cooldown <cooldown in seconds>
+#### !pingme settings ping-cooldown \<cooldown in seconds>
 * Sets the default ping cooldown for any pingable role created with this cog.
 * Roles can have their cooldown altered individually with the [`!pingme role-cooldown`](#pingme-role-cooldown-role-mention--role-id-cooldown-in-seconds) command.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme settings poll-emoji <emoji>
+#### !pingme settings poll-emoji \<emoji>
 * Sets the emoji to be used when creating a poll to vote in.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme settings role-emoji <emoji>
+#### !pingme settings role-emoji \<emoji>
 * Sets the default emoji to be used in the role reaction menu for the pingable role once it has been created.
 * Roles can have their reactable emoji altered individually with the [`!pingme role-emoji`](#pingme-role-emoji-role-mention--role-id-emoji) command.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme disable-role <one or many role mentions>
+#### !pingme disable-role \<one or many role mentions>
 * Disables the roles mentioned from being mentioned by non-administrators and disables their reaction menus.
 * The roles provided __must__ be pingable roles created with this cog.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme enable-role <one or many role mentions>
+#### !pingme enable-role \<one or many role mentions>
 * Enabled the roles mentioned to be mentioned by non-administrators and allows their reaction menus to be reacted to.
 * The roles provided __must__ be pingable roles created with this cog.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme create-role <role name> [Optional: poll length in seconds]
+#### !pingme create-role \<role name> [optional: poll length in seconds]
 * Creates a new poll to create a role if the number of votes has surpassed the server's threshold after the poll length has passed.
 
-#### !pingme delete-role <one or many role mentions>
+#### !pingme delete-role \<one or many role mentions>
 * Deletes the mentioned roles from the server.
 * The roles provided __must__ be pingable roles created with this cog.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme convert-role <one or many role mentions>
+#### !pingme convert-role \<one or many role mentions>
 * Converts the mentioned roles into pingable roles and creates their reaction menus.
 * The roles provided __cannot__ be roles that are already pingable roles.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme convert-pingable <one or many role mentions>
+#### !pingme convert-pingable \<one or many role mentions>
 * Converts the mentioned roles from pingable roles into normal roles and deletes their reaction menus.
 * The roles provided __must__ be pingable roles created with this cog.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme role-cooldown <role mention | role ID> <cooldown in seconds>
+#### !pingme role-cooldown \<role mention | role ID> <cooldown in seconds>
 * Sets the ping cooldown for a specific role which overrides the server default for that role.
 * The role provided __must__ be a pingable role created with this cog.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme role-emoji <role mention | role ID> <emoji>
+#### !pingme role-emoji \<role mention | role ID> <emoji>
 * Sets the emoji to use in the reaction menu for the given role.
 * The role provided __must__ be a pingable role created with this cog.
 * *Requires `administrator` permission in Discord*
