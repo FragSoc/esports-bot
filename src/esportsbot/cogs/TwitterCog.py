@@ -23,7 +23,6 @@ ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
 
 class TwitterWebhook(tweepy.StreamListener):
-
     def __init__(self, api, loop=None):
         super().__init__(api)
         self.loop = loop if loop is not None else asyncio.get_event_loop()
@@ -98,9 +97,7 @@ class TwitterWebhook(tweepy.StreamListener):
                 # And for each Webhook in the guild...
                 if bot_hook_prefix in g_hook.name and g_hook.user.id == bot_user_id:
                     # Only if the Webhook was created for the TwitterCog and by the bot.
-                    self.hooks[g_hook.id] = {"token": g_hook.token,
-                                             "name": g_hook.name,
-                                             "guild_id": g_hook.guild_id}
+                    self.hooks[g_hook.id] = {"token": g_hook.token, "name": g_hook.name, "guild_id": g_hook.guild_id}
 
     def add_hook(self, hook: Webhook) -> bool:
         """
@@ -172,9 +169,12 @@ class TwitterWebhook(tweepy.StreamListener):
         if len(tracked_guilds) == 1 and guild_id in tracked_guilds:
             # This guild is the only guild the account is tracked in.
             self.tracked_accounts.pop(user_id)
-            self.logger.info("%s(guild id) was the only guild id %s(account id) was tracked in,"
-                             " popping from tracked accounts.",
-                             guild_id, user_id)
+            self.logger.info(
+                "%s(guild id) was the only guild id %s(account id) was tracked in,"
+                " popping from tracked accounts.",
+                guild_id,
+                user_id
+            )
             return True
         elif guild_id in tracked_guilds:
             self.logger.info("%s(guild id) removed from %s(account id) tracked accounts.", guild_id, user_id)
@@ -232,12 +232,14 @@ class TwitterWebhook(tweepy.StreamListener):
                 webhook = Webhook.partial(id=hook_id, token=hook_token, adapter=hook_adapter)
                 self.logger.info("Sending to Webhook %s(%s)", self._hooks.get(hook_id).get("name"), hook_id)
                 # TODO: Decide how to title the Webhook in discord
-                await webhook.send(content=url, username=screen_name + " Tweeted",
-                                   avatar_url=status["user"]["profile_image_url_https"])
+                await webhook.send(
+                    content=url,
+                    username=screen_name + " Tweeted",
+                    avatar_url=status["user"]["profile_image_url_https"]
+                )
 
 
 class TwitterCog(commands.Cog):
-
     def __init__(self, bot, loop=None):
         self._bot = bot
         self.logger = logging.getLogger(__name__)
@@ -328,8 +330,10 @@ class TwitterCog(commands.Cog):
 
         if text_channel is None:
             # Unable to find the channel with the given name or mention.
-            await ctx.send(self.user_strings["webhook_error"].format(operation="create",
-                                                                     reason="I am unable to find that channel"))
+            await ctx.send(
+                self.user_strings["webhook_error"].format(operation="create",
+                                                          reason="I am unable to find that channel")
+            )
             return False
 
         hook_name = bot_hook_prefix + hook_name
@@ -338,25 +342,48 @@ class TwitterCog(commands.Cog):
             # A Webhook already exists with that name.
             self.logger.warning(
                 "Attempted to create Webhook with name %s but one already exists with that name in %s(%s)",
-                hook_name, ctx.guild.name, ctx.guild.id)
-            await ctx.send(self.user_strings["webhook_error"].format(operation="create",
-                                                                     reason=f"there is already a Webhook "
-                                                                            f"with the name {hook_name}"))
+                hook_name,
+                ctx.guild.name,
+                ctx.guild.id
+            )
+            await ctx.send(
+                self.user_strings["webhook_error"].format(
+                    operation="create",
+                    reason=f"there is already a Webhook "
+                    f"with the name {hook_name}"
+                )
+            )
             return False
 
         self.logger.info("Creating Webhook for guild %s(%s) with name %s", ctx.guild.name, ctx.guild.id, hook_name)
 
-        hook = await text_channel.create_webhook(name=hook_name,
-                                                 reason=f"{ctx.author.name}#{ctx.author.discriminator} created a "
-                                                        f"webhook for #{text_channel.name} channel using the "
-                                                        f"createhook command.")
+        hook = await text_channel.create_webhook(
+            name=hook_name,
+            reason=f"{ctx.author.name}#{ctx.author.discriminator} created a "
+            f"webhook for #{text_channel.name} channel using the "
+            f"createhook command."
+        )
 
-        self.logger.info("%s#%s created Webhook for guild %s(%s) with name %s in channel %s(%s)",
-                         ctx.author.name, ctx.author.discriminator, ctx.guild.name, ctx.guild.id, hook_name,
-                         text_channel.name, text_channel.id)
+        self.logger.info(
+            "%s#%s created Webhook for guild %s(%s) with name %s in channel %s(%s)",
+            ctx.author.name,
+            ctx.author.discriminator,
+            ctx.guild.name,
+            ctx.guild.id,
+            hook_name,
+            text_channel.name,
+            text_channel.id
+        )
 
-        self.logger.info("[%s] id: %s , url: %s , token: %s , channel: %s(%s)",
-                         hook.name, hook.id, hook.url, hook.token, hook.channel.name, hook.channel.id)
+        self.logger.info(
+            "[%s] id: %s , url: %s , token: %s , channel: %s(%s)",
+            hook.name,
+            hook.id,
+            hook.url,
+            hook.token,
+            hook.channel.name,
+            hook.channel.id
+        )
 
         # Add the hook to the Stream Listener so that it can send the updates to that Webhook.
         self._stream_listener.add_hook(hook)
@@ -383,8 +410,7 @@ class TwitterCog(commands.Cog):
             try:
                 channel = await self._bot.fetch_channel(cleaned_id)
             except Forbidden as e:
-                self.logger.error("Unable to access channel with id %s due to permission errors: %s",
-                                  cleaned_id, e.text)
+                self.logger.error("Unable to access channel with id %s due to permission errors: %s", cleaned_id, e.text)
                 return None
         return channel
 
@@ -402,8 +428,7 @@ class TwitterCog(commands.Cog):
 
         current_hooks = self._stream_listener.hooks
         for hook in current_hooks:
-            if current_hooks.get(hook).get("name") == name or current_hooks.get(hook).get("name") == (
-                    bot_hook_prefix + name):
+            if current_hooks.get(hook).get("name") == name or current_hooks.get(hook).get("name") == (bot_hook_prefix + name):
                 # Check for the name as well as the name combined with the prefix.
                 if current_hooks.get(hook).get("guild_id") == guild_id:
                     return hook, current_hooks.get(hook)
@@ -426,15 +451,17 @@ class TwitterCog(commands.Cog):
         h_id, hook_info = self.get_webhook_by_name(name, ctx.guild.id)
         if hook_info is None:
             # Unable to find a Webhook with the given name in the guild.
-            await ctx.send(self.user_strings["webhook_error"].format(operation="remove",
-                                                                     reason=f"there is no webhook with name {name} "
-                                                                            f"or {bot_hook_prefix + name}"))
+            await ctx.send(
+                self.user_strings["webhook_error"].format(
+                    operation="remove",
+                    reason=f"there is no webhook with name {name} "
+                    f"or {bot_hook_prefix + name}"
+                )
+            )
             return False
 
         async with aiohttp.ClientSession() as session:
-            webhook = Webhook.partial(id=h_id,
-                                      token=hook_info.get("token"),
-                                      adapter=AsyncWebhookAdapter(session))
+            webhook = Webhook.partial(id=h_id, token=hook_info.get("token"), adapter=AsyncWebhookAdapter(session))
             await webhook.delete(reason="Deleted with removehook comand")
             self._stream_listener.remove_hook(h_id)
         await ctx.send(self.user_strings["webhook_deleted"].format(name=hook_info.get("name"), hook_id=h_id))
@@ -464,8 +491,12 @@ class TwitterCog(commands.Cog):
 
             if tracked_guilds is not None and ctx.guild.id in tracked_guilds:
                 # The account is already tracked in the current guild.
-                self.logger.info("Not adding %s to %s(%s) as it is aleady tracked in the guild",
-                                 account, ctx.guild.name, ctx.guild.id)
+                self.logger.info(
+                    "Not adding %s to %s(%s) as it is aleady tracked in the guild",
+                    account,
+                    ctx.guild.name,
+                    ctx.guild.id
+                )
                 await ctx.send(self.user_strings["account_exists_error"].format(account=account))
                 return False
 
@@ -477,17 +508,21 @@ class TwitterCog(commands.Cog):
                 asyncio.create_task(self.refresh_filter(current_following))
 
             if tracked_guilds is None or ctx.guild.id not in tracked_guilds:
-                self._db.insert("twitter_info", params={"guild_id": ctx.guild.id,
-                                                            "twitter_user_id": user_id,
-                                                            "twitter_handle": account})
+                self._db.insert(
+                    "twitter_info",
+                    params={
+                        "guild_id": ctx.guild.id,
+                        "twitter_user_id": user_id,
+                        "twitter_handle": account
+                    }
+                )
 
             self.logger.info("Added %s to accounts tracked", account)
             await ctx.send(self.user_strings["account_added"].format(account=account))
             return True
         except tweepy.TweepError as e:
             self.logger.warning("Unable to add %s as a tracked account due to the following error: %s", account, e)
-            await ctx.send(
-                self.user_strings["account_missing_error"].format(account=account, operation="add"))
+            await ctx.send(self.user_strings["account_missing_error"].format(account=account, operation="add"))
             return False
 
     @commands.command()
@@ -516,8 +551,12 @@ class TwitterCog(commands.Cog):
 
             if tracked_accounts is None or ctx.guild.id not in tracked_accounts:
                 # Not tracked in this guild.
-                self.logger.info("Cannot remove %s from being tracked as it is not tracked in %s(%s)",
-                                 account, ctx.guild.name, ctx.guild.id)
+                self.logger.info(
+                    "Cannot remove %s from being tracked as it is not tracked in %s(%s)",
+                    account,
+                    ctx.guild.name,
+                    ctx.guild.id
+                )
                 await ctx.send(self.user_strings["account_missing_error"].format(operation="remove", account=account))
                 return False
 
@@ -532,8 +571,7 @@ class TwitterCog(commands.Cog):
 
         except tweepy.TweepError as e:
             self.logger.warning("Unable to remove %s account due to the following error: %s", account, e)
-            await ctx.send(
-                self.user_strings["account_missing_error".format(account=account, operation="remove")])
+            await ctx.send(self.user_strings["account_missing_error".format(account=account, operation="remove")])
             return False
 
     @commands.command(alias=["getalltwitter", "gettwitterhandles"])
@@ -573,8 +611,7 @@ class TwitterCog(commands.Cog):
         # Without the delay we get rate limited momentarily by Twitter.
         await asyncio.sleep(5)
         self._filter = tweepy.Stream(self._api.auth, self._stream_listener, daemon=True)
-        self.logger.info("Disconnected current stream... Current Status: %s",
-                         "Running" if self._filter.running else "Stopped")
+        self.logger.info("Disconnected current stream... Current Status: %s", "Running" if self._filter.running else "Stopped")
         self._filter.filter(follow=new_filter, is_async=True)
         self.logger.info("Reconnected filter with new parameters")
         self.logger.info("Current Stream Status: %s", "Running" if self._filter.running else "Stopped")

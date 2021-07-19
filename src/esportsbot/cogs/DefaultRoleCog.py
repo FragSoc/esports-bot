@@ -18,9 +18,9 @@ class DefaultRoleCog(commands.Cog):
             default_role = member.guild.get_role(guild.default_role_id)
             await member.add_roles(default_role)
             await send_to_log_channel(
-                    self,
-                    member.guild.id,
-                    f"{member.mention} has joined the server and received the {default_role.mention} role"
+                self,
+                member.guild.id,
+                f"{member.mention} has joined the server and received the {default_role.mention} role"
             )
         else:
             await send_to_log_channel(self, member.guild.id, f"{member.mention} has joined the server")

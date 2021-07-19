@@ -549,9 +549,9 @@ class PingableRolesCog(commands.Cog):
         self.logger.info(f"Deleted pingable roles: {deleted_string} in guild {context.guild.name}")
 
     @ping_me.command(
-            name="convert-role",
-            usage="<One or many role mentions>",
-            help="Converts the mentioned roles into pingable roles and creates their reaction menus."
+        name="convert-role",
+        usage="<One or many role mentions>",
+        help="Converts the mentioned roles into pingable roles and creates their reaction menus."
     )
     @commands.has_permissions(administrator=True)
     async def convert_role(self, context: commands.Context):

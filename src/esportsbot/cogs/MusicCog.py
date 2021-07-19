@@ -103,7 +103,6 @@ class MusicCog(commands.Cog):
             self.music_channels[item.guild_id] = item.channel_id
         return self.music_channels
 
-
     @commands.command(
         name="setmusicchannel",
         usage="<channel_id> or <@channel>",
