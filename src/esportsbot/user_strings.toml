@@ -100,13 +100,16 @@ set_role_cooldown = "✅ The cooldown for pingable roles is now set to `{cooldow
 set_poll_emoji = "✅ The emoji used to role creation polls is now set to {emoji}"
 set_role_emoji = "✅ The emoji used in pingable role reaction menus is now set to {emoji}"
 no_roles_given = ":x: You must mention one or more roles to use this command"
-not_pingable_role = ":warning: Only pingable roles can be used with this command"
+not_pingable_role = ":warning: `{role}` is not a pingable role, only pingable roles can be used with this command."
 role_delete_success = "✅ The following role(s) were deleted: `{deleted_roles}`"
 role_convert_success = "✅ The following role(s) were converted to pingable roles: `{converted_roles}`"
 pingable_convert_success= "✅ The following role(s) were converted to normal roles: `{converted_roles}`"
 invalid_role = ":x: The role or role ID is not a valid role or pingable role"
 role_cooldown_updated = "✅ The ping cooldown for the role `{role}` has been set to `{seconds} seconds`"
 role_emoji_updated = "✅ The emoji for the role `{role}` has been set to {emoji}"
+no_pingable_roles = ":warning: There are currently no pingable roles in this server! Use the `create-role` command to invoke a poll to create one, or convert an existing role to a pingable role with the `convert-role` command"
+roles_disabled = "✅ The following role(s) were disabled: `{disabled_roles}`"
+roles_enabled = "✅ The following role(s) were enabled: `{enabled_roles}`"
 
 [voicemaster]
 success_slave_locked = "Your VM slave has been locked 🔒"

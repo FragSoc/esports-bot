@@ -224,7 +224,7 @@ class PingableRolesCog(commands.Cog):
     async def get_menu_from_role_ping(self, context: commands.Context, role: Role):
         guild_id = context.guild.id
         if not self.all_role_ids.get(guild_id):
-            await context.reply(self.user_strings["invalid_role"])
+            await context.reply(self.user_strings["no_pingable_roles"])
             return None
 
         menu_id = self.all_role_ids.get(guild_id).get(role.id)
@@ -234,6 +234,18 @@ class PingableRolesCog(commands.Cog):
 
         role_menu = self.roles.get(menu_id).get("menu")
         return role_menu
+
+    async def role_mentions_are_valid(self, context: commands.Context):
+        role_mentions = context.message.role_mentions
+        if not role_mentions:
+            await context.reply(self.user_strings["no_roles_given"])
+            return False
+
+        guild_roles = self.all_role_ids.get(context.guild.id)
+        if not guild_roles:
+            await context.reply(self.user_strings["no_pingable_roles"])
+            return False
+        return True
 
     def ensure_tasks(self):
         if not self.check_poll.is_running() or self.check_poll.is_being_cancelled():
@@ -526,8 +538,7 @@ class PingableRolesCog(commands.Cog):
     )
     @commands.has_permissions(administrator=True)
     async def delete_role(self, context: commands.Context):
-        if not context.message.role_mentions:
-            await context.reply(self.user_strings["no_roles_given"])
+        if not await self.role_mentions_are_valid(context):
             return
 
         deleted_roles = []
@@ -535,7 +546,7 @@ class PingableRolesCog(commands.Cog):
         for role in context.message.role_mentions:
             db_item = self.db.get(Pingable_roles, guild_id=context.guild.id, role_id=role.id)
             if not db_item:
-                await context.send(self.user_strings["not_pingable_role"])
+                await context.send(self.user_strings["not_pingable_role"].format(role=role.name))
             else:
                 deleted_roles.append(role.name)
                 await role.delete()
@@ -579,12 +590,7 @@ class PingableRolesCog(commands.Cog):
     )
     @commands.has_permissions(administrator=True)
     async def convert_pingable(self, context: commands.Context):
-        if not context.message.role_mentions:
-            await context.reply(self.user_strings["no_roles_given"])
-            return
-
-        if not self.all_role_ids.get(context.guild.id):
-            await context.send(self.user_strings["not_pingable_role"])
+        if not await self.role_mentions_are_valid(context):
             return
 
         converted_roles = []
@@ -592,7 +598,7 @@ class PingableRolesCog(commands.Cog):
         for role in context.message.role_mentions:
             pingable_role = self.all_role_ids.get(context.guild.id).get(role.id)
             if not pingable_role:
-                await context.send(self.user_strings["not_pingable_role"])
+                await context.send(self.user_strings["not_pingable_role"].format(role=role.name))
             else:
                 converted_roles.append(role.name)
                 await self.remove_pingable_role(role)
@@ -643,16 +649,65 @@ class PingableRolesCog(commands.Cog):
         role_menu = await self.get_menu_from_role_ping(context, pingable_role)
         if not role_menu:
             return
-        await role_menu.disable(self.bot)
+        await role_menu.disable_menu(self.bot)
         current_emoji_id = list(role_menu.options.keys())[0]
         current_emoji = role_menu.options.get(current_emoji_id).get("emoji")
         role_menu.remove_option(current_emoji)
         role_menu.add_option(role_emoji, role_menu.role)
-        await role_menu.enable(self.bot)
+        await role_menu.enable_menu(self.bot)
         await context.reply(
             self.user_strings["role_emoji_updated"].format(role=pingable_role.name,
                                                            emoji=role_emoji.discord_emoji)
         )
+
+    @ping_me.command(
+            name="disable-role",
+            usage="<One or many role mentions>",
+            help="Stops the mentioned roles from being mentioned and disables their reaction menus. "
+                 "Only works for pingable roles."
+    )
+    @commands.has_permissions(administrator=True)
+    async def disable_pingable_role(self, context: commands.Context):
+        if not await self.role_mentions_are_valid(context):
+            return
+
+        disabled_roles = []
+
+        for role in context.message.role_mentions:
+            menu_id = self.all_role_ids.get(context.guild.id).get(role.id)
+            if not menu_id:
+                await context.send(self.user_strings["not_pingable_role"].format(role=role.name))
+            else:
+                await role.edit(mentionable=False)
+                await self.roles.get(menu_id).get("menu").disable_menu(self.bot)
+                disabled_roles.append(role.name)
+
+        disabled_string = str(disabled_roles).replace("[", "").replace("]", "")
+        await context.reply(self.user_strings["roles_disabled"].format(disabled_roles=disabled_string))
+
+    @ping_me.command(
+            name="enable-role",
+            usage="<One or many role mentions>",
+            help="Allows a pingable role to be mentioned again, and allows users to react to their reaction menus."
+    )
+    @commands.has_permissions(administrator=True)
+    async def enabled_pingable_roles(self, context: commands.Context):
+        if not await self.role_mentions_are_valid(context):
+            return
+
+        enabled_roles = []
+
+        for role in context.message.role_mentions:
+            menu_id = self.all_role_ids.get(context.guild.id).get(role.id)
+            if not menu_id:
+                await context.send(self.user_strings["not_pingable_role"].format(role=role.name))
+            else:
+                await role.edit(mentionable=True)
+                await self.roles.get(menu_id).get("menu").enable_menu(self.bot)
+                enabled_roles.append(role.name)
+
+        enabled_string = str(enabled_roles).replace("[", "").replace("]", "")
+        await context.reply(self.user_strings["roles_enabled"].format(enabled_roles=enabled_string))
 
     @change_pingable_role_cooldown.error
     @set_poll_threshold.error
