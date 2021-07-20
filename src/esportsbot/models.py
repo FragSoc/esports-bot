@@ -10,25 +10,6 @@ class Guild_info(base):
     guild_id = Column(BigInteger, primary_key=True, nullable=False)
     log_channel_id = Column(BigInteger, nullable=True)
     default_role_id = Column(BigInteger, nullable=True)
-    num_running_polls = Column(BigInteger, nullable=False)
-    role_ping_cooldown_seconds = Column(BigInteger, nullable=False)
-    pingme_create_threshold = Column(BigInteger, nullable=False)
-    pingme_create_poll_length_seconds = Column(BigInteger, nullable=False)
-    pingme_role_emoji = Column(String, nullable=True)
-    shared_role_id = Column(BigInteger, nullable=True)
-
-
-# class Pingable_roles(base):
-#     __tablename__ = 'pingable_roles'
-#     name = Column(String, nullable=False)
-#     guild_id = Column(BigInteger, primary_key=True, nullable=False)
-#     role_id = Column(BigInteger, primary_key=True, nullable=False)
-#     on_cooldown = Column(Boolean, nullable=False)
-#     last_ping = Column(Float, nullable=False)
-#     ping_count = Column(BigInteger, nullable=False)
-#     monthly_ping = Column(BigInteger, nullable=False)
-#     creator_id = Column(BigInteger, nullable=False)
-#     colour = Column(BigInteger, nullable=False)
 
 
 class Pingable_polls(base):
@@ -45,6 +26,8 @@ class Pingable_roles(base):
     role_id = Column(BigInteger, primary_key=True, nullable=False)
     menu_id = Column(BigInteger, nullable=False)
     menu = Column(JSONB, nullable=False)
+    total_pings = Column(BigInteger, nullable=False)
+    monthly_pings = Column(BigInteger, nullable=False)
 
 
 class Pingable_settings(base):

@@ -1,9 +1,8 @@
 from types import FrameType
-from discord.ext import commands, tasks
+from discord.ext import commands
 from discord import Intents, Embed, Message, Colour
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.models import Pingable_roles, Guild_info
-from esportsbot.lib import exceptions
+from esportsbot.models import Guild_info
 from typing import Dict, MutableMapping, Union
 from datetime import datetime
 import os
@@ -44,58 +43,6 @@ class EsportsBot(commands.Bot):
         """
         print("[EsportsBot] Shutting down...")
         await self.logout()
-
-    @tasks.loop(hours=24)
-    async def monthlyPingablesReport(self):
-        """Send a report to all joined servers, summarising the number of times each !pingme
-        role was pinged this month.
-        Also resets the monthly ping count for all !pingme roles.
-        """
-        if datetime.now().day == 1:
-            loggingTasks = set()
-            baseEmbed = Embed(
-                title="Monthly !pingme Report",
-                description="The number of times each !pingme role was pinged last month:"
-            )
-            baseEmbed.colour = Colour.random()
-            baseEmbed.set_thumbnail(url=self.user.avatar_url_as(size=128))
-            baseEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y"))
-            for guildData in DBGatewayActions().list(Guild_info):
-                pingableRoles = DBGatewayActions().list(Pingable_roles, guild_id=guildData.guild_id)
-                if pingableRoles:
-                    guild = self.get_guild(guildData.guild_id)
-                    if guild is None:
-                        print(
-                            f"[Esportsbot.monthlyPingablesReport] Unknown guild id in guild_info table: #{guildData.guild_id}"
-                        )
-                    elif guildData.log_channel_id is not None:
-                        reportEmbed = baseEmbed.copy()
-                        rolesAdded = False
-                        for roleData in pingableRoles:
-                            role = guild.get_role(roleData.role_id)
-                            if role is None:
-                                print(
-                                    f"[Esportsbot.monthlyPingablesReport] Unknown pingable role id in pingable_roles table. Removing from the table: role #{roleData.role_id} in guild #{guildData.guild_id}"
-                                )
-                                DBGatewayActions().delete(roleData)
-                            else:
-                                reportEmbed.add_field(
-                                    name=role.name,
-                                    value=f"{role.mention}\n{roleData.monthly_ping_count} pings"
-                                )
-                                roleData.monthly_ping_count = 0
-                                DBGatewayActions().update(roleData)
-                                rolesAdded = True
-                        if rolesAdded:
-                            loggingTasks.add(
-                                asyncio.create_task(guild.get_channel(guildData.log_channel_id).send(embed=reportEmbed))
-                            )
-
-            if loggingTasks:
-                await asyncio.wait(loggingTasks)
-                for task in loggingTasks:
-                    if e := task.exception():
-                        exceptions.print_exception_trace(e)
 
     async def adminLog(self, message: Message, actions: Dict[str, str], *args, guildID=None, **kwargs):
         """Log an event or series of events to the server's admin logging channel.

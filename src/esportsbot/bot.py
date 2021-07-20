@@ -3,7 +3,6 @@ from esportsbot import lib
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Guild_info
 
-from discord.ext import commands
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 from discord.ext.commands.context import Context
 from discord import NotFound, HTTPException, Forbidden
@@ -34,20 +33,6 @@ async def on_ready():
 
 
 @client.event
-async def on_guild_join(guild):
-    print(f"Joined the guild: {guild.name}")
-    DBGatewayActions().create(
-        Guild_info(
-            guild_id=guild.id,
-            num_running_polls=0,
-            role_ping_cooldown_seconds=int(DEFAULT_ROLE_PING_COOLDOWN.total_seconds()),
-            pingme_create_threshold=DEFAULT_PINGME_CREATE_THRESHOLD,
-            pingme_create_poll_length_seconds=int(DEFAULT_PINGME_CREATE_POLL_LENGTH.total_seconds())
-        )
-    )
-
-
-@client.event
 async def on_guild_remove(guild):
     guild_from_db = DBGatewayActions().get(Guild_info, guild_id=guild.id)
     if guild_from_db:
@@ -70,11 +55,11 @@ async def on_command_error(ctx: Context, exception: Exception):
         )
     elif isinstance(exception, CommandNotFound):
         try:
-            await ctx.message.add_reaction(client.unknownCommandEmoji.sendable)
+            await ctx.message.add_reaction(client.unknown_command_emoji.sendable)
         except (Forbidden, HTTPException):
             pass
         except NotFound:
-            raise ValueError("Invalid unknownCommandEmoji: " + client.unknownCommandEmoji.sendable)
+            raise ValueError("Invalid unknownCommandEmoji: " + client.unknown_command_emoji.sendable)
     else:
         sourceStr = str(ctx.message.id)
         try:
@@ -93,29 +78,6 @@ async def on_command_error(ctx: Context, exception: Exception):
 async def on_message(message):
     if not message.author.bot:
         await client.process_commands(message)
-
-
-@client.command(
-    name="initialsetup",
-    usage="",
-    help="Initiates the server config in the database for servers where the bot is already present"
-)
-@commands.has_permissions(administrator=True)
-async def initialsetup(ctx):
-    already_in_db = DBGatewayActions().get(Guild_info, guild_id=ctx.author.guild.id)
-    if already_in_db:
-        await ctx.channel.send("This server is already set up")
-    else:
-        DBGatewayActions().create(
-            Guild_info(
-                guild_id=ctx.author.guild.id,
-                num_running_polls=0,
-                role_ping_cooldown_seconds=int(DEFAULT_ROLE_PING_COOLDOWN.total_seconds()),
-                pingme_create_threshold=DEFAULT_PINGME_CREATE_THRESHOLD,
-                pingme_create_poll_length_seconds=int(DEFAULT_PINGME_CREATE_POLL_LENGTH.total_seconds())
-            )
-        )
-        await ctx.channel.send("This server has now been initialised")
 
 
 def launch():
