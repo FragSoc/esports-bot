@@ -8,14 +8,7 @@ from discord.ext.commands.context import Context
 from discord import NotFound, HTTPException, Forbidden
 import os
 import discord
-from datetime import datetime, timedelta
-
-# Value to assign new guilds in their role_ping_cooldown_seconds attribute
-DEFAULT_ROLE_PING_COOLDOWN = timedelta(hours=5)
-# Value to assign new guilds in their pingme_create_poll_length_seconds attribute
-DEFAULT_PINGME_CREATE_POLL_LENGTH = timedelta(hours=1)
-# Value to assign new guilds in their pingme_create_threshold attribute
-DEFAULT_PINGME_CREATE_THRESHOLD = 6
+from datetime import datetime
 
 # EsportsBot client instance
 client = lib.client.instance()
@@ -33,6 +26,14 @@ async def on_ready():
 
 
 @client.event
+async def on_guild_join(guild):
+    exists = DBGatewayActions().get(Guild_info, guild_id=guild.id)
+    if not exists:
+        db_item = Guild_info(guild_id=guild.id)
+        DBGatewayActions().create(db_item)
+
+
+@client.event
 async def on_guild_remove(guild):
     guild_from_db = DBGatewayActions().get(Guild_info, guild_id=guild.id)
     if guild_from_db:
@@ -42,7 +43,7 @@ async def on_guild_remove(guild):
 
 @client.event
 async def on_command_error(ctx: Context, exception: Exception):
-    """Handles printing errors to users if their command failed to call, E.g incorrect numbr of arguments
+    """Handles printing errors to users if their command failed to call, E.g incorrect number of arguments
     Also prints exceptions to stdout, since the event loop usually consumes these.
 
     :param Context ctx: A context summarising the message which caused the error
