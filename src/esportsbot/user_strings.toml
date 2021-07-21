@@ -149,3 +149,12 @@ accounts_empty = "There are no accounts currently tracked in this server"
 accounts_list = "Currently tracked accounts are: {tracked_accounts}"
 account_missing_error = "Unable to {operation} {account} because there is no account with that name"
 account_exists_error = "Unable to add {account} to tracked accounts because it is already tracked"
+
+[role_reacts]
+duplicate_emoji = "Cannot add the emoji {emoji} as there is already a role tied to that emoji in this reaction menu"
+missing_quotes = "Unable to get title and description from message. You may be missing quotes around your title and description individually"
+invalid_id = "There is no role reaction menu with the id `{given_id}`"
+invalid_emoji = "The provided emoji was not a valid emoji"
+disable_menu = "✅ The menu with ID `{menu_id}` has been disabled"
+enable_menu = "✅ The menu with ID `{menu_id}` has been enabled"
+delete_menu = "✅ The menu with ID `{menu_id}` has been deleted"

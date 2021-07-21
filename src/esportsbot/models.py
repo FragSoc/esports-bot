@@ -48,9 +48,9 @@ class Event_categories(base):
     event_menu = Column(JSONB, nullable=False)
 
 
-class Reaction_menus(base):
-    __tablename__ = 'reaction_menus'
-    message_id = Column(BigInteger, primary_key=True, nullable=False)
+class Role_menus(base):
+    __tablename__ = 'role_menus'
+    menu_id = Column(BigInteger, primary_key=True, nullable=False)
     menu = Column(JSONB, nullable=False)
 
 

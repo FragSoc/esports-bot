@@ -98,3 +98,10 @@ class MultiEmoji:
 
     def __hash__(self):
         return self._emoji_id
+
+
+class EmojiKeyError(Exception):
+    def __init__(self, emoji_id, *args):
+        super().__init__(*args)
+        self.message = f"There is already an emoji with the ID {emoji_id} as an option."
+        self.emoji = emoji_id
