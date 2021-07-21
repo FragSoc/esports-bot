@@ -57,7 +57,7 @@ class RoleReactMenu(ReactableMenu):
     async def react_add_func(self, payload: RawReactionActionEvent) -> bool:
         message_id: int = payload.message_id
         channel_id: int = payload.channel_id
-        emoji_triggered: PartialEmoji = payload.emoji
+        emoji_triggered = payload.emoji
         member = payload.member
         guild = self.message.guild
 

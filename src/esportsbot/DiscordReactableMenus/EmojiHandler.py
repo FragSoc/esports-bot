@@ -27,18 +27,18 @@ def partial_data_from_string(emoji_str: str) -> Dict:
     return {"name": name, "id": emoji_id, "animated": animated}
 
 
-def partial_from_string(emoji_str: Union[str, Dict]) -> PartialEmoji:
+def partial_from_string(emoji_str: str) -> PartialEmoji:
+    data = None
     if isinstance(emoji_str, str):
         data = partial_data_from_string(emoji_str)
-    elif isinstance(emoji_str, dict):
-        data = emoji_str
-    else:
-        raise ValueError("The supplied emoji value was not of type dict or str!")
+
+    if not data:
+        raise ValueError("Unable to form emoji from given string")
     return PartialEmoji.from_dict(data)
 
 
 class MultiEmoji:
-    def __init__(self, emoji_input: Union[str, Emoji, PartialEmoji, "MultiEmoji"]):
+    def __init__(self, emoji_input: Union[str, dict, Emoji, PartialEmoji, "MultiEmoji"]):
 
         if isinstance(emoji_input, str):
             self._partial = partial_from_string(emoji_input)
@@ -48,11 +48,14 @@ class MultiEmoji:
             self._partial = emoji_input
         elif isinstance(emoji_input, MultiEmoji):
             self._partial = emoji_input._partial
+        elif isinstance(emoji_input, dict):
+            self._partial = PartialEmoji.from_dict(emoji_input)
         else:
             raise ValueError("The given emoji input must of type str, discord.Emoji or discord.PartialEmoji")
 
-        self._name = self._partial.name
+        self._name = str(self._partial.name)
         self._emoji_id = self._partial.id if self._partial.id else self._name
+        self._emoji_id = str(self._emoji_id)
         self._animated = self._partial.animated
 
     @classmethod
@@ -92,3 +95,6 @@ class MultiEmoji:
 
     def to_dict(self):
         return self._partial.to_dict()
+
+    def __hash__(self):
+        return self._emoji_id

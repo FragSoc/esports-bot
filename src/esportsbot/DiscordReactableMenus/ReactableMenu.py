@@ -43,21 +43,16 @@ class ReactableMenu:
     def __contains__(self, item):
         return self.__getitem__(item) is not None
 
-    def __getitem__(self, item: Union[Emoji, PartialEmoji, str]):
-        if isinstance(item, str):
-            p_emoji = partial_from_string(item)
-        elif isinstance(item, PartialEmoji):
-            p_emoji = item
-        elif isinstance(item, Emoji):
-            p_emoji = partial_from_emoji(item)
-        elif isinstance(item, MultiEmoji):
-            p_emoji = item.discord_emoji
-        else:
+    def __getitem__(self, item: Union[str, dict, Emoji, PartialEmoji, MultiEmoji]):
+        # if isinstance(item, str) or isinstance(item, PartialEmoji) or isinstance(item, Emoji) or isinstance(item, MultiEmoji):
+        #     p_emoji = MultiEmoji(item)
+        # else:
+        #     return None
+        try:
+            p_emoji = MultiEmoji(item)
+            return self.options.get(p_emoji.emoji_id)
+        except ValueError:
             return None
-
-        emoji_id = p_emoji.id if p_emoji.id else p_emoji.name
-
-        return self.options.get(emoji_id)
 
     def __dict__(self):
         return self.to_dict()
@@ -90,7 +85,7 @@ class ReactableMenu:
             options = ast.literal_eval(options)
         for option in options:
             option_data = options.get(option)
-            emoji = MultiEmoji(option_data.get("emoji").get("name"))
+            emoji = MultiEmoji(option_data.get("emoji"))
             descriptor = option_data.get("descriptor")
             data[option] = {"emoji": emoji, "descriptor": descriptor}
         return data
