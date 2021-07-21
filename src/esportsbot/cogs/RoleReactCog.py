@@ -72,8 +72,9 @@ class RoleReactCog(commands.Cog):
     # TODO: Fix link
     @command_group.command(
         name="make-menu",
-        usage="<title surrounded by double quotes> <description surrounded by double quotes> [role mention , emoji]",
-        help="Creates a new reaction menu to get roles from. Go to {} for more help regarding usage."
+        usage="<title> <description> [<mentioned role> <emoji>]",
+        help="Creates a new role reaction menu with the given roles and their emojis. "
+        "Go to {} for more help regarding usage."
     )
     @commands.has_permissions(administrator=True)
     async def create_role_menu(self, context: commands.Context):
@@ -103,7 +104,7 @@ class RoleReactCog(commands.Cog):
 
     @command_group.command(
         name="add-option",
-        usage="[optional: menu id] [role mention , emoji]",
+        usage="[optional: menu id] [<mentioned role> <emoji>]",
         help="Adds a new option to a reaction menu. If no ID is given it will add the option to the latest menu."
     )
     @commands.has_permissions(administrator=True)
@@ -136,8 +137,9 @@ class RoleReactCog(commands.Cog):
 
     @command_group.command(
         name="remove-option",
-        usage="<emoji>",
-        help="Removes an option from a reaction menu. If no ID is given it will remove the option from the latest menu."
+        usage="<emoji> [optional: menu id]",
+        help="Removes the role associated with the emoji from the given menu. "
+        "If no ID is given it will remove the option from the latest menu."
     )
     @commands.has_permissions(administrator=True)
     async def remove_menu_option(self, context: commands.Context, option_key: MultiEmoji, menu_id=None):

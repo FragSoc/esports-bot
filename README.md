@@ -239,48 +239,48 @@ The `TWITCH_CALLBACK` is the URL to your HTTPS server. For testing you can use `
 <details>    
 <summary>Reaction Role Menus</summary>    
     
-### Reaction Role Menus Esportsbot now includes a slightly stripped down version of the reaction menus implementation provided by [BASED](https://github.com/Trimatix/BASED).    
+### Role Reaction Menus.    
+
+Role reaction menus allow admins to create reactable menus that when reacted to grant defined roles to the user.
+
+For devs:    
+* To enable this function in the bot use the `ENABLE_ROLEREACTIONS` env var and set it to `TRUE`.
+* Making new types of reaction menus is easy - simply extend `DiscordReactableMenus.ReactableMenu` or one of the example menus in `DiscordReactableMenus.ExampleMenus`.
     
-Making new types of reaction menus is easy - simply extend `reactionMenus.reactionMenu.ReactionMenu`.    
-    
-To register a menu instance for interaction, use `client.reactionMenus.add(yourMenuInstance)`. For an example of this, see `cogs.MenusCog.admin_cmd_make_role_menu`.    
-    
-All saveable reaction menus are automatically added and removed from Esportsbot's PostgreSQL database and will be loaded in again on bot startup. To register your `ReactionMenu` subclass as saveable, use the `reactionMenu.saveableMenu` class decorator. Saveable menus **MUST** provide complete `toDict` and `fromDict` implementations. For examples of this, see `reactionMenus.reactionRoleMenu`.    
-    
-`ReactionMenu`s store each option in the menu as an instance of a `reactionMenu.ReactionMenuOption` subclass - each `ReactionMenuOption` has its own behaviour for when reactions are added and removed. This already provides a huge amount of flexibility, but you can achieve even more with a custom `ReactionMenuOption` subclass. To make your `ReactionMenuOption` saveable, provide complete `toDict` and `fromDict` implementations. For an example of this, see `reactionMenus.reactionRoleMenu.ReactionRoleMenuOption`.    
-    
-#### !make-role-menu
-```    
-!make-role-menu {title}    
-{option1 emoji} {@option1 role}    
-...    ...    
-```    
-Create a reaction role menu.    
-    
-Each option must be on its own new line, as an emoji, followed by a space, followed by a mention of the role to grant.    
-    
-The `title` is displayed at the top of the menu and is optional, to exclude your title simply give a new line.    
-    
-#### !add-role-menu-option <menu_id> <emoji> <role_mention>  
-Add a role to a role menu.    
-    
-To get the ID of a reaction menu, enable discord's developer mode, right-click on the menu, and click Copy ID.    
-    
-Your emoji must not be in the menu already, adding the same role more than once is allowed.    
-    
-Give your role to grant/remove as a mention.    
-    
-#### !del-role-menu-option <menu_id> <emoji>  
-Remove a role from a role menu.    
-    
-To get the ID of a reaction menu, enable discord's developer mode, right-click on the menu, and click Copy ID.    
-    
-Your emoji must be an option in the menu.    
-    
-##### !del-menu <menu_id>  
-Remove the specified reaction menu. You can also just delete the message, if you have permissions.    
-    
-To get the ID of a reaction menu, enable discord's developer mode, right-click on the menu, and click Copy ID.    
+#### !roles make-menu \<title> \<description> [\<mentioned role> \<emoji>]
+* Creates a new role reaction menu with the given roles and their emojis.
+* Each option must be a mentioned role followed by the emoji to use as its reaction. There can be up to 25 roles in a single reaction menu.
+* The `title` is displayed at the top of the menu, and the `description` just below. To have either blank leave the quotes empty.
+* *Requires `administrator` permission in Discord*
+* An example usage of this command is as such: `!roles make-menu "{title}" "{description}" {@option1 role} {option1 emoji} ... ...`
+
+#### !roles add-option [optional: menu id] [\<mentioned role> \<emoji>]
+* Adds more role reaction options to the given menu. If there is no menu id given, the latest role reaction menu will be used.
+* There can be one or many options added at the same time with this command.
+* Each option must be a mentioned role followed by the emoji to use as its reaction. There can be up to 25 roles in a single reaction menu.
+* *Requires `administrator` permission in Discord*
+* An example usage of this command is as such: `!roles add-option {menu id} {@option role} {option emoji} ... ...`
+
+#### !roles remove-option \<emoji> [optional: menu id]
+* Removes the role associated with the emoji from the given menu. If there is no menu id given, the latest role reaction menu will be used.
+* *Requires `administrator` permission in Discord*
+
+#### !roles disable-menu [optional: menu id]
+* Disables a reaction menu. This means that roles will not be given to users when they react to the message. If there is no menu id given, the latest role reaction menu will be used.
+* *Requires `administrator` permission in Discord*
+
+#### !roles enable-menu [optional: menu id]
+* Enables a reaction menu. This means that users will be able to receive roles from the reaction menu when they react. If there is no menu id given, the latest role reaction menu will be used.
+* *Requires `administrator` permission in Discord*
+
+#### !roles delete-menu \<menu id>
+* Deletes the given role reaction menu. __Does not__ delete any of the roles in the menu, just the message.
+* *Requires `administrator` permission in Discord*
+
+#### !roles toggle-ids
+* Shows or Hides all role reaction menu footers, which contain the ID of the role reaction menu for ease of identification.
+* *Requires `administrator` permission in Discord*
+
 </details>   
   
 <details>  
@@ -305,8 +305,7 @@ Also requires you to be in the voice channel with the bot, or if the bot is inac
 6. Click on `Create Credentials` and then `API key`.  
 7. Copy the key given. For security, it is recommended that you "restrict key" and only enable `YouTube Data API v3`.  
   
-#### !setmusicchannel [optional: {args}] <channel_id>  
-  
+#### !setmusicchannel [optional: {args}] <channel_id>
 * Set the channel to be used for requesting music. Once set the channel will be cleared of any past messages, and the  
 preview messages will be sent. Any messages sent to this channel get deleted after being processed.  
 * If the channel being set has past messages, use the `-c` arg to indicate that the channel can be cleared and then set.  
