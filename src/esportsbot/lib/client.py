@@ -1,6 +1,7 @@
 from types import FrameType
 from discord.ext import commands
 from discord import Intents, Embed, Message, Colour
+from esportsbot.DiscordReactableMenus.EmojiHandler import MultiEmoji
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Guild_info
 from typing import Dict, MutableMapping, Union
@@ -22,7 +23,7 @@ class EsportsBot(commands.Bot):
         """
         super().__init__(command_prefix, **options)
 
-        self.unknown_command_emoji = os.getenv("UNKNOWN_COMMAND_EMOJI", "⁉")
+        self.unknown_command_emoji = MultiEmoji(os.getenv("UNKNOWN_COMMAND_EMOJI", "⁉"))
         self.STRINGS: StringTable = toml.load(user_strings_file)
 
         signal.signal(signal.SIGINT, self.interruptReceived)  # keyboard interrupt

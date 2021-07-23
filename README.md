@@ -118,7 +118,20 @@ The list below describes the different "Cogs" of the bot, their associated comma
 #### !clear_message * Aliases: `cls, purge, delete`  
 * Clear the specified number of messages from the current text channel.    
     
-#### !members * List the current number of members in the server.    
+#### !members 
+* List the current number of members in the server.
+
+#### !remove-cog \<cog name>
+* Unloads the given cog.
+* *This command requires your user ID to be defined in the env file under `DEV_IDS`*
+
+#### !add-cog \<cog name>
+* Loads the given cog.
+* *This command requires your user ID to be defined in the env file under `DEV_IDS`*
+
+#### !reload-cog \<cog name>
+* Reloads the given cog.
+* *This command requires your user ID to be defined in the env file under `DEV_IDS`*
 </details>  
   
 <details>  

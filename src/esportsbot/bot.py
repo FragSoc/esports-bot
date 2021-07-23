@@ -56,11 +56,11 @@ async def on_command_error(ctx: Context, exception: Exception):
         )
     elif isinstance(exception, CommandNotFound):
         try:
-            await ctx.message.add_reaction(client.unknown_command_emoji.sendable)
+            await ctx.message.add_reaction(client.unknown_command_emoji.discord_emoji)
         except (Forbidden, HTTPException):
             pass
         except NotFound:
-            raise ValueError("Invalid unknownCommandEmoji: " + client.unknown_command_emoji.sendable)
+            raise ValueError("Invalid unknownCommandEmoji: " + client.unknown_command_emoji.discord_emoji)
     else:
         sourceStr = str(ctx.message.id)
         try:
