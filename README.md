@@ -141,22 +141,22 @@ The list below describes the different "Cogs" of the bot, their associated comma
 Enables forwarding tweets when they are tweeted to a discord channel for specific Twitter accounts.  
   
 Requires the `ENABLE_TWITTER` variable to be set to `TRUE` in order to function.  
-#### !addtwitter \<twitter handle>  
+#### !twitter add \<twitter handle>  
 * Add a Twitter handle to notify when they tweet or quote retweet.  
   
-#### !removetwitter \<twitter handle>  
+#### !twitter remove \<twitter handle>  
 * Remove the given Twitter handle from notifications.  
   
-#### !twitterhook [optional: channel mention] [optional: hook name]  
-* Aliases:  `addtwitterhook`  
+#### !twitter hook [optional: channel mention] [optional: hook name]  
+* Aliases:  `addtwitterhook, create-hook`  
 * Creates a Discord Webhook bound to the channel the command was executed in, unless a channel is given, and with a default name unless a name is given.  
   
-#### !removetwitterhook \<hook name>  
-* Aliases: `deltwitterhook`  
+#### !twitter remove-hook \<hook name>  
+* Aliases: `deltwitterhook, delete-hook`  
 * Deletes the Discord Webhook so that updates are no longer sent to that channel  
   
-#### !gettwitters  
-* Aliases: `getalltwitter, gettwitterhandles`.  
+#### !twitter list  
+* Aliases: `accounts, get-all`.  
 * Returns a list of the currently tracked Twitter accounts for the server.  
 </details>
   
