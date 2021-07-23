@@ -9,6 +9,7 @@ from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Voting_menus
 
 DELETE_ON_CREATE = os.getenv("DELETE_VOTING_CREATION", "FALSE").lower() == "true"
+MAKE_POLL_README = "#votes-make-poll-title-emoji-description"
 
 
 class VotingCog(commands.Cog):
@@ -25,6 +26,10 @@ class VotingCog(commands.Cog):
         self.logger.info(f"Finished loading {__name__}!")
 
     async def load_menus(self):
+        """
+        Loads saved role reaction menus from the DB for all guilds .
+        :return: A dictionary of reaction menu IDs and their reaction menus .
+        """
         all_menus = self.db.list(Voting_menus)
         loaded_menus = {}
         for menu in all_menus:
@@ -32,6 +37,12 @@ class VotingCog(commands.Cog):
         return loaded_menus
 
     async def validate_menu(self, context, menu_id):
+        """
+        Ensures that the menu being requested is valid and that the user is allowed to edit the menu .
+        :param context: The context of the command .
+        :param menu_id: The ID of the menu to fetch .
+        :return: A tuple of Reaction Menu and if the action is valid .
+        """
         voting_menu = self.voting_menus.get(menu_id)
 
         if not voting_menu:
@@ -46,6 +57,10 @@ class VotingCog(commands.Cog):
         return voting_menu, True
 
     def add_or_update_db(self, menu_id):
+        """
+        Creates a new DB item or updates an existing one for a given menu id .
+        :param menu_id: The menu id to create or update .
+        """
         db_item = self.db.get(Voting_menus, menu_id=menu_id)
         if db_item:
             db_item.menu = self.voting_menus.get(menu_id).to_dict()
@@ -55,6 +70,10 @@ class VotingCog(commands.Cog):
             self.db.create(db_item)
 
     async def finalise_poll(self, menu):
+        """
+        Finishes a poll and sends the results of the poll .
+        :param menu: The menu to finish .
+        """
         results = await menu.generate_results()
         await menu.message.channel.send(embed=results)
         self.voting_menus.pop(menu.id)
@@ -64,16 +83,24 @@ class VotingCog(commands.Cog):
 
     @commands.group(name="votes", help="Create reaction menus that can be used as a poll.")
     async def command_group(self, context: commands.Context):
+        """
+        The command group used to make all commands sub-commands .
+        :param context: The context of the command .
+        """
         pass
 
-    # TODO: Fix link
     @command_group.command(
         name="make-poll",
         usage="<title> \n[options]\n...",
         help="Creates a new poll for users to vote on. "
-        "Each of the options to vote on are put on a new line, more help regarding this command can be found here: {}."
+        "Each of the options to vote on are put on a new line, more help regarding this command can be found here: "
+        f"https://github.com/FragSoc/esports-bot{MAKE_POLL_README}."
     )
     async def create_poll_menu(self, context: commands.Context):
+        """
+        Creates a new poll with the options provided in the command .
+        :param context: The context of the command .
+        """
         message_contents = context.message.content.split("\n")
         title = message_contents.pop(0)
         title = title[title.index(context.command.name) + len(context.command.name):].strip()
@@ -104,6 +131,12 @@ class VotingCog(commands.Cog):
                  "aoption"]
     )
     async def add_poll_option(self, context: commands.Context, menu_id: int, emoji):
+        """
+        Adds another poll option to the given poll .
+        :param context: The context of the command .
+        :param menu_id: The ID of the poll to add the option to .
+        :param emoji: The emoji of the option to add .
+        """
         voting_menu, valid = await self.validate_menu(context, menu_id)
 
         if not valid:
@@ -124,6 +157,12 @@ class VotingCog(commands.Cog):
                  "roption"]
     )
     async def remove_poll_option(self, context: commands.Context, menu_id: int, emoji):
+        """
+        Remove an option from a poll .
+        :param context: The context of the command .
+        :param menu_id: The ID of the poll to remove the option from .
+        :param emoji: The emoji of the option to remove .
+        """
         voting_menu, valid = await self.validate_menu(context, menu_id)
 
         if not valid:
@@ -141,6 +180,11 @@ class VotingCog(commands.Cog):
                  "del"]
     )
     async def delete_poll(self, context: commands.Context, menu_id: int):
+        """
+        Delete a poll .
+        :param context: The context of the command .
+        :param menu_id: The ID of the poll to delete .
+        """
         voting_menu, valid = await self.validate_menu(context, menu_id)
 
         if not valid:
@@ -154,6 +198,11 @@ class VotingCog(commands.Cog):
 
     @command_group.command(name="end-poll", usage="<menu id>", help="Finishes a poll.", aliases=["finish", "complete", "end"])
     async def finish_poll(self, context: commands.Context, menu_id: int):
+        """
+        Finishes a poll to get results and stop new votes from coming in .
+        :param context: The context of the command .
+        :param menu_id: The ID of the poll to finish .
+        """
         voting_menu, valid = await self.validate_menu(context, menu_id)
 
         if not valid:
@@ -170,6 +219,11 @@ class VotingCog(commands.Cog):
                  "restart"]
     )
     async def reset_poll_votes(self, context: commands.Context, menu_id: int):
+        """
+        Reset the current votes on a poll .
+        :param context: The context of the command .
+        :param menu_id: The ID of the poll to reset .
+        """
         voting_menu, valid = await self.validate_menu(context, menu_id)
 
         if not valid:
