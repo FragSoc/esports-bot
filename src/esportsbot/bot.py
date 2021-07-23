@@ -83,20 +83,34 @@ async def on_message(message):
 
 def launch():
 
-    TOKEN = os.getenv('DISCORD_TOKEN')
+    if os.getenv("ENABLE_MUSIC", "FALSE").lower() == "true":
+        client.load_extension("esportsbot.cogs.MusicCog")
 
-    client.load_extension('esportsbot.cogs.VoicemasterCog')
-    client.load_extension('esportsbot.cogs.DefaultRoleCog')
-    client.load_extension('esportsbot.cogs.LogChannelCog')
-    client.load_extension('esportsbot.cogs.AdminCog')
-    client.load_extension('esportsbot.cogs.MenusCog')
-    client.load_extension('esportsbot.cogs.PingablesCog')
-    client.load_extension('esportsbot.cogs.EventCategoriesCog')
-    if os.getenv('ENABLE_TWITTER').lower() == 'true':
-        client.load_extension('esportsbot.cogs.TwitterIntegrationCog')
-    if os.getenv('ENABLE_TWITCH').lower() == 'true':
-        client.load_extension('esportsbot.cogs.TwitchIntegrationCog')
-    if os.getenv('ENABLE_MUSIC') == 'TRUE':
-        client.load_extension('esportsbot.cogs.MusicCog')
+    if os.getenv("ENABLE_TWITCH", "FALSE").lower() == "true":
+        client.load_extension("esportsbot.cogs.TwitchCog")
 
-    client.run(TOKEN)
+    if os.getenv("ENABLE_TWITTER", "FALSE").lower() == "true":
+        client.load_extension("esportsbot.cogs.TwitterCog")
+
+    if os.getenv("ENABLE_PINGME", "FALSE").lower() == "true":
+        client.load_extension("esportsbot.cogs.PingableRolesCog")
+
+    if os.getenv("ENABLE_VOICEMASTER", "FALSE").lower() == "true":
+        client.load_extension("esportsbot.cogs.VoicemasterCog")
+
+    if os.getenv("ENABLE_DEFAULTROLE", "FALSE").lower() == "true":
+        client.load_extension("esportsbot.cogs.DefaultRoleCog")
+
+    if os.getenv("ENABLE_EVENTCATEGORIES", "FALSE").lower() == "true":
+        client.load_extension("esportsbot.cogs.EventCategoriesCog")
+
+    if os.getenv("ENABLE_ROLEREACTIONS", "FALSE").lower() == "true":
+        client.load_extension("esportsbot.cogs.RoleReactCog")
+
+    if os.getenv("ENABLE_VOTINGMENUS", "FALSE").lower() == "true":
+        client.load_extension("esportsbot.cogs.VotingCog")
+
+    client.load_extension("esportsbot.cogs.AdminCog")
+    client.load_extension("esportsbot.cogs.LogChannelCog")
+
+    client.run(os.getenv("DISCORD_TOKEN"))
