@@ -11,6 +11,7 @@ from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Role_menus
 
 DELETE_ON_CREATE = os.getenv("DELETE_ROLE_CREATION", "FALSE").lower() == "true"
+MAKE_MENU_GIT_README = "#roles-make-menu-title-description-mentioned-role-emoji"
 
 
 class RoleReactCog(commands.Cog):
@@ -27,6 +28,10 @@ class RoleReactCog(commands.Cog):
         self.logger.info(f"Finished loading {__name__}!")
 
     async def load_menus(self):
+        """
+        Loads saved role reaction menus from the DB for all guilds .
+        :return: A dictionary of reaction menu IDs and their reaction menus .
+        """
         all_menus = self.db.list(Role_menus)
         loaded_menus = {}
         for menu in all_menus:
@@ -34,6 +39,10 @@ class RoleReactCog(commands.Cog):
         return loaded_menus
 
     def add_or_update_db(self, menu_id):
+        """
+        Creates a new DB item or updates an existing one for a given menu id .
+        :param menu_id: The menu id to create or update .
+        """
         db_item = self.db.get(Role_menus, menu_id=menu_id)
         if db_item:
             db_item.menu = self.reaction_menus.get(menu_id).to_dict()
@@ -44,6 +53,12 @@ class RoleReactCog(commands.Cog):
 
     @staticmethod
     def options_from_strings(message, roles):
+        """
+        Gets the role/emoji pairs for the options to add to the role reaction menu from the message contents .
+        :param message: The message contents .
+        :param roles: The list of roles mentioned in the message in the order they were mentioned in .
+        :return: A dictionary of emoji to role.
+        """
         options = {}
         for i in range(len(roles)):
             if i == len(roles) - 1:
@@ -63,6 +78,11 @@ class RoleReactCog(commands.Cog):
 
     @staticmethod
     def title_and_description(message):
+        """
+        Get the title and description of a reaction menu from the creation command .
+        :param message: The message contents .
+        :return: A tuple of Title, Description
+        """
         quote_last_index = message.rfind('"')
         quote_first_index = message.index('"')
         short_message = message[quote_first_index:quote_last_index + 1]
@@ -71,17 +91,24 @@ class RoleReactCog(commands.Cog):
 
     @commands.group(name="roles", help="Create reaction menus that can be used to get roles.")
     async def command_group(self, context: commands.Context):
+        """
+        The command group used to make all commands sub-commands .
+        :param context: The context of the command .
+        """
         pass
 
-    # TODO: Fix link
     @command_group.command(
         name="make-menu",
         usage="<title> <description> [<mentioned role> <emoji>]",
         help="Creates a new role reaction menu with the given roles and their emojis. "
-        "Go to {} for more help regarding usage."
+        f"Go to https://github.com/FragSoc/esports-bot{MAKE_MENU_GIT_README} for more help regarding usage."
     )
     @commands.has_permissions(administrator=True)
     async def create_role_menu(self, context: commands.Context):
+        """
+        Creates a new role reaction menu with the options provided in the command .
+        :param context: The context of the command .
+        """
         roles = context.message.role_mentions
         role_strings = [f"<@&{x.id}>" for x in roles]
         # The mentioned roles in the correct order.
@@ -90,12 +117,14 @@ class RoleReactCog(commands.Cog):
         try:
             menu_options = self.options_from_strings(context.message.content, sorted_strings)
         except EmojiKeyError as e:
+            # The emoji is already in the reaction menu .
             await context.reply(self.user_strings["duplicate_emoji"].format(emoji=e.emoji))
             return
 
         try:
             title, description = self.title_and_description(context.message.content)
         except IndexError:
+            # The user missed some quotes around their title/description.
             await context.reply(self.user_strings["missing_quotes"])
             return
 
@@ -111,11 +140,17 @@ class RoleReactCog(commands.Cog):
     @command_group.command(
         name="add-option",
         usage="[optional: menu id] [<mentioned role> <emoji>]",
-        help="Adds a new option to a reaction menu. If no ID is given it will add the option to the latest menu."
+        help="Adds a new option to a reaction menu, can be one or many. "
+        "If no ID is given it will add the option to the latest menu."
     )
     @commands.has_permissions(administrator=True)
-    async def add_menu_option(self, context: commands.Context, menu_id=None):
-
+    async def add_menu_option(self, context: commands.Context, menu_id: str = None):
+        """
+        Adds more roles to the role reaction menu . This is done using the message.role_mentions attr instead of
+         using function params.
+        :param context: The context of the command .
+        :param menu_id: The ID of the menu to add the roles to .
+        """
         roles = context.message.role_mentions
         role_strings = [f"<@&{x.id}>" for x in roles]
         # The mentioned roles in the correct order.
@@ -149,6 +184,13 @@ class RoleReactCog(commands.Cog):
     )
     @commands.has_permissions(administrator=True)
     async def remove_menu_option(self, context: commands.Context, option_key: MultiEmoji, menu_id=None):
+        """
+        Removes an role option from a reaction menu .
+        :param context: The context of the command .
+        :param option_key: The emoji used to get the role to remove from the menu .
+        :param menu_id: The ID of the menu to remove the option from .
+        :return:
+        """
         menu = get_menu(self.reaction_menus, menu_id)
         if not menu:
             await context.reply(self.user_strings["invalid_id"].format(given_id=menu_id))
@@ -165,6 +207,11 @@ class RoleReactCog(commands.Cog):
     )
     @commands.has_permissions(administrator=True)
     async def disable_menu(self, context: commands.Context, menu_id=None):
+        """
+        Disables a reaction menu to stop users from being able to get roles from it .
+        :param context: The context of the command .
+        :param menu_id: The ID of the menu to disable .
+        """
         menu = get_menu(self.reaction_menus, menu_id)
         if not menu:
             await context.reply(self.user_strings["invalid_id"].format(given_id=None))
@@ -181,6 +228,11 @@ class RoleReactCog(commands.Cog):
     )
     @commands.has_permissions(administrator=True)
     async def enable_menu(self, context: commands.Context, menu_id=None):
+        """
+        Allows users to react to a message and get roles from it .
+        :param context: The context of the command .
+        :param menu_id: The menu ID to enable .
+        """
         menu = get_menu(self.reaction_menus, menu_id)
         if not menu:
             await context.reply(self.user_strings["invalid_id"].format(given_id=None))
@@ -193,6 +245,11 @@ class RoleReactCog(commands.Cog):
     @command_group.command(name="delete-menu", usage="<menu id>", help="Deletes a given role reaction menu.")
     @commands.has_permissions(administrator=True)
     async def delete_menu(self, context: commands.Context, menu_id):
+        """
+        Deletes a reaction menu entirely .
+        :param context: The context of the command .
+        :param menu_id: The menu ID to delete .
+        """
         menu = get_menu(self.reaction_menus, menu_id)
 
         if not menu:
@@ -208,6 +265,10 @@ class RoleReactCog(commands.Cog):
     @command_group.command(name="toggle-ids", help="Toggles the footer displaying the menu ID for all role reaction menus.")
     @commands.has_permissions(administrator=True)
     async def toggle_show_ids(self, context: commands.Context):
+        """
+        Toggles if the menu IDs are showing in the footer of all reaction menus .
+        :param context: The context of the command .
+        """
         for menu_id in self.reaction_menus:
             menu = self.reaction_menus.get(menu_id)
             menu.toggle_footer()

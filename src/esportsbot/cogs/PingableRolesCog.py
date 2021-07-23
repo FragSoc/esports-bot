@@ -501,7 +501,10 @@ class PingableRolesCog(commands.Cog):
         """
         guild_settings = self.guild_settings.get(context.guild.id)
         if not guild_settings:
-            await context.send(self.user_strings["needs_initialising"].format(prefix=self.bot.command_prefix, command="default-settings"))
+            await context.send(
+                self.user_strings["needs_initialising"].format(prefix=self.bot.command_prefix,
+                                                               command="default-settings")
+            )
             return
 
         embed = Embed(
