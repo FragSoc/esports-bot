@@ -11,6 +11,8 @@ class AdminCog(commands.Cog):
         self.STRINGS = bot.STRINGS["admin"]
 
     def is_dev(ctx):
+        if not devs:
+            return ctx.author.guild_permissions.administrator
         return str(ctx.author.id) in devs
 
     @commands.command(
