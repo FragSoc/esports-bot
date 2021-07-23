@@ -375,53 +375,58 @@ Also requires you to be in the voice channel with the bot, or if the bot is inac
 6. Click on `Create Credentials` and then `API key`.  
 7. Copy the key given. For security, it is recommended that you "restrict key" and only enable `YouTube Data API v3`.  
   
-#### !setmusicchannel [optional: {args}] <channel_id>
+#### !music set-channel [optional: {args}] <channel_id>
 * Set the channel to be used for requesting music. Once set the channel will be cleared of any past messages, and the  
 preview messages will be sent. Any messages sent to this channel get deleted after being processed.  
 * If the channel being set has past messages, use the `-c` arg to indicate that the channel can be cleared and then set.  
 * *__Does not need to be sent in the music channel__*  
   
   
-#### !getmusicchannel  
+#### !music get-channel  
 * Returns the current channel set as the music channel as a mentioned channel with a `#`.  
 * *__Does not need to be sent in the music channel__*  
   
-#### !resetmusicchannel  
+#### !music reset-channel  
 * This clears the current music channel and resets the preview and queue messages.  
 * *__Does not need to be sent in the music channel__*  
   
-#### !removesong \<index>  
+#### !music removesong \<index>  
 * Aliases: `remove, removeat`  
 * Removes a song from the queue at the given index.  
   
-#### !resumesong  
+#### !music resumesong  
 * Aliases: `resume, play`  
 * Resumes the current song. Only works if paused.  
   
-#### !pausesong  
+#### !music pausesong  
 * Aliases: `pause, stop`  
 * Pauses the current song. Only works if there is something playing.  
   
-#### !kickbot  
+#### !music kickbot  
 * Aliases: `kick`  
 * Kicks the bot from the current call. Will also clear the queue  
   
-#### !skipsong  
+#### !music skipsong  
 * Aliases: `skip`  
 * Skips the current song. If the current song is the only song in the playlist, the bot will leave.  
   
-#### !listqueue  
+#### !music listqueue  
 * Aliases: `list, queue`  
 * Shows the current queue. Has the same output as the current queue in the music channel  
 * *__Can't be sent in the music channel__*  
   
-#### !clearqueue  
+#### !music clearqueue  
 * Aliases: `clear, empty`  
 * Clears the current queue  
   
-#### !shufflequeue  
+#### !music shufflequeue  
 * Aliases: `shuffle, randomise`  
 * If the queue has 3 or more items, including the current song, it will shuffle all but the current songs.  
+
+#### !music setvolume \<volume level>
+* Aliases: `volume`
+* Sets the global playback volume to the given level.
+
 </details>  
   
 <details>  
