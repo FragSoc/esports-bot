@@ -6,13 +6,17 @@ import tweepy
 from discord.ext import commands
 from discord import Webhook, AsyncWebhookAdapter
 from discord.errors import Forbidden
+
+from ..db_gateway import DBGatewayActions
 from ..lib.stringTyping import strIsInt, strIsChannelMention
 import aiohttp
 import asyncio
 import logging
 from collections import defaultdict
-from ..db_gateway import db_gateway
+
 import os
+
+from ..models import Twitter_info
 
 bot_hook_prefix = "TwitterHook-"
 CONSUMER_KEY = os.getenv("TWITTER_CONSUMER_KEY")
@@ -245,7 +249,7 @@ class TwitterCog(commands.Cog):
         self.logger = logging.getLogger(__name__)
         self.loop = loop if loop is not None else asyncio.get_event_loop()
         self.user_strings = self._bot.STRINGS["twitter"]
-        self._db = db_gateway()
+        self._db = DBGatewayActions()
 
         auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
         auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
@@ -298,10 +302,10 @@ class TwitterCog(commands.Cog):
         :rtype: dict
         """
 
-        db_data = self._db.pure_return("SELECT guild_id, twitter_user_id FROM twitter_info")
+        db_data = self._db.list(Twitter_info)
         guild_info = defaultdict(set)
         for item in db_data:
-            guild_info[str(item.get("twitter_user_id"))].add(item.get("guild_id"))
+            guild_info[str(item.twitter_user_id)].add(item.guild_id)
         return guild_info
 
     @commands.command(alias=["addtwitterhook"])
@@ -508,14 +512,8 @@ class TwitterCog(commands.Cog):
                 asyncio.create_task(self.refresh_filter(current_following))
 
             if tracked_guilds is None or ctx.guild.id not in tracked_guilds:
-                self._db.insert(
-                    "twitter_info",
-                    params={
-                        "guild_id": ctx.guild.id,
-                        "twitter_user_id": user_id,
-                        "twitter_handle": account
-                    }
-                )
+                db_item = Twitter_info(guild_id=ctx.guild.id, twitter_user_id=user_id, twitter_handle=account)
+                self._db.create(db_item)
 
             self.logger.info("Added %s to accounts tracked", account)
             await ctx.send(self.user_strings["account_added"].format(account=account))
@@ -564,8 +562,8 @@ class TwitterCog(commands.Cog):
                 # The account is no longer tracked in any guild, can be removed from the filter.
                 current_filter.remove(user_id)
                 asyncio.create_task(self.refresh_filter(current_filter))
-
-            self._db.delete("twitter_info", where_params={"guild_id": ctx.guild.id, "twitter_user_id": user_id})
+            db_item = self._db.get(Twitter_info, guild_id=ctx.guild.id, twitter_user_id=user_id)
+            self._db.delete(db_item)
             self.logger.info("Removed %s from being tracked in %s(%s)", account, ctx.guild.name, ctx.guild.id)
             await ctx.send(self.user_strings["account_removed"].format(account=account))
 
@@ -583,12 +581,12 @@ class TwitterCog(commands.Cog):
         :return: None
         :rtype: NoneType
         """
-        handles = self._db.pure_return(f"SELECT twitter_handle FROM twitter_info WHERE guild_id={ctx.guild.id}")
-        if len(handles) == 0:
+        handles = self._db.list(Twitter_info, guild_id=ctx.guild.id)
+        if not handles:
             await ctx.send(self.user_strings["accounts_empty"])
             return
 
-        handle_names = [str(x.get("twitter_handle")) for x in handles]
+        handle_names = [x.twitter_handle for x in handles]
         handle_string = ",".join(handle_names)
         await ctx.send(self.user_strings["accounts_list"].format(tracked_accounts=handle_string))
 
