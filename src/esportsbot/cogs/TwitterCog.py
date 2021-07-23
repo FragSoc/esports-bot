@@ -7,8 +7,8 @@ from discord.ext import commands
 from discord import Webhook, AsyncWebhookAdapter
 from discord.errors import Forbidden
 
-from ..db_gateway import DBGatewayActions
-from ..lib.stringTyping import strIsInt, strIsChannelMention
+from esportsbot.db_gateway import DBGatewayActions
+from esportsbot.lib.stringTyping import strIsInt, strIsChannelMention
 import aiohttp
 import asyncio
 import logging
@@ -16,7 +16,7 @@ from collections import defaultdict
 
 import os
 
-from ..models import Twitter_info
+from esportsbot.models import Twitter_info
 
 bot_hook_prefix = "TwitterHook-"
 CONSUMER_KEY = os.getenv("TWITTER_CONSUMER_KEY")
