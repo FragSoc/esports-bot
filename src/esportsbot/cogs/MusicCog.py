@@ -811,7 +811,7 @@ class MusicCog(commands.Cog):
 
         if message.content.startswith(self._bot.command_prefix):
             # Ignore commands, any MusicCog commands will get handled in the usual way
-            return True
+            return False
 
         if not message.author.voice:
             # User is not in a voice channel.. exit
@@ -883,6 +883,8 @@ class MusicCog(commands.Cog):
         if not total_success:
             send = Embed(title=self.user_strings["song_error"], colour=EmbedColours.red)
             await send_timed_message(message.channel, embed=send, timer=10)
+
+        return True
 
     async def process_song_request(self, message: Message, request: str) -> bool:
         """
