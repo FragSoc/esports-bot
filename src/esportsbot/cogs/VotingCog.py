@@ -100,7 +100,8 @@ class VotingCog(commands.Cog):
         name="add-option",
         usage="<menu id> <emoji> <description>",
         help="Adds another option to an existing poll.",
-        aliases=["add", "aoption"]
+        aliases=["add",
+                 "aoption"]
     )
     async def add_poll_option(self, context: commands.Context, menu_id: int, emoji):
         voting_menu, valid = await self.validate_menu(context, menu_id)
@@ -116,10 +117,11 @@ class VotingCog(commands.Cog):
         self.add_or_update_db(voting_menu.id)
 
     @command_group.command(
-            name="remove-option",
-            usage="<menu id> <emoji>",
-            help="Removes a poll option from an existing poll",
-            aliases=["remove", "roption"]
+        name="remove-option",
+        usage="<menu id> <emoji>",
+        help="Removes a poll option from an existing poll",
+        aliases=["remove",
+                 "roption"]
     )
     async def remove_poll_option(self, context: commands.Context, menu_id: int, emoji):
         voting_menu, valid = await self.validate_menu(context, menu_id)
@@ -132,10 +134,11 @@ class VotingCog(commands.Cog):
         self.add_or_update_db(voting_menu.id)
 
     @command_group.command(
-            name="delete-poll",
-            usage="<menu id>",
-            help="Deletes a given role reaction menu.",
-            aliases=["delete", "del"]
+        name="delete-poll",
+        usage="<menu id>",
+        help="Deletes a given role reaction menu.",
+        aliases=["delete",
+                 "del"]
     )
     async def delete_poll(self, context: commands.Context, menu_id: int):
         voting_menu, valid = await self.validate_menu(context, menu_id)
@@ -159,10 +162,12 @@ class VotingCog(commands.Cog):
         await self.finalise_poll(voting_menu)
 
     @command_group.command(
-            name="reset-poll",
-            usage="<menu id>",
-            help="Removes all user reactions from the poll.",
-            aliases=["reset", "clear", "restart"]
+        name="reset-poll",
+        usage="<menu id>",
+        help="Removes all user reactions from the poll.",
+        aliases=["reset",
+                 "clear",
+                 "restart"]
     )
     async def reset_poll_votes(self, context: commands.Context, menu_id: int):
         voting_menu, valid = await self.validate_menu(context, menu_id)
