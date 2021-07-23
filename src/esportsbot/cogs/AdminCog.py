@@ -49,6 +49,8 @@ class AdminCog(commands.Cog):
     @commands.check(is_dev)
     @commands.command(name="remove-cog")
     async def remove_cog(self, context: commands.Context, cog_name: str):
+        if "AdminCog" in cog_name:
+            return
         try:
             package = "esportsbot.cogs."
             if package not in cog_name:
@@ -64,6 +66,8 @@ class AdminCog(commands.Cog):
     @commands.check(is_dev)
     @commands.command(name="add-cog")
     async def add_cog(self, context: commands.Context, cog_name: str):
+        if "AdminCog" in cog_name:
+            return
         try:
             package = "esportsbot.cogs."
             if package not in cog_name:
