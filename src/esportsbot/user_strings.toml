@@ -111,6 +111,7 @@ no_pingable_roles = ":warning: There are currently no pingable roles in this ser
 roles_disabled = "✅ The following role(s) were disabled: `{disabled_roles}`"
 roles_enabled = "✅ The following role(s) were enabled: `{enabled_roles}`"
 needs_initialising = ":x: This server has not had its default settings setup! Use the `{prefix}{command}` command to setup the settings"
+reserve_emoji = ":x: Sorry, the emoji `{emoji}` cannot be used as it is reserved for internal use"
 
 [voicemaster]
 success_slave_locked = "Your VM slave has been locked 🔒"

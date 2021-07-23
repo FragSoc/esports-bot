@@ -639,6 +639,11 @@ class PingableRolesCog(commands.Cog):
         :param context: The context of the command .
         :param poll_emoji: The emoji to use in the role polls .
         """
+        if poll_emoji == THRESHOLD_EMOJI:
+            # Can't use the threshold emoji as the poll emoji as it is used to count votes .
+            await context.reply(self.user_strings["reserved_emoji"].format(poll_emoji.discord_emoji))
+            return
+
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
         db_item.default_poll_emoji = poll_emoji.to_dict()
         self.db.update(db_item)
