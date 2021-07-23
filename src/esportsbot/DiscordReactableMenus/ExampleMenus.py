@@ -1,9 +1,10 @@
 import datetime
 import inspect
-from typing import Any, Dict, Union
+from collections import defaultdict
+from typing import Dict
 
 import discord
-from discord import Embed, PartialEmoji, Emoji, RawReactionActionEvent, Role
+from discord import Embed, PartialEmoji, RawReactionActionEvent, Role
 
 from esportsbot.DiscordReactableMenus.EmojiHandler import MultiEmoji
 from esportsbot.DiscordReactableMenus.ReactableMenu import ReactableMenu
@@ -42,7 +43,6 @@ class RoleReactMenu(ReactableMenu):
 
         if kwargs.get("description") is None:
             kwargs["description"] = DEFAULT_ROLE_DESCRIPTION
-
         if kwargs.get("add_func") is None:
             kwargs["add_func"] = self.react_add_func
 
@@ -114,56 +114,43 @@ class PollReactMenu(ReactableMenu):
         if kwargs.get("add_func") is None:
             kwargs["add_func"] = self.react_add_func
 
-        if kwargs.get("remove_func") is None:
-            kwargs["remove_func"] = self.react_remove_func
-
         if kwargs.get("auto_enable") is None:
             kwargs["auto_enable"] = AUTO_ENABLE_POLL_REACT
 
         super().__init__(**kwargs)
-        self.votes = {}
         self.total_votes = 0
-        self.end_time = kwargs.get("end_time", None)
+        self.end_time = kwargs.get("end_time", datetime.datetime.now())
         self.poll_length = kwargs["poll_length"]
+        self.author = kwargs["author"]
 
     @classmethod
     async def load_dict(cls, bot, data) -> Dict:
         kwargs = await super(PollReactMenu, cls).load_dict(bot, data)
         kwargs["poll_length"] = data.get("length")
         kwargs["end_time"] = data.get("end_time")
+        kwargs["author"] = bot.get_user(data.get("author_id"))
         return kwargs
 
     @classmethod
     async def from_dict(cls, bot, data):
         kwargs = await cls.load_dict(bot, data)
-        kwargs["poll_length"] = data.get("length")
-        kwargs["end_time"] = datetime.datetime.strptime(data.get("end_time"), DATE_FORMAT)
+        menu = PollReactMenu(**kwargs)
+        if menu.enabled:
+            menu.enabled = False
+            await menu.enable_menu(bot)
+        return menu
 
     def to_dict(self) -> Dict:
         kwargs = super(PollReactMenu, self).to_dict()
         kwargs["end_time"] = self.end_time.strftime(DATE_FORMAT)
         kwargs["length"] = self.poll_length
+        kwargs["author_id"] = self.author.id
         return kwargs
 
-    def get_longest_option(self):
-        longest = -1
-        for option in self.options:
-            if len(self.options.get(option).get("descriptor")) > longest:
-                longest = len(self.options.get(option).get("descriptor"))
-        return longest
-
-    def get_winner(self):
-        winner = ([None], -1)
-        for option in self.votes:
-            if self.votes.get(option).get("votes") > winner[-1]:
-                winner = ([option], self.votes.get(option).get("votes"))
-            elif self.votes.get(option).get("votes") == winner[-1]:
-                winner = (winner[0] + [option], winner[-1])
-        return winner
-
-    def generate_results(self):
+    async def generate_results(self):
+        results = await self.get_results()
         if self.total_votes > 0:
-            string = self.generate_results_string()
+            string = self.generate_results_string(results)
         else:
             string = NO_VOTES
 
@@ -175,29 +162,68 @@ class PollReactMenu(ReactableMenu):
 
         return embed
 
-    def generate_results_string(self):
+    def get_longest_option(self):
+        longest = -1
+        for option in self.options:
+            if len(self.options.get(option).get("descriptor")) > longest:
+                longest = len(self.options.get(option).get("descriptor"))
+        return longest
+
+    def get_winner(self):
+        winner = ([None], -1)
+        for react in self.message.reaction:
+            self.total_votes += react.count
+            if react.count > winner[-1]:
+                winner = ([react.emoji], react.count)
+            elif react.count == winner[-1]:
+                winner = (winner[0] + [react.emoji], winner[-1])
+        return winner
+
+    async def get_results(self):
+        await self.get_total_votes()
+        results = {"winner": [], "winner_count": -1, "reactions": defaultdict(list)}
+        """
+        winner_count : count,
+        reactions : {
+            0 : [reactions],
+            1 : [reactions],
+            ...
+        }
+        """
+        sorted_reactions = sorted(self.message.reactions, key=lambda x: x.count, reverse=True)
+        for reaction in sorted_reactions:
+            if reaction.count - 1 > results.get("winner_count"):
+                results["winner_count"] = reaction.count - 1
+            results["reactions"][reaction.count - 1].append(reaction)
+
+        return results
+
+    def generate_results_string(self, results):
         max_length = self.get_longest_option()
-        winner_ids, winner_votes = self.get_winner()
-        winner_strings = "\n".join(self.make_bar(x, max_length, winner_votes, is_winner=True) for x in winner_ids)
-        remaining_options = self.votes.copy()
-        for winner in winner_ids:
-            remaining_options.pop(winner)
+        winning_votes = results.get("winner_count")
+        res_string = ""
+        for i in range(0, max(results.get("reactions").keys()) + 1):
+            reacts = results.get("reactions").get(i)
+            if reacts:
+                res_string = "\n".join(self.make_bar(x, max_length, winning_votes, i) for x in reacts) + "\n" + res_string
+        return f"```{res_string}```"
 
-        other_strings = ""
-        for key, _ in sorted(remaining_options.items(), key=lambda x: x[1].get("votes"), reverse=True):
-            other_strings += "\n" + self.make_bar(key, max_length, winner_votes)
+    async def get_total_votes(self):
+        updated_message = await self.message.channel.fetch_message(self.id)
+        self.total_votes = 0
+        self.message = updated_message
+        for reaction in updated_message.reactions:
+            self.total_votes += reaction.count - 1
+        return self.total_votes
 
-        string = f"```\n{winner_strings}{other_strings}```"
-        return string
-
-    def make_bar(self, emoji_id, longest_descriptor, winning_votes, is_winner=False):
-        num_votes = self.votes.get(emoji_id).get("votes")
-        descriptor = self.options.get(emoji_id).get("descriptor")
+    def make_bar(self, reaction, longest_descriptor, winning_votes, num_votes):
+        winner = winning_votes == num_votes
+        react_as_emoji = MultiEmoji(reaction.emoji)
+        descriptor = self.options.get(react_as_emoji.emoji_id).get("descriptor")
         spacing = longest_descriptor - len(descriptor)
         bar_length = int((num_votes / winning_votes) * BAR_LENGTH)
         string = f"{descriptor}{' ' * spacing} | {'=' * bar_length}{'' if num_votes else ' '}" \
-                 f"{'🏆' if is_winner else ''} +{num_votes} Vote{'' if num_votes == 1 else 's'}"
-
+                 f"{'🏆' if winner else ''} +{num_votes} Vote{'' if num_votes == 1 else 's'}"
         return string
 
     async def enable_menu(self, bot) -> bool:
@@ -207,24 +233,9 @@ class PollReactMenu(ReactableMenu):
         return False
 
     async def disable_menu(self, bot) -> bool:
-        self.total_votes = 0
-        self.votes = {}
         if await super().disable_menu(bot):
             self.end_time = None
             return True
-        return False
-
-    def add_option(self, emoji: Union[Emoji, PartialEmoji, MultiEmoji, str], descriptor: Any) -> bool:
-        if super().add_option(emoji, descriptor):
-            formatted_emoji = MultiEmoji(emoji)
-            self.votes[formatted_emoji.emoji_id] = {"emoji": formatted_emoji, "votes": 0}
-            return True
-        return False
-
-    def remove_option(self, emoji: Union[Emoji, PartialEmoji, str]) -> bool:
-        if super().remove_option(emoji):
-            formatted_emoji = MultiEmoji(emoji)
-            return self.votes.pop(formatted_emoji.emoji_id, None) is not None
         return False
 
     async def react_add_func(self, payload: RawReactionActionEvent) -> bool:
@@ -238,23 +249,6 @@ class PollReactMenu(ReactableMenu):
             await message.remove_reaction(triggering_emoji, triggering_member)
             return False
 
-        formatted_emoji = MultiEmoji(triggering_emoji)
-
-        self.votes[formatted_emoji.emoji_id]["votes"] += 1
-        self.total_votes += 1
-
-        return True
-
-    async def react_remove_func(self, payload: RawReactionActionEvent):
-        triggering_emoji = payload.emoji
-
-        if triggering_emoji not in self:
-            return False
-
-        formatted_emoji = MultiEmoji(triggering_emoji)
-
-        self.votes[formatted_emoji.emoji_id]["votes"] -= 1
-        self.total_votes -= 1
         return True
 
 

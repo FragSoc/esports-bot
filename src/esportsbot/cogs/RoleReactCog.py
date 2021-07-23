@@ -1,4 +1,5 @@
 import logging
+import os
 import shlex
 
 from discord.ext import commands
@@ -8,6 +9,8 @@ from esportsbot.DiscordReactableMenus.ExampleMenus import RoleReactMenu
 from esportsbot.DiscordReactableMenus.reactable_lib import get_menu
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Role_menus
+
+DELETE_ON_CREATE = os.getenv("DELETE_ROLE_CREATION", "FALSE").lower() == "true"
 
 
 class RoleReactCog(commands.Cog):
@@ -21,6 +24,7 @@ class RoleReactCog(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.reaction_menus = await self.load_menus()
+        self.logger.info(f"Finished loading {__name__}!")
 
     async def load_menus(self):
         all_menus = self.db.list(Role_menus)
@@ -101,6 +105,8 @@ class RoleReactCog(commands.Cog):
 
         self.reaction_menus[role_menu.id] = role_menu
         self.add_or_update_db(role_menu.id)
+        if DELETE_ON_CREATE:
+            await context.message.delete()
 
     @command_group.command(
         name="add-option",

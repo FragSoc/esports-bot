@@ -237,7 +237,7 @@ The `TWITCH_CALLBACK` is the URL to your HTTPS server. For testing you can use `
 </details>  
   
 <details>    
-<summary>Reaction Role Menus</summary>    
+<summary>Role Reaction Menus</summary>    
     
 ### Role Reaction Menus.    
 
@@ -251,6 +251,7 @@ For devs:
 * Creates a new role reaction menu with the given roles and their emojis.
 * Each option must be a mentioned role followed by the emoji to use as its reaction. There can be up to 25 roles in a single reaction menu.
 * The `title` is displayed at the top of the menu, and the `description` just below. To have either blank leave the quotes empty.
+* If the `DELETE_ROLE_CREATION` env var is set to `TRUE` the command message will be deleted.
 * *Requires `administrator` permission in Discord*
 * An example usage of this command is as such: `!roles make-menu "{title}" "{description}" {@option1 role} {option1 emoji} ... ...`
 
@@ -282,7 +283,63 @@ For devs:
 * *Requires `administrator` permission in Discord*
 
 </details>   
-  
+
+<details>    
+<summary>Poll Reaction Menus</summary>    
+    
+### Poll Reaction menus.    
+
+Poll reaction menus allow users to create polls with up to 25 different options for other users, and themselves, to vote on.
+
+The poll start and end is not time based, but instead controlled by the user that created the poll or administrators.
+
+For devs:    
+* To enable this function in the bot use the `ENABLE_VOTINGMENUS` env var and set it to `TRUE`.
+* Making new types of reaction menus is easy - simply extend `DiscordReactableMenus.ReactableMenu` or one of the example menus in `DiscordReactableMenus.ExampleMenus`.
+    
+#### !votes make-poll \<title> [\<emoji> \<description>]
+* Creates a new poll with each emoji having a description.
+* Each option must be an emoji and a description, with each one on a new line. There can be up to 25 roles in a single reaction menu.
+* If the `DELETE_VOTING_CREATION` env var is set to `TRUE` the command message will be deleted.
+* An example usage of this command is as such: 
+  ```
+  !votes make-poll {title} 
+  {option1 emoji} {option1 description}
+  {option2 emoji} {option2 description}
+  ... ...
+  [up to option 25] 
+  ```
+
+#### !votes add-option \<menu id> \<emoji> \<description>
+* Aliases: `add, aoption`
+* Adds another option to the poll with the menu id given.
+* Only one option can be added at a time with this command.
+* Each option must be an emoji and a description, with each one on a new line. There can be up to 25 roles in a single reaction menu.
+* *You must be the owner of the poll or be an administrator*
+* An example usage of this command is as such: `!votes add-option {menu id} {option emoji} {option description}`
+
+#### !votes remove-option \<menu id> \<emoji>
+* Aliases: `remove, roption`
+* Removes the option from the poll with the menu id given.
+* *You must be the owner of the poll or be an administrator*
+
+#### !votes delete-poll \<menu id>
+* Aliases: `delete, del`
+* Deletes the poll with the menu id given.
+* *You must be the owner of the poll or be an administrator*
+
+#### !votes end-poll \<menu id>
+* Aliases: `finish, complete, end`
+* Deletes the actual poll message and sends a new message with the results of the poll.
+* *You must be the owner of the poll or be an administrator*
+
+#### !votes reset-poll \<menu id>
+* Aliases: `reset, clear, restart`
+* Removes all the current user-added reactions from the poll with the menu id given.
+* *You must be the owner of the poll or be an administrator*
+
+</details>
+
 <details>  
 <summary>Music Bot</summary>  
   

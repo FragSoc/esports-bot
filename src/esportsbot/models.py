@@ -54,6 +54,12 @@ class Role_menus(base):
     menu = Column(JSONB, nullable=False)
 
 
+class Voting_menus(base):
+    __tablename__ = 'voting_menus'
+    menu_id = Column(BigInteger, primary_key=True, nullable=False)
+    menu = Column(JSONB, nullable=False)
+
+
 class Voicemaster_master(base):
     __tablename__ = 'voicemaster_master'
     master_id = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)

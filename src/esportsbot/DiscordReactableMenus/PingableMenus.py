@@ -1,7 +1,7 @@
 import datetime
 from typing import Dict
 
-from discord import Embed, Role
+from discord import Embed, Reaction, Role
 
 from esportsbot.DiscordReactableMenus.ExampleMenus import PollReactMenu, RoleReactMenu
 from esportsbot.DiscordReactableMenus.ReactableMenu import ReactableMenu
@@ -45,16 +45,26 @@ class PingableVoteMenu(PollReactMenu):
         kwargs["name"] = self.name
         return kwargs
 
-    def generate_result_embed(self, dummy_emoji, vote_threshold):
+    async def generate_result_embed(self, dummy_emoji, vote_threshold):
+        results = await self.get_results()
         if self.total_votes <= 0:
             string = NO_VOTES
         else:
             self.options[dummy_emoji.emoji_id] = {"emoji": dummy_emoji, "descriptor": "Vote Threshold"}
-            self.votes[dummy_emoji.emoji_id] = {"emoji": dummy_emoji, "votes": vote_threshold}
+            dummy_react = Reaction(
+                emoji=dummy_emoji.discord_emoji,
+                message=self.message,
+                data={
+                    "count": vote_threshold,
+                    "me": True
+                }
+            )
+            if vote_threshold > results.get("winner_count"):
+                results["winner_count"] = vote_threshold
+            results["reactions"][vote_threshold].append(dummy_react)
             self.total_votes += vote_threshold
-            string = self.generate_results_string()
+            string = self.generate_results_string(results)
             self.options.pop(dummy_emoji.emoji_id)
-            self.votes.pop(dummy_emoji.emoji_id)
             self.total_votes -= vote_threshold
 
         title = self.title

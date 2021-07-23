@@ -158,3 +158,10 @@ invalid_emoji = "The provided emoji was not a valid emoji"
 disable_menu = "✅ The menu with ID `{menu_id}` has been disabled"
 enable_menu = "✅ The menu with ID `{menu_id}` has been enabled"
 delete_menu = "✅ The menu with ID `{menu_id}` has been deleted"
+
+[vote_reacts]
+wrong_author = ":x: You cannot perform this action, only `{author}` can do this"
+needs_number = ":x: The argument required for this is a menu ID as a number. You can copy the menu ID from the footer of the menu or by copying the message ID of the menu"
+invalid_id = ":warning: There is no poll with the id `{given_id}`"
+disable_menu = "✅ The poll with ID `{menu_id}` has been disabled"
+reset_menu = "✅ The poll with ID `{menu_id}` has had its reactions cleared"

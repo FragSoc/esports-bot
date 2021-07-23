@@ -5,7 +5,7 @@ import discord
 from discord import Embed, HTTPException, Message, Emoji, PartialEmoji, Role, TextChannel
 from emoji import emojize
 
-from esportsbot.DiscordReactableMenus.EmojiHandler import MultiEmoji, partial_from_emoji, partial_from_string
+from esportsbot.DiscordReactableMenus.EmojiHandler import MultiEmoji
 
 DISABLED_STRING = "(Currently Disabled)"
 
@@ -44,10 +44,6 @@ class ReactableMenu:
         return self.__getitem__(item) is not None
 
     def __getitem__(self, item: Union[str, dict, Emoji, PartialEmoji, MultiEmoji]):
-        # if isinstance(item, str) or isinstance(item, PartialEmoji) or isinstance(item, Emoji) or isinstance(item, MultiEmoji):
-        #     p_emoji = MultiEmoji(item)
-        # else:
-        #     return None
         try:
             p_emoji = MultiEmoji(item)
             return self.options.get(p_emoji.emoji_id)
@@ -197,7 +193,6 @@ class ReactableMenu:
 
     async def disable_menu(self, bot) -> bool:
         if self.enabled:
-            await self.message.clear_reactions()
             self.enabled = False
             await self.update_visuals()
             bot.remove_listener(self.on_react_add, "on_raw_reaction_add")
@@ -213,8 +208,8 @@ class ReactableMenu:
 
     async def finalise_and_send(self, bot, channel: TextChannel):
         embed = self.generate_embed()
-        self.add_footer(embed)
         await self.send_to_channel(channel, embed)
+        self.add_footer(embed)
         await self.message.edit(embed=embed)
         if self.auto_enable:
             await self.enable_menu(bot)
@@ -242,9 +237,15 @@ class ReactableMenu:
         if message is None:
             raise ValueError("There is no message to add reactions to")
 
-        await message.clear_reactions()
+        emojis_to_add = list(self.options.keys())
+        for react in self.message.reactions:
+            react_emoji = MultiEmoji(react.emoji)
+            if react_emoji.emoji_id in emojis_to_add:
+                emojis_to_add.remove(react_emoji.emoji_id)
+            else:
+                await react.clear()
 
-        for emoji_id in self.options:
+        for emoji_id in emojis_to_add:
             emoji = self.options.get(emoji_id).get("emoji")
             try:
                 await message.add_reaction(emoji.discord_emoji)
