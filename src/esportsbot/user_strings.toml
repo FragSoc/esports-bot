@@ -27,31 +27,31 @@ default_role_removed = "Default role has been removed"
 default_role_removed_log = "{author_mention} has removed the default role"
 
 [music]
-music_channel_set = "The Music Channel has been bound to {music_channel}"
-music_channel_set_log = "{author} has bound the Music Channel to {music_channel}"
+music_channel_set = "The Music Channel has been set to {channel}"
+music_channel_set_log = "{author} has bound the Music Channel to {channel}"
 music_channel_set_missing_channel = "You need to either use a # to mention the channel or paste the ID of the channel"
 music_channel_set_invalid_channel = """The channel given was not valid, check the ID pasted or try using a # to mention
                                        the channel"""
 music_channel_set_not_text_channel = "You must provide a Text Channel to bind as the Music Channel"
 music_channel_set_not_empty = """The channel given is not empty, if you want to clear the channel
-                                 use {bot_prefix}setmusicchannel -c <channel>"""
+                                 use {prefix}setmusicchannel -c <channel>"""
 
-music_channel_get = "The Music Channel is currently set to {music_channel}"
-music_channel_missing = "The Music Channel has not been bound"
+music_channel_get = "The Music Channel is currently set to {channel}"
+music_channel_missing = "The Music Channel has not been set"
 
-music_channel_reset = "The Music Channel ({music_channel}) has been reset"
+music_channel_reset = "The Music Channel ({channel}) has been reset"
 
-music_channel_removed = "The Music Channel has been unbound from {music_channel}"
-music_channel_removed_log = "{author} has unbound the Music Channel from {music_channel}"
+music_channel_removed = "The Music Channel has been unbound from {channel}"
+music_channel_removed_log = "{author} has unbound the Music Channel from {channel}"
 
 bot_inactive = "I am not currently active. Start playing some songs first by joining a channel and requesting one!"
 song_error = "There were errors while adding some songs to the queue"
 
-music_channel_wrong_channel = "That command {command_option} be sent in the Music Channel"
+music_channel_wrong_channel = "The command `{command}` must be sent in the Music Channel"
 
 no_perms_voice_channel = "{author}, I need the permission `connect` to be able to join that Voice Channel"
-no_voice_voice_channel = "{author}, You must be in a voice channel to request a song"
-wrong_voice_voice_channel = "{author}, I am already in another voice channel in this server"
+unable_to_join = "I am unable to join your Voice Channel as either you are not in one or I am already in another one"
+not_admin = "You cannot do that as you are not an administrator in this server"
 
 volume_set_invalid_value = "The volume level must be between 0 and 100"
 volume_set_success = "The volume has been set to {volume_level}%"
