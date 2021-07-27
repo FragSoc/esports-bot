@@ -782,6 +782,7 @@ class MusicCog(commands.Cog):
             current_song = self.active_guilds.get(guild_id).get("current_song")
             updated_message = Embed(
                 title=f"Currently Playing: {current_song.get('title')}",
+                description=f"Current Volume: {int(self.active_guilds.get(guild_id).get('volume') * 100)}%",
                 colour=EmbedColours.music,
                 url=current_song.get("link"),
                 video=current_song.get("link")
@@ -1061,6 +1062,7 @@ class MusicCog(commands.Cog):
 
         self.active_guilds.get(guild_id).get("voice_client").source.volume = float(volume_level) / float(100)
         self.active_guilds.get(guild_id)["volume"] = float(volume_level) / float(100)
+        await self.update_messages(guild_id)
 
     @command_group.command(name="shuffle", help="Shuffles the current queue.")
     async def shuffle_queue(self, context: commands.Context):
