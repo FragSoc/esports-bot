@@ -809,7 +809,7 @@ class MusicCog(commands.Cog):
         if guild_id not in self.active_guilds:
             return
 
-        await self.active_guilds.get(guild_id).get("voice_client").stop()
+        self.active_guilds.get(guild_id).get("voice_client").stop()
         self.active_guilds.get(guild_id)["current_song"] = None
         if skip_count > len(self.active_guilds.get(guild_id).get("queue")):
             await self.play_queue(guild_id)
