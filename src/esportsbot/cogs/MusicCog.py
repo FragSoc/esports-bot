@@ -813,7 +813,7 @@ class MusicCog(commands.Cog):
         name="setmusicchannel",
         usage="<channel mention> [optional args]",
         help="Sets the music channel to the channel mentioned. To see possible optional args, "
-        "go to https://github.com/FragSoc/esports-bot{}"
+        "go to https://github.com/FragSoc/esports-bot#setmusicchannel-channel-mention-optional-args"
     )
     @commands.has_permissions(administrator=True)
     async def set_music_channel_command(self, context: commands.Context, text_channel: TextChannel):
@@ -874,8 +874,8 @@ class MusicCog(commands.Cog):
         await self.reset_music_channel(context)
 
     @commands.command(
-            name="removemusicchannel",
-            help="Unlinks the currently set music channel from being the music channel. Does not delete the actual channel"
+        name="removemusicchannel",
+        help="Unlinks the currently set music channel from being the music channel. Does not delete the actual channel"
     )
     @commands.has_permissions(administrator=True)
     async def unlink_music_channel_command(self, context: commands.Context):
@@ -890,11 +890,11 @@ class MusicCog(commands.Cog):
         await context.send(self.user_strings["music_channel_removed"].format(channel=music_channel_instance.mention))
 
     @commands.command(
-        name="music-queue",
-        aliases=["musicqueue",
-                 "songqueue",
+        name="musicqueue",
+        aliases=["songqueue",
                  "songs",
-                 "songlist"],
+                 "songlist",
+                 "songslist"],
         help="Gets the current list of songs in the queue"
     )
     @delete_after()
@@ -914,7 +914,11 @@ class MusicCog(commands.Cog):
         queue_string = self.get_updated_queue_message(context.guild.id)
         await send_timed_message(channel=context.channel, content=queue_string, timer=60)
 
-    @commands.group(name="music")
+    @commands.group(
+        name="music",
+        help="These are commands used to control the music bot. For more detailed command explanations, "
+        "go to https://github.com/FragSoc/esports-bot#music-bot"
+    )
     @commands.check(check_music_channel)
     @delete_after()
     async def command_group(self, context: commands.Context):
@@ -947,6 +951,7 @@ class MusicCog(commands.Cog):
 
     @command_group.command(
         name="join",
+        aliases=["connect"],
         usage="[-f]",
         help="Make the bot join the channel. If you are an admin you can force it join your voice channel "
         "if it is currently in another channel with '-f' or 'force'."
@@ -976,7 +981,7 @@ class MusicCog(commands.Cog):
         name="kick",
         aliases=["leave"],
         usage="[-f]",
-        help="Kicks the bot from the channel. If you are an admin you can force it join your voice channel "
+        help="Kicks the bot from the channel. If you are an admin you can force it leave a voice channel "
         "if it is currently in another channel with '-f' or 'force'."
     )
     async def leave_channel_command(self, context: commands.Context, force: str = ""):
@@ -999,8 +1004,8 @@ class MusicCog(commands.Cog):
 
     @command_group.command(
         name="skip",
-        usage="[songs to skip]",
-        help="Skips the current song. If a number is given it will also skip n-1 songs after the current song."
+        usage="[skip to position]",
+        help="Skips the current song. If a number is given it will also skip to the song at the position given."
         "For example, if 'songs to skip' is 4, the next song to play would be song 4 in the queue."
     )
     async def skip_song(self, context: commands.Context, skip_count=1):
