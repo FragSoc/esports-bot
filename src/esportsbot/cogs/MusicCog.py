@@ -7,6 +7,7 @@ import re
 import sys
 import time
 from enum import IntEnum
+from random import shuffle
 from urllib.parse import parse_qs, urlparse
 
 import googleapiclient.discovery
@@ -816,6 +817,22 @@ class MusicCog(commands.Cog):
             volume_level = 100
 
         self.active_guilds.get(guild_id).get("voice_client").source.volume = float(volume_level) / float(100)
+
+    @command_group.command(
+            name="shuffle",
+            help="Shuffles the current queue."
+    )
+    async def shuffle_queue(self, context: commands.Context):
+        if context.author in self.active_guilds.get(context.guild.id).get("voice_channel").members:
+            await self.__shuffle_queue(context.guild.id)
+            await send_timed_message(channel=context.channel, content=self.user_strings["shuffle_queue_success"], timer=10)
+
+    async def __shuffle_queue(self, guild_id):
+        if guild_id not in self.active_guilds:
+            return
+
+        shuffle(self.active_guilds.get(guild_id).get("queue"))
+        await self.update_messages(guild_id)
 
     @staticmethod
     async def clear_music_channel(channel):
