@@ -699,6 +699,24 @@ class MusicCog(commands.Cog):
         await self.remove_active_guild(context.guild)
         await self.reset_music_channel(context)
 
+    @commands.command(
+            name="music-queue",
+            aliases=["musicqueue", "songqueue", "songs", "songlist"],
+            help="Gets the current list of songs in the queue"
+    )
+    @delete_after()
+    async def get_current_queue(self, context: commands.Context):
+        if context.guild.id not in self.active_guilds:
+            await send_timed_message(channel=context.channel, content=self.user_strings["bot_inactive"], timer=20)
+            return
+
+        if not self.active_guilds.get(context.guild.id).get("queue"):
+            await send_timed_message(channel=context.channel, content=self.user_strings["bot_inactive"], timer=20)
+            return
+
+        queue_string = self.get_updated_queue_message(context.guild.id)
+        await send_timed_message(channel=context.channel, content=queue_string, timer=60)
+
     @commands.group(name="music")
     @commands.check(check_music_channel)
     @delete_after()
