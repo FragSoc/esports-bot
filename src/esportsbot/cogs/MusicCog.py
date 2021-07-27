@@ -875,26 +875,28 @@ class MusicCog(commands.Cog):
             if context.author not in self.active_guilds.get(context.guild.id).get("voice_channel").members:
                 return
 
-        await self.__play_song(context.guild.id, song_to_play)
+        await self.__play_song(context.author, song_to_play)
         await send_timed_message(channel=context.channel, content=self.user_strings["song_resume_success"], timer=10)
 
-    async def __play_song(self, guild_id, song_to_play=""):
-        if guild_id not in self.active_guilds and song_to_play == "":
+    async def __play_song(self, member, song_to_play=""):
+        if member.guild.id not in self.active_guilds and song_to_play == "":
             return
 
         if song_to_play != "":
-            await self.process_request(guild_id, song_to_play)
+            if member.guild.id not in self.active_guilds:
+                await self.join_member(member)
+            await self.process_request(member.guild.id, song_to_play)
         else:
-            if self.active_guilds.get(guild_id).get("voice_client").is_paused():
-                self.active_guilds.get(guild_id).get("voice_client").resume()
+            if self.active_guilds.get(member.guild.id).get("voice_client").is_paused():
+                self.active_guilds.get(member.guild.id).get("voice_client").resume()
             else:
-                await self.play_queue(guild_id)
+                await self.play_queue(member.guild.id)
 
-        if guild_id in self.inactive_guilds:
-            self.inactive_guilds.pop(guild_id)
+        if member.guild.id in self.inactive_guilds:
+            self.inactive_guilds.pop(member.guild.id)
 
-        if guild_id not in self.playing_guilds:
-            self.playing_guilds.append(guild_id)
+        if member.guild.id not in self.playing_guilds:
+            self.playing_guilds.append(member.guild.id)
 
     @command_group.command(
             name="pause",
