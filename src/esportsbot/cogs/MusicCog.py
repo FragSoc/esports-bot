@@ -874,6 +874,22 @@ class MusicCog(commands.Cog):
         await self.reset_music_channel(context)
 
     @commands.command(
+            name="removemusicchannel",
+            help="Unlinks the currently set music channel from being the music channel. Does not delete the actual channel"
+    )
+    @commands.has_permissions(administrator=True)
+    async def unlink_music_channel_command(self, context: commands.Context):
+        if not self.music_channels.get(context.guild.id):
+            await context.send(self.user_strings["music_channel_missing"])
+            return
+
+        music_channel_instance = await self.find_music_channel_instance(context.guild)
+        self.music_channels.pop(context.guild.id)
+        db_item = self.db.get(Music_channels, guild_id=context.guild.id)
+        self.db.delete(db_item)
+        await context.send(self.user_strings["music_channel_removed"].format(channel=music_channel_instance.mention))
+
+    @commands.command(
         name="music-queue",
         aliases=["musicqueue",
                  "songqueue",
