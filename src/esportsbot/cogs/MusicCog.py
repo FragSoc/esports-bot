@@ -170,6 +170,9 @@ class MusicCog(commands.Cog):
         now = datetime.datetime.now()
 
         for guild_id in self.playing_guilds:
+            if guild_id not in self.active_guilds:
+                to_remove.append(guild_id)
+                continue
             voice_client = self.active_guilds.get(guild_id).get("voice_client")
             if not voice_client.is_playing() and not voice_client.is_paused():
                 if not await self.play_queue(guild_id):
