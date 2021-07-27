@@ -129,7 +129,17 @@ class MusicCog(commands.Cog):
         :param after: The voice state after.
         """
         if member.id != self.bot.user.id:
-            # TODO: Handle empty VCs here
+            if not after.channel:
+                # If the user has left a voice channel
+                if member.guild.id in self.active_guilds:
+                    guild_vc = self.active_guilds.get(member.guild.id).get("voice_channel")
+                    if before.channel.id == guild_vc.id:
+                        # And that voice channel is the one we are in
+                        # And the only users in the channel are bots
+                        non_bots = [x for x in guild_vc.members if not x.bot]
+                        if not non_bots:
+                            # Leave the channel
+                            await self.remove_active_guild(member.guild)
             return
 
         if not before.channel and not after.channel:
