@@ -778,6 +778,9 @@ class MusicCog(commands.Cog):
         except ValueError:
             skip_count = 0
 
+        if context.guild.id not in self.active_guilds:
+            return
+
         if context.author in self.active_guilds.get(context.guild.id).get("voice_channel").members:
             await self.__skip_song(context.guild.id, skip_count)
 
@@ -803,6 +806,9 @@ class MusicCog(commands.Cog):
             await send_timed_message(channel=context.channel, content=self.user_strings["volume_set_invalid_value"], timer=10)
             return
 
+        if context.guild.id not in self.active_guilds:
+            return
+
         if context.author in self.active_guilds.get(context.guild.id).get("voice_channel").members:
             await self.set_volume(context.guild.id, int(volume_level))
 
@@ -823,6 +829,8 @@ class MusicCog(commands.Cog):
             help="Shuffles the current queue."
     )
     async def shuffle_queue(self, context: commands.Context):
+        if context.guild.id not in self.active_guilds:
+            return
         if context.author in self.active_guilds.get(context.guild.id).get("voice_channel").members:
             await self.__shuffle_queue(context.guild.id)
             await send_timed_message(channel=context.channel, content=self.user_strings["shuffle_queue_success"], timer=10)
