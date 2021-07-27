@@ -271,55 +271,60 @@ class MusicCog(commands.Cog):
         :param message: The message sent to the music channel.
         :return: True if the message was handled by this function. False if the message was a command.
         """
-        if message.content.startswith(self.bot.command_prefix):
-            # Allow commands to be handled by the bot command handler.
-            return False
+        try:
+            if message.content.startswith(self.bot.command_prefix):
+                # Allow commands to be handled by the bot command handler.
+                return False
 
-        if not await self.join_member(message.author):
-            if not message.author.voice:
-                await send_timed_message(channel=message.channel, content=self.user_strings["unable_to_join"])
-                return True
-            if not message.author.voice.channel.permissions_for(message.guild.me).connect:
-                await send_timed_message(channel=message.channel, content=self.user_strings["no_connect_perms"])
-                return True
+            if not await self.join_member(message.author):
+                if not message.author.voice:
+                    await send_timed_message(channel=message.channel, content=self.user_strings["unable_to_join"])
+                    return True
+                if not message.author.voice.channel.permissions_for(message.guild.me).connect:
+                    await send_timed_message(channel=message.channel, content=self.user_strings["no_connect_perms"])
+                    return True
 
-        message_content = re.sub(r"(`)+", "", message.content)
-        request_options = message_content.split("\n")
-        cleaned_requests = [k for k in request_options if k not in ('', ' ')]
+            message_content = re.sub(r"(`)+", "", message.content)
+            request_options = message_content.split("\n")
+            cleaned_requests = [k for k in request_options if k not in ('', ' ')]
 
-        debug_start_time = time.time()
-        request_tasks = []
-        for request in cleaned_requests:
-            request_tasks.append(self.process_request(message.guild.id, request))
+            debug_start_time = time.time()
+            request_tasks = []
+            for request in cleaned_requests:
+                request_tasks.append(self.process_request(message.guild.id, request))
 
-        results = await asyncio.gather(*request_tasks)
-        debug_end_time = time.time()
+            results = await asyncio.gather(*request_tasks)
+            debug_end_time = time.time()
 
-        self.logger.info(
-            f"Processed {len(cleaned_requests)} song(s) in {debug_end_time - debug_start_time} seconds for "
-            f"{message.guild.name} and got {results.count(True)} successful result(s)"
-        )
-
-        failed_songs = ""
-
-        for i in range(len(results)):
-            if not results[i]:
-                failed_songs += f"{i+1}. {cleaned_requests[i]}\n"
-
-        if results.count(False) >= 1:
-            await send_timed_message(
-                channel=message.channel,
-                content=self.user_strings["song_process_failed"].format(songs=failed_songs),
-                timer=10
+            self.logger.info(
+                f"Processed {len(cleaned_requests)} song(s) in {debug_end_time - debug_start_time} seconds for "
+                f"{message.guild.name} and got {results.count(True)} successful result(s)"
             )
 
-        if results.count(True) >= 1:
-            if message.guild.id in self.inactive_guilds:
-                self.inactive_guilds.pop(message.guild.id)
+            failed_songs = ""
 
-        self.run_tasks()
+            for i in range(len(results)):
+                if not results[i]:
+                    failed_songs += f"{i+1}. {cleaned_requests[i]}\n"
 
-        return True
+            if results.count(False) >= 1:
+                await send_timed_message(
+                    channel=message.channel,
+                    content=self.user_strings["song_process_failed"].format(songs=failed_songs),
+                    timer=10
+                )
+
+            if results.count(True) >= 1:
+                if message.guild.id in self.inactive_guilds:
+                    self.inactive_guilds.pop(message.guild.id)
+
+            self.run_tasks()
+
+            return True
+        except Exception as e:
+            await send_timed_message(message.channel, content=self.unhandled_error_string, timer=120)
+            self.logger.error(f"There was an error handling the following message: {message.content} \n {e!s}")
+            return True
 
     async def process_request(self, guild_id, request):
         request_type = self.find_request_type(request)
