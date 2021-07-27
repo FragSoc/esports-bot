@@ -979,7 +979,7 @@ class MusicCog(commands.Cog):
                 return
 
         from_pos = await self.song_index_str_to_int(context, from_pos)
-        if not from_pos:
+        if from_pos is None:
             return
         to_pos = await self.song_index_str_to_int(context, to_pos)
         if to_pos is None:
@@ -1011,12 +1011,14 @@ class MusicCog(commands.Cog):
             inserted_song = [queue[from_pos]]
             queue_middle = queue[to_pos:from_pos]
             queue_end = queue[from_pos + 1:]
+            new_queue = queue_top + inserted_song + queue_middle + queue_end
         else:
             queue_top = queue[:from_pos]
             inserted_song = [queue[from_pos]]
-            queue_middle = queue[from_pos + 1:to_pos]
-            queue_end = queue[to_pos:]
-        new_queue = queue_top + inserted_song + queue_middle + queue_end
+            queue_middle = queue[from_pos + 1:to_pos + 1]
+            queue_end = queue[to_pos + 1:]
+            new_queue = queue_top + queue_middle + inserted_song + queue_end
+
         self.active_guilds.get(guild_id)["queue"] = new_queue
         await self.update_messages(guild_id)
         return True
