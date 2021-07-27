@@ -912,6 +912,37 @@ class MusicCog(commands.Cog):
         if self.active_guilds.get(guild_id)["voice_client"].is_playing():
             self.active_guilds.get(guild_id)["voice_client"].pause()
 
+    @command_group.command(
+        name="remove",
+        aliases=["removeat"],
+        usage="<song number>",
+        help="Removes a song from the given number in the queue."
+    )
+    async def remove_song(self, context: commands.Context, song_index: str = 1):
+        if context.guild.id not in self.active_guilds:
+            return
+        try:
+            song_index = int(song_index) - 1
+            if song_index > len(self.active_guilds.get(context.guild.id).get("queue")):
+                raise ValueError
+        except ValueError:
+            if len(self.active_guilds.get(context.guild.id).get("queue")) == 0:
+                return
+            help_string = self.user_strings["song_remove_valid_options"].format(
+                end_index=len(self.active_guilds.get(context.guild.id).get("queue"))
+            )
+            helpful_error = f"{self.user_strings['song_remove_invalid_value']}:\n{help_string}"
+            await send_timed_message(channel=context.channel, content=helpful_error, timer=10)
+            return
+
+        await self.__remove_song(context.guild.id, song_index)
+
+    async def __remove_song(self, guild_id, song_index):
+        if guild_id not in self.active_guilds:
+            return
+
+        self.active_guilds.get(guild_id)["queue"].pop(song_index)
+
     @staticmethod
     async def clear_music_channel(channel):
         await channel.purge(limit=int(sys.maxsize))

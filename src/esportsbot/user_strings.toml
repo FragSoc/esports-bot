@@ -56,8 +56,8 @@ not_admin = "You cannot do that as you are not an administrator in this server"
 volume_set_invalid_value = "The volume level must be between 0 and 100"
 volume_set_success = "The volume has been set to {volume_level}%"
 
-song_remove_invalid_value = "The song number must be a value in the current queue."
-song_remove_valid_options = "Valid options are from {start_index} to {end_index}"
+song_remove_invalid_value = "The song number must be a value in the current queue"
+song_remove_valid_options = "Valid options are from `1` to `{end_index}`"
 song_remove_success = "The song **{song_title}** has been removed from position **{song_position}** in the queue"
 
 song_pause_success = "Song Paused!"
