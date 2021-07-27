@@ -870,8 +870,7 @@ class MusicCog(commands.Cog):
     async def play_song(self, context: commands.Context, song_to_play=""):
         if context.guild.id in self.active_guilds:
             if context.author not in self.active_guilds.get(context.guild.id).get("voice_channel").members:
-                if not context.author.guild_permissions.administrator:
-                    return
+                return
 
         await self.__play_song(context.guild.id, song_to_play)
         await send_timed_message(channel=context.channel, content=self.user_strings["song_resume_success"], timer=10)
@@ -884,7 +883,7 @@ class MusicCog(commands.Cog):
             await self.process_request(guild_id, song_to_play)
         else:
             if self.active_guilds.get(guild_id).get("voice_client").is_paused():
-                await self.active_guilds.get(guild_id).get("voice_client").resume()
+                self.active_guilds.get(guild_id).get("voice_client").resume()
             else:
                 await self.play_queue(guild_id)
 
@@ -893,6 +892,25 @@ class MusicCog(commands.Cog):
 
         if guild_id not in self.playing_guilds:
             self.playing_guilds.append(guild_id)
+
+    @command_group.command(
+            name="pause",
+            help="Pauses the current song."
+    )
+    async def pause_song(self, context: commands.Context):
+        if context.guild.id in self.active_guilds:
+            if context.author not in self.active_guilds.get(context.guild.id).get("voice_channel").members:
+                return
+
+        self.__pause_song(context.guild.id)
+        await send_timed_message(channel=context.channel, content=self.user_strings["song_pause_success"], timer=10)
+
+    def __pause_song(self, guild_id):
+        if guild_id not in self.active_guilds:
+            return
+
+        if self.active_guilds.get(guild_id)["voice_client"].is_playing():
+            self.active_guilds.get(guild_id)["voice_client"].pause()
 
     @staticmethod
     async def clear_music_channel(channel):
