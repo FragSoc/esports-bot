@@ -60,6 +60,8 @@ song_remove_invalid_value = "The song number must be a value in the current queu
 song_remove_valid_options = "Valid options are from `1` to `{end_index}`"
 song_remove_success = "The song **{song_title}** has been removed from position **{song_position}** in the queue"
 
+song_moved_success = "The song **{title}** has been moved from position `{from_pos}` to position `{to_pos}`"
+
 song_pause_success = "Song Paused!"
 
 song_resume_success = "Song Resumed!"

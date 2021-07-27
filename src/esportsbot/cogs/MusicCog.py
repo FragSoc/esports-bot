@@ -944,18 +944,9 @@ class MusicCog(commands.Cog):
     async def remove_song(self, context: commands.Context, song_index: str = 1):
         if context.guild.id not in self.active_guilds:
             return
-        try:
-            song_index = int(song_index) - 1
-            if song_index > len(self.active_guilds.get(context.guild.id).get("queue")):
-                raise ValueError
-        except ValueError:
-            if len(self.active_guilds.get(context.guild.id).get("queue")) == 0:
-                return
-            help_string = self.user_strings["song_remove_valid_options"].format(
-                end_index=len(self.active_guilds.get(context.guild.id).get("queue"))
-            )
-            helpful_error = f"{self.user_strings['song_remove_invalid_value']}:\n{help_string}"
-            await send_timed_message(channel=context.channel, content=helpful_error, timer=10)
+
+        song_index = await self.song_index_str_to_int(context, song_index)
+        if song_index is None:
             return
 
         removed_song = await self.__remove_song(context.guild.id, song_index)
@@ -974,6 +965,79 @@ class MusicCog(commands.Cog):
         song = self.active_guilds.get(guild_id)["queue"].pop(song_index)
         await self.update_messages(guild_id)
         return song
+
+    @command_group.command(
+        name="move",
+        usage="<from position> <to position>",
+        help="Moves a song from one position to another."
+    )
+    async def move_song(self, context: commands.context, from_pos: str, to_pos: str):
+        if context.guild.id not in self.active_guilds:
+            return
+        else:
+            if context.author not in self.active_guilds.get(context.guild.id).get("voice_channel").members:
+                return
+
+        from_pos = await self.song_index_str_to_int(context, from_pos)
+        if not from_pos:
+            return
+        to_pos = await self.song_index_str_to_int(context, to_pos)
+        if to_pos is None:
+            return
+
+        song_at_pos = self.active_guilds.get(context.guild.id).get("queue")[from_pos]
+
+        if await self.__move_song(context.guild.id, from_pos, to_pos):
+            await send_timed_message(
+                channel=context.channel,
+                content=self.user_strings["song_moved_success"].format(
+                    from_pos=from_pos + 1,
+                    to_pos=to_pos + 1,
+                    title=song_at_pos.get("title")
+                )
+            )
+
+    async def __move_song(self, guild_id, from_pos, to_pos):
+        if guild_id not in self.active_guilds:
+            return False
+
+        if from_pos == to_pos:
+            return True
+
+        queue = self.active_guilds.get(guild_id).get("queue")
+
+        if from_pos > to_pos:
+            queue_top = queue[:to_pos]
+            inserted_song = [queue[from_pos]]
+            queue_middle = queue[to_pos:from_pos]
+            queue_end = queue[from_pos + 1:]
+        else:
+            queue_top = queue[:from_pos]
+            inserted_song = [queue[from_pos]]
+            queue_middle = queue[from_pos + 1:to_pos]
+            queue_end = queue[to_pos:]
+        new_queue = queue_top + inserted_song + queue_middle + queue_end
+        self.active_guilds.get(guild_id)["queue"] = new_queue
+        await self.update_messages(guild_id)
+        return True
+
+    async def song_index_str_to_int(self, context, song_index):
+        song_index = str(song_index)
+        try:
+            song_index = int(song_index) - 1
+            queue_length = len(self.active_guilds.get(context.guild.id).get("queue"))
+            if song_index > queue_length or song_index < 0:
+                raise ValueError
+            return song_index
+        except ValueError:
+            if len(self.active_guilds.get(context.guild.id).get("queue")) == 0:
+                return None
+            help_string = self.user_strings["song_remove_valid_options"].format(
+                end_index=len(self.active_guilds.get(context.guild.id).get("queue"))
+            )
+            helpful_error = f"{self.user_strings['song_remove_invalid_value']}:\n{help_string}"
+            await send_timed_message(channel=context.channel, content=helpful_error, timer=10)
+            return None
 
     @staticmethod
     async def clear_music_channel(channel):
