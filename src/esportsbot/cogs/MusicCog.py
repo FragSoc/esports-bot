@@ -940,13 +940,22 @@ class MusicCog(commands.Cog):
             await send_timed_message(channel=context.channel, content=helpful_error, timer=10)
             return
 
-        await self.__remove_song(context.guild.id, song_index)
+        removed_song = await self.__remove_song(context.guild.id, song_index)
+        await send_timed_message(
+            channel=context.channel,
+            content=self.user_strings["song_remove_success"].format(
+                song_title=removed_song.get("title"),
+                song_position=song_index
+            )
+        )
 
     async def __remove_song(self, guild_id, song_index):
         if guild_id not in self.active_guilds:
             return
 
-        self.active_guilds.get(guild_id)["queue"].pop(song_index)
+        song = self.active_guilds.get(guild_id)["queue"].pop(song_index)
+        await self.update_messages(guild_id)
+        return song
 
     @staticmethod
     async def clear_music_channel(channel):
