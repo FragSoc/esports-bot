@@ -842,6 +842,24 @@ class MusicCog(commands.Cog):
         shuffle(self.active_guilds.get(guild_id).get("queue"))
         await self.update_messages(guild_id)
 
+    @command_group.command(
+            name="clear",
+            aliases=["purge", "empty"],
+            help="Clears the current queue of all songs. Does not stop the currently playing song."
+    )
+    async def clear_queue(self, context: commands.context):
+        if context.guild.id in self.active_guilds:
+            if context.author not in self.active_guilds.get(context.guild.id).get("voice_channel").members:
+                if not context.author.guild_permissions.administrator:
+                    return
+
+        await self.__clear_queue(context.guild.id)
+
+    async def __clear_queue(self, guild_id):
+        if guild_id in self.active_guilds:
+            self.active_guilds.get(guild_id)["queue"] = []
+        await self.update_messages(guild_id)
+
     @staticmethod
     async def clear_music_channel(channel):
         await channel.purge(limit=int(sys.maxsize))
