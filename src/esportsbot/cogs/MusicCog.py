@@ -860,6 +860,40 @@ class MusicCog(commands.Cog):
             self.active_guilds.get(guild_id)["queue"] = []
         await self.update_messages(guild_id)
 
+    @command_group.command(
+            name="resume",
+            usage="[song to play]",
+            aliases=["play"],
+            help="Resumes playback of the current song. If a song is given and there is no current song, it is played,"
+            "otherwise it is added to the queue."
+    )
+    async def play_song(self, context: commands.Context, song_to_play=""):
+        if context.guild.id in self.active_guilds:
+            if context.author not in self.active_guilds.get(context.guild.id).get("voice_channel").members:
+                if not context.author.guild_permissions.administrator:
+                    return
+
+        await self.__play_song(context.guild.id, song_to_play)
+        await send_timed_message(channel=context.channel, content=self.user_strings["song_resume_success"], timer=10)
+
+    async def __play_song(self, guild_id, song_to_play=""):
+        if guild_id not in self.active_guilds and song_to_play == "":
+            return
+
+        if song_to_play != "":
+            await self.process_request(guild_id, song_to_play)
+        else:
+            if self.active_guilds.get(guild_id).get("voice_client").is_paused():
+                await self.active_guilds.get(guild_id).get("voice_client").resume()
+            else:
+                await self.play_queue(guild_id)
+
+        if guild_id in self.inactive_guilds:
+            self.inactive_guilds.pop(guild_id)
+
+        if guild_id not in self.playing_guilds:
+            self.playing_guilds.append(guild_id)
+
     @staticmethod
     async def clear_music_channel(channel):
         await channel.purge(limit=int(sys.maxsize))
