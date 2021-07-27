@@ -1,9 +1,19 @@
+import asyncio
+import datetime
 import functools
 import logging
+import os
+import re
 import sys
+import time
+from enum import IntEnum
+from urllib.parse import parse_qs, urlparse
 
-from discord import ClientException, Colour, Embed, TextChannel
-from discord.ext import commands
+import googleapiclient.discovery
+import youtube_dl
+from discord import ClientException, Colour, Embed, FFmpegPCMAudio, PCMVolumeTransformer, TextChannel
+from discord.ext import commands, tasks
+from youtubesearchpython import VideosSearch
 
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.lib.discordUtil import send_timed_message
@@ -43,8 +53,16 @@ class EmbedColours:
     music = Colour(0xd462fd)
 
 
-EMPTY_QUEUE_MESSAGE = "**__Queue list:__**\n" \
-                      "Join a VoiceChannel and search a song by name or YouTube url.\n"
+class MessageTypeEnum(IntEnum):
+    youtube_url = 0
+    youtube_playlist = 1
+    youtube_thumbnail = 2
+    string = 3
+    invalid = 4
+
+
+EMPTY_QUEUE_MESSAGE = "Join a Voice Channel and search a song by name or paste a YouTube url.\n" \
+                      "**__Current Queue:__**\n"
 
 ESPORTS_LOGO_URL = "http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png"
 
@@ -56,6 +74,13 @@ EMPTY_PREVIEW_MESSAGE = Embed(
 EMPTY_PREVIEW_MESSAGE.set_image(url=ESPORTS_LOGO_URL)
 EMPTY_PREVIEW_MESSAGE.set_footer(text="Definitely not made by fuxticks#1809 on discord")
 
+GOOGLE_API_KEY = os.getenv("GOOGLE_API")
+YOUTUBE_API = googleapiclient.discovery.build("youtube", "v3", developerKey=GOOGLE_API_KEY)
+
+FFMPEG_BEFORE_OPT = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+
+TIMEOUT_DELAY = 60
+
 
 class MusicCog(commands.Cog):
     def __init__(self, bot):
@@ -66,6 +91,8 @@ class MusicCog(commands.Cog):
         self.unhandled_error_string = bot.STRINGS["command_error_generic"]
         self.music_channels = self.load_channels()
         self.active_guilds = {}
+        self.playing_guilds = []
+        self.inactive_guilds = {}
 
     def load_channels(self):
         """
@@ -88,7 +115,8 @@ class MusicCog(commands.Cog):
             guild_id = message.guild.id
             music_channel = self.music_channels.get(guild_id)
             if music_channel:
-                await self.on_message_handle(message)
+                if await self.on_message_handle(message):
+                    await message.delete()
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -122,12 +150,54 @@ class MusicCog(commands.Cog):
             self.update_voice_client(after.channel.guild)
             return
 
-    async def on_message_handle(self, message):
-        """
-        Handles when a message is sent to a music channel.
-        :param message: The message sent to the music channel.
-        """
-        pass
+    def run_tasks(self):
+        if not self.check_inactive_guilds.is_running() or self.check_inactive_guilds.is_being_cancelled():
+            self.check_inactive_guilds.start()
+
+        if not self.check_playing_guilds.is_running() or self.check_playing_guilds.is_being_cancelled():
+            self.check_playing_guilds.start()
+
+    @tasks.loop(seconds=5)
+    async def check_playing_guilds(self):
+        if not self.playing_guilds:
+            self.check_playing_guilds.cancel()
+            self.check_playing_guilds.stop()
+            return
+
+        to_remove = []
+
+        now = datetime.datetime.now()
+
+        for guild_id in self.playing_guilds:
+            voice_client = self.active_guilds.get(guild_id).get("voice_client")
+            if not voice_client.is_playing() and not voice_client.is_paused():
+                if not await self.play_queue(guild_id):
+                    self.inactive_guilds[guild_id] = now
+                    to_remove.append(guild_id)
+                    self.run_tasks()
+
+        for guild_id in to_remove:
+            self.playing_guilds.remove(guild_id)
+
+    @tasks.loop(seconds=60)
+    async def check_inactive_guilds(self):
+        if not self.inactive_guilds:
+            self.check_inactive_guilds.cancel()
+            self.check_inactive_guilds.stop()
+            return
+
+        to_remove = []
+
+        now = datetime.datetime.now()
+
+        for guild_id in self.inactive_guilds:
+            if (now - self.inactive_guilds.get(guild_id)).seconds > TIMEOUT_DELAY:
+                to_remove.append(guild_id)
+
+        for guild_id in to_remove:
+            self.inactive_guilds.pop(guild_id)
+            guild = self.active_guilds.get(guild_id).get("voice_channel").guild
+            await self.remove_active_guild(guild)
 
     def new_active_guild(self, guild):
         self.logger.info(f"Adding an active channel in {guild.name}")
@@ -194,6 +264,358 @@ class MusicCog(commands.Cog):
             return None
 
         return channel_instance
+
+    async def on_message_handle(self, message):
+        """
+        Handles when a message is sent to a music channel.
+        :param message: The message sent to the music channel.
+        :return: True if the message was handled by this function. False if the message was a command.
+        """
+        if message.content.startswith(self.bot.command_prefix):
+            # Allow commands to be handled by the bot command handler.
+            return False
+
+        if not await self.join_member(message.author):
+            if not message.author.voice:
+                await send_timed_message(channel=message.channel, content=self.user_strings["unable_to_join"])
+                return True
+            if not message.author.voice.channel.permissions_for(message.guild.me).connect:
+                await send_timed_message(channel=message.channel, content=self.user_strings["no_connect_perms"])
+                return True
+
+        message_content = re.sub(r"(`)+", "", message.content)
+        request_options = message_content.split("\n")
+        cleaned_requests = [k for k in request_options if k not in ('', ' ')]
+
+        debug_start_time = time.time()
+        request_tasks = []
+        for request in cleaned_requests:
+            request_tasks.append(self.process_request(message.guild.id, request))
+
+        results = await asyncio.gather(*request_tasks)
+        debug_end_time = time.time()
+
+        self.logger.info(
+            f"Processed {len(cleaned_requests)} song(s) in {debug_end_time - debug_start_time} seconds for "
+            f"{message.guild.name} and got {results.count(True)} successful result(s)"
+        )
+
+        failed_songs = ""
+
+        for i in range(len(results)):
+            if not results[i]:
+                failed_songs += f"{i+1}. {cleaned_requests[i]}\n"
+
+        if results.count(False) >= 1:
+            await send_timed_message(
+                channel=message.channel,
+                content=self.user_strings["song_process_failed"].format(songs=failed_songs),
+                timer=10
+            )
+
+        if results.count(True) >= 1:
+            if message.guild.id in self.inactive_guilds:
+                self.inactive_guilds.pop(message.guild.id)
+
+        self.run_tasks()
+
+        return True
+
+    async def process_request(self, guild_id, request):
+        request_type = self.find_request_type(request)
+        if request_type == MessageTypeEnum.youtube_url or request_type == MessageTypeEnum.youtube_playlist:
+            youtube_api_response = self.get_youtube_request(request, request_type)
+            formatted_response = self.format_youtube_response(youtube_api_response)
+        elif request_type == MessageTypeEnum.string:
+            query_response = self.query_request(request)
+            formatted_response = self.format_query_response(query_response)
+        else:
+            return False
+        res = await self.add_songs_to_queue(formatted_response, guild_id)
+        await self.update_messages(guild_id)
+        return res
+
+    def find_request_type(self, request):
+        if request.startswith("https://") or request.startswith("http://"):
+            return self.find_url_type(request)
+        else:
+            return MessageTypeEnum.string
+
+    @staticmethod
+    def find_url_type(url):
+        youtube_desktop_signature = r"(http[s]?://)?youtube.com/watch\?v="
+        if re.search(youtube_desktop_signature, url):
+            return MessageTypeEnum.youtube_url
+
+        youtube_playlist_signature = r"(http[s]?://)?youtube.com/playlist\?list="
+        if re.search(youtube_playlist_signature, url):
+            return MessageTypeEnum.youtube_playlist
+
+        youtube_mobile_signature = r"(http[s]?://)?youtu.be/([a-zA-Z]|[0-9])+"
+        if re.search(youtube_mobile_signature, url):
+            return MessageTypeEnum.youtube_url
+
+        youtube_thumbnail_signature = r"(http[s]?://)?i.ytimg.com/vi/([a-zA-Z]|[0-9])+"
+        if re.search(youtube_thumbnail_signature, url):
+            return MessageTypeEnum.youtube_thumbnail
+
+        return MessageTypeEnum.invalid
+
+    @staticmethod
+    def get_youtube_request(request, request_type):
+        api_func = YOUTUBE_API.videos() if request_type == MessageTypeEnum.youtube_url else YOUTUBE_API.playlistItems()
+        key = "v" if request_type == MessageTypeEnum.youtube_url else "list"
+
+        query = parse_qs(urlparse(request).query, keep_blank_values=True)
+        youtube_id = query[key][0]
+
+        api_args = {"part": "snippet", "maxResults": 1 if request_type == MessageTypeEnum.youtube_url else 50}
+
+        if request_type == MessageTypeEnum.youtube_url:
+            api_args["id"] = youtube_id
+        else:
+            api_args["playlistId"] = youtube_id
+
+        api_request = api_func.list(**api_args)
+
+        video_responses = []
+        while api_request:
+            response = api_request.execute()
+            video_responses += response["items"]
+            api_request = api_func.list_next(api_request, response)
+
+        return video_responses
+
+    def format_youtube_response(self, response):
+        formatted_response = []
+        for item in response:
+            snippet = item.get("snippet")
+            video_info = {
+                "title": snippet.get("title"),
+                "thumbnail": self.thumbnail_from_snippet(snippet),
+                "link": self.url_from_response(item)
+            }
+            formatted_response.append(video_info)
+        return formatted_response
+
+    @staticmethod
+    def thumbnail_from_snippet(snippet):
+        all_thumbnails = snippet.get("thumbnails")
+        if "maxres" in all_thumbnails:
+            return all_thumbnails.get("maxres").get("url")
+        else:
+            any_thumbnail_res = list(all_thumbnails)[0]
+            return all_thumbnails.get(any_thumbnail_res).get("url")
+
+    @staticmethod
+    def url_from_response(response):
+        if response.get("kind") == "youtube#video":
+            video_id = response.get("id")
+        else:
+            video_id = response.get("resourceId").get("videoId")
+        return "https://youtube.com/watch?=v{}".format(video_id)
+
+    @staticmethod
+    def query_request(request):
+        results = VideosSearch(request, limit=50).result().get("result")
+
+        if not results:
+            # If unable to find any results
+            return {}, {}
+
+        # Sort videos by view count.
+        sorted_results = sorted(
+            results,
+            key=lambda x: 0 if x["viewCount"]["text"] is None or "No" in x["viewCount"]["text"] else
+            int(re.sub(r"view(s)?",
+                       "",
+                       x["viewCount"]["text"].replace(",",
+                                                      ""))),
+            reverse=True
+        )
+
+        music_result = None
+        official_result = None
+        for result in sorted_results:
+            title_lower = result.get("title").lower()
+            if not music_result and "lyric" in title_lower or "audio" in title_lower:
+                music_result = result
+            if not official_result and "official" in title_lower:
+                official_result = result
+            if official_result and music_result:
+                break
+
+        ret_val = official_result, music_result
+
+        if not music_result:
+            ret_val = ret_val[0], sorted_results[0]
+        if not official_result:
+            ret_val = sorted_results[0], ret_val[1]
+        return ret_val
+
+    @staticmethod
+    def format_query_response(response):
+        top_result, music_result = response
+
+        if not top_result or not music_result:
+            # If either of the dictionaries are emtpy, return an empty list with an empty dictionary.
+            return [{}]
+
+        formatted_query = {
+            "title": top_result.get("title"),
+            "thumbnail": top_result.get("thumbnails")[-1].get("url"),
+            "link": music_result.get("link")
+        }
+        return [formatted_query]
+
+    async def add_songs_to_queue(self, songs, guild_id):
+        try:
+            if guild_id not in self.active_guilds:
+                return False
+
+            ret_val = True
+            for song in songs:
+                if len(song) != 0:
+                    self.active_guilds.get(guild_id)["queue"].append(song)
+                else:
+                    ret_val = False
+
+            if not self.active_guilds.get(guild_id).get("voice_client").is_playing():
+                return await self.play_queue(guild_id)
+            return ret_val
+        except Exception as e:
+            self.logger.error(f"There was an error adding a song to the queue for guild {guild_id}: {e!s}")
+            return False
+
+    async def __play_queue(self, guild_id):
+        if guild_id not in self.active_guilds:
+            return False
+
+        if not len(self.active_guilds.get(guild_id).get("queue")) > 0:
+            self.active_guilds.get(guild_id)["current_song"] = None
+            return False
+
+        voice_client = self.active_guilds.get(guild_id).get("voice_client")
+
+        if voice_client.is_playing():
+            voice_client.stop()
+
+        try:
+            next_song = self.set_next_song(guild_id)
+            source = PCMVolumeTransformer(
+                FFmpegPCMAudio(next_song.get("url"),
+                               before_options=FFMPEG_BEFORE_OPT,
+                               options="-vn"),
+                volume=self.active_guilds.get(guild_id).get("volume")
+            )
+            voice_client.play(source)
+            self.playing_guilds.append(guild_id)
+            return True
+        except AttributeError:
+            return False
+        except KeyError:
+            return False
+        except TypeError:
+            return False
+        except ClientException:
+            return False
+
+    async def play_queue(self, guild_id):
+        res = await self.__play_queue(guild_id)
+        await self.update_messages(guild_id)
+        return res
+
+    def set_next_song(self, guild_id):
+        next_song = self.active_guilds.get(guild_id).get("queue").pop()
+        current_song = {**self.get_youtube_info(next_song.get("link")), **next_song}
+        self.active_guilds.get(guild_id)["current_song"] = current_song
+        return current_song
+
+    @staticmethod
+    def get_youtube_info(url):
+        ydl_opts = {
+            "format": "bestaudio/best",
+            "outtmpl": "%(title)s-%(id)s.mp3",
+            "postprocessors": [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
+            }],
+        }
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+        return info
+
+    async def update_messages(self, guild_id):
+        queue_message_content = self.get_updated_queue_message(guild_id)
+        preview_message_content = self.get_updated_preview_message(guild_id)
+
+        music_channel_instance = self.bot.get_channel(self.music_channels.get(guild_id))
+        if not music_channel_instance:
+            music_channel_instance = await self.bot.fetch_channel(self.music_channels.get(guild_id))
+
+        db_item = self.db.get(Music_channels, guild_id=guild_id)
+
+        if not db_item:
+            return
+
+        queue_message_instance = await music_channel_instance.fetch_message(db_item.queue_message_id)
+        preview_message_instance = await music_channel_instance.fetch_message(db_item.preview_message_id)
+
+        await queue_message_instance.edit(content=queue_message_content)
+        await preview_message_instance.edit(embed=preview_message_content)
+
+    def get_updated_queue_message(self, guild_id):
+        if guild_id not in self.active_guilds:
+            return EMPTY_QUEUE_MESSAGE
+        else:
+            return self.make_queue_text(guild_id)
+
+    def make_queue_text(self, guild_id):
+        queue_string = EMPTY_QUEUE_MESSAGE
+        queue = self.active_guilds.get(guild_id).get("queue")
+        if len(queue) > 25:
+            first_ten = queue[:10]
+            last_ten = queue[-10:]
+            remainder = len(queue) - 20
+
+            first_string = self.reversed_numbered_list(first_ten)
+            last_string = self.reversed_numbered_list(last_ten, offset=remainder + 10)
+
+            queue_string += f"{last_string}\n\n... and **`{remainder}`** more ... \n\n{first_string}"
+        elif queue:
+            queue_string += self.reversed_numbered_list(queue)
+        return queue_string
+
+    @staticmethod
+    def reversed_numbered_list(list_data, offset=0):
+        reversed_list = list(reversed(list_data))
+        biggest = len(list_data) + offset
+        return "\n".join(f"{biggest - song_num}. {song.get('title')}" for song_num, song in enumerate(reversed_list))
+
+    @staticmethod
+    def numbered_list(list_data, offset=0):
+        return "\n".join(f"{song_num + 1 + offset}. {song.get('title')}" for song_num, song in enumerate(list_data))
+
+    def get_updated_preview_message(self, guild_id):
+        if guild_id not in self.active_guilds:
+            return EMPTY_PREVIEW_MESSAGE
+        elif not self.active_guilds.get(guild_id).get("current_song"):
+            return EMPTY_PREVIEW_MESSAGE
+        else:
+            current_song = self.active_guilds.get(guild_id).get("current_song")
+            updated_message = Embed(
+                title=f"Currently Playing: {current_song.get('title')}",
+                colour=EmbedColours.music,
+                url=current_song.get("link"),
+                video=current_song.get("link")
+            )
+            thumbnail = current_song.get("thumbnail")
+            if self.find_url_type(thumbnail) != MessageTypeEnum.youtube_thumbnail:
+                thumbnail = ESPORTS_LOGO_URL
+            updated_message.set_image(url=thumbnail)
+            updated_message.set_footer(text="Definitely not made by fuxticks#1809 on discord")
+            return updated_message
 
     @staticmethod
     async def join_member(member):
@@ -337,6 +759,7 @@ class MusicCog(commands.Cog):
         else:
             if context.author in self.active_guilds.get(context.guild.id).get("voice_channel").members:
                 await self.remove_active_guild(context.guild)
+        await self.update_messages(context.guild.id)
 
     @staticmethod
     async def clear_music_channel(channel):

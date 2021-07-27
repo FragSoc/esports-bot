@@ -45,11 +45,11 @@ music_channel_removed = "The Music Channel has been unbound from {channel}"
 music_channel_removed_log = "{author} has unbound the Music Channel from {channel}"
 
 bot_inactive = "I am not currently active. Start playing some songs first by joining a channel and requesting one!"
-song_error = "There were errors while adding some songs to the queue"
+song_process_failed = "The following songs had issues while processing: \n{songs}"
 
 music_channel_wrong_channel = "The command `{command}` must be sent in the Music Channel"
 
-no_perms_voice_channel = "{author}, I need the permission `connect` to be able to join that Voice Channel"
+no_connect_perms = "I need the permission `connect` to be able to join your Voice Channel"
 unable_to_join = "I am unable to join your Voice Channel as either you are not in one or I am already in another one"
 not_admin = "You cannot do that as you are not an administrator in this server"
 
