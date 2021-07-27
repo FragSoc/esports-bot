@@ -526,7 +526,7 @@ class MusicCog(commands.Cog):
         return res
 
     def set_next_song(self, guild_id):
-        next_song = self.active_guilds.get(guild_id).get("queue").pop()
+        next_song = self.active_guilds.get(guild_id).get("queue").pop(0)
         current_song = {**self.get_youtube_info(next_song.get("link")), **next_song}
         self.active_guilds.get(guild_id)["current_song"] = current_song
         return current_song
