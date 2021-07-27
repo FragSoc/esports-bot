@@ -765,6 +765,33 @@ class MusicCog(commands.Cog):
                 await self.remove_active_guild(context.guild)
         await self.update_messages(context.guild.id)
 
+    @command_group.command(
+            name="skip",
+            usage="[songs to skip]",
+            help="Skips the current song. If a number is given it will also skip n-1 songs after the current song."
+            "For example, if 'songs to skip' is 4, the next song to play would be song 4 in the queue."
+    )
+    async def skip_song(self, context: commands.Context, skip_count=0):
+        try:
+            skip_count = int(skip_count) - 1
+        except ValueError:
+            skip_count = 0
+
+        if context.author in self.active_guilds.get(context.guild.id).get("voice_channel").members:
+            await self.__skip_song(context.guild.id, skip_count)
+
+    async def __skip_song(self, guild_id, skip_count):
+        if guild_id not in self.active_guilds:
+            return
+
+        await self.active_guilds.get(guild_id).get("voice_client").stop()
+        self.active_guilds.get(guild_id)["current_song"] = None
+        if skip_count > len(self.active_guilds.get(guild_id).get("queue")):
+            await self.play_queue(guild_id)
+        else:
+            self.active_guilds.get(guild_id)["queue"] = self.active_guilds.get(guild_id)["queue"][skip_count:]
+            await self.play_queue(guild_id)
+
     @staticmethod
     async def clear_music_channel(channel):
         await channel.purge(limit=int(sys.maxsize))
