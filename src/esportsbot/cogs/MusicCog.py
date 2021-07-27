@@ -428,47 +428,46 @@ class MusicCog(commands.Cog):
             # If unable to find any results
             return {}, {}
 
-        # Sort videos by view count.
-        sorted_results = sorted(
-            results,
-            key=lambda x: 0 if x["viewCount"]["text"] is None or "No" in x["viewCount"]["text"] else
-            int(re.sub(r"view(s)?",
-                       "",
-                       x["viewCount"]["text"].replace(",",
-                                                      ""))),
-            reverse=True
-        )
-
+        # The music result is what will be playing, while official will be used for the title and thumbnail.
         music_result = None
         official_result = None
-        for result in sorted_results:
+        for result in results:
             title_lower = result.get("title").lower()
             if not music_result and "lyric" in title_lower or "audio" in title_lower:
                 music_result = result
             if not official_result and "official" in title_lower:
                 official_result = result
             if official_result and music_result:
+                # Break once a video has been found for both.
                 break
 
         ret_val = official_result, music_result
 
+        # If one of them is not found just use the top result.
         if not music_result:
-            ret_val = ret_val[0], sorted_results[0]
+            ret_val = ret_val[0], results[0]
         if not official_result:
-            ret_val = sorted_results[0], ret_val[1]
+            ret_val = results[0], ret_val[1]
         return ret_val
 
     @staticmethod
     def format_query_response(response):
-        top_result, music_result = response
+        official_result, music_result = response
 
-        if not top_result or not music_result:
+        if not official_result or not music_result:
             # If either of the dictionaries are emtpy, return an empty list with an empty dictionary.
             return [{}]
 
+        official_views = re.sub(r"view(s)?", "", official_result.get("viewCount").get("text").replace(",", ""))
+        music_views = re.sub(r"view(s)?", "", music_result.get("viewCount").get("text").replace(",", ""))
+
+        official_views = 0 if official_views is None or "No" in official_views else int(official_views)
+        music_views = 0 if music_views is None or "No" in music_views else int(music_views)
+
         formatted_query = {
-            "title": top_result.get("title"),
-            "thumbnail": top_result.get("thumbnails")[-1].get("url"),
+            "title": official_result.get("title") if official_views > music_views else music_result.get("title"),
+            "thumbnail": official_result.get("thumbnails")[-1].get("url") if official_views > music_views else
+            music_result.get("thumbnails")[-1].get("url"),
             "link": music_result.get("link")
         }
         return [formatted_query]
