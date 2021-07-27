@@ -823,6 +823,7 @@ class MusicCog(commands.Cog):
             help="Sets the volume of the bot to the percentage given."
     )
     async def set_volume(self, context: commands.Context, volume_level):
+        volume_level = str(volume_level)
         if not volume_level.isdigit():
             await send_timed_message(channel=context.channel, content=self.user_strings["volume_set_invalid_value"], timer=10)
             return
@@ -831,7 +832,7 @@ class MusicCog(commands.Cog):
             return
 
         if context.author in self.active_guilds.get(context.guild.id).get("voice_channel").members:
-            await self.set_volume(context.guild.id, int(volume_level))
+            await self.__set_volume(context.guild.id, int(volume_level))
 
     async def __set_volume(self, guild_id, volume_level):
         if guild_id not in self.active_guilds:
@@ -844,6 +845,7 @@ class MusicCog(commands.Cog):
             volume_level = 100
 
         self.active_guilds.get(guild_id).get("voice_client").source.volume = float(volume_level) / float(100)
+        self.active_guilds.get(guild_id)["volume"] = float(volume_level) / float(100)
 
     @command_group.command(
             name="shuffle",
