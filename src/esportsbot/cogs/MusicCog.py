@@ -309,7 +309,7 @@ class MusicCog(commands.Cog):
 
             for i in range(len(results)):
                 if not results[i]:
-                    failed_songs += f"{i+1}. {cleaned_requests[i]}\n"
+                    failed_songs += f"{i + 1}. {cleaned_requests[i]}\n"
 
             if results.count(False) >= 1:
                 await send_timed_message(
@@ -469,10 +469,13 @@ class MusicCog(commands.Cog):
         music_views = 0 if music_views is None or "No" in music_views else int(music_views)
 
         formatted_query = {
-            "title": official_result.get("title") if official_views > music_views else music_result.get("title"),
-            "thumbnail": official_result.get("thumbnails")[-1].get("url") if official_views > music_views else
-            music_result.get("thumbnails")[-1].get("url"),
-            "link": music_result.get("link")
+            "title":
+            official_result.get("title") if official_views > music_views else music_result.get("title"),
+            "thumbnail":
+            official_result.get("thumbnails")[-1].get("url")
+            if official_views > music_views else music_result.get("thumbnails")[-1].get("url"),
+            "link":
+            music_result.get("link")
         }
         return [formatted_query]
 
@@ -700,9 +703,12 @@ class MusicCog(commands.Cog):
         await self.reset_music_channel(context)
 
     @commands.command(
-            name="music-queue",
-            aliases=["musicqueue", "songqueue", "songs", "songlist"],
-            help="Gets the current list of songs in the queue"
+        name="music-queue",
+        aliases=["musicqueue",
+                 "songqueue",
+                 "songs",
+                 "songlist"],
+        help="Gets the current list of songs in the queue"
     )
     @delete_after()
     async def get_current_queue(self, context: commands.Context):
@@ -771,6 +777,7 @@ class MusicCog(commands.Cog):
 
     @command_group.command(
         name="kick",
+        aliases=["leave"],
         usage="[-f]",
         help="Kicks the bot from the channel. If you are an admin you can force it join your voice channel "
         "if it is currently in another channel with '-f' or 'force'."
@@ -788,10 +795,10 @@ class MusicCog(commands.Cog):
         await self.update_messages(context.guild.id)
 
     @command_group.command(
-            name="skip",
-            usage="[songs to skip]",
-            help="Skips the current song. If a number is given it will also skip n-1 songs after the current song."
-            "For example, if 'songs to skip' is 4, the next song to play would be song 4 in the queue."
+        name="skip",
+        usage="[songs to skip]",
+        help="Skips the current song. If a number is given it will also skip n-1 songs after the current song."
+        "For example, if 'songs to skip' is 4, the next song to play would be song 4 in the queue."
     )
     async def skip_song(self, context: commands.Context, skip_count=0):
         try:
@@ -818,9 +825,9 @@ class MusicCog(commands.Cog):
             await self.play_queue(guild_id)
 
     @command_group.command(
-            name="volume",
-            usage="<volume percentage>",
-            help="Sets the volume of the bot to the percentage given."
+        name="volume",
+        usage="<volume percentage>",
+        help="Sets the volume of the bot to the percentage given."
     )
     async def set_volume(self, context: commands.Context, volume_level):
         volume_level = str(volume_level)
@@ -847,10 +854,7 @@ class MusicCog(commands.Cog):
         self.active_guilds.get(guild_id).get("voice_client").source.volume = float(volume_level) / float(100)
         self.active_guilds.get(guild_id)["volume"] = float(volume_level) / float(100)
 
-    @command_group.command(
-            name="shuffle",
-            help="Shuffles the current queue."
-    )
+    @command_group.command(name="shuffle", help="Shuffles the current queue.")
     async def shuffle_queue(self, context: commands.Context):
         if context.guild.id not in self.active_guilds:
             return
@@ -866,9 +870,10 @@ class MusicCog(commands.Cog):
         await self.update_messages(guild_id)
 
     @command_group.command(
-            name="clear",
-            aliases=["purge", "empty"],
-            help="Clears the current queue of all songs. Does not stop the currently playing song."
+        name="clear",
+        aliases=["purge",
+                 "empty"],
+        help="Clears the current queue of all songs. Does not stop the currently playing song."
     )
     async def clear_queue(self, context: commands.context):
         if context.guild.id in self.active_guilds:
@@ -884,11 +889,11 @@ class MusicCog(commands.Cog):
         await self.update_messages(guild_id)
 
     @command_group.command(
-            name="resume",
-            usage="[song to play]",
-            aliases=["play"],
-            help="Resumes playback of the current song. If a song is given and there is no current song, it is played,"
-            "otherwise it is added to the queue."
+        name="resume",
+        usage="[song to play]",
+        aliases=["play"],
+        help="Resumes playback of the current song. If a song is given and there is no current song, it is played,"
+        "otherwise it is added to the queue."
     )
     async def play_song(self, context: commands.Context, song_to_play=""):
         if context.guild.id in self.active_guilds:
@@ -918,10 +923,7 @@ class MusicCog(commands.Cog):
         if member.guild.id not in self.playing_guilds:
             self.playing_guilds.append(member.guild.id)
 
-    @command_group.command(
-            name="pause",
-            help="Pauses the current song."
-    )
+    @command_group.command(name="pause", help="Pauses the current song.")
     async def pause_song(self, context: commands.Context):
         if context.guild.id in self.active_guilds:
             if context.author not in self.active_guilds.get(context.guild.id).get("voice_channel").members:
