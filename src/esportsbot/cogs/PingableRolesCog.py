@@ -78,7 +78,7 @@ class PingableRolesCog(commands.Cog):
 
         # Check each role mentioned in the message:
         for role in message.role_mentions:
-            if role.id in self.all_role_ids.get(message.guild.id):
+            if role.id in self.all_role_ids[message.guild.id]:
                 self.logger.debug(f"{role.name} pingable role was just mentioned in {message.guild.name}")
                 menu_id = self.all_role_ids.get(message.guild.id).get(role.id)
                 menu = self.roles.get(menu_id).get("menu")
