@@ -358,14 +358,19 @@ For devs:
   
 ### Music Bot  
   
-The Esports bot now has a basic music bot that functions very similarly to the popular 'Hydra Bot'.  
-  
-Commands that control the music must be performed in the defined music channel. They also require you to be in the same  
-voice channel as the bot, so that only the people listening can change the flow of music.  
+A basic music bot that functions similarly to the popular 'Hydra Bot'.  
+
+Commands that use the prefix of `!music` are commands that must be sent in the defined music channel for the server.
+The rest of the commands in this cog can be sent anywhere.
+Most `!music` commands require you to be in the same voice channel as the bot, or if it is not in a channel, for you to be in a voice channel.
+Some `!music` commands can have this requirement ignored if the user performing the command is an administrator and uses the `force` or `-f` flag in the command. 
   
 To add new songs to the queue, just put the name, YouTube link, or a YouTube playlist into the music channel once set.  
 Also requires you to be in the voice channel with the bot, or if the bot is inactive, in any voice channel.  
   
+To enable this cog, use the `ENABLE_MUSIC` env var in your `secrets.env` file, and set it to `TRUE`.
+For this cog to work, the `GOOGLE_API` env var must also be set, and instructions on how to get an API credential is below:
+
 ### To create your Google API credentials:  
 1. Go to the [Google Cloud API]("https://console.cloud.google.com/apis/") site.  
 2. Create a new project and name it whatever you want.  
@@ -375,57 +380,69 @@ Also requires you to be in the voice channel with the bot, or if the bot is inac
 6. Click on `Create Credentials` and then `API key`.  
 7. Copy the key given. For security, it is recommended that you "restrict key" and only enable `YouTube Data API v3`.  
   
-#### !music set-channel [optional: {args}] <channel_id>
-* Set the channel to be used for requesting music. Once set the channel will be cleared of any past messages, and the  
-preview messages will be sent. Any messages sent to this channel get deleted after being processed.  
-* If the channel being set has past messages, use the `-c` arg to indicate that the channel can be cleared and then set.  
-* *__Does not need to be sent in the music channel__*  
+#### !setmusicchannel \<channel mention> [optional: [args]] 
+* This sets the channel mentioned to be used as the music channel. All messages into this channel will be considered music requests, and any music commands must be sent in this channel.
+* Optional args:
+  * Using `-c` will clear the entire channel before setting it up as the music channel.
+* *Requires `administrator` permission in Discord*
   
+#### !getmusicchannel  
+* Sends the currently set music channel for the server. 
+* *Requires `administrator` permission in Discord* 
   
-#### !music get-channel  
-* Returns the current channel set as the music channel as a mentioned channel with a `#`.  
-* *__Does not need to be sent in the music channel__*  
-  
-#### !music reset-channel  
+#### !resetmusicchannel  
 * This clears the current music channel and resets the preview and queue messages.  
-* *__Does not need to be sent in the music channel__*  
-  
-#### !music removesong \<index>  
-* Aliases: `remove, removeat`  
-* Removes a song from the queue at the given index.  
-  
-#### !music resumesong  
-* Aliases: `resume, play`  
-* Resumes the current song. Only works if paused.  
-  
-#### !music pausesong  
-* Aliases: `pause, stop`  
-* Pauses the current song. Only works if there is something playing.  
-  
-#### !music kickbot  
-* Aliases: `kick`  
-* Kicks the bot from the current call. Will also clear the queue  
-  
-#### !music skipsong  
-* Aliases: `skip`  
-* Skips the current song. If the current song is the only song in the playlist, the bot will leave.  
-  
-#### !music listqueue  
-* Aliases: `list, queue`  
-* Shows the current queue. Has the same output as the current queue in the music channel  
-* *__Can't be sent in the music channel__*  
-  
-#### !music clearqueue  
-* Aliases: `clear, empty`  
-* Clears the current queue  
-  
-#### !music shufflequeue  
-* Aliases: `shuffle, randomise`  
-* If the queue has 3 or more items, including the current song, it will shuffle all but the current songs.  
+* *Requires `administrator` permission in Discord*  
 
-#### !music setvolume \<volume level>
-* Aliases: `volume`
-* Sets the global playback volume to the given level.
+#### !removemusicchannel
+* Unlinks the currently linked music channel from being the music channel. This will not delete the channel or its contents.
+* *Requires `administrator` permission in Discord*  
+
+#### !fixmusic
+* If the bot has broken and thinks it is still in a Voice Channel, use this command to force it to reset.
+* *Requires `administrator` permission in Discord*
+
+#### !musicqueue
+* Aliases: `songqueue, songs, songlist, songslist`
+* Gets the current list of songs in the queue.
+  
+#### !music join [optional: -f | force]
+* Aliases: `connect`  
+* Make the bot join the channel. 
+* If you are an admin you can force it join your voice channel using the `-f` or `force` option.
+  
+#### !music kick [optional: -f | force]
+* Aliases: `leave`  
+* Kicks the bot from the channel.
+* If you are an admin you can force it to leave a voice channel with the `-f` or `force` option. 
+  
+#### !music play [optional: song request]  
+* Aliases: `resume`  
+* Resumes playback of the current song. 
+* If a song is requested and there is no current song, it is played, otherwise it is added to the queue.
+
+#### !music pause
+* Pauses the current song.
+
+#### !music shuffle
+* Shuffles the current queue of songs.
+
+#### !music volume \<volume level>
+* Sets the volume of the bot for everyone to the level given.
+           
+#### !music clear
+* Clears the queue entirely, does not stop the current song from playing.
+
+#### !music skip [optional: skip to position]
+* Skips the current song. 
+* If a number is given it will also skip to the song at the position given.
+* For example, if 'songs to skip' is 4, the next song to play would be song 4 in the queue.
+
+#### !music remove \<song position>
+* Removes the song at the given position from the queue.
+
+#### !music move \<from position> \<to position>
+* Moves the song at position `from position` to position `to position` in the queue.
 
 </details>  
   
