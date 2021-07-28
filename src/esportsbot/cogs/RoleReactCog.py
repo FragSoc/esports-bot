@@ -21,11 +21,12 @@ class RoleReactCog(commands.Cog):
         self.db = DBGatewayActions()
         self.reaction_menus = {}
         self.logger = logging.getLogger(__name__)
+        self.logger.info(f"Finished loading {__name__}... waiting for ready")
 
     @commands.Cog.listener()
     async def on_ready(self):
         self.reaction_menus = await self.load_menus()
-        self.logger.info(f"Finished loading {__name__}!")
+        self.logger.info(f"{__name__} is now ready!")
 
     async def load_menus(self):
         """

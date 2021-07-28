@@ -257,6 +257,7 @@ class TwitterCog(commands.Cog):
         self._api.verify_credentials()
         self._stream_listener = TwitterWebhook(self._api)
         self._filter = tweepy.Stream(self._api.auth, self._stream_listener)
+        self.logger.info(f"Finished loading {__name__}... waiting for ready")
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -272,6 +273,7 @@ class TwitterCog(commands.Cog):
             self.logger.info("Currently tracking %d account(s)!", len(guild_info))
         else:
             self.logger.warning("There are no accounts that are currently tracked!")
+        self.logger.info(f"{__name__} is now ready!")
 
     async def load_discord_hooks(self):
         """

@@ -19,11 +19,12 @@ class VotingCog(commands.Cog):
         self.db = DBGatewayActions()
         self.voting_menus = {}
         self.user_strings = bot.STRINGS["vote_reacts"]
+        self.logger.info(f"Finished loading {__name__}... waiting for ready")
 
     @commands.Cog.listener()
     async def on_ready(self):
         self.voting_menus = await self.load_menus()
-        self.logger.info(f"Finished loading {__name__}!")
+        self.logger.info(f"{__name__} is now ready!")
 
     async def load_menus(self):
         """

@@ -540,7 +540,6 @@ class EventCategoriesCog(commands.Cog):
 
         # When the user does not have the correct permissions to perform the command.
         if isinstance(error, commands.MissingPermissions):
-            print(error.missing_perms)
             permission = error.missing_perms[0].replace("_", " ").replace("guild", "server")
             self.logger.error(f"Unable to perform {context.command.name} as you lack the permissions: {permission}")
             await context.reply(self.user_strings["user_missing_perms"].format(permission=permission))

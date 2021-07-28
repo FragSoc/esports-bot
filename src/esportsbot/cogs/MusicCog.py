@@ -94,6 +94,7 @@ class MusicCog(commands.Cog):
         self.active_guilds = {}
         self.playing_guilds = []
         self.inactive_guilds = {}
+        self.logger.info(f"Finished loading {__name__}... cog is ready!")
 
     def load_channels(self):
         """

@@ -52,6 +52,7 @@ class PingableRolesCog(commands.Cog):
         self.current_menu = None
         self.current_role = None
         self.on_cooldown = False
+        self.logger.info(f"Finished loading {__name__}... waiting for ready")
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -63,7 +64,7 @@ class PingableRolesCog(commands.Cog):
         self.ensure_tasks()
         if os.getenv("RUN_MONTHLY_REPORT", "FALSE").lower() == "true":
             self.monthly_ping_report.start()
-        self.logger.info(f"Finished loading {__name__}!")
+        self.logger.info(f"{__name__} is now ready!")
 
     @commands.Cog.listener()
     async def on_message(self, message):
