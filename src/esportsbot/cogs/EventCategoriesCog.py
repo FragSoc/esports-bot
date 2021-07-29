@@ -10,7 +10,7 @@ from esportsbot.DiscordReactableMenus.ExampleMenus import ActionConfirmationMenu
 from esportsbot.DiscordReactableMenus.reactable_lib import get_menu
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.lib.discordUtil import get_attempted_arg
-from esportsbot.models import Event_categories
+from esportsbot.models import Event_categories, Guild_info
 
 denied_perms = PermissionOverwrite(read_messages=False, send_messages=False, connect=False)
 read_only_perms = PermissionOverwrite(read_messages=True, send_messages=False, connect=False)
@@ -232,12 +232,13 @@ class EventCategoriesCog(commands.Cog):
 
     @event_command_group.command(
         name="create-event",
-        usage="<event name> <shared role>",
+        usage="<event name> [shared role]",
         help="Creates a new category, text channel, voice channel and sign-in menu with the given name, and "
-        "once opened will, the sign-in channel will be available to the given role."
+        "once opened will, the sign-in channel will be available to the given role. If no role is given, the server default "
+        "role will be used as the shared role. If there is no shared role @everyone is used."
     )
     @commands.has_permissions(administrator=True)
-    async def create_event(self, context: commands.Context, event_name: str, shared_role: Role):
+    async def create_event(self, context: commands.Context, event_name: str, shared_role: Role = None):
         """
         Creates a new event with the given name and using the shared role in the server to stop users from seeing the
         event early .
@@ -249,7 +250,13 @@ class EventCategoriesCog(commands.Cog):
         audit_reason = "Done with `create-event` command"
 
         if not shared_role:
-            shared_role = context.guild.default_role
+            db_data = self.db.get(Guild_info, guild_id=context.guild.id)
+            if not db_data or not db_data.default_role_id:
+                shared_role = context.guild.default_role
+            else:
+                shared_role = context.guild.get_role(db_data.default_role_id)
+                if not shared_role:
+                    shared_role = context.guild.default_role
 
         guild_events = self.event_menus[context.guild.id]
 
