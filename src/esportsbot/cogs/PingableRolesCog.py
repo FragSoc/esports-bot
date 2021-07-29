@@ -574,6 +574,7 @@ class PingableRolesCog(commands.Cog):
         self.guild_settings[context.guild.id]["role_emoji"] = PINGABLE_ROLE_EMOJI
 
         self.logger.info(f"{context.guild.name} has had its pingable settings set back to defaults!")
+        await context.reply(self.user_strings["default_settings_set"])
 
     @ping_me_settings.command(
         name="poll-length",
