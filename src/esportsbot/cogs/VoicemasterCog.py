@@ -14,6 +14,15 @@ class VoicemasterCog(commands.Cog):
         before_channel_id = before.channel.id if before.channel else False
         after_channel_id = after.channel.id if after.channel else False
 
+        if not member.guild.me.guild_permissions.move_members:
+            await send_to_log_channel(
+                self,
+                member.guild.id,
+                "I need the permission `move members` in this guild to be able to perform Voicemaster "
+                "operations"
+            )
+            return
+
         if before_channel_id and get_whether_in_vm_slave(member.guild.id, before_channel_id):
             vm_slave = DBGatewayActions().get(Voicemaster_slave, guild_id=member.guild.id, channel_id=before_channel_id)
             # If you were in a slave VM VC
