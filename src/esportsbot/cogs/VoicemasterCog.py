@@ -156,6 +156,9 @@ class VoicemasterCog(commands.Cog):
 
     @commands.command(name="lockvm", aliases=["lock"], usage="", help="Locks the Voicemaster slave that you are currently in")
     async def lockvm(self, ctx):
+        if not ctx.author.voice:
+            await ctx.channel.send(self.STRINGS['error_not_in_slave'])
+            return
         in_vm_slave = DBGatewayActions().get(
             Voicemaster_slave,
             guild_id=ctx.author.guild.id,
@@ -188,6 +191,9 @@ class VoicemasterCog(commands.Cog):
         help="Unlocks the Voicemaster slave that you are currently in"
     )
     async def unlockvm(self, ctx):
+        if not ctx.author.voice:
+            await ctx.channel.send(self.STRINGS['error_not_in_slave'])
+            return
         in_vm_slave = DBGatewayActions().get(
             Voicemaster_slave,
             guild_id=ctx.author.guild.id,
