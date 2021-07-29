@@ -548,26 +548,30 @@ class PingableRolesCog(commands.Cog):
 
         exists = self.db.get(Pingable_settings, guild_id=guild_id)
 
-        current_item = Pingable_settings(
-            guild_id=guild_id,
-            default_poll_length=int(os.getenv("DEFAULT_POLL_LENGTH")),
-            default_poll_threshold=int(os.getenv("DEFAULT_POLL_THRESHOLD")),
-            default_cooldown_length=int(os.getenv("DEFAULT_COOLDOWN_LENGTH")),
-            default_poll_emoji=PINGABLE_POLL_EMOJI.to_dict(),
-            default_role_emoji=PINGABLE_ROLE_EMOJI.to_dict()
-        )
-
         if exists:
-            self.db.update(current_item)
+            exists.default_poll_length = int(os.getenv("DEFAULT_POLL_LENGTH"))
+            exists.default_poll_threshold = int(os.getenv("DEFAULT_POLL_THRESHOLD"))
+            exists.default_cooldown_length = int(os.getenv("DEFAULT_COOLDOWN_LENGTH"))
+            exists.default_poll_emoji = PINGABLE_POLL_EMOJI.to_dict()
+            exists.default_role_emoji = PINGABLE_ROLE_EMOJI.to_dict()
+            self.db.update(exists)
         else:
+            current_item = Pingable_settings(
+                guild_id=guild_id,
+                default_poll_length=int(os.getenv("DEFAULT_POLL_LENGTH")),
+                default_poll_threshold=int(os.getenv("DEFAULT_POLL_THRESHOLD")),
+                default_cooldown_length=int(os.getenv("DEFAULT_COOLDOWN_LENGTH")),
+                default_poll_emoji=PINGABLE_POLL_EMOJI.to_dict(),
+                default_role_emoji=PINGABLE_ROLE_EMOJI.to_dict()
+            )
             self.db.create(current_item)
 
         self.guild_settings[context.guild.id] = {}
-        self.guild_settings[context.guild.id]["poll_length"] = current_item.default_poll_length
-        self.guild_settings[context.guild.id]["poll_threshold"] = current_item.default_poll_threshold
-        self.guild_settings[context.guild.id]["role_cooldown"] = current_item.default_cooldown_length
-        self.guild_settings[context.guild.id]["poll_emoji"] = current_item.default_poll_emoji
-        self.guild_settings[context.guild.id]["role_emoji"] = current_item.default_role_emoji
+        self.guild_settings[context.guild.id]["poll_length"] = int(os.getenv("DEFAULT_POLL_LENGTH"))
+        self.guild_settings[context.guild.id]["poll_threshold"] = int(os.getenv("DEFAULT_POLL_THRESHOLD"))
+        self.guild_settings[context.guild.id]["role_cooldown"] = int(os.getenv("DEFAULT_COOLDOWN_LENGTH"))
+        self.guild_settings[context.guild.id]["poll_emoji"] = PINGABLE_POLL_EMOJI
+        self.guild_settings[context.guild.id]["role_emoji"] = PINGABLE_ROLE_EMOJI
 
         self.logger.info(f"{context.guild.name} has had its pingable settings set back to defaults!")
 
@@ -584,6 +588,14 @@ class PingableRolesCog(commands.Cog):
         :param poll_length: The number of seconds to set the default poll length to .
         """
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        if not db_item:
+            await context.send(
+                self.user_strings["needs_initialising"].format(
+                    prefix=self.bot.command_prefix,
+                    command="pingme settings default-settings"
+                )
+            )
+            return
         db_item.default_poll_length = poll_length
         self.db.update(db_item)
 
@@ -604,6 +616,14 @@ class PingableRolesCog(commands.Cog):
         :param vote_threshold: The number of votes needed to create a role .
         """
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        if not db_item:
+            await context.send(
+                self.user_strings["needs_initialising"].format(
+                    prefix=self.bot.command_prefix,
+                    command="pingme settings default-settings"
+                )
+            )
+            return
         db_item.default_poll_threshold = vote_threshold
         self.db.update(db_item)
 
@@ -624,6 +644,14 @@ class PingableRolesCog(commands.Cog):
         :param role_cooldown: The number of seconds a role will be on cooldown for .
         """
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        if not db_item:
+            await context.send(
+                self.user_strings["needs_initialising"].format(
+                    prefix=self.bot.command_prefix,
+                    command="pingme settings default-settings"
+                )
+            )
+            return
         db_item.default_cooldown_length = role_cooldown
         self.db.update(db_item)
 
@@ -649,6 +677,14 @@ class PingableRolesCog(commands.Cog):
             return
 
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        if not db_item:
+            await context.send(
+                self.user_strings["needs_initialising"].format(
+                    prefix=self.bot.command_prefix,
+                    command="pingme settings default-settings"
+                )
+            )
+            return
         db_item.default_poll_emoji = poll_emoji.to_dict()
         self.db.update(db_item)
 
@@ -669,6 +705,14 @@ class PingableRolesCog(commands.Cog):
         :param role_emoji: The emoji to use in the role reaction menus .
         """
         db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        if not db_item:
+            await context.send(
+                self.user_strings["needs_initialising"].format(
+                    prefix=self.bot.command_prefix,
+                    command="pingme settings default-settings"
+                )
+            )
+            return
         db_item.default_role_emoji = role_emoji.to_dict()
         self.db.update(db_item)
 
