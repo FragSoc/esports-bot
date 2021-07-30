@@ -119,15 +119,15 @@ class PollReactMenu(ReactableMenu):
 
         super().__init__(**kwargs)
         self.total_votes = 0
-        self.end_time = kwargs.get("end_time", datetime.datetime.now())
         self.poll_length = kwargs["poll_length"]
+        self.end_time = kwargs.get("end_time", datetime.datetime.now() + datetime.timedelta(seconds=self.poll_length))
         self.author = kwargs["author"]
 
     @classmethod
     async def load_dict(cls, bot, data) -> Dict:
         kwargs = await super(PollReactMenu, cls).load_dict(bot, data)
         kwargs["poll_length"] = data.get("length")
-        kwargs["end_time"] = data.get("end_time")
+        kwargs["end_time"] = datetime.datetime.strptime(data.get("end_time"), DATE_FORMAT)
         kwargs["author"] = bot.get_user(data.get("author_id"))
         return kwargs
 
@@ -228,7 +228,8 @@ class PollReactMenu(ReactableMenu):
 
     async def enable_menu(self, bot) -> bool:
         if await super().enable_menu(bot):
-            self.end_time = datetime.datetime.now() + datetime.timedelta(seconds=self.poll_length)
+            if not self.end_time:
+                self.end_time = datetime.datetime.now() + datetime.timedelta(seconds=self.poll_length)
             return True
         return False
 

@@ -419,6 +419,7 @@ class PingableRolesCog(commands.Cog):
             self.logger.info(f"Pingable poll with name {poll_to_finish.name} had more votes than the voting threshold!")
             role = await channel.guild.create_role(name=poll_to_finish.name + PINGABLE_ROLE_SUFFIX, mentionable=True)
             await self.create_reaction_menu(role, channel)
+            await self.give_roles_to_reacts(poll_to_finish.message, role)
             self.logger.debug(f"Saved new pingable role information for {role.name} to DB!")
 
         db_item = self.db.get(Pingable_polls, guild_id=channel.guild.id, poll_id=poll_to_finish.id)
@@ -457,6 +458,13 @@ class PingableRolesCog(commands.Cog):
             total_pings=0
         )
         self.db.create(db_item)
+
+    @staticmethod
+    async def give_roles_to_reacts(message, role):
+        for react in message.reactions:
+            async for user in react.users():
+                if not user.bot:
+                    await user.add_roles(role)
 
     def role_exists(self, name: str) -> bool:
         """
@@ -580,7 +588,7 @@ class PingableRolesCog(commands.Cog):
         name="poll-length",
         usage="<poll length in seconds>",
         help="Sets the default poll length to the given time in seconds. "
-        "Poll lengths can still be overridden by giving the poll length in the `create-poll` command!"
+        "Poll lengths can still be overridden by giving the poll length in the `create-role` command!"
     )
     async def set_poll_length(self, context: commands.Context, poll_length: int):
         """
