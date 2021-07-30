@@ -461,6 +461,11 @@ class PingableRolesCog(commands.Cog):
 
     @staticmethod
     async def give_roles_to_reacts(message, role):
+        """
+        Gives the given role to the reactees of a message.
+        :param message: The message to get the user reactions from.
+        :param role: The role to give the users.
+        """
         for react in message.reactions:
             async for user in react.users():
                 if not user.bot:
@@ -484,6 +489,23 @@ class PingableRolesCog(commands.Cog):
                 return True
 
         return False
+
+    async def get_guild_in_settings(self, context):
+        """
+        Gets the current guild settings for a guild. If the guild is not in the settings DB, returns None.
+        :param context: The context of the command.
+        :return: A Pingable_settings DB item if the guild is in the DB, else None.
+        """
+        db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        if not db_item:
+            await context.send(
+                self.user_strings["needs_initialising"].format(
+                    prefix=self.bot.command_prefix,
+                    command="pingme settings default-settings"
+                )
+            )
+            return None
+        return db_item
 
     @commands.group(name="pingme", help="Get and create custom roles with ping cooldown timers.", invoke_without_command=True)
     async def ping_me(self, context: commands.Context):
@@ -596,14 +618,8 @@ class PingableRolesCog(commands.Cog):
         :param context: The context of the command .
         :param poll_length: The number of seconds to set the default poll length to .
         """
-        db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        db_item = await self.get_guild_in_settings(context)
         if not db_item:
-            await context.send(
-                self.user_strings["needs_initialising"].format(
-                    prefix=self.bot.command_prefix,
-                    command="pingme settings default-settings"
-                )
-            )
             return
         db_item.default_poll_length = poll_length
         self.db.update(db_item)
@@ -624,14 +640,8 @@ class PingableRolesCog(commands.Cog):
         :param context: The context of the command .
         :param vote_threshold: The number of votes needed to create a role .
         """
-        db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        db_item = await self.get_guild_in_settings(context)
         if not db_item:
-            await context.send(
-                self.user_strings["needs_initialising"].format(
-                    prefix=self.bot.command_prefix,
-                    command="pingme settings default-settings"
-                )
-            )
             return
         db_item.default_poll_threshold = vote_threshold
         self.db.update(db_item)
@@ -685,14 +695,8 @@ class PingableRolesCog(commands.Cog):
             await context.reply(self.user_strings["reserved_emoji"].format(poll_emoji.discord_emoji))
             return
 
-        db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        db_item = await self.get_guild_in_settings(context)
         if not db_item:
-            await context.send(
-                self.user_strings["needs_initialising"].format(
-                    prefix=self.bot.command_prefix,
-                    command="pingme settings default-settings"
-                )
-            )
             return
         db_item.default_poll_emoji = poll_emoji.to_dict()
         self.db.update(db_item)
@@ -713,14 +717,8 @@ class PingableRolesCog(commands.Cog):
         :param context: The context of the command .
         :param role_emoji: The emoji to use in the role reaction menus .
         """
-        db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        db_item = await self.get_guild_in_settings(context)
         if not db_item:
-            await context.send(
-                self.user_strings["needs_initialising"].format(
-                    prefix=self.bot.command_prefix,
-                    command="pingme settings default-settings"
-                )
-            )
             return
         db_item.default_role_emoji = role_emoji.to_dict()
         self.db.update(db_item)
