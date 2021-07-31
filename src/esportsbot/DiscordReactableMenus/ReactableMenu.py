@@ -218,6 +218,7 @@ class ReactableMenu:
         embed = self.generate_embed()
         self.add_footer(embed)
         await self.message.edit(embed=embed)
+        self.message = await self.message.channel.fetch_message(self.id)
         if self.enabled:
             await self.add_reactions()
 

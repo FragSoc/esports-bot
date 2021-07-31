@@ -72,7 +72,7 @@ class RoleReactMenu(ReactableMenu):
         if not role_id:
             channel = guild.get_channel(channel_id)
             message = await channel.fetch_message(message_id)
-            await message.remove_reaction(emoji_triggered, member)
+            await message.clear_reaction(emoji_triggered)
             return False
 
         role_to_add = get_role_from_id(guild, role_id)
@@ -247,7 +247,7 @@ class PollReactMenu(ReactableMenu):
         if triggering_emoji not in self:
             channel = guild_from_react.get_channel(payload.channel_id)
             message = await channel.fetch_message(payload.message_id)
-            await message.remove_reaction(triggering_emoji, triggering_member)
+            await message.clear_reaction(triggering_emoji)
             return False
 
         return True
@@ -309,7 +309,7 @@ class ActionConfirmationMenu(ReactableMenu):
         if formatted_emoji not in self:
             channel = guild_from_react.get_channel(payload.channel_id)
             message = await channel.fetch_message(payload.message_id)
-            await message.remove_reaction(triggering_emoji, triggering_member)
+            await message.clear_reaction(triggering_emoji)
             return False
 
         if formatted_emoji == CONFIRM_EMOJI:
