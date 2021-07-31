@@ -55,10 +55,10 @@ class TwitterWebhook(tweepy.StreamListener):
 
         if not len(self.hooks) > 0:
             # There are no hooks to send the new status to.
-            self.logger.error("Discord webhooks have not been loaded or ther are no webhooks!")
+            self.logger.error("Discord webhooks have not been loaded or there are no webhooks!")
             return
 
-        self.logger.info("Recieve new status for account %s...", status["user"]["screen_name"])
+        self.logger.info("Receive new status for account %s...", status["user"]["screen_name"])
         self.logger.info("Pushing to webhooks...")
 
         if status.get("retweeted_status") is not None:
@@ -489,7 +489,7 @@ class TwitterCog(commands.Cog):
 
         async with aiohttp.ClientSession() as session:
             webhook = Webhook.partial(id=h_id, token=hook_info.get("token"), adapter=AsyncWebhookAdapter(session))
-            await webhook.delete(reason="Deleted with removehook comand")
+            await webhook.delete(reason="Deleted with removehook command")
             self._stream_listener.remove_hook(h_id)
         await ctx.send(self.user_strings["webhook_deleted"].format(name=hook_info.get("name"), hook_id=h_id))
         return True
@@ -523,7 +523,7 @@ class TwitterCog(commands.Cog):
             if tracked_guilds is not None and ctx.guild.id in tracked_guilds:
                 # The account is already tracked in the current guild.
                 self.logger.info(
-                    "Not adding %s to %s(%s) as it is aleady tracked in the guild",
+                    "Not adding %s to %s(%s) as it is already tracked in the guild",
                     account,
                     ctx.guild.name,
                     ctx.guild.id
@@ -623,7 +623,7 @@ class TwitterCog(commands.Cog):
             return
 
         handle_names = [x.twitter_handle for x in handles]
-        handle_string = ",".join(handle_names)
+        handle_string = ", ".join(handle_names)
         await ctx.send(self.user_strings["accounts_list"].format(tracked_accounts=handle_string))
 
     async def refresh_filter(self, new_filter: List[str]):
