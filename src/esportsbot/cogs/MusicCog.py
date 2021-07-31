@@ -819,7 +819,8 @@ class MusicCog(commands.Cog):
         :return: A boolean if the bot was able to join the channel.
         """
         try:
-            await member.voice.channel.connect()
+            client = await member.voice.channel.connect()
+            await member.guild.change_voice_state(channel=client.channel, self_mute=False, self_deaf=True)
             return True
         except ClientException:
             return False
