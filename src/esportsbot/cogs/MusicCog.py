@@ -350,11 +350,10 @@ class MusicCog(commands.Cog):
             cleaned_requests = [k for k in request_options if k not in ('', ' ')]
 
             debug_start_time = time.time()
-            request_tasks = []
+            results = []
             for request in cleaned_requests:
-                request_tasks.append(self.process_request(message.guild.id, request))
+                results.append(await self.process_request(message.guild.id, request))
 
-            results = await asyncio.gather(*request_tasks)
             debug_end_time = time.time()
 
             self.logger.info(
@@ -1242,7 +1241,7 @@ class MusicCog(commands.Cog):
                 channel=context.channel,
                 content=self.user_strings["song_remove_success"].format(
                     song_title=removed_song.get("title"),
-                    song_position=song_index
+                    song_position=song_index + 1
                 )
             )
 
