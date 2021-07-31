@@ -825,7 +825,7 @@ class MusicCog(commands.Cog):
         :param text_channel: The text channel to set the music channel to.
         """
         # Using the text channel as the last official arg in the command, find any extras that occur after with a `-`
-        text_channel_str = str(text_channel)
+        text_channel_str = str(text_channel.mention)
         end_index = context.message.content.index(text_channel_str) + len(text_channel_str)
         args = context.message.content[end_index:].strip().split("-")
         args.pop(0)
