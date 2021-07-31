@@ -688,6 +688,7 @@ class MusicCog(commands.Cog):
         """
         ydl_opts = {
             "quiet": "true",
+            "nowarning": "true",
             "format": "bestaudio/best",
             "outtmpl": "%(title)s-%(id)s.mp3",
             "postprocessors": [{
