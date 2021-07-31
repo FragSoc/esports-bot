@@ -254,14 +254,14 @@ class RoleReactCog(commands.Cog):
         menu = get_menu(self.reaction_menus, menu_id)
 
         if not menu:
-            await context.reply(self.user_strings["invalid_id"].format(given_id=None))
+            await context.reply(self.user_strings["invalid_id"].format(given_id=menu_id))
             return
 
         await menu.message.delete()
         self.reaction_menus.pop(menu.id)
         db_item = self.db.get(Role_menus, menu_id=menu.id)
         self.db.delete(db_item)
-        await context.reply(self.user_strings["delete_menu"].format(given_id=menu.id))
+        await context.reply(self.user_strings["delete_menu"].format(menu_id=menu.id))
 
     @command_group.command(name="toggle-ids", help="Toggles the footer displaying the menu ID for all role reaction menus.")
     @commands.has_permissions(administrator=True)
