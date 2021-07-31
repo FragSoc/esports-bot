@@ -1381,6 +1381,7 @@ class MusicCog(commands.Cog):
             db_item.preview_message_id = preview_message.id
             db_item.channel_id = channel.id
             self.db.update(db_item)
+        self.music_channels[channel.guild.id] = channel.id
 
     async def reset_music_channel(self, context):
         """
