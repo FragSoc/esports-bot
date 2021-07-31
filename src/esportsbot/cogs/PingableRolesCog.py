@@ -145,17 +145,39 @@ class PingableRolesCog(commands.Cog):
         """
         self.logger.debug("Initialising menus into actual menu objects from data base info")
 
+        to_pop = []
+
         # Load role menus:
         for menu_id in self.roles:
             menu_data = self.roles.get(menu_id).get("menu")
-            self.roles[menu_id]["menu"] = await PingableRoleMenu.from_dict(self.bot, menu_data)
+            loaded_menu = await PingableRoleMenu.from_dict(self.bot, menu_data)
+            if isinstance(loaded_menu, dict):
+                db_item = self.db.get(Pingable_roles, guild_id=menu_data.get("guild_id"), role_id=menu_data.get("role_id"))
+                self.db.delete(db_item)
+                to_pop.append(menu_id)
+            else:
+                self.roles[menu_id]["menu"] = loaded_menu
+
+        for menu in to_pop:
+            self.roles.pop(menu)
+
+        to_pop = []
 
         # Load poll menus:
         for poll_id in self.polls:
             menu_data = self.polls.get(poll_id).get("menu")
-            self.polls[poll_id]["menu"] = await PingableVoteMenu.from_dict(self.bot, menu_data)
+            loaded_menu = await PingableVoteMenu.from_dict(self.bot, menu_data)
+            if isinstance(loaded_menu, dict):
+                db_item = self.db.get(Pingable_polls, guild_id=menu_data.get("guild_id"), menu_id=poll_id)
+                self.db.delete(db_item)
+                to_pop.append(poll_id)
+            else:
+                self.polls[poll_id]["menu"] = loaded_menu
 
-        self.logger.info("All menus initialised!")
+        for menu in to_pop:
+            self.polls.pop(menu)
+
+        self.logger.info(f"Initialised {len(self.polls)} pingable polls, and {len(self.roles)} pingable roles")
 
     def load_guild_settings(self) -> Dict:
         """
@@ -193,7 +215,7 @@ class PingableRolesCog(commands.Cog):
             guild_data = self.load_guild_polls(guild)
             loaded_data = {**guild_data, **loaded_data}
 
-        self.logger.info(f"Loaded {len(loaded_data)} pingable poll(s)!")
+        self.logger.info(f"Found {len(loaded_data)} pingable poll menu(s) in DB table")
 
         return loaded_data
 
@@ -228,7 +250,7 @@ class PingableRolesCog(commands.Cog):
             guild_data = self.load_guild_roles(guild)
             loaded_data = {**guild_data, **loaded_data}
 
-        self.logger.info(f"Loaded {len(loaded_data)} pingable react menu(s) in {len(guild_ids)} guild(s)")
+        self.logger.info(f"Found {len(loaded_data)} pingable react menu(s) in DB table")
 
         return loaded_data
 
