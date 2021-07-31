@@ -140,6 +140,7 @@ class MusicCog(commands.Cog):
                         non_bots = [x for x in guild_vc.members if not x.bot]
                         if not non_bots:
                             # Leave the channel
+                            await self.disconnect_from_guild(member.guild)
                             await self.remove_active_guild(member.guild)
             return
 
@@ -224,10 +225,8 @@ class MusicCog(commands.Cog):
             # These guilds have reached the timeout and should be disconnected.
             self.inactive_guilds.pop(guild_id)
             guild = self.active_guilds.get(guild_id).get("voice_channel").guild
-            # await self.remove_active_guild(context.guild)
-            voice_client = self.active_guilds.get(guild_id, {}).get("voice_client")
-            if voice_client:
-                await voice_client.disconnect()
+            await self.disconnect_from_guild(guild)
+            await self.remove_active_guild(guild)
 
     def new_active_guild(self, guild):
         """
@@ -285,22 +284,28 @@ class MusicCog(commands.Cog):
 
     async def remove_active_guild(self, guild):
         """
-        Remove a guild from being active. Will also attempt to disconnect the bot from a voice channel.
+        Remove a guild from being active.
         :param guild: The guild to remove activity from.
         :return: A boolean if the removal was successful.
         """
         self.logger.info(f"Removing active channel for {guild.name}")
         try:
-            guild_data = self.active_guilds.pop(guild.id)
+            self.active_guilds.pop(guild.id)
             await self.update_messages(guild.id)
-            await guild_data.get("voice_client").disconnect()
             return True
-        except ClientException:
-            return False
         except AttributeError:
             return False
         except KeyError:
             return False
+
+    async def disconnect_from_guild(self, guild):
+        guild_data = self.active_guilds.get(guild.id)
+        if guild_data:
+            await guild_data["voice_client"].disconnect()
+        else:
+            my_voice = guild.voice_client
+            if my_voice:
+                await my_voice.disconnect()
 
     async def find_music_channel_instance(self, guild):
         """
@@ -717,26 +722,32 @@ class MusicCog(commands.Cog):
         await queue_message_instance.edit(content=queue_message_content)
         await preview_message_instance.edit(embed=preview_message_content)
 
-    def get_updated_queue_message(self, guild_id):
+    def get_updated_queue_message(self, guild_id, complete_list=False):
         """
         Gets the most up-to-date message for the current queue information of a given guild.
         :param guild_id: The ID of the guild to get the queue information of.
+        :param complete_list: If the string should be a complete list or a truncated list.
         :return: A string representing the queue in the guild.
         """
         if guild_id not in self.active_guilds:
             return EMPTY_QUEUE_MESSAGE
         else:
-            return self.make_queue_text(guild_id)
+            return self.make_queue_text(guild_id, complete_list=complete_list)
 
-    def make_queue_text(self, guild_id):
+    def make_queue_text(self, guild_id, complete_list=False):
         """
         Creates the text of the current queue in a given guild.
         :param guild_id: The ID of the guild to get the queue of.
+        :param complete_list: If the string should be a complete list or a truncated list.
         :return: A string representing the queue in a given guild.
         """
         queue_string = EMPTY_QUEUE_MESSAGE
         queue = self.active_guilds.get(guild_id).get("queue")
-        if len(queue) > 25:
+        if not queue:
+            return queue_string
+        elif complete_list:
+            queue_string = self.reversed_numbered_list(queue)
+        elif len(queue) > 25:
             # If the queue is long, truncate it using the start and end with an indicator of how many extra songs are hidden.
             first_ten = queue[:10]
             last_ten = queue[-10:]
@@ -746,7 +757,7 @@ class MusicCog(commands.Cog):
             last_string = self.reversed_numbered_list(last_ten, offset=remainder + 10)
 
             queue_string += f"{last_string}\n\n... and **`{remainder}`** more ... \n\n{first_string}"
-        elif queue:
+        else:
             queue_string += self.reversed_numbered_list(queue)
         return queue_string
 
@@ -875,6 +886,7 @@ class MusicCog(commands.Cog):
         :param context: The context of the command.
         """
         await self.remove_active_guild(context.guild)
+        await self.disconnect_from_guild(context.guild)
         await self.reset_music_channel(context)
 
     @commands.command(
@@ -915,7 +927,7 @@ class MusicCog(commands.Cog):
             await send_timed_message(channel=context.channel, content=self.user_strings["bot_inactive"], timer=20)
             return
 
-        queue_string = self.get_updated_queue_message(context.guild.id)
+        queue_string = self.get_updated_queue_message(context.guild.id, complete_list=True)
         await send_timed_message(channel=context.channel, content=queue_string, timer=60)
 
     @commands.group(
@@ -1000,16 +1012,12 @@ class MusicCog(commands.Cog):
             if not context.author.guild_permissions.administrator:
                 await send_timed_message(context.channel, content=self.user_strings["not_admin"], timer=10)
                 return
-            # await self.remove_active_guild(context.guild)
-            voice_client = self.active_guilds.get(context.guild.id, {}).get("voice_client")
-            if voice_client:
-                await voice_client.disconnect()
+            await self.disconnect_from_guild(context.guild)
+            await self.remove_active_guild(context.guild)
         else:
             if context.author in self.active_guilds.get(context.guild.id).get("voice_channel").members:
-                # await self.remove_active_guild(context.guild)
-                voice_client = self.active_guilds.get(context.guild.id, {}).get("voice_client")
-                if voice_client:
-                    await voice_client.disconnect()
+                await self.disconnect_from_guild(context.guild)
+                await self.remove_active_guild(context.guild)
         await self.update_messages(context.guild.id)
 
     @command_group.command(
