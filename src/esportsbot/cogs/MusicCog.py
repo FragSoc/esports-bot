@@ -224,7 +224,10 @@ class MusicCog(commands.Cog):
             # These guilds have reached the timeout and should be disconnected.
             self.inactive_guilds.pop(guild_id)
             guild = self.active_guilds.get(guild_id).get("voice_channel").guild
-            await self.remove_active_guild(guild)
+            # await self.remove_active_guild(context.guild)
+            voice_client = self.active_guilds.get(guild_id, {}).get("voice_client")
+            if voice_client:
+                await voice_client.disconnect()
 
     def new_active_guild(self, guild):
         """
@@ -289,6 +292,7 @@ class MusicCog(commands.Cog):
         self.logger.info(f"Removing active channel for {guild.name}")
         try:
             guild_data = self.active_guilds.pop(guild.id)
+            await self.update_messages(guild.id)
             await guild_data.get("voice_client").disconnect()
             return True
         except ClientException:
@@ -997,10 +1001,16 @@ class MusicCog(commands.Cog):
             if not context.author.guild_permissions.administrator:
                 await send_timed_message(context.channel, content=self.user_strings["not_admin"], timer=10)
                 return
-            await self.remove_active_guild(context.guild)
+            # await self.remove_active_guild(context.guild)
+            voice_client = self.active_guilds.get(context.guild.id, {}).get("voice_client")
+            if voice_client:
+                await voice_client.disconnect()
         else:
             if context.author in self.active_guilds.get(context.guild.id).get("voice_channel").members:
-                await self.remove_active_guild(context.guild)
+                # await self.remove_active_guild(context.guild)
+                voice_client = self.active_guilds.get(context.guild.id, {}).get("voice_client")
+                if voice_client:
+                    await voice_client.disconnect()
         await self.update_messages(context.guild.id)
 
     @command_group.command(
