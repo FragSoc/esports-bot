@@ -687,6 +687,7 @@ class MusicCog(commands.Cog):
         :return: A dictionary of data which contains the stream data.
         """
         ydl_opts = {
+            "quiet": "true",
             "format": "bestaudio/best",
             "outtmpl": "%(title)s-%(id)s.mp3",
             "postprocessors": [{
