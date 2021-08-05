@@ -1,3 +1,5 @@
+command_error_generic = "There was an internal error while performing your command! Please contact a developer!"
+
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
 channel_set_already = "Logging channel already set to this channel"
@@ -25,38 +27,40 @@ default_role_removed = "Default role has been removed"
 default_role_removed_log = "{author_mention} has removed the default role"
 
 [music]
-music_channel_set = "The Music Channel has been bound to {music_channel}"
-music_channel_set_log = "{author} has bound the Music Channel to {music_channel}"
+music_channel_set = "The Music Channel has been set to {channel}"
+music_channel_set_log = "{author} has bound the Music Channel to {channel}"
 music_channel_set_missing_channel = "You need to either use a # to mention the channel or paste the ID of the channel"
 music_channel_set_invalid_channel = """The channel given was not valid, check the ID pasted or try using a # to mention
                                        the channel"""
 music_channel_set_not_text_channel = "You must provide a Text Channel to bind as the Music Channel"
 music_channel_set_not_empty = """The channel given is not empty, if you want to clear the channel
-                                 use {bot_prefix}setmusicchannel -c <channel>"""
+                                 use {prefix}setmusicchannel -c <channel>"""
 
-music_channel_get = "The Music Channel is currently set to {music_channel}"
-music_channel_missing = "The Music Channel has not been bound"
+music_channel_get = "The Music Channel is currently set to {channel}"
+music_channel_missing = "The Music Channel has not been set"
 
-music_channel_reset = "The Music Channel ({music_channel}) has been reset"
+music_channel_reset = "The Music Channel ({channel}) has been reset"
 
-music_channel_removed = "The Music Channel has been unbound from {music_channel}"
-music_channel_removed_log = "{author} has unbound the Music Channel from {music_channel}"
+music_channel_removed = "The Music Channel has been unbound from {channel}"
+music_channel_removed_log = "{author} has unbound the Music Channel from {channel}"
 
 bot_inactive = "I am not currently active. Start playing some songs first by joining a channel and requesting one!"
-song_error = "There were errors while adding some songs to the queue"
+song_process_failed = "The following songs had issues while processing: \n{songs}"
 
-music_channel_wrong_channel = "That command {command_option} be sent in the Music Channel"
+music_channel_wrong_channel = "The command `{command}` must be sent in the Music Channel"
 
-no_perms_voice_channel = "{author}, I need the permission `connect` to be able to join that Voice Channel"
-no_voice_voice_channel = "{author}, You must be in a voice channel to request a song"
-wrong_voice_voice_channel = "{author}, I am already in another voice channel in this server"
+no_connect_perms = "I need the permission `connect` to be able to join your Voice Channel"
+unable_to_join = "I am unable to join your Voice Channel as either you are not in one or I am already in another one"
+not_admin = "You cannot do that as you are not an administrator in this server"
 
 volume_set_invalid_value = "The volume level must be between 0 and 100"
 volume_set_success = "The volume has been set to {volume_level}%"
 
-song_remove_invalid_value = "The song number must be a value in the current queue."
-song_remove_valid_options = "Valid options are from {start_index} to {end_index}"
+song_remove_invalid_value = "The song number must be a value in the current queue"
+song_remove_valid_options = "Valid options are from `1` to `{end_index}`"
 song_remove_success = "The song **{song_title}** has been removed from position **{song_position}** in the queue"
+
+song_moved_success = "The song **{title}** has been moved from position `{from_pos}` to position `{to_pos}`"
 
 song_pause_success = "Song Paused!"
 
@@ -71,74 +75,46 @@ clear_queue_success = "Queue Cleared!"
 shuffle_queue_success = "Queue Shuffled!"
 
 [event_categories]
-success_channel = "✅ <#{channel_id!s}> is now visible to **{role_name}**!"
-success_event = """✅ New event category '{event_title}' created successfuly!
-The event role is {event_role_mention}, and the signin menu is ID `{signin_menu_id!s}`, in {signin_channel_mention}.
+success_event = """✅ New event category '{event_name}' created successfully!
+The event role is {event_role_mention}, and the sign-in menu is ID `{sign_in_menu_id}`, in {sign_in_channel_mention}.
 
-The event is currently **closed**, and invisible to your shared role, `{shared_role_name}`. Open the event when you're ready with `{command_prefix}open-event {event_name}`!
-Feel free to customise the category, channels and roles, but do not synchronise the category permissions.
-
-You can create a new channel in the category with the correct permissions by either:
-- Using the `+` icon next to the category,
-- Dragging your channel into the category and synchronising **just that channel**'s permissions with the category, or
-- Duplicating {event_general_mention}."""
-success_event_category ="✅ Event category '{event_name}' registered successfuly!"
-success_event_deleted = "✅ {event_title} event category and role successfuly deleted."
-success_event_role = "✅ The {event_name} event role is now **{role_name}**."
-success_event_role_unregister = "✅ {event_title} event category successfuly unregistered."
-success_menu = "✅ The {event_namme} event signin menu is now: {menu_url}"
-success_shared_role = "✅ The shared role is now **{role_name}**."
-success_event_closed = "Done!"
-nothing_to_do = "Nothing to do!\n*(<#{channel_id!s}> already invisible to {shared_role}, no reactions on signin menu, no users with {event_role} role)*"
-
-menu_title = "Sign Into {event_name}"
-menu_description = "If you're attending this event, react to this message to get the '{event_role}' role, and access to secret event channels!"
-
-react_delete_confirm = "React within 60 seconds: Are you sure you want to delete the '{event_title}' category{event_segment} and the {num_channels!s} event channels?"
-react_error = "An error occurred when loading your reaction, please try the command again with a different emoji."
-react_event_delete_cancel = "Event category deletion cancelled."
-react_no_time = "Out of time, please try the command again."
-react_start = "Please react to this message within 60 seconds, with the emoji which you would like users to react with to receive the event role:"
-
-request_event_name = ":x: Please give the name of the event!"
-request_menu_id_event_name = ":x: Please provide a menu ID and event name!"
-request_menu_role_name = ":x: Please provide a menu ID, followed by a role, and the name of your event!"
-request_role_id = ":x: Please provide a role to set!"
-
-invalid_menu_id = ":x: Invalid menu ID!\nTo get a menu ID, enable discord's developer mode, right click on the menu, and click 'copy ID'"
-invalid_role = ":x: Invalid role! Please give your role as either a mention or an ID."
-unrecognised_event = ":x: Unrecognised event. The following events exist in this server: {events}"
-unrecognised_menu_id = ":x: Unrecognised menu ID: {menu_id}"
-unrecognised_role = ":x: Unrecognised role!"
-invalid_signin_menu = ":x: The event signin menu must be a role menu granting the {role_name} role!"
-
-channel_already_open = ":x: The {event_name} signin channel is already open! <#{channel_id!s}>"
+The event is currently **closed**, and invisible to the `{shared_role_name}` role. Open the event when you're ready with `{command_prefix}open-event {event_name}`!
+Feel free to create more Text Channels and Voice Channels below the ones created by the command!
+"""
+success_channel = "✅ <#{channel_id}> is now visible to **{role_name}**!"
 event_exists = ":x: An event category with the name '{event_name}' already exists!"
-missing_shared_role = ":x: I can't find the server's shared role! Was it deleted?\nPlease use the `{command_prefix}set-shared-role` command to set a new one."
-no_event_categories = ":x: This server doesn't have any event categories registered!"
-no_shared_role = ":x: No shared role has been set for this server! Use the {command_prefix}set-shared-role` command to set one."
+no_events = ":x: This server doesn't have any event categories registered!"
+success_event_closed = "✅ All event channels are longer visible to anyone"
+success_event_deleted = "✅ {event_name} event and role successfully deleted."
+delete_cancelled = "✅ {event_name} event and role will not be deleted"
+unrecognised_event = ":x: Unrecognised event. The following events exist in this server: {events}"
+invalid_role = ":x: Invalid role! Please give your Role as either a mention or an ID."
+user_missing_perms = ":x: I am unable to perform that action as you are missing the `{permission}` permission in this server!"
+bot_missing_perms = ":x: I am unable to perform that action as I may be missing one of the following permissions: `{permissions}`"
+missing_arguments = ":x: There were key arguments missing in the supplied command. Try using `{prefix}help {command}` to find how to use this command"
 
-no_channel_edit_perms = ":x: I don't have permission to edit the permissions in <#{channel_id!s}>!"
-no_role_edit_perms = ":x: I don't have permission to assign roles!\nPlease give me the 'manage roles' permission."
-role_edit_perms_bad_order = ":x: I don't have permission to unassign the **{event_role}** role!\nPlease move it below my {role_name} role."
-
-event_category_create_reason = "Creating new event category '{event_name}' requested via {command_prefix}create-event-category command"
-event_category_delete_reason = "Event category '{event_name}' deletion requested via {command_prefix}delete-event-category command"
-event_channel_close_reason = "{author} closed the {event_name} event via {command_prefix}close-event command"
-event_channel_open_reason = "{author} opened the {event_name} event via the {command_prefix}open-event command"
-
-admin_channel_invisible = ["Event Channel made invisibile", "<#{channel_id!s}>"]
-admin_event_category_deleted = ["Event Category Deleted", "Event name: {event_title}\nChannels deleted: {num_channels!s}"]
-admin_event_category_unregistered = ["Event Category Unregistered", "Event name: {event_title}\nCategory/channels left undeleted."]
-admin_event_category_updated = ["New Event Category Created", "Event name: {event_title}\nMenu ID: {menu_id!s}\nRole: <@&{role_id!s}>\n[Menu]({menu_url})"]
-admin_event_closed = ["Event Closed", "Event name: {event_title}"]
-admin_event_role_set = ["Event role set", "<@&{role_id}!s}>"]
-admin_existing_event_registered = ["Existing Event Category Registered", "Event name: {event_title}\nMenu id: {menu_id}\nRole: <@&{role_id!s}>\n[Menu]({menu_url})"]
-admin_menu_updated = ["Event signin menu updated", "Event name: {event_title}\nMenu ID: {menu_id}\nType: {menu_type}\n[Menu]({menu_url})"]
-admin_role_menu_reset = ["Role menu reset", "id: {menu_id}\ntype: {menu_type}\n[Menu]({menu_url})"]
-admin_role_removed = ["Event Role removed", "Users: {users!s}\n<@&{event_role_id!s}>"]
-admin_shared_role_set = ["Shared role set", "<@&{role_id!s}>"]
-admin_signin_visible = ["Event signin channel made visible", "<#{channel_id}>"]
+[pingable_roles]
+already_exists = ":warning: There is already a pingable role with the name `{role}` in this server"
+create_success = "✅ Successfully created a poll for your pingable role"
+set_poll_length = "✅ The default poll length is now set to `{poll_length} seconds`"
+set_poll_threshold = "✅ The default number of votes required to create a role is now set to `{vote_threshold} votes`"
+set_role_cooldown = "✅ The cooldown for pingable roles is now set to `{cooldown} seconds`"
+set_poll_emoji = "✅ The emoji used to role creation polls is now set to {emoji}"
+set_role_emoji = "✅ The emoji used in pingable role reaction menus is now set to {emoji}"
+no_roles_given = ":x: You must mention one or more roles to use this command"
+not_pingable_role = ":warning: `{role}` is not a pingable role, only pingable roles can be used with this command."
+role_delete_success = "✅ The following role(s) were deleted: `{deleted_roles}`"
+role_convert_success = "✅ The following role(s) were converted to pingable roles: `{converted_roles}`"
+pingable_convert_success= "✅ The following role(s) were converted to normal roles: `{converted_roles}`"
+invalid_role = ":x: The role or role ID is not a valid role or pingable role"
+role_cooldown_updated = "✅ The ping cooldown for the role `{role}` has been set to `{seconds} seconds`"
+role_emoji_updated = "✅ The emoji for the role `{role}` has been set to {emoji}"
+no_pingable_roles = ":warning: There are currently no pingable roles in this server! Use the `create-role` command to invoke a poll to create one, or convert an existing role to a pingable role with the `convert-role` command"
+roles_disabled = "✅ The following role(s) were disabled: `{disabled_roles}`"
+roles_enabled = "✅ The following role(s) were enabled: `{enabled_roles}`"
+needs_initialising = ":x: This server has not had its default settings setup! Use the `{prefix}{command}` command to setup the settings"
+reserve_emoji = ":x: Sorry, the emoji `{emoji}` cannot be used as it is reserved for internal use"
+default_settings_set = "✅ Default pingable settings have been applied"
 
 [voicemaster]
 success_slave_locked = "Your VM slave has been locked 🔒"
@@ -178,3 +154,19 @@ accounts_empty = "There are no accounts currently tracked in this server"
 accounts_list = "Currently tracked accounts are: {tracked_accounts}"
 account_missing_error = "Unable to {operation} {account} because there is no account with that name"
 account_exists_error = "Unable to add {account} to tracked accounts because it is already tracked"
+
+[role_reacts]
+duplicate_emoji = "Cannot add the emoji {emoji} as there is already a role tied to that emoji in this reaction menu"
+missing_quotes = "Unable to get title and description from message. You may be missing quotes around your title and description individually"
+invalid_id = "There is no role reaction menu with the id `{given_id}`"
+invalid_emoji = "The provided emoji was not a valid emoji"
+disable_menu = "✅ The menu with ID `{menu_id}` has been disabled"
+enable_menu = "✅ The menu with ID `{menu_id}` has been enabled"
+delete_menu = "✅ The menu with ID `{menu_id}` has been deleted"
+
+[vote_reacts]
+wrong_author = ":x: You cannot perform this action, only `{author}` can do this"
+needs_number = ":x: The argument required for this is a menu ID as a number. You can copy the menu ID from the footer of the menu or by copying the message ID of the menu"
+invalid_id = ":warning: There is no poll with the id `{given_id}`"
+disable_menu = "✅ The poll with ID `{menu_id}` has been disabled"
+reset_menu = "✅ The poll with ID `{menu_id}` has had its reactions cleared"

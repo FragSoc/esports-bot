@@ -3,7 +3,6 @@ import re
 MENTION_REGEX = re.compile(r"^<@!?[0-9]+>$")
 ROLE_REGEX = re.compile(r"^<@&[0-9]+>$")
 CHANNEL_REGEX = re.compile(r"^<#[0-9]+>$")
-
 """
 The lib package was partially copied over from the BASED template project: https://github.com/Trimatix/BASED
 It is modified and not actively synced with BASED, so will very likely be out of date.
@@ -66,6 +65,7 @@ def strIsChannelMention(mention: str) -> bool:
     :rtype: bool
     """
     return mention[:2] == "<#" and mention[-1:] == ">" and strIsInt(mention[2:-1])
+
 
 # string extensions for numbers, e.g 11th, 1st, 23rd...
 NUM_EXTS = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"]
