@@ -15,6 +15,7 @@ import os
 from typing import Any
 
 import aiohttp
+import discord
 from discord import Webhook, Embed, AsyncWebhookAdapter
 from tornado.httpserver import HTTPServer
 import tornado.web
@@ -55,7 +56,6 @@ class TwitchApp(Application):
     This TwitchApp is the application which the TwitchListener is serving and handling requests for.
     Mainly used to store data that is used across requests, as well as handling any API requests that need to be made.
     """
-
     def __init__(self, handlers=None, default_host=None, transforms=None, **settings: Any):
         super().__init__(handlers, default_host, transforms, **settings)
         self.seen_ids = set()
@@ -111,9 +111,9 @@ class TwitchApp(Application):
             with open(BEARER_TEMP_FILE, "r") as f:
                 lines = f.readlines()
             self.bearer = {
-                    "granted_on": lines[0].replace("\n", ""),
-                    "expires_in": int(lines[1].replace("\n", "")),
-                    "access_token": lines[2].replace("\n", "")
+                "granted_on": lines[0].replace("\n", ""),
+                "expires_in": int(lines[1].replace("\n", "")),
+                "access_token": lines[2].replace("\n", "")
             }
         except FileNotFoundError:
             self.bearer = None
@@ -295,7 +295,6 @@ class TwitchListener(tornado.web.RequestHandler):
     """
     This TwitchListener is the webserver that listens for requests.
     """
-
     def __init__(self, application: "TwitchApp", request: httputil.HTTPServerRequest, **kwargs: Any):
         super().__init__(application, request, **kwargs)
         self.application: TwitchApp = application
@@ -422,7 +421,6 @@ class TwitchCog(commands.Cog):
     """
     The TwitchCog that handles communications from Twitch.
     """
-
     def __init__(self, bot):
         self._bot = bot
         self.logger = logging.getLogger(__name__)
@@ -527,10 +525,14 @@ class TwitchCog(commands.Cog):
 
     @twitch.command(
         name="createhook",
-        usage="[#channel] [hook name]",
-        help="Creates a new Discord Webhook that will be used to post the notifications of Twitch channels going live"
+        aliases=["newhook",
+                 "makehook",
+                 "addhook"],
+        usage="<#channel> <hook name>",
+        help="Creates a new Discord Webhook for the given channel that will be used to post the notifications of "
+        "Twitch channels, that are added to that hook, when they go live"
     )
-    async def createhook(self, ctx, channel=None, hook_name=None):
+    async def createhook(self, ctx, channel: discord.TextChannel, hook_name: str):
         """
         Creates a new Discord Webhook for use of the Twitch updates.
         :param ctx: The context of the command.
@@ -539,19 +541,11 @@ class TwitchCog(commands.Cog):
         :return: Whether a Webhook was created with the given name and bound to the given channel.
         """
 
-        if hook_name is None:
-            hook_name = DEFAULT_HOOK_NAME
-
         if hook_name == WEBHOOK_PREFIX:
-            hook_name = DEFAULT_HOOK_NAME
+            await ctx.send(self.user_strings["invalid_name"].format(name=hook_name))
+            return False
 
-        # If the channel was given, get the channel instance, else get the current channel from context.
-        if channel is not None:
-            text_channel = await channel_from_mention(self._bot, channel)
-        else:
-            text_channel = ctx.channel
-
-        if text_channel is None:
+        if channel is None:
             await ctx.send(
                 self.user_strings["webhook_error"].format(operation="create",
                                                           reason="I am unable to find that channel")
@@ -569,12 +563,7 @@ class TwitchCog(commands.Cog):
                 ctx.guild.name,
                 ctx.guild.id
             )
-            await ctx.send(
-                self.user_strings["webhook_error"].format(
-                    operation="create",
-                    reason=f"there is already a Webhook with the name {hook_name}"
-                )
-            )
+            await ctx.send(self.user_strings["invalid_name"].format(name=hook_name))
             return False
 
         self.logger.info(
@@ -582,14 +571,14 @@ class TwitchCog(commands.Cog):
             ctx.guild.name,
             ctx.guild.id,
             hook_name,
-            text_channel.name,
-            text_channel.id
+            channel.name,
+            channel.id
         )
 
-        hook = await text_channel.create_webhook(
+        hook = await channel.create_webhook(
             name=hook_name,
             reason=f"{ctx.author.name}#{ctx.author.discriminator} "
-                   f"created a webhook for #{text_channel.name} using the twitchhook command."
+            f"created a webhook for #{channel.name} using the twitchhook command."
         )
 
         self.logger.debug(
@@ -639,7 +628,7 @@ class TwitchCog(commands.Cog):
         name="add",
         usage="<channel name|channel url> [custom message]",
         help="Adds a Twitch channel to be tracked for when it goes live. If a custom 'go live' message is given it must be "
-             "surrounded by double quotes"
+        "surrounded by double quotes"
     )
     async def add(self, ctx, channel, custom_message=None):
         """
@@ -671,10 +660,12 @@ class TwitchCog(commands.Cog):
                     # Channel is tracked in other guilds, but not this one, add it to the tracked channels:
                     self._twitch_app.tracked_channels[channel_id]["guilds"].add(ctx.guild.id)
                     self._twitch_app.tracked_channels[channel_id]["custom_messages"][ctx.guild.id] = custom_message
-                    db_entry = Twitch_info(guild_id=ctx.guild.id,
-                                           twitch_channel_id=str(channel_id),
-                                           twitch_handle=channel,
-                                           custom_message=custom_message)
+                    db_entry = Twitch_info(
+                        guild_id=ctx.guild.id,
+                        twitch_channel_id=str(channel_id),
+                        twitch_handle=channel,
+                        custom_message=custom_message
+                    )
                     self._db.create(db_entry)
                     await ctx.send(self.user_strings["channel_added"].format(channel=channel))
                     return True
@@ -682,10 +673,12 @@ class TwitchCog(commands.Cog):
             # Channel is not tracked in any guild yet:
             if await self._twitch_app.create_subscription("stream.online", channel_name=channel):
                 self.logger.info("Successfully created a new EventSub for %s Twitch channel", channel)
-                db_entry = Twitch_info(guild_id=ctx.guild.id,
-                                       twitch_channel_id=str(channel_id),
-                                       twitch_handle=channel,
-                                       custom_message=custom_message)
+                db_entry = Twitch_info(
+                    guild_id=ctx.guild.id,
+                    twitch_channel_id=str(channel_id),
+                    twitch_handle=channel,
+                    custom_message=custom_message
+                )
                 self._db.create(db_entry)
                 await ctx.send(self.user_strings["channel_added"].format(channel=channel))
                 return True
@@ -777,7 +770,7 @@ class TwitchCog(commands.Cog):
         name="setmessage",
         usage="<channel name> [message]",
         help="Sets the custom 'go live' message for a Twitch channel. Leave the message empty if you want to remove the "
-             "custom message. If the message is not empty be sure to surround the message with double quotes"
+        "custom message. If the message is not empty be sure to surround the message with double quotes"
     )
     async def setmessage(self, ctx, channel, message: str = None):
         """
