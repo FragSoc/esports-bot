@@ -107,13 +107,16 @@ class TwitchApp(Application):
         return self.bearer
 
     def load_bearer(self):
-        with open(BEARER_TEMP_FILE, "r") as f:
-            lines = f.readlines()
-        self.bearer = {
-                "granted_on": lines[0].replace("\n", ""),
-                "expires_in": int(lines[1].replace("\n", "")),
-                "access_token": lines[2].replace("\n", "")
-        }
+        try:
+            with open(BEARER_TEMP_FILE, "r") as f:
+                lines = f.readlines()
+            self.bearer = {
+                    "granted_on": lines[0].replace("\n", ""),
+                    "expires_in": int(lines[1].replace("\n", "")),
+                    "access_token": lines[2].replace("\n", "")
+            }
+        except FileNotFoundError:
+            self.bearer = None
 
     def save_bearer(self):
         if self.bearer is not None:
