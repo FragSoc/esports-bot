@@ -18,7 +18,7 @@ def role_id_from_mention(pre_clean_data: str) -> int:
     :rtype: int
     :raise ValueError: When given an ID containing non-integer characters
     """
-    return int(pre_clean_data.lstrip("<&").rstrip(">"))
+    return int(pre_clean_data.lstrip("<@&").rstrip(">"))
 
 
 def channel_id_from_mention(pre_clean_data: str) -> int:

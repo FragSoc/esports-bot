@@ -118,7 +118,20 @@ The list below describes the different "Cogs" of the bot, their associated comma
 #### !clear_message * Aliases: `cls, purge, delete`  
 * Clear the specified number of messages from the current text channel.    
     
-#### !members * List the current number of members in the server.    
+#### !members 
+* List the current number of members in the server.
+
+#### !remove-cog \<cog name>
+* Unloads the given cog.
+* *This command requires your user ID to be defined in the env file under `DEV_IDS`*
+
+#### !add-cog \<cog name>
+* Loads the given cog.
+* *This command requires your user ID to be defined in the env file under `DEV_IDS`*
+
+#### !reload-cog \<cog name>
+* Reloads the given cog.
+* *This command requires your user ID to be defined in the env file under `DEV_IDS`*
 </details>  
   
 <details>  
@@ -128,114 +141,45 @@ The list below describes the different "Cogs" of the bot, their associated comma
 Enables forwarding tweets when they are tweeted to a discord channel for specific Twitter accounts.  
   
 Requires the `ENABLE_TWITTER` variable to be set to `TRUE` in order to function.  
-#### !addtwitter <twitter_handle>  
+#### !twitter add \<twitter handle>  
 * Add a Twitter handle to notify when they tweet or quote retweet.  
   
-#### !removetwitter <twitter_handle>  
+#### !twitter remove \<twitter handle>  
 * Remove the given Twitter handle from notifications.  
   
-#### !twitterhook [optional: channel_mention] [optional: hook_name]  
-* Aliases:  `addtwitterhook`  
+#### !twitter hook [optional: channel mention] [optional: hook name]  
+* Aliases:  `addtwitterhook, create-hook`  
 * Creates a Discord Webhook bound to the channel the command was executed in, unless a channel is given, and with a default name unless a name is given.  
   
-#### !removetwitterhook <hook_name>  
-* Aliases: `deltwitterhook`  
+#### !twitter remove-hook \<hook name>  
+* Aliases: `deltwitterhook, delete-hook`  
 * Deletes the Discord Webhook so that updates are no longer sent to that channel  
   
-#### !gettwitters  
-* Aliases: `getalltwitter, gettwitterhandles`.  
+#### !twitter list  
+* Aliases: `accounts, get-all`.  
 * Returns a list of the currently tracked Twitter accounts for the server.  
-</details>  
-  
-<details>  
-<summary>Pingme: User-Created Roles With Ping Cooldown</summary>  
-  
-### Pingme: User-Created Roles With Ping Cooldown  
-Users can start a vote to create a new role. If enough votes are reached, a new role is created. The role can be pinged by anyone, but is placed on cooldown afterwards.  
-  
-To help administrators manage the number of roles, a usage report is sent to the server's logging channel on a monthly basis.  
-  
-#### !pingme register <role_mention | role_id> <role_name>  
-* Register a new role for use with `!pingme`, with the given name. This does not have to be the same as the role's name.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme unregister <role_mention | role_id>  
-* Unregister a role from use with `!pingme`, without deleting the role from the server.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme delete <role_mention | role_id>  
-* Unregister a `!pingme` role from the role from the server.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme reset-cooldown <role_mention | role_id>  
-* Reset the pinging cooldown for a `!pingme` role, making it pingable again instantly.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme set-cooldown [seconds=...] [minutes=...] [hours=...] [days=...]  
-* Set the cooldown between `!pingme` role pings.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme set-create-threshold <num_votes>  
-* Set minimum number of votes required to create a new role during `!pingme create`.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme set-create-poll-length [seconds=...] [minutes=...] [hours=...] [days=...]  
-* Set the amount of time which `!pingme create` polls run for.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme set-role-emoji <emoji>  
-* Set the emoji which appears before the names of `!pingme` roles. Must be a built-in emoji, not custom.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme remove-role-emoji  
-* Remove the emoji which appears before the names of `!pingme` roles.  
-* *__Can only be executed by an Administrator__*  
-  
-#### !pingme create <role_name>  
-* Start a poll for the creation of a new `!pingme` role.  
-  
-#### !pingme for <role_name>  
-* Get yourself a `!pingme` role, to be notified about events and games.  
-  
-#### !pingme list  
-* List all available `!pingme` roles.  
-  
-#### !pingme clear  
-* Unsubscribe from all `!pingme` roles, if you have any.  
-</details>  
+</details>
   
 <details>  
 <summary>Event Channel Management</summary>  
   
 ### Event Category Management  
-Each server can have any number of named event categories, each with a registered signin role menu granting an event specific role. All commands in this cog are administrator commands.  
+Each server can have any number of named event categories, where each category creates a sign-in channel, a general chat, a voice chat and a role for the event. All commands in this cog required the `administrator` permission in Discord.  
   
-#### !open-event <event_name>  
-* Set the event's signin channel as visible to the server's shared role.  
+#### !events create-event \<event name> \<role mention | role ID>  
+* Creates the text channels, and voice channel for the event. The role given is used to later expose the sign-in channel to members. Upon creation the event is set to `closed`.
+* See the `open-event` and `close-event` for more information regarding which members can see which channels.
+* The role created for this event will have the same as the event name, it is not the role given in the command.
+
+#### !events open-event \<event name>  
+* Allows the role given in the `create-event` command to see the sign-in channel, and add reactions to the sign-in message.
+* The sign-in message grants the role created by the bot for the event. 
   
-#### !close-event <event_name>  
-* Set the event's signin channel as invisible, remove the event's role from all users, and reset the event's signin menu.  
+#### !events close-event \<event name>
+* Stops any member who is not an administrator from being able to see any of the event channels. 
   
-#### !register-event-category <menu_id> <role_mention | role_id> <event_name>  
-* Register an existing category and role as an event category, allowing you to use `!open-event` and `!close-event` with it.  
-  
-#### !create-event-category <event_name>  
-* Create a new event category with a signin menu, general text and voice channels, and an event role. This category will automatically be registered for use with `!open-event` and `!close-event`  
-  
-#### !unregister-event-category <event_name>  
-* Unregister an event category and role, without deleting them from the server.  
-  
-#### !delete-event-category <event_name>  
-* Delete an event category from the server, including the category, channels and role. You will be asked for confirmation first.  
-  
-#### !set-event-signin-menu <menu_id> <event_name>  
-* Change the reaction menu to clear during `!close-event`. This will also tell the bot which channel to set visibility for during `!open-event`.  
-  
-#### !set-shared-role <role_mention | role_id>  
-* Change the role to deny signin channel visibility to during `!close-event`. All users should have ths role.  
-  
-#### !set-event-role <role_mention | role_id> <event_name>  
-* Change the role to remove from users during `!close-event`.  
+#### !events delete-event \<event name>  
+* Deletes all the channels in the category for the event and deletes the role created by the bot for the event.
 </details>  
   
 <details>  
@@ -280,91 +224,153 @@ In your `.env` file the `TWITCH_SUB_SECRET` should be a string that is 10-100 ch
 The `TWITCH_CALLBACK` is the URL to your HTTPS server. For testing you can use `ngrok`: 
 - Run `ngrok http 443` and copy the `https` URL **not** the `htttp` URL and use that as your `TWITCH_CALLBACK` variable.
   
-#### !twitch createhook [optional: channel_mention] [optional: hook_name]  
+#### !twitch createhook [optional: channel_mention] [optional: hook name]  
 * Creates a Discord Webhook bound to the channel the command was executed in, unless a channel is given, and with a default name unless a name is given.  
   
-#### !twitch deletehook <hook_name>  
+#### !twitch deletehook \<hook name>  
 * Deletes the given Discord Webhook.  
   
-#### !twitch add <twitch_handle | twitch_url> [optional: custom_message]  
+#### !twitch add \<twitch handle | twitch url> [optional: custom message]  
 * Adds a Twitch channel to be tracked in the current Discord server.  
 * *__If a custom message is given, it must be surrounded by double quotes__*: `!twitch add <twitch_handle> "custom_message"`  
   
-#### !twitch remove <twitch_handle>  
+#### !twitch remove \<twitch handle>  
 * Removes a Twitch channel from being tracked in the current Discord server.  
   
 #### !twitch list  
 * Shows a list of all the currently tracked Twitch accounts and their custom messages.  
   
-#### !twitch setmessage <twitch_handle> [optional: custom_message]  
+#### !twitch setmessage \<twitch handle> [optional: custom message]  
 * Sets the custom message of a Twitch channel. Can be left empty if the custom message is to be removed.  
 * *__If a custom message is given, it must be surrounded by double quotes__*: `!twitch setmessage <twitch_handle> "custom_message"`  
   
-#### !twitch getmessage <twitch_handle>  
+#### !twitch getmessage \<twitch handle>  
 * Gets the currently set custom message for a Twitch channel.  
   
 </details>  
   
 <details>    
-<summary>Reaction Role Menus</summary>    
+<summary>Role Reaction Menus</summary>    
     
-### Reaction Role Menus Esportsbot now includes a slightly stripped down version of the reaction menus implementation provided by [BASED](https://github.com/Trimatix/BASED).    
+### Role Reaction Menus.    
+
+Role reaction menus allow admins to create reactable menus that when reacted to grant defined roles to the user.
+
+For devs:    
+* To enable this function in the bot use the `ENABLE_ROLEREACTIONS` env var and set it to `TRUE`.
+* Making new types of reaction menus is easy - simply extend `DiscordReactableMenus.ReactableMenu` or one of the example menus in `DiscordReactableMenus.ExampleMenus`.
     
-Making new types of reaction menus is easy - simply extend `reactionMenus.reactionMenu.ReactionMenu`.    
-    
-To register a menu instance for interaction, use `client.reactionMenus.add(yourMenuInstance)`. For an example of this, see `cogs.MenusCog.admin_cmd_make_role_menu`.    
-    
-All saveable reaction menus are automatically added and removed from Esportsbot's PostgreSQL database and will be loaded in again on bot startup. To register your `ReactionMenu` subclass as saveable, use the `reactionMenu.saveableMenu` class decorator. Saveable menus **MUST** provide complete `toDict` and `fromDict` implementations. For examples of this, see `reactionMenus.reactionRoleMenu`.    
-    
-`ReactionMenu`s store each option in the menu as an instance of a `reactionMenu.ReactionMenuOption` subclass - each `ReactionMenuOption` has its own behaviour for when reactions are added and removed. This already provides a huge amount of flexibility, but you can achieve even more with a custom `ReactionMenuOption` subclass. To make your `ReactionMenuOption` saveable, provide complete `toDict` and `fromDict` implementations. For an example of this, see `reactionMenus.reactionRoleMenu.ReactionRoleMenuOption`.    
-    
-#### !make-role-menu
-```    
-!make-role-menu {title}    
-{option1 emoji} {@option1 role}    
-...    ...    
-```    
-Create a reaction role menu.    
-    
-Each option must be on its own new line, as an emoji, followed by a space, followed by a mention of the role to grant.    
-    
-The `title` is displayed at the top of the menu and is optional, to exclude your title simply give a new line.    
-    
-#### !add-role-menu-option <menu_id> <emoji> <role_mention>  
-Add a role to a role menu.    
-    
-To get the ID of a reaction menu, enable discord's developer mode, right-click on the menu, and click Copy ID.    
-    
-Your emoji must not be in the menu already, adding the same role more than once is allowed.    
-    
-Give your role to grant/remove as a mention.    
-    
-#### !del-role-menu-option <menu_id> <emoji>  
-Remove a role from a role menu.    
-    
-To get the ID of a reaction menu, enable discord's developer mode, right-click on the menu, and click Copy ID.    
-    
-Your emoji must be an option in the menu.    
-    
-##### !del-menu <menu_id>  
-Remove the specified reaction menu. You can also just delete the message, if you have permissions.    
-    
-To get the ID of a reaction menu, enable discord's developer mode, right-click on the menu, and click Copy ID.    
+#### !roles make-menu \<title> \<description> [\<mentioned role> \<emoji>]
+* Creates a new role reaction menu with the given roles and their emojis.
+* Each option must be a mentioned role followed by the emoji to use as its reaction. There can be up to 25 roles in a single reaction menu.
+* The `title` is displayed at the top of the menu, and the `description` just below. To have either blank leave the quotes empty.
+* If the `DELETE_ROLE_CREATION` env var is set to `TRUE` the command message will be deleted.
+* *Requires `administrator` permission in Discord*
+* An example usage of this command is as such: `!roles make-menu "{title}" "{description}" {@option1 role} {option1 emoji} ... ...`
+
+#### !roles add-option [optional: menu id] [\<mentioned role> \<emoji>]
+* Adds more role reaction options to the given menu. If there is no menu id given, the latest role reaction menu will be used.
+* There can be one or many options added at the same time with this command.
+* Each option must be a mentioned role followed by the emoji to use as its reaction. There can be up to 25 roles in a single reaction menu.
+* *Requires `administrator` permission in Discord*
+* An example usage of this command is as such: `!roles add-option {menu id} {@option role} {option emoji} ... ...`
+
+#### !roles remove-option \<emoji> [optional: menu id]
+* Removes the role associated with the emoji from the given menu. If there is no menu id given, the latest role reaction menu will be used.
+* *Requires `administrator` permission in Discord*
+
+#### !roles disable-menu [optional: menu id]
+* Disables a reaction menu. This means that roles will not be given to users when they react to the message. If there is no menu id given, the latest role reaction menu will be used.
+* *Requires `administrator` permission in Discord*
+
+#### !roles enable-menu [optional: menu id]
+* Enables a reaction menu. This means that users will be able to receive roles from the reaction menu when they react. If there is no menu id given, the latest role reaction menu will be used.
+* *Requires `administrator` permission in Discord*
+
+#### !roles delete-menu \<menu id>
+* Deletes the given role reaction menu. __Does not__ delete any of the roles in the menu, just the message.
+* *Requires `administrator` permission in Discord*
+
+#### !roles toggle-ids
+* Shows or Hides all role reaction menu footers, which contain the ID of the role reaction menu for ease of identification.
+* *Requires `administrator` permission in Discord*
+
 </details>   
-  
+
+<details>    
+<summary>Poll Reaction Menus</summary>    
+    
+### Poll Reaction menus.    
+
+Poll reaction menus allow users to create polls with up to 25 different options for other users, and themselves, to vote on.
+
+The poll start and end is not time based, but instead controlled by the user that created the poll or administrators.
+
+For devs:    
+* To enable this function in the bot use the `ENABLE_VOTINGMENUS` env var and set it to `TRUE`.
+* Making new types of reaction menus is easy - simply extend `DiscordReactableMenus.ReactableMenu` or one of the example menus in `DiscordReactableMenus.ExampleMenus`.
+    
+#### !votes make-poll \<title> [\<emoji> \<description>]
+* Creates a new poll with each emoji having a description.
+* Each option must be an emoji and a description, with each one on a new line. There can be up to 25 roles in a single reaction menu.
+* If the `DELETE_VOTING_CREATION` env var is set to `TRUE` the command message will be deleted.
+* An example usage of this command is as such: 
+  ```
+  !votes make-poll {title} 
+  {option1 emoji} {option1 description}
+  {option2 emoji} {option2 description}
+  ... ...
+  [up to option 25] 
+  ```
+
+#### !votes add-option \<menu id> \<emoji> \<description>
+* Aliases: `add, aoption`
+* Adds another option to the poll with the menu id given.
+* Only one option can be added at a time with this command.
+* Each option must be an emoji and a description, with each one on a new line. There can be up to 25 roles in a single reaction menu.
+* *You must be the owner of the poll or be an administrator*
+* An example usage of this command is as such: `!votes add-option {menu id} {option emoji} {option description}`
+
+#### !votes remove-option \<menu id> \<emoji>
+* Aliases: `remove, roption`
+* Removes the option from the poll with the menu id given.
+* *You must be the owner of the poll or be an administrator*
+
+#### !votes delete-poll \<menu id>
+* Aliases: `delete, del`
+* Deletes the poll with the menu id given.
+* *You must be the owner of the poll or be an administrator*
+
+#### !votes end-poll \<menu id>
+* Aliases: `finish, complete, end`
+* Deletes the actual poll message and sends a new message with the results of the poll.
+* *You must be the owner of the poll or be an administrator*
+
+#### !votes reset-poll \<menu id>
+* Aliases: `reset, clear, restart`
+* Removes all the current user-added reactions from the poll with the menu id given.
+* *You must be the owner of the poll or be an administrator*
+
+</details>
+
 <details>  
 <summary>Music Bot</summary>  
   
 ### Music Bot  
   
-The Esports bot now has a basic music bot that functions very similarly to the popular 'Hydra Bot'.  
-  
-Commands that control the music must be performed in the defined music channel. They also require you to be in the same  
-voice channel as the bot, so that only the people listening can change the flow of music.  
+A basic music bot that functions similarly to the popular 'Hydra Bot'.  
+
+Commands that use the prefix of `!music` are commands that must be sent in the defined music channel for the server.
+The rest of the commands in this cog can be sent anywhere.
+Most `!music` commands require you to be in the same voice channel as the bot, or if it is not in a channel, for you to be in a voice channel.
+Some `!music` commands can have this requirement ignored if the user performing the command is an administrator and uses the `force` or `-f` flag in the command. 
   
 To add new songs to the queue, just put the name, YouTube link, or a YouTube playlist into the music channel once set.  
 Also requires you to be in the voice channel with the bot, or if the bot is inactive, in any voice channel.  
   
+To enable this cog, use the `ENABLE_MUSIC` env var in your `secrets.env` file, and set it to `TRUE`.
+For this cog to work, the `GOOGLE_API` env var must also be set, and instructions on how to get an API credential is below:
+
 ### To create your Google API credentials:  
 1. Go to the [Google Cloud API]("https://console.cloud.google.com/apis/") site.  
 2. Create a new project and name it whatever you want.  
@@ -374,112 +380,150 @@ Also requires you to be in the voice channel with the bot, or if the bot is inac
 6. Click on `Create Credentials` and then `API key`.  
 7. Copy the key given. For security, it is recommended that you "restrict key" and only enable `YouTube Data API v3`.  
   
-#### !setmusicchannel [optional: {args}] <channel_id>  
-  
-* Set the channel to be used for requesting music. Once set the channel will be cleared of any past messages, and the  
-preview messages will be sent. Any messages sent to this channel get deleted after being processed.  
-* If the channel being set has past messages, use the `-c` arg to indicate that the channel can be cleared and then set.  
-* *__Does not need to be sent in the music channel__*  
-  
+#### !setmusicchannel \<channel mention> [optional: [args]] 
+* This sets the channel mentioned to be used as the music channel. All messages into this channel will be considered music requests, and any music commands must be sent in this channel.
+* Optional args:
+  * Using `-c` will clear the entire channel before setting it up as the music channel.
+* *Requires `administrator` permission in Discord*
   
 #### !getmusicchannel  
-* Returns the current channel set as the music channel as a mentioned channel with a `#`.  
-* *__Does not need to be sent in the music channel__*  
+* Sends the currently set music channel for the server. 
+* *Requires `administrator` permission in Discord* 
   
 #### !resetmusicchannel  
 * This clears the current music channel and resets the preview and queue messages.  
-* *__Does not need to be sent in the music channel__*  
+* *Requires `administrator` permission in Discord*  
+
+#### !removemusicchannel
+* Unlinks the currently linked music channel from being the music channel. This will not delete the channel or its contents.
+* *Requires `administrator` permission in Discord*  
+
+#### !fixmusic
+* If the bot has broken and thinks it is still in a Voice Channel, use this command to force it to reset.
+* *Requires `administrator` permission in Discord*
+
+#### !musicqueue
+* Aliases: `songqueue, songs, songlist, songslist`
+* Gets the current list of songs in the queue.
   
-#### !removesong <index>  
-* Aliases: `remove, removeat`  
-* Removes a song from the queue at the given index.  
+#### !music join [optional: -f | force]
+* Aliases: `connect`  
+* Make the bot join the channel. 
+* If you are an admin you can force it join your voice channel using the `-f` or `force` option.
   
-#### !resumesong  
-* Aliases: `resume, play`  
-* Resumes the current song. Only works if paused.  
+#### !music kick [optional: -f | force]
+* Aliases: `leave`  
+* Kicks the bot from the channel.
+* If you are an admin you can force it to leave a voice channel with the `-f` or `force` option. 
   
-#### !pausesong  
-* Aliases: `pause, stop`  
-* Pauses the current song. Only works if there is something playing.  
-  
-#### !kickbot  
-* Aliases: `kick`  
-* Kicks the bot from the current call. Will also clear the queue  
-  
-#### !skipsong  
-* Aliases: `skip`  
-* Skips the current song. If the current song is the only song in the playlist, the bot will leave.  
-  
-#### !listqueue  
-* Aliases: `list, queue`  
-* Shows the current queue. Has the same output as the current queue in the music channel  
-* *__Can't be sent in the music channel__*  
-  
-#### !clearqueue  
-* Aliases: `clear, empty`  
-* Clears the current queue  
-  
-#### !shufflequeue  
-* Aliases: `shuffle, randomise`  
-* If the queue has 3 or more items, including the current song, it will shuffle all but the current songs.  
+#### !music play [optional: song request]  
+* Aliases: `resume`  
+* Resumes playback of the current song. 
+* If a song is requested and there is no current song, it is played, otherwise it is added to the queue.
+
+#### !music pause
+* Pauses the current song.
+
+#### !music shuffle
+* Shuffles the current queue of songs.
+
+#### !music volume \<volume level>
+* Sets the volume of the bot for everyone to the level given.
+           
+#### !music clear
+* Clears the queue entirely, does not stop the current song from playing.
+
+#### !music skip [optional: skip to position]
+* Skips the current song. 
+* If a number is given it will also skip to the song at the position given.
+* For example, if 'songs to skip' is 4, the next song to play would be song 4 in the queue.
+
+#### !music remove \<song position>
+* Removes the song at the given position from the queue.
+
+#### !music move \<from position> \<to position>
+* Moves the song at position `from position` to position `to position` in the queue.
+
 </details>  
   
 <details>  
-<summary>User Created Roles w/ Cooldown-Limited Pings</summary>  
+<summary>Pingable Roles</summary>  
   
-### User Created Pingable Roles  
+### Pingable Roles  
   
-Roles which may be voted into existence by anyone.  
-  
-On creation request, a poll will be triggered. If the poll receives a certain number of votes, the role will be created.  
-  
-While the role takes its requested colour (default green), it is pingable by anyone. If the role is pinged, its colour will be changed the grey, and the role is no longer pingable by anyone. Once a cooldown period has passed (default 5 hours), the colour and pingable status will be reverted.  
-  
-Every month, a report of the use of all pingable roles will be sent to the servers logging channel, if one is set.  
-  
-##### !pingme list  
-User command: list out all available `!pingme` roles  
-  
-##### !pingme register {@role mention} {name}  
-Admin command: register an existing role for use with `!pingme`.  
-  
-##### !pingme unregister {@role mention}  
-Admin command: unregister a role for use with `!pingme`, without deleting the role from the server.  
-  
-##### !pingme delete {@role mention}  
-Admin command: unregister a role for use with `!pingme`, and deleting the role from the server.  
-  
-Alternatively, if you have permission, you can simply delete the role from the server within discord, and the role will automatically be unregistered from `!pingme`.  
-  
-##### !pingme reset-cooldown {@role mention}  
-Admin command: reset the cooldown for mentioning the given `!pingme` role. The role will immediately become pingable again by anyone.  
-  
-##### !pingme set-cooldown seconds={seconds} minutes={minutes} hours={hours} days={days}  
-Admin command: set the cooldown between a `!pingme` role being pinged, and it being pingable again. All args should be given as keyword args as shown. All args are optional.  
-This does not update the cooldown for roles that are already on cooldown.  
-  
-##### !pingme set-create-threshold {num votes}  
-Admin command: set the minimum number of votes required for users to create a role with `!pingme create`. This does not affect already running polls.  
-  
-##### !pingme set-create-poll-length seconds={seconds} minutes={minutes} hours={hours} days={days}  
-Admin command: set the amount of time `!pingme create` polls run for. All args should be given as keyword args as shown. All args are optional.  
-This does not affect already running polls.  
-  
-##### !pingme set-role-emoji {emoji}  
-Admin command: set a single unicode emoji to be prefixed onto all `!pingme` role names. This will update the names of all existing `!pingme` roles.  
-  
-##### !pingme remove-role-emoji  
-Admin command: remove the emoji prefix for all `!pingme` role names. This will update the names of all existing `!pingme` roles.  
-  
-##### !pingme create {name}  
-User command: request the creation of a `!pingme` role with the given name. A `!pingme` role with the given name must not already exist.  
-On command use, a poll will be created. If a minimum number of votes is reached, a role with the given name is created, and registered for `!pingme` cooldown etc.  
-  
-##### !pingme for {name}  
-User command: add or removing the `!pingme` role with the given name to/from the user.  
-  
-##### !pingme clear  
-User command: remove all `!pingme` roles from the user.  
+Pingable roles are roles that can be voted in to be created by any user, and that once created have a cooldown tied to how often that role can be pinged.
 
+A user can create a poll where if there are enough votes by the time the poll ends, a role will be created. The length of the poll and the number of votes required are customisable by server admins.
+
+After the poll finishes, a reaction menu gets created, allowing *any* user to react and receive the role. Initially the role will have the default cooldown of the server, but can be overridden.  
+  
+#### !pingme settings get-settings
+* Returns an embed of the current default settings for the server.
+* *Requires `administrator` permission in Discord*
+  
+#### !pingme settings default-settings
+* Resets all settings for this guild to the bot-defined defaults defined in the `.env` file.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme settings poll-length \<poll length in seconds>
+* Sets the default poll length to the given time in seconds.
+* Polls can have a custom length by specifying it when using the [`!pingme create-role`](#pingme-create-role-role-name-optional-poll-length-in-seconds) command. 
+* *Requires `administrator` permission in Discord*
+
+#### !pingme settings poll-threshold \<number of votes threshold>
+* Sets the number of votes required in a poll for the role to be created.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme settings ping-cooldown \<cooldown in seconds>
+* Sets the default ping cooldown for any pingable role created with this cog.
+* Roles can have their cooldown altered individually with the [`!pingme role-cooldown`](#pingme-role-cooldown-role-mention--role-id-cooldown-in-seconds) command.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme settings poll-emoji \<emoji>
+* Sets the emoji to be used when creating a poll to vote in.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme settings role-emoji \<emoji>
+* Sets the default emoji to be used in the role reaction menu for the pingable role once it has been created.
+* Roles can have their reactable emoji altered individually with the [`!pingme role-emoji`](#pingme-role-emoji-role-mention--role-id-emoji) command.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme disable-role \<one or many role mentions>
+* Disables the roles mentioned from being mentioned by non-administrators and disables their reaction menus.
+* The roles provided __must__ be pingable roles created with this cog.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme enable-role \<one or many role mentions>
+* Enabled the roles mentioned to be mentioned by non-administrators and allows their reaction menus to be reacted to.
+* The roles provided __must__ be pingable roles created with this cog.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme create-role \<role name> [optional: poll length in seconds]
+* Creates a new poll to create a role if the number of votes has surpassed the server's threshold after the poll length has passed.
+
+#### !pingme delete-role \<one or many role mentions>
+* Deletes the mentioned roles from the server.
+* The roles provided __must__ be pingable roles created with this cog.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme convert-role \<one or many role mentions>
+* Converts the mentioned roles into pingable roles and creates their reaction menus.
+* The roles provided __cannot__ be roles that are already pingable roles.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme convert-pingable \<one or many role mentions>
+* Converts the mentioned roles from pingable roles into normal roles and deletes their reaction menus.
+* The roles provided __must__ be pingable roles created with this cog.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme role-cooldown \<role mention | role ID> <cooldown in seconds>
+* Sets the ping cooldown for a specific role which overrides the server default for that role.
+* The role provided __must__ be a pingable role created with this cog.
+* *Requires `administrator` permission in Discord*
+
+#### !pingme role-emoji \<role mention | role ID> <emoji>
+* Sets the emoji to use in the reaction menu for the given role.
+* The role provided __must__ be a pingable role created with this cog.
+* *Requires `administrator` permission in Discord*
 
 </details>

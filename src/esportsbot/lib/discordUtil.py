@@ -1,5 +1,7 @@
+import shlex
+
 from discord import Forbidden, RawReactionActionEvent, Message, Member, User, Client, DMChannel, GroupChannel, TextChannel
-from typing import Tuple, Union
+from typing import List, Tuple, Union
 from . import emotes, exceptions
 
 # Link to an empty image, to allow for an author name in embeds without providing an icon.
@@ -147,3 +149,10 @@ def get_webhook_by_name(current_hooks, name, guild_id, prefix_to_filter):
                 return hook, current_hooks.get(hook)
 
     return None, None
+
+
+def get_attempted_arg(message: str, arg_index: int) -> [str, List]:
+    command_args = shlex.split(message)
+    command_args.pop(0)
+    attempted_arg = command_args[arg_index]
+    return attempted_arg, command_args
