@@ -56,30 +56,26 @@ class DefaultRoleCog(commands.Cog):
             # Create list of roles from database response
             apply_roles = [ctx.author.guild.get_role(role.role_id) for role in guild_default_roles]
             # Return all the default roles to the user
-            #await ctx.channel.send(f"Default roles are set to {*apply_roles,}") " ".join(str(x) for x in a)
             await ctx.channel.send(f"Default role(s) are set to {' '.join(f'<@&{x.id}>' for x in apply_roles)}")
         else:
             await ctx.channel.send(self.STRINGS['default_role_missing'])
 
     @commands.command(
-        name="removedefaultrole",
+        name="removedefaultroles",
         usage="",
-        help="Removes the role that the server gives to members when they join the server"
+        help="Removes the roles that the server gives to members when they join the server"
     )
     @commands.has_permissions(administrator=True)
-    async def removedefaultrole(self, ctx):
-        guild = DBGatewayActions().get(Guild_info, guild_id=ctx.author.guild.id)
-        default_role_exists = guild.default_role_id is not None
-
-        if default_role_exists:
-            guild.default_role_id = None
-            DBGatewayActions().update(guild)
-            await ctx.channel.send(self.STRINGS['default_role_removed'])
-            await send_to_log_channel(
-                self,
-                ctx.author.guild.id,
-                self.STRINGS['default_role_removed_log'].format(author_mention=ctx.author.mention)
-            )
+    async def removedefaultroles(self, ctx):
+        # Get all the default role for the server from database
+        guild_default_roles = DBGatewayActions().list(Default_roles, guild_id=ctx.author.guild.id)
+        # Check to see if any roles exist
+        if guild_default_roles:
+            for default_role in guild_default_roles:
+                # Remove the current role
+                DBGatewayActions().delete(default_role)
+            # Return a response to the user
+            await ctx.channel.send(f"Default role(s) are removed")
         else:
             await ctx.channel.send(self.STRINGS['default_role_missing'])
 
