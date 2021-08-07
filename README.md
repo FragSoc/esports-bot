@@ -94,9 +94,9 @@ The list below describes the different "Cogs" of the bot, their associated comma
 ### Default role    
  #### !setdefaultroles <role_mention | role_id> * Sets the roles that the server gives to members when they join the server.    
     
-#### !getdefaultrole * Gets the current default role value.    
+#### !getdefaultroles * Gets the current default roles set for the server.    
     
-#### !removedefaultrole * Removes the current default role.    
+#### !removedefaultroles * Removes the current default roles for the server.    
 </details>    
   
 <details>    
