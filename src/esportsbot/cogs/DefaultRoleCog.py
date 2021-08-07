@@ -56,7 +56,7 @@ class DefaultRoleCog(commands.Cog):
             # Create list of roles from database response
             apply_roles = [ctx.author.guild.get_role(role.role_id) for role in guild_default_roles]
             # Return all the default roles to the user
-            await ctx.channel.send(f"Default role(s) are set to {' '.join(f'<@&{x.id}>' for x in apply_roles)}")
+            await ctx.channel.send(self.STRINGS['default_role_get'].format(role_ids=(' '.join(f'<@&{x.id}>' for x in apply_roles))))
         else:
             await ctx.channel.send(self.STRINGS['default_role_missing'])
 
@@ -75,7 +75,7 @@ class DefaultRoleCog(commands.Cog):
                 # Remove the current role
                 DBGatewayActions().delete(default_role)
             # Return a response to the user
-            await ctx.channel.send(f"Default role(s) are removed")
+            await ctx.channel.send(self.STRINGS['default_role_removed'])
         else:
             await ctx.channel.send(self.STRINGS['default_role_missing'])
 
