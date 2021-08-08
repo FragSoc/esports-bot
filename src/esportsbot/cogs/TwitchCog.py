@@ -110,9 +110,12 @@ class TwitchApp(Application):
             with open(BEARER_TEMP_FILE, "r") as f:
                 lines = f.readlines()
             self.bearer = {
-                "granted_on": lines[0].replace("\n", ""),
-                "expires_in": int(lines[1].replace("\n", "")),
-                "access_token": lines[2].replace("\n", "")
+                "granted_on": lines[0].replace("\n",
+                                               ""),
+                "expires_in": int(lines[1].replace("\n",
+                                                   "")),
+                "access_token": lines[2].replace("\n",
+                                                 "")
             }
         except FileNotFoundError:
             self.bearer = None
@@ -624,8 +627,9 @@ class TwitchCog(commands.Cog):
                  "makehook",
                  "addhook"],
         usage="<#channel> <hook name>",
-        help="Creates a new Discord Webhook for the given channel that will be used to post the notifications of "
-        "Twitch channels, that are added to that hook, when they go live"
+        help="Creates a new Discord Webhook bound to the mentioned channel. "
+        "The name will be prefixed with the Twitch Cog Webhook prefix to distinguish Twitch hooks from other Webhooks."
+        "The Webhooks created with the Twitch Cog do not need the prefix used in the name in order to reference them."
     )
     @commands.has_permissions(administrator=True)
     async def create_new_hook(self, context, bound_channel: discord.TextChannel, hook_name: str):
@@ -655,8 +659,7 @@ class TwitchCog(commands.Cog):
     @twitch.command(
         name="deletehook",
         usage="<hook name>",
-        help="Deletes a Discord Webhook that was created for posting Twitch notifications by supplying the name of the Webhook. "
-        "This will also stop tracking accounts that were tied to the given Webhook."
+        help="Deletes the given Discord Webhook. This will also stop tracking accounts that were tied to the given Webhook."
     )
     @commands.has_permissions(administrator=True)
     async def delete_twitch_hook(self, context, hook_name: str):
@@ -690,8 +693,12 @@ class TwitchCog(commands.Cog):
     @twitch.command(
         name="add",
         usage="<channel name|channel url> <webhook name> [custom message]",
-        help="Adds a Twitch channel to be tracked for when it goes live. If a custom 'go live' message is given it must be "
-        "surrounded by double quotes."
+        help="Adds a Twitch channel to be tracked in the given Webhook. "
+        "This means when the channel goes live, its notification will be posted to the given Webhook. "
+        "A channel can be tied to more than one Webhook. "
+        "The custom message can be left empty, but when not, it will be used in the live notification. "
+        "A preview of what a notification looks like can be seen with the "
+        "`!twitch preview <twitch handle> <webhook name>` command."
     )
     @commands.has_permissions(administrator=True)
     async def add_twitch_channel(self, context, channel, webhook_name, custom_message=None):
@@ -749,8 +756,7 @@ class TwitchCog(commands.Cog):
     @twitch.command(
         name="remove",
         usage="<channel name> <webhook name>",
-        help="Stops tracking a Twitch channel in the given Webhook so that notifications of when it goes live are no "
-        "longer posted to that channel."
+        help="Removes a Twitch channel from being tracked in the given Webhook."
     )
     @commands.has_permissions(administrator=True)
     async def remove_twitch_channel(self, context, channel, webhook_name):
@@ -790,8 +796,8 @@ class TwitchCog(commands.Cog):
     @twitch.command(
         name="list",
         usage="[webhook name]",
-        help="Shows a list of currently tracked Twitch channels and their custom messages. "
-        "If no Webhook name is given, it shows the information for all Webhooks"
+        help="Shows a list of all the currently tracked Twitch accounts and their custom messages for the given Webhook. "
+        "If no Webhook name is given, it shows the information for all Twitch Webhooks."
     )
     @commands.has_permissions(administrator=True)
     async def get_accounts_tracked(self, context, webhook_name=None):
@@ -816,7 +822,7 @@ class TwitchCog(commands.Cog):
             embed = self.get_webhook_channels_as_embed(hook, self._twitch_app.hooks.get(hook).get("name"))
             await context.send(embed=embed)
 
-    @twitch.command(name="webhooks", help="Gets the list of Discord Webhooks in this server.")
+    @twitch.command(name="webhooks", help="Shows a list of the current Webhooks for the Twitch Cog.")
     @commands.has_permissions(administrator=True)
     async def get_current_webhooks(self, context):
         """
@@ -836,8 +842,8 @@ class TwitchCog(commands.Cog):
     @twitch.command(
         name="setmessage",
         usage="<channel name> <webhook name> [message]",
-        help="Sets the custom 'go live' message for a Twitch channel. Leave the message empty if you want to remove the "
-        "custom message. If the message is not empty be sure to surround the message with double quotes"
+        help="Sets the custom message of a Twitch channel for the given Webhook. "
+        "Can be left empty if the custom message is to be removed. "
     )
     @commands.has_permissions(administrator=True)
     async def set_channel_message(self, context, channel, webhook_name, custom_message=None):
@@ -885,7 +891,8 @@ class TwitchCog(commands.Cog):
     @twitch.command(
         name="getmessage",
         usage="<channel name> [webhook name]",
-        help="Retrieves the currently set custom 'go live' message for a Twitch channel"
+        help="Gets the currently set custom message for a Twitch channel for the given Webhook."
+        "If no Webhook name is given, it shows a list of all the custom messages for the Webhooks the channel is tracked in."
     )
     async def get_channel_message(self, context, channel, webhook_name=None):
         """
@@ -926,7 +933,7 @@ class TwitchCog(commands.Cog):
     @twitch.command(
         name="preview",
         usage="<channel name> <webhook name>",
-        help="Shows a preview of the Twitch channels 'go live' notification for a given webhook"
+        help="Shows a preview of the live notification for a given channel for the given Webhook."
     )
     async def get_channel_preview(self, context, channel, webhook_name):
         """

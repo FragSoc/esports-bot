@@ -224,28 +224,52 @@ In your `.env` file the `TWITCH_SUB_SECRET` should be a string that is 10-100 ch
 The `TWITCH_CALLBACK` is the URL to your HTTPS server. For testing you can use `ngrok`: 
 - Run `ngrok http 443` and copy the `https` URL **not** the `htttp` URL and use that as your `TWITCH_CALLBACK` variable.
   
-#### !twitch createhook [optional: channel_mention] [optional: hook name]  
-* Creates a Discord Webhook bound to the channel the command was executed in, unless a channel is given, and with a default name unless a name is given.  
+#### !twitch createhook \<channel mention> \<hook name>
+* Aliases: `newhook, makehook, addhook`
+* Creates a new Discord Webhook bound to the mentioned channel. 
+  The name will be prefixed with the Twitch Cog Webhook prefix to distinguish Twitch hooks from other Webhooks.
+  The Webhooks created with the Twitch Cog do not need the prefix used in the name in order to reference them.
+* *Requires `administrator` permission in Discord*
   
 #### !twitch deletehook \<hook name>  
 * Deletes the given Discord Webhook.  
+* *Requires `administrator` permission in Discord*
   
-#### !twitch add \<twitch handle | twitch url> [optional: custom message]  
-* Adds a Twitch channel to be tracked in the current Discord server.  
-* *__If a custom message is given, it must be surrounded by double quotes__*: `!twitch add <twitch_handle> "custom_message"`  
+#### !twitch add \<twitch handle | twitch url> \<webhook name> [optional: custom message]  
+* Adds a Twitch channel to be tracked in the given Webhook.
+  This means when the channel goes live, its notification will be posted to the given Webhook.
+  A channel can be tied to more than one Webhook.
+  The custom message can be left empty, but when not, it will be used in the live notification.
+  A preview of what a notification looks like can be seen with the `!twitch preview <twitch handle> <webhook name>` command.
+* *__If a custom message is given, it must be surrounded by double quotes__*: `!twitch add <twitch_handle> <webhook name> "custom_message"`  
+* *Requires `administrator` permission in Discord*
   
-#### !twitch remove \<twitch handle>  
-* Removes a Twitch channel from being tracked in the current Discord server.  
+#### !twitch remove \<twitch handle>  \<webhook name>
+* Removes a Twitch channel from being tracked in the given Webhook.
+* *Requires `administrator` permission in Discord*
   
-#### !twitch list  
-* Shows a list of all the currently tracked Twitch accounts and their custom messages.  
+#### !twitch list [optional: webhook name] 
+* Shows a list of all the currently tracked Twitch accounts and their custom messages for the given Webhook.
+If no Webhook name is given, it shows the information for all Twitch Webhooks.
+* *Requires `administrator` permission in Discord*
   
-#### !twitch setmessage \<twitch handle> [optional: custom message]  
-* Sets the custom message of a Twitch channel. Can be left empty if the custom message is to be removed.  
-* *__If a custom message is given, it must be surrounded by double quotes__*: `!twitch setmessage <twitch_handle> "custom_message"`  
+#### !twitch webhooks
+* Shows a list of the current Webhooks for the Twitch Cog.
+* *Requires `administrator` permission in Discord*
+
+#### !twitch setmessage \<twitch handle> \<webhook name> [optional: custom message]  
+* Sets the custom message of a Twitch channel for the given Webhook. 
+  Can be left empty if the custom message is to be removed. 
+* *__If a custom message is given, it must be surrounded by double quotes__*: `!twitch setmessage <twitch_handle> <webhook name> "custom_message"` 
+* *Requires `administrator` permission in Discord*
   
-#### !twitch getmessage \<twitch handle>  
-* Gets the currently set custom message for a Twitch channel.  
+#### !twitch getmessage \<twitch handle>  [optional: webhook name]
+* Gets the currently set custom message for a Twitch channel for the given Webhook.
+If no Webhook name is given, it shows a list of all the custom messages for the Webhooks the channel is tracked in.
+* *Requires `administrator` permission in Discord*
+
+#### !twitch preview \<twitch handle> \<webhook name>
+* Shows a preview of the live notification for a given channel for the given Webhook.
   
 </details>  
   
