@@ -1,6 +1,6 @@
-from discord.ext import commands
-from esportsbot.base_functions import send_to_log_channel
 import os
+
+from discord.ext import commands
 
 devs = os.getenv("DEV_IDS").replace(" ", "").split(",")
 
@@ -29,11 +29,13 @@ class AdminCog(commands.Cog):
     @commands.has_permissions(manage_messages=True)
     async def clear_messages(self, ctx, amount=5):
         await ctx.channel.purge(limit=int(amount) + 1)
-        await send_to_log_channel(
-            self,
-            ctx.author.guild.id,
-            self.STRINGS['channel_cleared'].format(author_mention=ctx.author.mention,
-                                                   message_amount=amount)
+        await self.bot.adminLog(
+            ctx.message,
+            {
+                "Cog": str(type(self)),
+                "Message": self.STRINGS['channel_cleared'].format(author_mention=ctx.author.mention,
+                                                                  message_amount=amount)
+            }
         )
 
     @commands.command(

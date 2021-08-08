@@ -32,7 +32,7 @@ class VoicemasterCog(commands.Cog):
                 await self.bot.adminLog(
                     None,
                     {
-                        "Cog": "VoiceMaster",
+                        "Cog": str(type(self)),
                         "Message": f"{member.mention} has deleted a VM slave"
                     },
                     guildID=member.guild.id
@@ -56,7 +56,7 @@ class VoicemasterCog(commands.Cog):
             await self.bot.adminLog(
                 None,
                 {
-                    "Cog": "VoiceMaster",
+                    "Cog": str(type(self)),
                     "Message": f"{member.mention} has created a VM slave"
                 },
                 guildID=member.guild.id
@@ -89,7 +89,6 @@ class VoicemasterCog(commands.Cog):
                         "Message":
                         f"{ctx.author.mention} has made {new_vm_master_channel.name} - {new_vm_master_channel.id} a VM master VC"
                     },
-                    None,
                 )
             elif is_a_master:
                 # This already exists as a master
@@ -150,7 +149,6 @@ class VoicemasterCog(commands.Cog):
                             channel_id=removed_vm_master.id
                         )
                     },
-                    None,
                 )
             else:
                 await ctx.channel.send(self.STRINGS['error_not_vm'])
@@ -167,10 +165,9 @@ class VoicemasterCog(commands.Cog):
         await self.bot.adminLog(
             ctx.message,
             {
-                "Cog": "VoiceMaster",
+                "Cog": str(type(self)),
                 "Message": self.STRINGS['log_vm_masters_cleared'].format(mention=ctx.author.mention)
             },
-            None
         )
 
     @commands.command(name="killallslaves", usage="", help="Deletes all Voicemaster slave channels from the server")
@@ -186,10 +183,9 @@ class VoicemasterCog(commands.Cog):
         await self.bot.adminLog(
             ctx.message,
             {
-                "Cog": "VoiceMaster",
+                "Cog": str(type(self)),
                 "Message": self.STRINGS['log_vm_slaves_cleared'].format(mention=ctx.author.mention)
             },
-            None
         )
 
     @commands.command(name="lockvm", aliases=["lock"], usage="", help="Locks the Voicemaster slave that you are currently in")
@@ -213,10 +209,9 @@ class VoicemasterCog(commands.Cog):
                     await self.bot.adminLog(
                         ctx.message,
                         {
-                            "Cog": "VoiceMaster",
+                            "Cog": str(type(self)),
                             "Message": self.STRINGS['log_slave_locked'].format(mention=ctx.author.mention)
                         },
-                        None
                     )
                 else:
                     await ctx.channel.send(self.STRINGS['error_already_locked'])
@@ -250,10 +245,9 @@ class VoicemasterCog(commands.Cog):
                     await self.bot.adminLog(
                         ctx.message,
                         {
-                            "Cog": "VoiceMaster",
+                            "Cog": str(type(self)),
                             "Message": self.STRINGS['log_slave_unlocked'].format(mention=ctx.author.mention)
                         },
-                        None
                     )
                 else:
                     await ctx.channel.send(self.STRINGS['error_already_unlocked'])
