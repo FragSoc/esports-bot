@@ -1,7 +1,6 @@
 from discord.ext import commands
 from esportsbot.base_functions import (get_whether_in_vm_master, get_whether_in_vm_slave)
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.lib.client import instance
 from esportsbot.models import Voicemaster_master, Voicemaster_slave
 
 
@@ -16,8 +15,7 @@ class VoicemasterCog(commands.Cog):
         after_channel_id = after.channel.id if after.channel else False
 
         if not member.guild.me.guild_permissions.move_members:
-            this_instance = instance()
-            await this_instance.adminLog(
+            await self.bot.adminLog(
                 None,
                 {"Message": "I need the permission `move members` in this guild to be able to perform Voicemaster"},
                 guildID=member.guild.id
@@ -31,8 +29,7 @@ class VoicemasterCog(commands.Cog):
                 # Nobody else in VC
                 await before.channel.delete()
                 DBGatewayActions().delete(vm_slave)
-                this_instance = instance()
-                await this_instance.adminLog(
+                await self.bot.adminLog(
                     None,
                     {
                         "Cog": "VoiceMaster",
@@ -56,8 +53,7 @@ class VoicemasterCog(commands.Cog):
                                   locked=False)
             )
             await member.move_to(new_slave_channel)
-            this_instance = instance()
-            await this_instance.adminLog(
+            await self.bot.adminLog(
                 None,
                 {
                     "Cog": "VoiceMaster",
@@ -85,8 +81,7 @@ class VoicemasterCog(commands.Cog):
                 DBGatewayActions().create(Voicemaster_master(guild_id=ctx.author.guild.id, channel_id=given_channel_id))
                 await ctx.channel.send("This VC has now been set as a VM master")
                 new_vm_master_channel = self.bot.get_channel(int(given_channel_id))
-                this_instance = instance()
-                await this_instance.adminLog(
+                await self.bot.adminLog(
                     ctx.message,
                     {
                         "Cog":
@@ -143,8 +138,7 @@ class VoicemasterCog(commands.Cog):
                 DBGatewayActions().delete(channel_exists)
                 await ctx.channel.send(self.STRINGS['success_vm_unset'])
                 removed_vm_master = self.bot.get_channel(given_channel_id)
-                this_instance = instance()
-                await this_instance.adminLog(
+                await self.bot.adminLog(
                     ctx.message,
                     {
                         "Cog":
@@ -170,8 +164,7 @@ class VoicemasterCog(commands.Cog):
         for vm_master in all_vm_masters:
             DBGatewayActions().delete(vm_master)
         await ctx.channel.send(self.STRINGS['success_vm_masters_cleared'])
-        this_instance = instance()
-        await this_instance.adminLog(
+        await self.bot.adminLog(
             ctx.message,
             {
                 "Cog": "VoiceMaster",
@@ -190,8 +183,7 @@ class VoicemasterCog(commands.Cog):
                 await vm_slave_channel.delete()
             DBGatewayActions().delete(vm_slave)
         await ctx.channel.send(self.STRINGS['success_vm_slaves_cleared'])
-        this_instance = instance()
-        await this_instance.adminLog(
+        await self.bot.adminLog(
             ctx.message,
             {
                 "Cog": "VoiceMaster",
@@ -218,8 +210,7 @@ class VoicemasterCog(commands.Cog):
                     DBGatewayActions().update(in_vm_slave)
                     await ctx.author.voice.channel.edit(user_limit=len(ctx.author.voice.channel.members))
                     await ctx.channel.send(self.STRINGS['success_slave_locked'])
-                    this_instance = instance()
-                    await this_instance.adminLog(
+                    await self.bot.adminLog(
                         ctx.message,
                         {
                             "Cog": "VoiceMaster",
@@ -256,8 +247,7 @@ class VoicemasterCog(commands.Cog):
                     in_vm_slave.locked = False
                     DBGatewayActions().update(in_vm_slave)
                     await ctx.author.voice.channel.edit(user_limit=0)
-                    this_instance = instance()
-                    await this_instance.adminLog(
+                    await self.bot.adminLog(
                         ctx.message,
                         {
                             "Cog": "VoiceMaster",
