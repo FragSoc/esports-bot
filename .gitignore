@@ -1,6 +1,6 @@
-*.env
 **/__pycache__
 test-file.py
 /src/cogs/TestCog.py
 .vscode
 .idea
+secrets.env

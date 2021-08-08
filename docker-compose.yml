@@ -3,7 +3,9 @@ version: "3"
 services:
   db:
     environment:
-      - POSTGRES_PASSWORD=Pass2020!
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PWD}
+      - POSTGRES_DB=${PG_DATABASE}
     image: "postgres:11"
     restart: unless-stopped
     volumes:
@@ -16,11 +18,6 @@ services:
     env_file: secrets.env
     environment:
       - PG_HOST=db
-      - PG_DATABASE=esportsbot
-      - PG_USER=postgres
-      - PG_PWD=Pass2020!
-      - ENABLE_TWITTER=False
-      - ENABLE_TWITCH=False
     restart: unless-stopped
 
   pg_admin:
