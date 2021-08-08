@@ -20,7 +20,7 @@ class VoicemasterCog(commands.Cog):
             await this_instance.adminLog(
                 None,
                 {"Message": "I need the permission `move members` in this guild to be able to perform Voicemaster"},
-                member.guild.id
+                guildID=member.guild.id
             )
             return
 
@@ -38,7 +38,7 @@ class VoicemasterCog(commands.Cog):
                         "Cog": "VoiceMaster",
                         "Message": f"{member.mention} has deleted a VM slave"
                     },
-                    member.guild.id
+                    guildID=member.guild.id
                 )
             else:
                 # Still others in VC
@@ -63,7 +63,7 @@ class VoicemasterCog(commands.Cog):
                     "Cog": "VoiceMaster",
                     "Message": f"{member.mention} has created a VM slave"
                 },
-                member.guild.id
+                guildID=member.guild.id
             )
 
     @commands.command(
