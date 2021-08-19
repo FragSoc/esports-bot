@@ -1,7 +1,7 @@
 from discord.ext import commands
+from esportsbot.base_functions import role_id_from_mention
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Guild_info
-from esportsbot.base_functions import role_id_from_mention, send_to_log_channel
 
 
 class DefaultRoleCog(commands.Cog):
@@ -18,13 +18,23 @@ class DefaultRoleCog(commands.Cog):
         if guild.default_role_id:
             default_role = member.guild.get_role(guild.default_role_id)
             await member.add_roles(default_role)
-            await send_to_log_channel(
-                self,
-                member.guild.id,
-                f"{member.mention} has joined the server and received the {default_role.mention} role"
+            await self.bot.adminLog(
+                None,
+                {
+                    "Cog": str(type(self)),
+                    "Message": f"{member.mention} has joined the server and received the {default_role.mention} role"
+                },
+                guildID=member.guild.id
             )
         else:
-            await send_to_log_channel(self, member.guild.id, f"{member.mention} has joined the server")
+            await self.bot.adminLog(
+                None,
+                {
+                    "Cog": str(type(self)),
+                    "Message": f"{member.mention} has joined the server"
+                },
+                guildID=member.guild.id
+            )
 
     @commands.command(
         name="setdefaultrole",
@@ -46,11 +56,15 @@ class DefaultRoleCog(commands.Cog):
 
             await ctx.channel.send(self.STRINGS['default_role_set'].format(role_id=cleaned_role_id))
             default_role = ctx.author.guild.get_role(cleaned_role_id)
-            await send_to_log_channel(
-                self,
-                ctx.author.guild.id,
-                self.STRINGS['default_role_set_log'].format(author=ctx.author.mention,
-                                                            role_mention=default_role.mention)
+            await self.bot.adminLog(
+                ctx.message,
+                {
+                    "Cog":
+                    str(type(self)),
+                    "Message":
+                    self.STRINGS['default_role_set_log'].format(author=ctx.author.mention,
+                                                                role_mention=default_role.mention)
+                }
             )
         else:
             await ctx.channel.send(self.STRINGS['default_role_set_missing_params'])
@@ -88,10 +102,12 @@ class DefaultRoleCog(commands.Cog):
             guild.default_role_id = None
             DBGatewayActions().update(guild)
             await ctx.channel.send(self.STRINGS['default_role_removed'])
-            await send_to_log_channel(
-                self,
-                ctx.author.guild.id,
-                self.STRINGS['default_role_removed_log'].format(author_mention=ctx.author.mention)
+            await self.bot.adminLog(
+                ctx.message,
+                {
+                    "Cog": str(type(self)),
+                    "Message": self.STRINGS['default_role_removed_log'].format(author_mention=ctx.author.mention)
+                }
             )
         else:
             await ctx.channel.send(self.STRINGS['default_role_missing'])

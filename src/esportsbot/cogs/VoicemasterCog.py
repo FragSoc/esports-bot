@@ -1,7 +1,7 @@
 from discord.ext import commands
+from esportsbot.base_functions import (get_whether_in_vm_master, get_whether_in_vm_slave)
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Voicemaster_master, Voicemaster_slave
-from esportsbot.base_functions import get_whether_in_vm_master, get_whether_in_vm_slave, send_to_log_channel
 
 
 class VoicemasterCog(commands.Cog):
@@ -15,11 +15,10 @@ class VoicemasterCog(commands.Cog):
         after_channel_id = after.channel.id if after.channel else False
 
         if not member.guild.me.guild_permissions.move_members:
-            await send_to_log_channel(
-                self,
-                member.guild.id,
-                "I need the permission `move members` in this guild to be able to perform Voicemaster "
-                "operations"
+            await self.bot.adminLog(
+                None,
+                {"Message": "I need the permission `move members` in this guild to be able to perform Voicemaster"},
+                guildID=member.guild.id
             )
             return
 
@@ -30,7 +29,14 @@ class VoicemasterCog(commands.Cog):
                 # Nobody else in VC
                 await before.channel.delete()
                 DBGatewayActions().delete(vm_slave)
-                await send_to_log_channel(self, member.guild.id, f"{member.mention} has deleted a VM slave")
+                await self.bot.adminLog(
+                    None,
+                    {
+                        "Cog": str(type(self)),
+                        "Message": f"{member.mention} has deleted a VM slave"
+                    },
+                    guildID=member.guild.id
+                )
             else:
                 # Still others in VC
                 await before.channel.edit(name=f"{before.channel.members[0].display_name}'s VC")
@@ -47,7 +53,14 @@ class VoicemasterCog(commands.Cog):
                                   locked=False)
             )
             await member.move_to(new_slave_channel)
-            await send_to_log_channel(self, member.guild.id, f"{member.mention} has created a VM slave")
+            await self.bot.adminLog(
+                None,
+                {
+                    "Cog": str(type(self)),
+                    "Message": f"{member.mention} has created a VM slave"
+                },
+                guildID=member.guild.id
+            )
 
     @commands.command(
         name="setvmmaster",
@@ -68,10 +81,14 @@ class VoicemasterCog(commands.Cog):
                 DBGatewayActions().create(Voicemaster_master(guild_id=ctx.author.guild.id, channel_id=given_channel_id))
                 await ctx.channel.send("This VC has now been set as a VM master")
                 new_vm_master_channel = self.bot.get_channel(int(given_channel_id))
-                await send_to_log_channel(
-                    self,
-                    ctx.author.guild.id,
-                    f"{ctx.author.mention} has made {new_vm_master_channel.name} - {new_vm_master_channel.id} a VM master VC"
+                await self.bot.adminLog(
+                    ctx.message,
+                    {
+                        "Cog":
+                        "VoiceMaster",
+                        "Message":
+                        f"{ctx.author.mention} has made {new_vm_master_channel.name} - {new_vm_master_channel.id} a VM master VC"
+                    },
                 )
             elif is_a_master:
                 # This already exists as a master
@@ -120,14 +137,18 @@ class VoicemasterCog(commands.Cog):
                 DBGatewayActions().delete(channel_exists)
                 await ctx.channel.send(self.STRINGS['success_vm_unset'])
                 removed_vm_master = self.bot.get_channel(given_channel_id)
-                await send_to_log_channel(
-                    self,
-                    ctx.author.guild.id,
-                    self.STRINGS['log_vm_master_removed'].format(
-                        mention=ctx.author.guild.id,
-                        channel_name=removed_vm_master.name,
-                        channel_id=removed_vm_master.id
-                    )
+                await self.bot.adminLog(
+                    ctx.message,
+                    {
+                        "Cog":
+                        "VoiceMaster",
+                        "Message":
+                        self.STRINGS['log_vm_master_removed'].format(
+                            mention=ctx.author.guild.id,
+                            channel_name=removed_vm_master.name,
+                            channel_id=removed_vm_master.id
+                        )
+                    },
                 )
             else:
                 await ctx.channel.send(self.STRINGS['error_not_vm'])
@@ -141,10 +162,12 @@ class VoicemasterCog(commands.Cog):
         for vm_master in all_vm_masters:
             DBGatewayActions().delete(vm_master)
         await ctx.channel.send(self.STRINGS['success_vm_masters_cleared'])
-        await send_to_log_channel(
-            self,
-            ctx.author.guild.id,
-            self.STRINGS['log_vm_masters_cleared'].format(mention=ctx.author.mention)
+        await self.bot.adminLog(
+            ctx.message,
+            {
+                "Cog": str(type(self)),
+                "Message": self.STRINGS['log_vm_masters_cleared'].format(mention=ctx.author.mention)
+            },
         )
 
     @commands.command(name="killallslaves", usage="", help="Deletes all Voicemaster slave channels from the server")
@@ -157,10 +180,12 @@ class VoicemasterCog(commands.Cog):
                 await vm_slave_channel.delete()
             DBGatewayActions().delete(vm_slave)
         await ctx.channel.send(self.STRINGS['success_vm_slaves_cleared'])
-        await send_to_log_channel(
-            self,
-            ctx.author.guild.id,
-            self.STRINGS['log_vm_slaves_cleared'].format(mention=ctx.author.mention)
+        await self.bot.adminLog(
+            ctx.message,
+            {
+                "Cog": str(type(self)),
+                "Message": self.STRINGS['log_vm_slaves_cleared'].format(mention=ctx.author.mention)
+            },
         )
 
     @commands.command(name="lockvm", aliases=["lock"], usage="", help="Locks the Voicemaster slave that you are currently in")
@@ -181,10 +206,12 @@ class VoicemasterCog(commands.Cog):
                     DBGatewayActions().update(in_vm_slave)
                     await ctx.author.voice.channel.edit(user_limit=len(ctx.author.voice.channel.members))
                     await ctx.channel.send(self.STRINGS['success_slave_locked'])
-                    await send_to_log_channel(
-                        self,
-                        ctx.author.guild.id,
-                        self.STRINGS['log_slave_locked'].format(mention=ctx.author.mention)
+                    await self.bot.adminLog(
+                        ctx.message,
+                        {
+                            "Cog": str(type(self)),
+                            "Message": self.STRINGS['log_slave_locked'].format(mention=ctx.author.mention)
+                        },
                     )
                 else:
                     await ctx.channel.send(self.STRINGS['error_already_locked'])
@@ -215,10 +242,12 @@ class VoicemasterCog(commands.Cog):
                     in_vm_slave.locked = False
                     DBGatewayActions().update(in_vm_slave)
                     await ctx.author.voice.channel.edit(user_limit=0)
-                    await send_to_log_channel(
-                        self,
-                        ctx.author.guild.id,
-                        self.STRINGS['log_slave_unlocked'].format(mention=ctx.author.mention)
+                    await self.bot.adminLog(
+                        ctx.message,
+                        {
+                            "Cog": str(type(self)),
+                            "Message": self.STRINGS['log_slave_unlocked'].format(mention=ctx.author.mention)
+                        },
                     )
                 else:
                     await ctx.channel.send(self.STRINGS['error_already_unlocked'])
