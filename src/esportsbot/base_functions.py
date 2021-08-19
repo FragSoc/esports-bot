@@ -2,12 +2,6 @@ from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Voicemaster_master, Voicemaster_slave, Guild_info
 
 
-async def send_to_log_channel(self, guild_id, msg):
-    db_logging_call = DBGatewayActions().get(Guild_info, guild_id=guild_id)
-    if db_logging_call.log_channel_id:
-        await self.bot.get_channel(db_logging_call.log_channel_id).send(msg)
-
-
 def role_id_from_mention(pre_clean_data: str) -> int:
     """Extracts the ID of a role from a role mention.
     Will also accept strings containing a role ID, and will reject invalid integers with a ValueError.
