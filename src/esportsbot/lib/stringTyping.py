@@ -64,7 +64,7 @@ def strIsChannelMention(mention: str) -> bool:
     :return: True if mention matches the formatting of a discord channel mention, False otherwise
     :rtype: bool
     """
-    return mention[:2] == "<#" and mention[-1:] == ">" and strIsInt(mention[2:-1])
+    return len(mention) == 21 and mention[:2] == "<#" and mention[-1:] == ">" and strIsInt(mention[2:-1])
 
 
 # string extensions for numbers, e.g 11th, 1st, 23rd...

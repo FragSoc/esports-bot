@@ -19,6 +19,8 @@ services:
     environment:
       - PG_HOST=db
     restart: unless-stopped
+    ports:
+      - 443:443
 
   pg_admin:
     depends_on:
