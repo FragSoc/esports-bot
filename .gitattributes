@@ -1,2 +1,3 @@
 # Use line ending normalisation on all files
 * text=auto
+docs/make.bat -text
