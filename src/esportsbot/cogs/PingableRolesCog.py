@@ -6,14 +6,12 @@ from typing import Dict, List
 
 from discord import Colour, Embed, Role
 from discord.ext import commands, tasks
-
-from esportsbot.DiscordReactableMenus.EmojiHandler import MultiEmoji
-from esportsbot.DiscordReactableMenus.PingableMenus import PingableRoleMenu, PingableVoteMenu
 from esportsbot.db_gateway import DBGatewayActions
-
+from esportsbot.DiscordReactableMenus.EmojiHandler import MultiEmoji
+from esportsbot.DiscordReactableMenus.PingableMenus import (PingableRoleMenu, PingableVoteMenu)
 # The emoji to use in the role menu:
 from esportsbot.lib.discordUtil import get_attempted_arg
-from esportsbot.models import Guild_info, Pingable_polls, Pingable_roles, Pingable_settings
+from esportsbot.models import (Guild_info, Pingable_polls, Pingable_roles, Pingable_settings)
 
 # The default role emoji to use on the role react menus:
 PINGABLE_ROLE_EMOJI = MultiEmoji("💎")

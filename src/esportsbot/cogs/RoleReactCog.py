@@ -3,11 +3,10 @@ import os
 import shlex
 
 from discord.ext import commands
-
-from esportsbot.DiscordReactableMenus.EmojiHandler import EmojiKeyError, MultiEmoji
+from esportsbot.db_gateway import DBGatewayActions
+from esportsbot.DiscordReactableMenus.EmojiHandler import (EmojiKeyError, MultiEmoji)
 from esportsbot.DiscordReactableMenus.ExampleMenus import RoleReactMenu
 from esportsbot.DiscordReactableMenus.reactable_lib import get_menu
-from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Role_menus
 
 DELETE_ON_CREATE = os.getenv("DELETE_ROLE_CREATION", "FALSE").lower() == "true"
@@ -124,7 +123,7 @@ class RoleReactCog(commands.Cog):
 
         try:
             title, description = self.title_and_description(context.message.content)
-        except IndexError:
+        except ValueError:
             # The user missed some quotes around their title/description.
             await context.reply(self.user_strings["missing_quotes"])
             return
