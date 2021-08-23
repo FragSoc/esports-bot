@@ -146,6 +146,23 @@ log_vm_slaves_cleared = "{mention} has removed all VM slaves"
 log_slave_locked = "{mention} has locked their VM slave"
 log_slave_unlocked = "{mention} has unlocked their VM slave"
 
+[twitch]
+generic_error = "There was an error while trying to add `{channel}` as a tracked channel"
+invalid_name = "Unable to create a webhook with the name `{name}` as it is either in use already or invalid"
+webhook_created = "Successfully created a new Webhook! Name: `{name}`, Channel: {channel}, Webhook ID: `{hook_id}`"
+webhook_deleted = "Successfully deleted `{name}` Webhook (ID: `{hook_id}`)"
+webhook_exists = "A Discord Webhook already exists with the name `{name}` in this server"
+webhook_missing = "There is no Discord Webhook with the name `{name}` in this server"
+no_webhooks = "There are currently no Discord Webhooks for the Twitch Cog in this server"
+current_webhooks = "There are the following Discord Webhooks for the Twitch Cog in this server: `{webhooks}`. \n If you want to add a Twitch channel or get current Twitch channels of a Webhook, you can reference the name of the Webhook without the prefix `{prefix}`"
+channel_added = "Live notifications for `{twitch_channel}` will now be sent to {discord_channel}"
+channel_removed = "`{twitch_channel}` will no longer have live notifications sent to {discord_channel}"
+channel_not_tracked = "The Twitch channel `{name}` is not currently tracked in the Webhook `{webhook}`"
+channel_already_tracked = "The Twitch channel `{name}` is already tracked in the Webhook `{webhook}`"
+set_custom_message = "Set the custom live message for `{channel}` to `{message}` for the webhook `{webhook}`"
+get_custom_message = "The custom message for `{channel}` in the webhook `{webhook}` is `{message}`"
+no_channel_error = "There is no Twitch channel with the name `{channel}`"
+
 [twitter]
 webhook_created = "Created a Webhook -> Name: {name} , ID: {hook_id}"
 webhook_deleted = "Deleted a Webhook with Name: {name} and ID: {hook_id}"

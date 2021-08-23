@@ -11,4 +11,5 @@ youtube-search-python
 PyNaCl
 aiohttp[speedups]
 toml
+tornado
 tweepy
