@@ -829,7 +829,8 @@ class MusicCog(commands.Cog):
     @commands.group(
         name="music",
         help="These are commands used to control the music bot. For more detailed command explanations, "
-        "go to https://github.com/FragSoc/esports-bot#music-bot"
+        "go to https://github.com/FragSoc/esports-bot#music-bot",
+        invoke_without_command=True
     )
     @commands.check(check_music_channel)
     @delete_after()
@@ -1277,7 +1278,7 @@ class MusicCog(commands.Cog):
         await self.disconnect_from_guild(context.guild)
         await self.reset_music_channel(context)
 
-    @command_group.group(name="channel", help="Manage music channel")
+    @command_group.group(name="channel", help="Manage music channel", invoke_without_command=True)
     async def music_channel(self, context: commands.Context):
         """
         The command group for the music channel management.
