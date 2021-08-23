@@ -25,6 +25,8 @@ jobs:
 
       - name: Run a one-line script
         run: docker build -t fragsoc/esports-bot:${GITHUB_REF} ${GITHUB_WORKSPACE}
-        
+
       - name: Push to docker hub
-        run: ${GITHUB_WORKSPACE}/docker-push.sh
+        run: |
+          echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
+          docker push fragsoc/esports-bot:${GITHUB_REF}
