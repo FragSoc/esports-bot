@@ -1,4 +1,4 @@
-from esportsbot import lib
+from . import lib
 
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Guild_info
