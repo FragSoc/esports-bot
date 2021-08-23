@@ -4,3 +4,5 @@ test-file.py
 .vscode
 .idea
 secrets.env
+dist
+**.egg-info
