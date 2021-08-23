@@ -10,7 +10,7 @@ Welcome to Esports Bot's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   esportsbot
+   esportsbot/main
 
 
 
