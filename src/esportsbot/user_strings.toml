@@ -1,4 +1,6 @@
 command_error_generic = "There was an internal error while performing your command! Please contact a developer!"
+command_error_required_arguments = "Arguments are required for this command! See `{command_prefix}help {command_used}` for more information."
+guild_leave = "Left the guild: {guild_name}"
 
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
