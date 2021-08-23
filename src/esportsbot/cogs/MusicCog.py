@@ -1279,14 +1279,14 @@ class MusicCog(commands.Cog):
         await self.reset_music_channel(context)
 
     @command_group.group(name="channel", help="Manage music channel", invoke_without_command=True)
-    async def music_channel(self, context: commands.Context):
+    async def music_channel_group(self, context: commands.Context):
         """
         The command group for the music channel management.
         :param context: The context of the command.
         """
         pass
 
-    @music_channel.command(
+    @music_channel_group.command(
         name="set",
         usage="<channel mention> [optional args]",
         help="Sets the music channel to the channel mentioned. To see possible optional args, "
@@ -1313,7 +1313,7 @@ class MusicCog(commands.Cog):
         await self.setup_music_channel(text_channel)
         await context.send(self.user_strings["music_channel_set"].format(channel=text_channel.mention))
 
-    @music_channel.command(name="get", help="Gets the current channel that is set as the music channel.")
+    @music_channel_group.command(name="get", help="Gets the current channel that is set as the music channel.")
     @commands.has_permissions(administrator=True)
     async def get_music_channel_command(self, context: commands.Context):
         """
@@ -1327,7 +1327,7 @@ class MusicCog(commands.Cog):
         else:
             await context.send(self.user_strings["music_channel_missing"])
 
-    @music_channel.command(name="reset", help="Clears the music channel and sends the preview and queue messages.")
+    @music_channel_group.command(name="reset", help="Clears the music channel and sends the preview and queue messages.")
     @commands.has_permissions(administrator=True)
     async def reset_music_channel_command(self, context: commands.Context):
         """
@@ -1336,7 +1336,7 @@ class MusicCog(commands.Cog):
         """
         await self.reset_music_channel(context)
 
-    @music_channel.command(
+    @music_channel_group.command(
         name="remove",
         help="Unlinks the currently set music channel from being the music channel. Does not delete the actual channel"
     )
