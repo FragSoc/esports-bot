@@ -115,7 +115,7 @@ class MusicCog(commands.Cog):
         if not message.author.bot and message.guild:
             guild_id = message.guild.id
             music_channel = self.music_channels.get(guild_id)
-            if music_channel:
+            if music_channel and message.channel.id == music_channel:
                 if await self.on_message_handle(message):
                     await message.delete()
 
