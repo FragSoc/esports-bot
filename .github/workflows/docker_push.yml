@@ -23,7 +23,10 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      - name: Run a one-line script
+      - name: Get version string
+        run: git describe --tags >> ${GITHUB_WORKSPACE}/src/esportsbot/version.txt
+
+      - name: Build docker image
         run: docker build -t fragsoc/esports-bot:${GITHUB_REF} ${GITHUB_WORKSPACE}
 
       - name: Push to docker hub
