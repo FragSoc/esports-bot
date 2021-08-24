@@ -15,6 +15,7 @@ channel_removed = "Log channel has been removed"
 [admin]
 channel_cleared = "{author_mention} has cleared {message_amount} messages from {author_mention}"
 members = "This server has {member_count} members including me"
+no_version = "No version recorded"
 
 [default_role]
 default_role_missing = "Default role has not been set"
