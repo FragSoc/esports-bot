@@ -10,6 +10,14 @@ class AdminCog(commands.Cog):
         self.bot = bot
         self.STRINGS = bot.STRINGS["admin"]
 
+        # Get bot version from text file
+        try:
+            version_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "version.txt")
+            with open(version_file_path, "rt") as version_file:
+                self.bot_version = "`" + version_file.readline().strip() + "`"
+        except FileNotFoundError:
+            self.bot_version = self.STRINGS['no_version']
+
     def is_dev(ctx):
         if not devs:
             return ctx.author.guild_permissions.administrator
@@ -41,14 +49,7 @@ class AdminCog(commands.Cog):
     @commands.check(is_dev)
     @commands.command(name="version", help="Print the bot's version string")
     async def print_version(self, ctx):
-        try:
-            version_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "version.txt")
-            print(version_file_path)
-            with open(version_file_path, "rt") as version_file:
-                version = version_file.readline().strip()
-                await ctx.channel.send(f"`{version}`")
-        except FileNotFoundError:
-            await ctx.channel.send(self.STRINGS['no_version'])
+        await ctx.channel.send(self.bot_version)
 
     @commands.command(
         name="members",
