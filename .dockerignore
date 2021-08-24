@@ -1,5 +1,6 @@
-README.md
 .dockerignore
 Dockerfile
+LICENSE
+README.md
 docker-compose.yml
-todo
+setup.cfg
