@@ -58,6 +58,7 @@ class PingableRolesCog(commands.Cog):
         self.roles = self.load_all_roles(guild_ids)
         self.polls = self.load_all_polls(guild_ids)
         self.all_role_ids = self.all_roles_from_guild_data(self.roles)
+        await self.delete_missing_roles()
         await self.initialise_menus()
         self.ensure_tasks()
         if os.getenv("RUN_MONTHLY_REPORT", "FALSE").lower() == "true":
@@ -116,6 +117,53 @@ class PingableRolesCog(commands.Cog):
             )
             self.db.create(db_item)
             self.logger.info(f"Joined new guild: {guild.name} ; Set default pingable settings")
+
+    async def delete_missing_roles(self):
+        """
+        Check every role loaded from the DB that it still exists at once loaded. If the role does not exist it will be
+        deleted from the DB.
+        """
+        bot_guild_ids = [x.id for x in self.bot.guilds]
+        guilds_to_remove = []
+
+        for guild_id in self.all_role_ids:
+
+            if guild_id not in bot_guild_ids:
+                # If the guild is not in the bot's guilds, delete every role.
+                for role_id in self.all_role_ids.get(guild_id):
+                    self.delete_role_from_db(guild_id, role_id)
+
+                continue
+
+            # Iterate through each role and check for its existence.
+            guild_role_ids = [x.id for x in await self.bot.get_guild(guild_id).fetch_roles()]
+            for role_id in self.all_role_ids.get(guild_id):
+                if role_id not in guild_role_ids:
+                    self.delete_role_from_db(guild_id, role_id)
+
+            if not self.all_role_ids.get(guild_id):
+                guilds_to_remove.append(guilds_to_remove)
+
+        # Remove empty guilds from the dictionary.
+        for guild_id in guilds_to_remove:
+            self.all_role_ids.pop(guild_id)
+
+    def delete_role_from_db(self, guild_id, role_id):
+        """
+        Deletes a role from the DB and ensures that the role is not in the internal dicts.
+        :param guild_id: The ID of the guild of the role to delete.
+        :param role_id: The ID of the role to delete.
+        """
+        menu_id = self.all_role_ids.get(guild_id, {}).get(role_id)
+
+        if not menu_id or menu_id not in self.roles:
+            return
+
+        self.roles.pop(menu_id)
+        self.all_role_ids.get(guild_id).pop(role_id)
+
+        db_item = self.db.get(Pingable_roles, guild_id=guild_id, role_id=role_id, menu_id=menu_id)
+        self.db.delete(db_item)
 
     async def remove_pingable_role(self, role):
         """
