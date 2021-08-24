@@ -1,7 +1,7 @@
 
 # UoY Esports Bot Rewrite  
 <div align=left>  
-    <a href="https://travis-ci.com/FragSoc/esports-bot"><img src="https://img.shields.io/travis/com/fragsoc/esports-bot?style=flat-square" /></a>  
+    <a href="https://github.com/FragSoc/esports-bot/actions"><img src="https://img.shields.io/github/workflow/status/FragSoc/esports-bot/docker_push/develop?style=flat-square" /></a>  
     <a href="https://hub.docker.com/r/fragsoc/esports-bot"><img src="https://img.shields.io/docker/pulls/fragsoc/esports-bot?style=flat-square" /></a>  
     <a href="https://github.com/FragSoc/esports-bot"><img src="https://img.shields.io/github/license/fragsoc/esports-bot?style=flat-square" /></a>  
 </div>  
