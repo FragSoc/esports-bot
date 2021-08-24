@@ -19,21 +19,21 @@ This Discord bot was written to merge all the functions of different bots used i
 ## How to set up an instance of this bot with Docker
 
 1. Clone this repository:
-```console
-$ git clone https://github.com/FragSoc/Esports-Bot-Rewrite.git
-```
+  ```console
+  $ git clone https://github.com/FragSoc/Esports-Bot-Rewrite.git
+  ```
 1. Change into the repo directory:
-```console
-$ cd Esports-Bot-Rewrite
-```
+  ```console
+  $ cd Esports-Bot-Rewrite
+  ```
 1. Rename the `secrets.template` to `secrets.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:
-```console
-$ nano secrets.env
-```
+  ```console
+  $ nano secrets.env
+  ```
 1. Run docker-compose:
-```console
-$ docker-compose up
-```
+  ```console
+  $ docker-compose up
+  ```
 
 ## How to set up an instance of this bot without Docker
 
