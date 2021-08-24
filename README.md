@@ -52,28 +52,28 @@ $ git clone https://github.com/FragSoc/Esports-Bot-Rewrite.git
 
 ```
 
-1. Change into the repo directory:
+2. Change into the repo directory:
 ```console
 $ cd Esports-Bot-Rewrite
 ```
 
-1. Rename the `secrets.template` to `secrets.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:
+3. Rename the `secrets.template` to `secrets.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:
 ```console
 $ nano secrets.env
 $ source secrets.env
 ```
 
-1. Change into the bot directory:
+4. Change into the bot directory:
 ```bash
 $ cd src
 ```
 
-1. Install all the requirements for python:
+5. Install all the requirements for python:
 ```bash
 pip install -r requirements.txt
 ```
 
-1. Run the bot:
+6. Run the bot:
 ```bash
 python3 main.py
 ```
