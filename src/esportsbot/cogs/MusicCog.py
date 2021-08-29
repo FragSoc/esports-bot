@@ -1277,7 +1277,7 @@ class MusicCog(commands.Cog):
         await self.disconnect_from_guild(context.guild)
         await self.reset_music_channel(context)
 
-    @command_group.group(name="channel", help="Manage music channel")
+    @commands.group(name="musicchannel", help="Manage music channel")
     async def music_channel_group(self, context: commands.Context):
         """
         The command group for the music channel management.
