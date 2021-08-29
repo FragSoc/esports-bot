@@ -67,81 +67,70 @@ $ source secrets.env
 ```bash
 $ cd src
 ```
-
-5. Install all the requirements for python:
-```bash
-pip install -r requirements.txt
-```
-
-6. Run the bot:
-```bash
-python3 main.py
-```
-
-## Current Functions
-
-The list below describes the different "Cogs" of the bot, their associated commands, and any additional information required to set them up.
-
-<details>
-<summary>Voicemaster</summary>
-
-### Voicemaster
-
- #### !setvmmaster <channel_id>
-
-* Make the given ID a Voicemaster master.
-
-#### !getvmmasters * Get all the Voicemaster masters in the server.
-
-#### !removevmmaster <channel_id>
-
-* Remove the given ID as a Voicemaster master.
-
-#### !removeallmasters * Remove all Voicemaster masters from the server.
-
-#### !killallslaves * Kill all the Voicemaster slave channels in the server.
-
-#### !lockvm * Locks the Voicemaster slave you're currently in to the number of current members.
-
-#### !unlockvm * Unlocks the Voicemaster slave you're currently in.
-</details>
-
-<details>
-<summary>Default Role</summary>
-
-### Default role
-
- #### !setdefaultrole <role_mention | role_id> * Set the default role to the @'ed role or given role ID.
-
-#### !getdefaultrole * Gets the current default role value.
-
-#### !removedefaultrole * Removes the current default role.
-</details>
-
-<details>
-<summary>Log Channel</summary>
-
-### Log Channel
-
- #### !setlogchannel <channel_mention | channel_id> * Set the log channel to the #'ed channel or given role ID.
-
-#### !getlogchannel * Gets the current log channel value.
-
-#### !removelogchannel * Removes the current log channel value.
-
-</details>
-
-<details>
-<summary>Administrator Tools</summary>
-
-### Administrator Tools
-
- Adds a few commands useful for admin operations.
-
-#### !clear_message * Aliases: `cls, purge, delete`
-* Clear the specified number of messages from the current text channel.
-
-#### !members
+5. Install all the requirements for python:  
+```bash  
+pip install -r requirements.txt  
+```  
+6. Run the bot:  
+```bash  
+python3 main.py  
+```  
+  
+## Current Functions  
+The list below describes the different "Cogs" of the bot, their associated commands, and any additional information required to set them up.  
+  
+<details>    
+<summary>Voicemaster</summary>    
+    
+### Voicemaster    
+ #### !setvmmaster <channel_id>  
+* Make the given ID a Voicemaster master.    
+    
+#### !getvmmasters * Get all the Voicemaster masters in the server.    
+    
+#### !removevmmaster <channel_id>  
+* Remove the given ID as a Voicemaster master.    
+    
+#### !removeallmasters * Remove all Voicemaster masters from the server.    
+    
+#### !killallslaves * Kill all the Voicemaster slave channels in the server.    
+    
+#### !lockvm * Locks the Voicemaster slave you're currently in to the number of current members.    
+    
+#### !unlockvm * Unlocks the Voicemaster slave you're currently in.    
+</details>  
+  
+<details>    
+<summary>Default Role</summary>    
+    
+### Default role    
+ #### !setdefaultroles <role_mention | role_id> * Sets the roles that the server gives to members when they join the server.   
+    
+#### !getdefaultroles * Gets the current default roles set for the server.   
+    
+#### !removedefaultroles * Removes the current default roles for the server.  
+</details>    
+  
+<details>    
+<summary>Log Channel</summary>    
+    
+### Log Channel    
+ #### !setlogchannel <channel_mention | channel_id> * Set the log channel to the #'ed channel or given role ID.    
+    
+#### !getlogchannel * Gets the current log channel value.    
+    
+#### !removelogchannel * Removes the current log channel value.    
+</details>  
+  
+<details>    
+<summary>Administrator Tools</summary>    
+    
+### Administrator Tools    
+ Adds a few commands useful for admin operations.  
+#### !clear_message * Aliases: `cls, purge, delete`  
+* Clear the specified number of messages from the current text channel.    
+    
+#### !members 
 * List the current number of members in the server.
 
 #### !remove-cog \<cog name>

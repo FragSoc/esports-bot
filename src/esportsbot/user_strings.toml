@@ -18,15 +18,18 @@ members = "This server has {member_count} members including me"
 no_version = "No version recorded"
 
 [default_role]
-default_role_missing = "Default role has not been set"
+default_role_join = "{member_name} has joined the server and received: {role_ids}"
+default_role_join_no_role = "{member_name} has joined the server"
+default_role_missing = "Default role(s) have not been set"
 
-default_role_set = "Default role has been set to {role_id}"
-default_role_set_log = "{author} has set the default role to {role_mention}"
-default_role_set_missing_param = "You need to either @ a role or paste the ID"
+default_roles_set = "Default role(s) are now set to {roles}"
+default_roles_set_empty = "No roles were passed, please review your usage"
+default_roles_set_error = "Error occurred during this operation, please check that you have formatted these inputs correctly"
+default_role_set_log = "{author_mention} has set the default role(s) to: {roles}"
 
-default_role_get = "Default role is set to {role_id}"
+default_role_get = "Default role(s) are set to {role_ids}"
 
-default_role_removed = "Default role has been removed"
+default_role_removed = "Default role(s) are removed"
 default_role_removed_log = "{author_mention} has removed the default role"
 
 [music]
