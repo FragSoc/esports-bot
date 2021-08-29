@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from collections import defaultdict
+from enum import IntEnum
 
 from discord import Forbidden, PermissionOverwrite, Role
 from discord.ext import commands
@@ -10,7 +11,7 @@ from esportsbot.DiscordReactableMenus.ExampleMenus import ActionConfirmationMenu
 from esportsbot.DiscordReactableMenus.reactable_lib import get_menu
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.lib.discordUtil import get_attempted_arg
-from esportsbot.models import Event_categories, Guild_info
+from esportsbot.models import Event_categories, Default_roles
 
 denied_perms = PermissionOverwrite(read_messages=False, send_messages=False, connect=False)
 read_only_perms = PermissionOverwrite(read_messages=True, send_messages=False, connect=False)
@@ -22,6 +23,13 @@ SIGN_IN_DESCRIPTION = "Welcome to {}, react to this message to join the event so
 GENERAL_CHANNEL_SUFFIX = "general-chat"
 SIGN_IN_CHANNEL_SUFFIX = "sign-in"
 VOICE_CHANNEL_SUFFIX = "VC"
+
+
+class RoleTypeEnum(IntEnum):
+    DEFAULT = 0  # The Default role
+    SHARED = 1  # The Shared role users receive when joining the server
+    EVENT = 2  # The Event role
+    TOP = 3  # The Top role the bot has
 
 
 class EventCategoriesCog(commands.Cog):
@@ -129,82 +137,59 @@ class EventCategoriesCog(commands.Cog):
         db_item = self.db.get(Event_categories, guild_id=guild_id, event_id=event_id)
         self.db.delete(db_item)
 
-    @staticmethod
-    async def event_closed_perms(general, sign_in, voice_chat, bot_role, event_role, shared_role, reason):
-        """
-        Sets the permissions of the channels to those of a closed event .
-        :param general: The general text channel in the event .
-        :param sign_in: The sign-in channel for the event .
-        :param voice_chat: The voice channel in the event .
-        :param bot_role: The top role that the bot has .
-        :param event_role: The role for the event .
-        :param shared_role: The shared role in the server that all users have .
-        :param reason: The audit reason .
-        """
-        # The Guilds default role, pretty much always @everyone
-        default_role = general.guild.default_role
+    async def set_role_permissions_for_event(self, event_menu, role, role_type, reason):
+        if event_menu.enabled:
+            await self.set_open_perms(event_menu, role, role_type, reason)
+        else:
+            await self.set_closed_perms(event_menu, role, role_type, reason)
 
-        # Get the current permissions for the general channel and update them
-        current_general = {
-            bot_role: writable_perms,
-            event_role: denied_perms,
-            shared_role: denied_perms,
-            default_role: denied_perms
-        }
-        await general.edit(overwrites=current_general, reason=reason)
+    async def set_open_perms(self, event_menu, role, role_type, reason):
+        general_channel, sign_in_channel, voice_channel = self.get_event_channels(event_menu)
 
-        # Get the current permissions for the voice channel and update them
-        current_vc = {
-            bot_role: writable_perms,
-            event_role: denied_perms,
-            shared_role: denied_perms,
-            default_role: denied_perms
-        }
-        await voice_chat.edit(overwrites=current_vc, reason=reason)
+        current_general_perms = general_channel.overwrites
+        current_vc_perms = voice_channel.overwrites
+        current_sign_in_perms = sign_in_channel.overwrites
 
-        # Get the current permissions for the sign in channel and update them
-        current_sign_in = {
-            bot_role: writable_perms,
-            event_role: denied_perms,
-            shared_role: denied_perms,
-            default_role: denied_perms
-        }
-        await sign_in.edit(overwrites=current_sign_in, reason=reason)
+        if role_type == RoleTypeEnum.DEFAULT:
+            current_sign_in_perms[role] = denied_perms
+            current_vc_perms[role] = denied_perms
+            current_general_perms[role] = denied_perms
+        if role_type == RoleTypeEnum.SHARED:
+            current_sign_in_perms[role] = read_only_perms
+            current_vc_perms[role] = denied_perms
+            current_general_perms[role] = denied_perms
+        if role_type == RoleTypeEnum.EVENT:
+            current_sign_in_perms[role] = read_only_perms
+            current_vc_perms[role] = writable_perms
+            current_general_perms[role] = writable_perms
+        if role_type == RoleTypeEnum.TOP:
+            current_sign_in_perms[role] = writable_perms
+            current_vc_perms[role] = writable_perms
+            current_general_perms[role] = writable_perms
 
-    @staticmethod
-    async def event_open_perms(general, sign_in, voice_chat, event_role, shared_role, reason):
-        """
-        Sets the permissions of the channels to those of an open event .
-        :param general: The general text channel in the event .
-        :param sign_in: The sign-in channel for the event .
-        :param voice_chat: The voice channel in the event .
-        :param event_role: The role for the event .
-        :param shared_role: The shared role in the server that all users have .
-        :param reason: The audit reason .
-        """
-        # The Guilds default role, pretty much always @everyone
-        default_role = general.guild.default_role
+        await general_channel.edit(overwrites=current_general_perms, reason=reason)
+        await sign_in_channel.edit(overwrites=current_sign_in_perms, reason=reason)
+        await voice_channel.edit(overwrites=current_vc_perms, reason=reason)
 
-        # Get the current permissions for the general channel and update them
-        current_general = general.overwrites
-        current_general[event_role] = writable_perms
-        current_general[shared_role] = denied_perms
-        current_general[default_role] = denied_perms
-        await general.edit(overwrites=current_general, reason=reason)
+    async def set_closed_perms(self, event_menu, role, role_type, reason):
+        general_channel, sign_in_channel, voice_channel = self.get_event_channels(event_menu)
 
-        # Get the current permissions for the voice channel and update them
-        current_vc = voice_chat.overwrites
-        current_vc[event_role] = writable_perms
-        current_vc[shared_role] = denied_perms
-        current_vc[default_role] = denied_perms
-        await voice_chat.edit(overwrites=current_vc, reason=reason)
+        current_general_perms = general_channel.overwrites
+        current_vc_perms = voice_channel.overwrites
+        current_sign_in_perms = sign_in_channel.overwrites
 
-        # Get the current permissions for the sign in channel and update them
-        current_sign_in = sign_in.overwrites
-        current_sign_in[event_role] = read_only_perms
-        current_sign_in[shared_role] = read_only_perms
-        current_sign_in[default_role] = denied_perms
-        await sign_in.edit(overwrites=current_sign_in, reason=reason)
+        if role_type == RoleTypeEnum.TOP:
+            current_sign_in_perms[role] = writable_perms
+            current_vc_perms[role] = writable_perms
+            current_general_perms[role] = writable_perms
+        else:
+            current_sign_in_perms[role] = denied_perms
+            current_vc_perms[role] = denied_perms
+            current_general_perms[role] = denied_perms
+
+        await general_channel.edit(overwrites=current_general_perms, reason=reason)
+        await sign_in_channel.edit(overwrites=current_sign_in_perms, reason=reason)
+        await voice_channel.edit(overwrites=current_vc_perms, reason=reason)
 
     @staticmethod
     def get_event_channels(event_menu):
@@ -250,11 +235,11 @@ class EventCategoriesCog(commands.Cog):
         audit_reason = "Done with `create-event` command"
 
         if not shared_role:
-            db_data = self.db.get(Guild_info, guild_id=context.guild.id)
-            if not db_data or not db_data.default_role_id:
+            db_data = self.db.get(Default_roles, guild_id=context.guild.id)
+            if not db_data or not db_data.role_id:
                 shared_role = context.guild.default_role
             else:
-                shared_role = context.guild.get_role(db_data.default_role_id)
+                shared_role = context.guild.get_role(db_data.role_id)
                 if not shared_role:
                     shared_role = context.guild.default_role
 
@@ -292,17 +277,6 @@ class EventCategoriesCog(commands.Cog):
         # Used to ensure that the bot can always see/type in the channel.
         bot_top_role = context.me.roles[-1]
 
-        # Set the permissions for each of the channels created by the command:
-        await self.event_closed_perms(
-            event_general_channel,
-            event_sign_in_channel,
-            event_voice_channel,
-            bot_top_role,
-            event_role,
-            shared_role,
-            audit_reason
-        )
-
         # Create the sign-in message:
         event_menu = EventReactMenu(
             shared_role=shared_role,
@@ -315,6 +289,16 @@ class EventCategoriesCog(commands.Cog):
         event_menu.add_option(SIGN_IN_EMOJI, event_role)
 
         await event_menu.finalise_and_send(self.bot, event_sign_in_channel)
+
+        await self.set_role_permissions_for_event(event_menu, bot_top_role, RoleTypeEnum.TOP, reason=audit_reason)
+        await self.set_role_permissions_for_event(event_menu, shared_role, RoleTypeEnum.SHARED, reason=audit_reason)
+        await self.set_role_permissions_for_event(event_menu, event_role, RoleTypeEnum.EVENT, reason=audit_reason)
+        await self.set_role_permissions_for_event(
+            event_menu,
+            context.guild.default_role,
+            RoleTypeEnum.DEFAULT,
+            reason=audit_reason
+        )
 
         db_item = Event_categories(
             guild_id=context.guild.id,
@@ -362,19 +346,21 @@ class EventCategoriesCog(commands.Cog):
             await self.send_current_events(context)
             return
 
-        # Set the permissions for the generic event channels:
-        general_channel, sign_in_channel, voice_channel = self.get_event_channels(event_menu)
-        await self.event_open_perms(
-            general_channel,
-            sign_in_channel,
-            voice_channel,
-            event_menu.event_role,
-            event_menu.shared_role,
-            reason=audit_reason
-        )
+        bot_top_role = context.me.roles[-1]
 
         await event_menu.enable_menu(self.bot)
         self.update_event(context.guild.id, event_menu)
+
+        await self.set_role_permissions_for_event(event_menu, bot_top_role, RoleTypeEnum.TOP, reason=audit_reason)
+        await self.set_role_permissions_for_event(event_menu, event_menu.shared_role, RoleTypeEnum.SHARED, reason=audit_reason)
+        await self.set_role_permissions_for_event(event_menu, event_menu.event_role, RoleTypeEnum.EVENT, reason=audit_reason)
+        await self.set_role_permissions_for_event(
+            event_menu,
+            context.guild.default_role,
+            RoleTypeEnum.DEFAULT,
+            reason=audit_reason
+        )
+
         self.logger.info(f"Successfully opened an event with the name {event_name} in {context.guild.name}")
         await context.reply(
             self.user_strings["success_channel"].format(
@@ -411,20 +397,19 @@ class EventCategoriesCog(commands.Cog):
 
         bot_top_role = context.me.roles[-1]
 
-        # Set the permissions for the generic event channels:
-        general_channel, sign_in_channel, voice_channel = self.get_event_channels(event_menu)
-        await self.event_closed_perms(
-            general_channel,
-            sign_in_channel,
-            voice_channel,
-            bot_top_role,
-            event_menu.event_role,
-            event_menu.shared_role,
+        await event_menu.disable_menu(self.bot)
+        self.update_event(context.guild.id, event_menu)
+
+        await self.set_role_permissions_for_event(event_menu, bot_top_role, RoleTypeEnum.TOP, reason=audit_reason)
+        await self.set_role_permissions_for_event(event_menu, event_menu.shared_role, RoleTypeEnum.SHARED, reason=audit_reason)
+        await self.set_role_permissions_for_event(event_menu, event_menu.event_role, RoleTypeEnum.EVENT, reason=audit_reason)
+        await self.set_role_permissions_for_event(
+            event_menu,
+            context.guild.default_role,
+            RoleTypeEnum.DEFAULT,
             reason=audit_reason
         )
 
-        await event_menu.disable_menu(self.bot)
-        self.update_event(context.guild.id, event_menu)
         self.logger.info(f"Successfully closed an event with the name {event_name} in {context.guild.name}")
         await context.reply(self.user_strings["success_event_closed"])
         return
