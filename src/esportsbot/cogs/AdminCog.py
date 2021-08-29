@@ -1,6 +1,6 @@
-from discord.ext import commands
-from esportsbot.base_functions import send_to_log_channel
 import os
+
+from discord.ext import commands
 
 devs = os.getenv("DEV_IDS").replace(" ", "").split(",")
 
@@ -9,6 +9,14 @@ class AdminCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.STRINGS = bot.STRINGS["admin"]
+
+        # Get bot version from text file
+        try:
+            version_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "version.txt")
+            with open(version_file_path, "rt") as version_file:
+                self.bot_version = "`" + version_file.readline().strip() + "`"
+        except FileNotFoundError:
+            self.bot_version = self.STRINGS['no_version']
 
     def is_dev(ctx):
         if not devs:
@@ -29,12 +37,19 @@ class AdminCog(commands.Cog):
     @commands.has_permissions(manage_messages=True)
     async def clear_messages(self, ctx, amount=5):
         await ctx.channel.purge(limit=int(amount) + 1)
-        await send_to_log_channel(
-            self,
-            ctx.author.guild.id,
-            self.STRINGS['channel_cleared'].format(author_mention=ctx.author.mention,
-                                                   message_amount=amount)
+        await self.bot.adminLog(
+            ctx.message,
+            {
+                "Cog": str(type(self)),
+                "Message": self.STRINGS['channel_cleared'].format(author_mention=ctx.author.mention,
+                                                                  message_amount=amount)
+            }
         )
+
+    @commands.check(is_dev)
+    @commands.command(name="version", help="Print the bot's version string")
+    async def print_version(self, ctx):
+        await ctx.channel.send(self.bot_version)
 
     @commands.command(
         name="members",

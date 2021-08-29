@@ -38,7 +38,7 @@ async def on_guild_remove(guild):
     guild_from_db = DBGatewayActions().get(Guild_info, guild_id=guild.id)
     if guild_from_db:
         DBGatewayActions().delete(guild_from_db)
-        print(f"Left the guild: {guild.name}")
+        print(client.STRINGS["guild_leave"].format(guild_name=guild.name))
 
 
 @client.event
@@ -51,9 +51,12 @@ async def on_command_error(ctx: Context, exception: Exception):
     """
     if isinstance(exception, MissingRequiredArgument):
         await ctx.message.reply(
-            "Arguments are required for this command! See `" + client.command_prefix + "help " + ctx.invoked_with
-            + "` for more information."
+            client.STRINGS["command_error_required_arguments"].format(
+                command_prefix=client.command_prefix,
+                command_used=ctx.invoked_with
+            )
         )
+
     elif isinstance(exception, CommandNotFound):
         try:
             await ctx.message.add_reaction(client.unknown_command_emoji.discord_emoji)

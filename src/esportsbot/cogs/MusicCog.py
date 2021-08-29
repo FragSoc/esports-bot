@@ -12,13 +12,12 @@ from urllib.parse import parse_qs, urlparse
 
 import googleapiclient.discovery
 import youtube_dl
-from discord import ClientException, Colour, Embed, FFmpegPCMAudio, PCMVolumeTransformer, TextChannel
+from discord import (ClientException, Colour, Embed, FFmpegPCMAudio, PCMVolumeTransformer, TextChannel)
 from discord.ext import commands, tasks
-from youtubesearchpython import VideosSearch
-
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.lib.discordUtil import send_timed_message
 from esportsbot.models import Music_channels
+from youtubesearchpython import VideosSearch
 
 
 # A discord command check that the command is in the music channel:
@@ -116,7 +115,7 @@ class MusicCog(commands.Cog):
         if not message.author.bot and message.guild:
             guild_id = message.guild.id
             music_channel = self.music_channels.get(guild_id)
-            if music_channel:
+            if music_channel and message.channel.id == music_channel:
                 if await self.on_message_handle(message):
                     await message.delete()
 
@@ -827,116 +826,10 @@ class MusicCog(commands.Cog):
         except AttributeError:
             return False
 
-    @commands.command(
-        name="setmusicchannel",
-        usage="<channel mention> [optional args]",
-        help="Sets the music channel to the channel mentioned. To see possible optional args, "
-        "go to https://github.com/FragSoc/esports-bot#setmusicchannel-channel-mention-optional-args"
-    )
-    @commands.has_permissions(administrator=True)
-    async def set_music_channel_command(self, context: commands.Context, text_channel: TextChannel):
-        """
-        Sets the music channel for a given guild to the channel channel mentioned in the command. Extra args can be given to
-        indicate some extra process to perform while setting up the channel.
-        :param context: The context of the command.
-        :param text_channel: The text channel to set the music channel to.
-        """
-        # Using the text channel as the last official arg in the command, find any extras that occur after with a `-`
-        text_channel_str = str(text_channel.mention)
-        end_index = context.message.content.index(text_channel_str) + len(text_channel_str)
-        args = context.message.content[end_index:].strip().split("-")
-        args.pop(0)
-        args = [arg.lower() for arg in args]
-        if "c" in args:
-            # Use -c to clear the channel.
-            await self.clear_music_channel(text_channel)
-
-        await self.setup_music_channel(text_channel)
-        await context.send(self.user_strings["music_channel_set"].format(channel=text_channel.mention))
-
-    @commands.command(name="getmusicchannel", help="Gets the current channel that is set as the music channel.")
-    @commands.has_permissions(administrator=True)
-    async def get_music_channel_command(self, context: commands.Context):
-        """
-        Gets the current channel that is set as the music channel.
-        If there is no channel set it will return a message saying so.
-        :param context: The context of the command.
-        """
-        channel = await self.find_music_channel_instance(context.guild)
-        if channel:
-            await context.send(self.user_strings["music_channel_get"].format(channel=channel.mention))
-        else:
-            await context.send(self.user_strings["music_channel_missing"])
-
-    @commands.command(name="resetmusicchannel", help="Clears the music channel and sends the preview and queue messages.")
-    @commands.has_permissions(administrator=True)
-    async def reset_music_channel_command(self, context: commands.Context):
-        """
-        Resets the music channel to clear all the text and re-send the preview and queue messages.
-        :param context: The context of the command.
-        """
-        await self.reset_music_channel(context)
-
-    @commands.command(
-        name="fixmusic",
-        help="Kicks the bot from the current Voice Channel, clears the current queue and resets the music channel."
-    )
-    @commands.has_permissions(administrator=True)
-    async def guild_bot_reset_command(self, context: commands.Context):
-        """
-        Resets the music channel as well as attempts to disconnect the bot. This is to be used in-case there was an error
-        and the bot was not able to reset itself.
-        :param context: The context of the command.
-        """
-        await self.remove_active_guild(context.guild)
-        await self.disconnect_from_guild(context.guild)
-        await self.reset_music_channel(context)
-
-    @commands.command(
-        name="removemusicchannel",
-        help="Unlinks the currently set music channel from being the music channel. Does not delete the actual channel"
-    )
-    @commands.has_permissions(administrator=True)
-    async def unlink_music_channel_command(self, context: commands.Context):
-        if not self.music_channels.get(context.guild.id):
-            await context.send(self.user_strings["music_channel_missing"])
-            return
-
-        music_channel_instance = await self.find_music_channel_instance(context.guild)
-        self.music_channels.pop(context.guild.id)
-        db_item = self.db.get(Music_channels, guild_id=context.guild.id)
-        self.db.delete(db_item)
-        await context.send(self.user_strings["music_channel_removed"].format(channel=music_channel_instance.mention))
-
-    @commands.command(
-        name="musicqueue",
-        aliases=["songqueue",
-                 "songs",
-                 "songlist",
-                 "songslist"],
-        help="Gets the current list of songs in the queue"
-    )
-    @delete_after()
-    async def get_current_queue(self, context: commands.Context):
-        """
-        Get the current queue as a string.
-        :param context: The context of the command.
-        """
-        if context.guild.id not in self.active_guilds:
-            await send_timed_message(channel=context.channel, content=self.user_strings["bot_inactive"], timer=20)
-            return
-
-        if not self.active_guilds.get(context.guild.id).get("queue"):
-            await send_timed_message(channel=context.channel, content=self.user_strings["bot_inactive"], timer=20)
-            return
-
-        queue_string = self.get_updated_queue_message(context.guild.id, complete_list=True)
-        await send_timed_message(channel=context.channel, content=queue_string, timer=60)
-
     @commands.group(
         name="music",
         help="These are commands used to control the music bot. For more detailed command explanations, "
-        "go to https://github.com/FragSoc/esports-bot#music-bot"
+        "go to https://github.com/FragSoc/esports-bot#music-bot",
     )
     @commands.check(check_music_channel)
     @delete_after()
@@ -967,6 +860,31 @@ class MusicCog(commands.Cog):
         # If the error was some other error, raise it so we know about it.
         await context.send(self.unhandled_error_string)
         raise error
+
+    @command_group.command(
+        name="queue",
+        aliases=["songqueue",
+                 "songs",
+                 "songlist",
+                 "songslist"],
+        help="Gets the current list of songs in the queue"
+    )
+    @delete_after()
+    async def get_current_queue(self, context: commands.Context):
+        """
+        Get the current queue as a string.
+        :param context: The context of the command.
+        """
+        if context.guild.id not in self.active_guilds:
+            await send_timed_message(channel=context.channel, content=self.user_strings["bot_inactive"], timer=20)
+            return
+
+        if not self.active_guilds.get(context.guild.id).get("queue"):
+            await send_timed_message(channel=context.channel, content=self.user_strings["bot_inactive"], timer=20)
+            return
+
+        queue_string = self.get_updated_queue_message(context.guild.id, complete_list=True)
+        await send_timed_message(channel=context.channel, content=queue_string, timer=60)
 
     @command_group.command(
         name="join",
@@ -1343,6 +1261,95 @@ class MusicCog(commands.Cog):
         self.active_guilds.get(guild_id)["queue"] = new_queue
         await self.update_messages(guild_id)
         return True
+
+    @command_group.command(
+        name="fix",
+        help="Kicks the bot from the current Voice Channel, clears the current queue and resets the music channel."
+    )
+    @commands.has_permissions(administrator=True)
+    async def guild_bot_reset_command(self, context: commands.Context):
+        """
+        Resets the music channel as well as attempts to disconnect the bot. This is to be used in-case there was an error
+        and the bot was not able to reset itself.
+        :param context: The context of the command.
+        """
+        await self.remove_active_guild(context.guild)
+        await self.disconnect_from_guild(context.guild)
+        await self.reset_music_channel(context)
+
+    @command_group.group(name="channel", help="Manage music channel")
+    async def music_channel_group(self, context: commands.Context):
+        """
+        The command group for the music channel management.
+        :param context: The context of the command.
+        """
+        pass
+
+    @music_channel_group.command(
+        name="set",
+        usage="<channel mention> [optional args]",
+        help="Sets the music channel to the channel mentioned. To see possible optional args, "
+        "go to https://github.com/FragSoc/esports-bot#setmusicchannel-channel-mention-optional-args"
+    )
+    @commands.has_permissions(administrator=True)
+    async def set_music_channel_command(self, context: commands.Context, text_channel: TextChannel):
+        """
+        Sets the music channel for a given guild to the channel channel mentioned in the command. Extra args can be given to
+        indicate some extra process to perform while setting up the channel.
+        :param context: The context of the command.
+        :param text_channel: The text channel to set the music channel to.
+        """
+        # Using the text channel as the last official arg in the command, find any extras that occur after with a `-`
+        text_channel_str = str(text_channel.mention)
+        end_index = context.message.content.index(text_channel_str) + len(text_channel_str)
+        args = context.message.content[end_index:].strip().split("-")
+        args.pop(0)
+        args = [arg.lower() for arg in args]
+        if "c" in args:
+            # Use -c to clear the channel.
+            await self.clear_music_channel(text_channel)
+
+        await self.setup_music_channel(text_channel)
+        await context.send(self.user_strings["music_channel_set"].format(channel=text_channel.mention))
+
+    @music_channel_group.command(name="get", help="Gets the current channel that is set as the music channel.")
+    @commands.has_permissions(administrator=True)
+    async def get_music_channel_command(self, context: commands.Context):
+        """
+        Gets the current channel that is set as the music channel.
+        If there is no channel set it will return a message saying so.
+        :param context: The context of the command.
+        """
+        channel = await self.find_music_channel_instance(context.guild)
+        if channel:
+            await context.send(self.user_strings["music_channel_get"].format(channel=channel.mention))
+        else:
+            await context.send(self.user_strings["music_channel_missing"])
+
+    @music_channel_group.command(name="reset", help="Clears the music channel and sends the preview and queue messages.")
+    @commands.has_permissions(administrator=True)
+    async def reset_music_channel_command(self, context: commands.Context):
+        """
+        Resets the music channel to clear all the text and re-send the preview and queue messages.
+        :param context: The context of the command.
+        """
+        await self.reset_music_channel(context)
+
+    @music_channel_group.command(
+        name="remove",
+        help="Unlinks the currently set music channel from being the music channel. Does not delete the actual channel"
+    )
+    @commands.has_permissions(administrator=True)
+    async def unlink_music_channel_command(self, context: commands.Context):
+        if not self.music_channels.get(context.guild.id):
+            await context.send(self.user_strings["music_channel_missing"])
+            return
+
+        music_channel_instance = await self.find_music_channel_instance(context.guild)
+        self.music_channels.pop(context.guild.id)
+        db_item = self.db.get(Music_channels, guild_id=context.guild.id)
+        self.db.delete(db_item)
+        await context.send(self.user_strings["music_channel_removed"].format(channel=music_channel_instance.mention))
 
     async def song_index_str_to_int(self, context, song_index):
         """

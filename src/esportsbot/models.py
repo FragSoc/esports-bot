@@ -84,13 +84,11 @@ class Voicemaster_slave(base):
 
 class Twitch_info(base):
     __tablename__ = 'twitch_info'
-    id = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
-    channel_id = Column(BigInteger, nullable=False)
+    channel_id = Column(BigInteger, primary_key=True, nullable=False)
+    hook_id = Column(BigInteger, primary_key=True, nullable=False)
     twitch_handle = Column(String, nullable=False)
-    currently_live = Column(Boolean, nullable=False)
-    custom_message = Column(String, nullable=False)
-    # Will most likely change after Benji switch
+    custom_message = Column(String, nullable=True)
 
 
 class Twitter_info(base):
