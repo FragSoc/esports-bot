@@ -11,6 +11,9 @@ class DefaultRoleCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
+        guild = DBGatewayActions().get(Guild_info, guild_id=member.guild.id)
+        if not guild:
+            return
         # Get all the default role for the server from database
         guild_default_roles = DBGatewayActions().list(Default_roles, guild_id=member.guild.id)
         # Check to see if any roles exist
@@ -19,6 +22,28 @@ class DefaultRoleCog(commands.Cog):
             apply_roles = [member.guild.get_role(role.role_id) for role in guild_default_roles]
             # Add all the roles to the user, we don't check if they're valid as we do this on input
             await member.add_roles(*apply_roles)
+            await self.bot.adminLog(
+                None,
+                {
+                    "Cog":
+                    str(type(self)),
+                    "Message":
+                    self.STRINGS['default_role_join'].format(
+                        member_name=member.mention,
+                        role_ids=(' '.join(f'<@&{x.id}>' for x in apply_roles))
+                    )
+                },
+                guildID=member.guild.id
+            )
+        else:
+            await self.bot.adminLog(
+                None,
+                {
+                    "Cog": str(type(self)),
+                    "Message": self.STRINGS['default_role_join_no_role'].format(member_name=member.mention)
+                },
+                guildID=member.guild.id
+            )
 
     @commands.command(
         name="setdefaultroles",
@@ -49,6 +74,14 @@ class DefaultRoleCog(commands.Cog):
                 for role in checked_roles:
                     DBGatewayActions().create(Default_roles(guild_id=ctx.author.guild.id, role_id=role))
                 await ctx.channel.send(self.STRINGS['default_roles_set'].format(roles=args))
+                await self.bot.adminLog(
+                    ctx.message,
+                    {
+                        "Cog": str(type(self)),
+                        "Message": self.STRINGS['default_roles_set_log'].format(author_mention=ctx.author.mention,
+                                                                                roles=args)
+                    }
+                )
             else:
                 await ctx.channel.send(self.STRINGS['default_roles_set_error'])
 
@@ -66,7 +99,9 @@ class DefaultRoleCog(commands.Cog):
             # Create list of roles from database response
             apply_roles = [ctx.author.guild.get_role(role.role_id) for role in guild_default_roles]
             # Return all the default roles to the user
-            await ctx.channel.send(self.STRINGS['default_role_get'].format(role_ids=(' '.join(f'<@&{x.id}>' for x in apply_roles))))
+            await ctx.channel.send(
+                self.STRINGS['default_role_get'].format(role_ids=(' '.join(f'<@&{x.id}>' for x in apply_roles)))
+            )
         else:
             await ctx.channel.send(self.STRINGS['default_role_missing'])
 
@@ -86,6 +121,13 @@ class DefaultRoleCog(commands.Cog):
                 DBGatewayActions().delete(default_role)
             # Return a response to the user
             await ctx.channel.send(self.STRINGS['default_role_removed'])
+            await self.bot.adminLog(
+                ctx.message,
+                {
+                    "Cog": str(type(self)),
+                    "Message": self.STRINGS['default_role_removed_log'].format(author_mention=ctx.author.mention)
+                }
+            )
         else:
             await ctx.channel.send(self.STRINGS['default_role_missing'])
 
