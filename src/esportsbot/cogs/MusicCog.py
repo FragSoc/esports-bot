@@ -828,11 +828,7 @@ class MusicCog(commands.Cog):
         except AttributeError:
             return False
 
-    @commands.group(
-        name="music",
-        help="These are commands used to control the music bot. For more detailed command explanations, "
-        "go to https://github.com/FragSoc/esports-bot#music-bot",
-    )
+    @commands.group(name="music", help="These are commands used to control the music bot.")
     @commands.check(check_music_channel)
     @delete_after()
     async def command_group(self, context: commands.Context):
@@ -893,7 +889,7 @@ class MusicCog(commands.Cog):
         aliases=["connect"],
         usage="[-f]",
         help="Make the bot join the channel. If you are an admin you can force it join your voice channel "
-        "if it is currently in another channel with '-f' or 'force'."
+        "if it is currently in another channel with `-f` or `force`."
     )
     async def join_channel_command(self, context: commands.Context, force: str = ""):
         """
@@ -921,7 +917,7 @@ class MusicCog(commands.Cog):
         aliases=["leave"],
         usage="[-f]",
         help="Kicks the bot from the channel. If you are an admin you can force it leave a voice channel "
-        "if it is currently in another channel with '-f' or 'force'."
+        "if it is currently in another channel with `-f` or `force`."
     )
     async def leave_channel_command(self, context: commands.Context, force: str = ""):
         """
