@@ -463,7 +463,10 @@ class MusicCog(commands.Cog):
         key = "v" if request_type == MessageTypeEnum.youtube_url else "list"
 
         query = parse_qs(urlparse(request).query, keep_blank_values=True)
-        youtube_id = query[key][0]
+        if not query:
+            youtube_id = request.split("/")[-1]
+        else:
+            youtube_id = query[key][0]
 
         api_args = {"part": "snippet", "maxResults": 1 if request_type == MessageTypeEnum.youtube_url else 50}
 
