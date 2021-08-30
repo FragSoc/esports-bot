@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import functools
 import logging
@@ -528,7 +527,7 @@ class MusicCog(commands.Cog):
             video_id = response.get("id")
         else:
             video_id = response.get("resourceId").get("videoId")
-        return "https://youtube.com/watch?=v{}".format(video_id)
+        return "https://youtube.com/watch?v={}".format(video_id)
 
     @staticmethod
     def query_request(request):
