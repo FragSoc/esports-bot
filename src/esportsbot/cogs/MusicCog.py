@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import functools
 import logging
@@ -463,7 +462,10 @@ class MusicCog(commands.Cog):
         key = "v" if request_type == MessageTypeEnum.youtube_url else "list"
 
         query = parse_qs(urlparse(request).query, keep_blank_values=True)
-        youtube_id = query[key][0]
+        if not query:
+            youtube_id = request.split("/")[-1]
+        else:
+            youtube_id = query[key][0]
 
         api_args = {"part": "snippet", "maxResults": 1 if request_type == MessageTypeEnum.youtube_url else 50}
 
@@ -525,7 +527,7 @@ class MusicCog(commands.Cog):
             video_id = response.get("id")
         else:
             video_id = response.get("resourceId").get("videoId")
-        return "https://youtube.com/watch?=v{}".format(video_id)
+        return "https://youtube.com/watch?v={}".format(video_id)
 
     @staticmethod
     def query_request(request):
@@ -1277,7 +1279,7 @@ class MusicCog(commands.Cog):
         await self.disconnect_from_guild(context.guild)
         await self.reset_music_channel(context)
 
-    @command_group.group(name="channel", help="Manage music channel")
+    @commands.group(name="musicchannel", help="Manage music channel")
     async def music_channel_group(self, context: commands.Context):
         """
         The command group for the music channel management.
