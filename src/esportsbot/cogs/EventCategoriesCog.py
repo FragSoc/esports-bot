@@ -138,12 +138,26 @@ class EventCategoriesCog(commands.Cog):
         self.db.delete(db_item)
 
     async def set_role_permissions_for_event(self, event_menu, role, role_type, reason):
+        """
+        Sets the permissions for the event channels for the given role based on its role type.
+        :param event_menu: The event menu of the event to update the roles of.
+        :param role: The role to update the permissions of.
+        :param role_type: The type of role the role is.
+        :param reason: The audit log reason to log with.
+        """
         if event_menu.enabled:
             await self.set_open_perms(event_menu, role, role_type, reason)
         else:
             await self.set_closed_perms(event_menu, role, role_type, reason)
 
     async def set_open_perms(self, event_menu, role, role_type, reason):
+        """
+        Sets the permissions for the given role and role type for when the event is open.
+        :param event_menu: The menu of the event.
+        :param role: The role to update the permissions of.
+        :param role_type: The type of role the role is.
+        :param reason: The audit log reason to log with.
+        """
         general_channel, sign_in_channel, voice_channel = self.get_event_channels(event_menu)
 
         current_general_perms = general_channel.overwrites
@@ -172,6 +186,13 @@ class EventCategoriesCog(commands.Cog):
         await voice_channel.edit(overwrites=current_vc_perms, reason=reason)
 
     async def set_closed_perms(self, event_menu, role, role_type, reason):
+        """
+        Sets the permissions for the given role and role type for when the event is closed.
+        :param event_menu: The menu of the event.
+        :param role: The role to update the permissions of.
+        :param role_type: The type of role the role is.
+        :param reason: The audit log reason to log with.
+        """
         general_channel, sign_in_channel, voice_channel = self.get_event_channels(event_menu)
 
         current_general_perms = general_channel.overwrites
