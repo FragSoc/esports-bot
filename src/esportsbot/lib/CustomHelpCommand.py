@@ -76,7 +76,7 @@ class CustomHelpCommand(HelpCommand):
         # name = <prefix><fully qualified name>
         # value = Short help string \n Alias String \n Help command string
 
-        help_dict = self.help_strings.get(fully_qualified_name.replace(" ", "_"))
+        help_dict = self.help_strings.get(fully_qualified_name.replace(" ", "_").replace("-", "_"))
         name = self.help_strings["usage_string"].format(prefix=self.clean_prefix, fqn=fully_qualified_name)
         if not help_dict:
             # If the command is missing help string definition in the user_strings file, try and default to the defined
@@ -115,7 +115,7 @@ class CustomHelpCommand(HelpCommand):
         title = self.help_strings["embed_title"].format(prefix=self.clean_prefix, fqn=fully_qualified_name)
         usage = self.help_strings["usage_string"].format(prefix=self.clean_prefix, fqn=fully_qualified_name)
 
-        help_dict = self.help_strings.get(fully_qualified_name.replace(" ", "_"))
+        help_dict = self.help_strings.get(fully_qualified_name.replace(" ", "_").replace("-", "_"))
         if not help_dict:
             short = command.help if command.help else self.help_strings["missing_help_string"]
             long_string = command.description if command.description else ""
@@ -148,7 +148,7 @@ class CustomHelpCommand(HelpCommand):
         fully_qualified_name = fully_qualified_name.strip()
 
         title = self.help_strings["embed_title"].format(prefix=self.clean_prefix, fqn=fully_qualified_name)
-        help_dict = self.help_strings.get(fully_qualified_name.replace(" ", "_"))
+        help_dict = self.help_strings.get(fully_qualified_name.replace(" ", "_").replace("-", "_"))
         if not help_dict:
             description = "​" if not group.help else group.help
         else:
