@@ -230,6 +230,36 @@ help_string = "Unlocks your current Voicemaster voice channel."
 description = "If you are in a Voicemaster child channel and if you own the channel, it will remove the user-count limit."
 readme_url = "https://github.com/FragSoc/esports-bot#unlockvm"
 
+[help.clear]
+help_string = "Deletes the given number of messages. Defaults to 5 messages."
+usage = "<number of messages>"
+readme_url = "https://github.com/FragSoc/esports-bot#clear"
+
+[help.version]
+help_string = "Get the current bot version."
+readme_url = "https://github.com/FragSoc/esports-bot#version"
+
+[help.members]
+help_string = "Get the number of members in the server."
+readme_url = "https://github.com/FragSoc/esports-bot#members"
+
+[help.remove_cog]
+help_string = "Unloads the given cog."
+description = "This removes a cog from being loaded and removes all its commands. This can only be run by a member that is defined in the dev_ids section of the bots environment. If a cog makes use of the `on_ready` function, it will not work properly if loaded through the command, and will require a full restart to re-enable."
+usage = "<cog name>"
+readme_url = "https://github.com/FragSoc/esports-bot#remove-cog-cog-name"
+
+[help.add_cog]
+help_string = "Loads the given cog."
+description = "Enables a Cog and adds its commands. This can only be run by a member that is defined in the dev_ids section of the bots environment. If the given cog uses the `on_ready` function, it will not work as expected and will require a full restart to properly enable."
+usage ="<cog name>"
+readme_url = "https://github.com/FragSoc/esports-bot#add-cog-cog-name"
+
+[help.reload_cog]
+help_string = "Reloads the given cog."
+description = "Unloads and then reloads the given cog. Refer to the 'load cog' command to see potential side-effects. This can only be run by a member that is defined in the dev_ids section of the bots environment."
+usage = "<cog name>"
+readme_url = "https://github.com/FragSoc/esports-bot#reload-cog-cog-name"
 
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
