@@ -83,21 +83,21 @@ The list below describes the different "Cogs" of the bot, their associated comma
 <summary>Voicemaster</summary>
 
 ### Voicemaster
- #### !setvmmaster <channel_id>
-* Make the given ID a Voicemaster master.
+ #### !setvmparent <channel_id>
+* Make the given ID a Voicemaster parent voice channel.
 
-#### !getvmmasters * Get all the Voicemaster masters in the server.
+#### !getvmparents * Get all the Voicemaster parent voice channels in the server.
 
-#### !removevmmaster <channel_id>
-* Remove the given ID as a Voicemaster master.
+#### !removevmparent <channel_id>
+* Remove the given ID as a Voicemaster parent voice channel.
 
-#### !removeallmasters * Remove all Voicemaster masters from the server.
+#### !removeallparents * Remove all Voicemaster parents from the server.
 
-#### !killallslaves * Kill all the Voicemaster slave channels in the server.
+#### !deleteallchildren * Delete all the Voicemaster child channels in the server.
 
-#### !lockvm * Locks the Voicemaster slave you're currently in to the number of current members.
+#### !lockvm * Locks the Voicemaster child you're currently in to the number of current members.
 
-#### !unlockvm * Unlocks the Voicemaster slave you're currently in.
+#### !unlockvm * Unlocks the Voicemaster child you're currently in.
 </details>
 
 <details>
