@@ -440,7 +440,7 @@ readme_url = "https://github.com/FragSoc/esports-bot#twitch-integration"
 help_string = "Create a new Discord Webhook for Twitch notifications."
 description = "Creates a Webhook with the given name that can be used to post live notifications of specific Twitch channels to the specific Discord text channel the Webhook is bound to."
 usage = "<channel mention> <hook name>"
-readme_url = "https://github.com/FragSoc/esports-bot#twitch-createhook-optional-channel_mention-optional-hook-name"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-createhook-channel_mention-hook-name"
 
 [help.twitch_deletehook]
 help_string = "Delete an existing Discord Webhook for Twitch notifications."
@@ -452,19 +452,19 @@ readme_url = "https://github.com/FragSoc/esports-bot#twitch-deletehook-hook-name
 help_string = "Adds a Twitch channel to be tracked."
 description = "This will track the given Twitch channel and post its updates to the given discord Webhook. A channel can be bound to many Discord Webhooks. If a custom message is given, it will be used in the live notification and must be surrounded by double quotes."
 usage = "<channel name | channel url> <hook name> [optional: custom message]"
-readme_url = "https://github.com/FragSoc/esports-bot#twitch-add-twitch-handle--twitch-url-optional-custom-message"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-add-channel-name--channel-url--hook name-optional-custom-message"
 
 [help.twitch_remove]
 help_string = "Stops tracking a Twitch channel."
 description = "This will stop posting updates for the given Twitch channel in the given Webhook's text channel. If the Twitch channel is tracked in other channels, the notifications will still be posted there."
 usage = "<channel name | channel url> <hook name>"
-readme_url = "https://github.com/FragSoc/esports-bot#twitch-remove-twitch-handle"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-remove-twitch-handle-hook-name"
 
 [help.twitch_list]
 help_string = "Shows a list of the current Discord Webhooks and their tracked channels."
 description = "To only see one Webhooks channels, specify the Webhook name in the command."
 usage = "[optional: hook name]"
-readme_url = "https://github.com/FragSoc/esports-bot#twitch-list"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-list-optional-hook-name"
 
 [help.twitch_webhooks]
 help_string = "Get a list of the current Discord Webhooks for Twitch."

@@ -276,35 +276,43 @@ The `TWITCH_CALLBACK` is the URL to your HTTPS server. For testing you can use `
 
 - Run `ngrok http 443` and copy the `https` URL **not** the `htttp` URL and use that as your `TWITCH_CALLBACK` variable.
 
-#### !twitch createhook [optional: channel_mention] [optional: hook name]
+#### !twitch createhook \<channel mention> \<hook name>
 
-* Creates a Discord Webhook bound to the channel the command was executed in, unless a channel is given, and with a default name unless a name is given.
+* Creates a Discord Webhook bound to the channel given and with the name given, but prefixed with the Twitch Webhook prefix.
 
 #### !twitch deletehook \<hook name>
 
 * Deletes the given Discord Webhook.
 
-#### !twitch add \<twitch handle | twitch url> [optional: custom message]
+#### !twitch add \<channel name | channel url> \<hook name> [optional: custom message]
 
-* Adds a Twitch channel to be tracked in the current Discord server.
+* Adds a Twitch channel to be tracked in the given Webhook.
 * *__If a custom message is given, it must be surrounded by double quotes__*: `!twitch add <twitch_handle> "custom_message"`
 
-#### !twitch remove \<twitch handle>
+#### !twitch remove \<twitch handle> \<hook name>
 
 * Removes a Twitch channel from being tracked in the current Discord server.
 
-#### !twitch list
+#### !twitch list [optional: hook name]
 
 * Shows a list of all the currently tracked Twitch accounts and their custom messages.
+* If a hook name is given, only shows the information for the given hook.
 
-#### !twitch setmessage \<twitch handle> [optional: custom message]
+#### !twitch webhooks
+* Get a list of the current Discord Webhooks for Twitch notifications.
+
+#### !twitch setmessage \<twitch handle> \<hook name> [optional: custom message]
 
 * Sets the custom message of a Twitch channel. Can be left empty if the custom message is to be removed.
 * *__If a custom message is given, it must be surrounded by double quotes__*: `!twitch setmessage <twitch_handle> "custom_message"`
 
-#### !twitch getmessage \<twitch handle>
+#### !twitch getmessage \<twitch handle> [optional: hook name]
 
 * Gets the currently set custom message for a Twitch channel.
+* If a hook name is given, gets the currently set custom message for the Twitch channel in that Webhook.
+
+#### !twitch preview \<twitch handle> \<hook name>
+* Get a preview of the live notification for the given Twitch channel in the given Webhook.
 
 </details>
 
