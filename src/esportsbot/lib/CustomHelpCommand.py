@@ -179,7 +179,7 @@ class CustomHelpCommand(HelpCommand):
         Send the help for a given cog.
         :param cog: The cog to get the help about.
         """
-        await self.context.send(embed=self.get_cog_help(cog, cog.get_commands()))
+        await self.context.send(embed=await self.get_cog_help(cog, cog.get_commands()))
 
 
 class HelpMenu(ReactableMenu):
