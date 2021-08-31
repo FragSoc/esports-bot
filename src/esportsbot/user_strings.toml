@@ -305,6 +305,20 @@ readme_url = "https://github.com/FragSoc/esports-bot#twitter-remove-twitter-hand
 help_string = "Lists all the Twitter accounts currently tracked."
 readme_url = "https://github.com/FragSoc/esports-bot#twitter-list"
 
+[help.setdefaultroles]
+help_string = "Sets the list of roles to be given to users when they join the server."
+usage = "<one or many role mentions>"
+readme_url = "https://github.com/FragSoc/esports-bot#setdefaultroles-role_mention--role_id"
+
+[help.getdefaultroles]
+help_string = "Get the list of current default roles."
+readme_url = "https://github.com/FragSoc/esports-bot#getdefaultroles"
+
+[help.removedefaultroles]
+help_string = "Removes all default roles."
+description = "This will stop applying the current list of default roles to new members. Does not affect existing members."
+readme_url = "https://github.com/FragSoc/esports-bot#removedefaultroles"
+
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
 channel_set_already = "Logging channel already set to this channel"
