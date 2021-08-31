@@ -47,7 +47,7 @@ class AdminCog(commands.Cog):
         )
 
     @commands.check(is_dev)
-    @commands.command(name="version", help="Print the bot's version string")
+    @commands.command(name="version", help="Print the bot's version string", hidden=True)
     async def print_version(self, ctx):
         await ctx.channel.send(self.bot_version)
 
@@ -62,7 +62,7 @@ class AdminCog(commands.Cog):
         await ctx.channel.send(self.STRINGS['members'].format(member_count=ctx.guild.member_count))
 
     @commands.check(is_dev)
-    @commands.command(name="remove-cog")
+    @commands.command(name="remove-cog", hidden=True)
     async def remove_cog(self, context: commands.Context, cog_name: str):
         if "AdminCog" in cog_name:
             return
@@ -79,7 +79,7 @@ class AdminCog(commands.Cog):
             await context.send(f"The cog with name `{cog_name}` is not loaded.")
 
     @commands.check(is_dev)
-    @commands.command(name="add-cog")
+    @commands.command(name="add-cog", hidden=True)
     async def add_cog(self, context: commands.Context, cog_name: str):
         if "AdminCog" in cog_name:
             return
@@ -96,7 +96,7 @@ class AdminCog(commands.Cog):
             await context.send(f"The cog with name `{cog_name}` is already loaded.")
 
     @commands.check(is_dev)
-    @commands.command(name="reload-cog")
+    @commands.command(name="reload-cog", hidden=True)
     async def reload_cog(self, context: commands.Context, cog_name: str):
         try:
             package = "esportsbot.cogs."
