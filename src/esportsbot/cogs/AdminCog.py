@@ -24,7 +24,7 @@ class AdminCog(commands.Cog):
         return str(ctx.author.id) in devs
 
     @commands.command(
-        name="clear_messages",
+        name="clear",
         aliases=['cls',
                  'purge',
                  'delete',

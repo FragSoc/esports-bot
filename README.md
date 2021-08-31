@@ -132,7 +132,8 @@ The list below describes the different "Cogs" of the bot, their associated comma
 
 ### Administrator Tools
  Adds a few commands useful for admin operations.
-#### !clear_message * Aliases: `cls, purge, delete`
+#### !clear 
+* Aliases: `cls, purge, delete`
 * Clear the specified number of messages from the current text channel.
 
 #### !members
