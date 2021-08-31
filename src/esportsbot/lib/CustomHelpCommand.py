@@ -6,6 +6,10 @@ from esportsbot.DiscordReactableMenus.ReactableMenu import ReactableMenu
 
 
 class CustomHelpCommand(HelpCommand):
+    def __init__(self, **options):
+        self.help_strings = options.pop("help_strings")
+        super().__init__(**options)
+
     async def send_bot_help(self, mapping):
         """
         This function runs when the bare `help` command is run without any groups or commands specified.
@@ -29,11 +33,17 @@ class CustomHelpCommand(HelpCommand):
         :param commands: The commands and command groups in the given cog.
         :return: An embed for the cog.
         """
-        embed = Embed(title=getattr(cog, "qualified_name", "No Category"), description="​", colour=Colour.random())
+        embed = Embed(
+            title=getattr(cog,
+                          "qualified_name",
+                          self.help_strings.get("empty_category")),
+            description="​",
+            colour=Colour.random()
+        )
         for command in commands:
             await self.add_command_field(embed, command)
 
-        embed.set_footer(text="For more help go to https://github.com/FragSoc/esports-bot")
+        embed.set_footer(text=self.help_strings.get("embed_footer"))
 
         return embed
 
@@ -57,22 +67,38 @@ class CustomHelpCommand(HelpCommand):
         except MissingPermissions:
             return
 
-        name = command.name
+        fully_qualified_name = command.name
         if command.full_parent_name:
-            name = command.full_parent_name + " " + name
+            fully_qualified_name = f"{command.full_parent_name} {fully_qualified_name}"
 
-        value = ""
-        if command.help:
-            value += f"• {command.help}"
+        fully_qualified_name = fully_qualified_name.strip()
 
-        aliases = command.aliases
-        if aliases:
-            alias_string = str(aliases).replace("]", "").replace("[", "").replace("'", "")
-            value += f"\n• Aliases: {alias_string}"
+        # name = <prefix><fully qualified name>
+        # value = Short help string \n Alias String \n Help command string
 
-        value += f"\n• Help command: {self.clean_prefix}help {name}\n​"
+        help_dict = self.help_strings.get(fully_qualified_name.replace(" ", "_"))
+        name = self.help_strings["usage_string"].format(prefix=self.clean_prefix, fqn=fully_qualified_name)
+        if not help_dict:
+            # If the command is missing help string definition in the user_strings file, try and default to the defined
+            # help string in the command definition.
+            value = ""
+            if command.help:
+                value += self.help_strings["command_help_short"].format(help_string=command.help) + "\n"
+            else:
+                value += self.help_strings["command_help_short"].format(
+                    help_string=self.help_strings["missing_help_string"]
+                ) + "\n"
+        else:
+            value = self.help_strings["command_help_short"].format(help_string=help_dict["help_string"]) + "\n"
 
-        embed.add_field(name=f"**{self.clean_prefix}{name}**", value=value, inline=False)
+        if command.aliases:
+            alias_string = str(command.aliases).replace("]", "").replace("[", "").replace("'", "")
+            value += self.help_strings["command_alias"].format(aliases=alias_string) + "\n"
+        value += self.help_strings["command_help"].format(prefix=self.clean_prefix, fqn=fully_qualified_name) + "\n"
+
+        value += "​"
+
+        embed.add_field(name=f"**{name}**", value=value, inline=False)
 
     async def send_command_help(self, command):
         """
@@ -80,24 +106,34 @@ class CustomHelpCommand(HelpCommand):
         command that is not in a group.
         :param command: The command to get the help information of.
         """
-        name = command.name
+        fully_qualified_name = command.name
         if command.full_parent_name:
-            name = f"{command.full_parent_name} {name}"
+            fully_qualified_name = f"{command.full_parent_name} {fully_qualified_name}"
 
-        title = f"Showing help for — {self.clean_prefix}{name}"
-        description = "<No description>" if not command.help else command.help
+        fully_qualified_name = fully_qualified_name.strip()
+
+        title = self.help_strings["embed_title"].format(prefix=self.clean_prefix, fqn=fully_qualified_name)
+        usage = self.help_strings["usage_string"].format(prefix=self.clean_prefix, fqn=fully_qualified_name)
+
+        help_dict = self.help_strings.get(fully_qualified_name.replace(" ", "_"))
+        if not help_dict:
+            short = command.help if command.help else self.help_strings["missing_help_string"]
+            long_string = command.description if command.description else ""
+            usage += command.usage if command.usage else ""
+        else:
+            short = help_dict.get("help_string", self.help_strings["missing_help_string"])
+            long_string = help_dict.get("description", "")
+            usage += help_dict.get("usage", "")
+
+        description = self.help_strings["command_description"].format(short_string=short, long_string=long_string)
+
         embed = Embed(title=title, description=description, colour=Colour.random())
-
-        usage = "<No parameters>" if not command.usage else f"{self.clean_prefix}{name} {command.usage}"
+        if help_dict and help_dict.get("readme_url"):
+            embed.__setattr__("url", help_dict.get("readme_url"))
         embed.add_field(name=f"Usage:", value=usage, inline=False)
-        embed.add_field(
-            name="​",
-            value="• Parameters with `<>` around them are required parameters.\n"
-            "• Parameters with `[]` are optional parameters.\n"
-            "• The brackets are not required when executing the command."
-        )
+        embed.add_field(name="​", value=self.help_strings["command_footer"])
+        embed.set_footer(text=self.help_strings["embed_footer"])
 
-        embed.set_footer(text="For more help go to https://github.com/FragSoc/esports-bot")
         await self.context.send(embed=embed)
 
     async def send_group_help(self, group):
@@ -105,18 +141,29 @@ class CustomHelpCommand(HelpCommand):
         Runs when the help command is run with a parameter that is a command group.
         :param group: The command group to send the help information about.
         """
-        name = group.name
+        fully_qualified_name = group.name
         if group.full_parent_name:
-            name = f"{group.full_parent_name} {name}"
+            fully_qualified_name = f"{group.full_parent_name} {fully_qualified_name}"
 
-        title = f"Showing help for — {self.clean_prefix}{name}"
-        description = "​" if not group.help else f"{group.help}\n​"
+        fully_qualified_name = fully_qualified_name.strip()
+
+        title = self.help_strings["embed_title"].format(prefix=self.clean_prefix, fqn=fully_qualified_name)
+        help_dict = self.help_strings.get(fully_qualified_name.replace(" ", "_"))
+        if not help_dict:
+            description = "​" if not group.help else group.help
+        else:
+            description = help_dict.get("help_string", "​")
+
+        description += "\n​"
         embed = Embed(title=title, description=description, colour=Colour.random())
+
+        if help_dict and help_dict.get("readme_url"):
+            embed.__setattr__("url", help_dict.get("readme_url"))
 
         for command in group.commands:
             await self.add_command_field(embed, command)
 
-        embed.set_footer(text="For more help go to https://github.com/FragSoc/esports-bot")
+        embed.set_footer(text=self.help_strings["embed_footer"])
         await self.context.send(embed=embed)
 
     async def send_cog_help(self, cog):

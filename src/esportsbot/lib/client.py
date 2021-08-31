@@ -99,6 +99,7 @@ def instance() -> EsportsBot:
                       "!"),
             "esportsbot/user_strings.toml",
             intents=intents,
-            help_command=CustomHelpCommand()
+            help_command=None
         )
+        _instance.help_command = CustomHelpCommand(help_strings=_instance.STRINGS["help"])
     return _instance

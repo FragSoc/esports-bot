@@ -3,16 +3,19 @@ command_error_required_arguments = "Arguments are required for this command! See
 guild_leave = "Left the guild: {guild_name}"
 
 [help]
-command_footer = "• Parameters with `<>` around them are required parameters.\n• Parameters with `[]` are optional parameters.\n• The brackets are not required when executing the command."
-embed_footer = "For more help go to https://github.com/FragSoc/esports-bot"
-command_help = "• Help Command: {help_string}"
-command_alias = "• Aliases: {aliases}"
+missing_help_string = ":warning: Missing help string :warning:"
 empty_category = "No Category"
-embed_title = "Showing help for Showing help for — {prefix}{name}"
-usage_string = "{prefix}{fqn}"
+embed_title = "Showing help for — {prefix}{fqn}"
+embed_footer = "For more help go to https://github.com/FragSoc/esports-bot"
+usage_string = "{prefix}{fqn} "
+command_help_short = "• {help_string}"
+command_description = "{short_string} \n\n {long_string}"
+command_help = "• Help Command: {prefix}help {fqn}"
+command_alias = "• Aliases: {aliases}"
+command_footer = "• Parameters with `<>` around them are required parameters.\n• Parameters with `[]` are optional parameters.\n• The brackets are not required when executing the command."
 
 [help.music]
-help_string = "This is a command group for controlling music playback. All subcommands of this one can only be run in the music channel. Just executing this command will not do anything, use `{prefix}help music` to find a list of all the music commands."
+help_string = "This is a command group for controlling music playback. All subcommands of this one can only be run in the music channel. Just executing this command will not do anything, use the help command for this command to see the list of all music commands."
 readme_url = "https://github.com/FragSoc/esports-bot#music-bot"
 
 [help.music_queue]
