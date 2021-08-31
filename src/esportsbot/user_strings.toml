@@ -102,6 +102,101 @@ help_string = "Unlinks the currently set music channel from being the music chan
 description = "This will just stop the channel from processing song requests, the channel will not be deleted with this command and will just be a regular text channel."
 readme_url = "https://github.com/FragSoc/esports-bot#musicadmin-remove"
 
+[help.pingme]
+help_string = "This is a command group used to create custom roles that have ping cooldown timers."
+readme_url = "https://github.com/FragSoc/esports-bot#pingable-roles"
+
+[help.pingme_settings]
+help_string = "This is a command group used to manage the default settings for pingable roles in this server. These commands require the `administrator` permission in this server."
+readme_url = "https://github.com/FragSoc/esports-bot#pingable-roles"
+
+[help.pingme_settings_get_settings]
+help_string = "Shows the current settings for this server."
+description = "The settings shown are the default settings applied to new roles when they are created. Polls and Roles can have some of their settings overridden with other pingme settings commands."
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-settings-get-settings"
+
+[help.pingme_settings_default_settings]
+help_string = "Resets all settings for this server to the bot-defined defaults."
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-settings-default-settings"
+
+[help.pingme_settings_poll_length]
+help_string = "Sets the default poll length to the given time in seconds."
+description = "This is the default length used in a poll if when no poll length is given when creating a poll."
+usage = "<poll length in seconds>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-settings-poll-length-poll-length-in-seconds"
+
+[help.pingme_settings_poll_threshold]
+help_string = "Sets the number of votes required for a poll to pass."
+description = "If a poll passes or equals the value set here, when finished a pingable role will be created with the default settings and all users who voted will be granted the new role."
+usage = "<number of votes required>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-settings-poll-threshold-number-of-votes-threshold"
+
+[help.pingme_settings_ping_cooldown]
+help_string = "Sets the default ping cooldown for new pingable roles."
+description = "This cooldown is the time in which the role cannot be mentioned again. This ping cooldown will only apply to new roles created, and will not affect roles previously created with the default ping cooldown."
+usage = "<ping cooldown in seconds>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-settings-ping-cooldown-cooldown-in-seconds"
+
+[help.pingme_settings_poll_emoji]
+help_string = "Sets the emoji used in voting polls."
+description = "This sets the emoji that users use to vote on if they want a new pingable role. This will not affect any already running polls."
+usage = "<emoji>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-settings-poll-emoji-emoji"
+
+[help.pingme_settings_role_emoji]
+help_string = "Sets the emoji used in the role reaction menu."
+description = "Once a role is created it will also create a role reaction menu so that users who didn't vote but want the role can get the role. This command sets the emoji for the reaction used to get or remove the role from a user. This will not affect any already existing role reaction menus."
+usage = "<emoji>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-settings-role-emoji-emoji"
+
+[help.pingme_create_role]
+help_string = "Creates a new poll to create a new role."
+description = "Creates a new poll for users to vote on. If the number of votes surpasses the servers defined vote threshold, a new role is created with the name given in this command. The role will be given to all users who voted and a reaction menu will be created so users who have the role can remove it and users who want the role can receive it."
+usage="<role name> [Optional: poll length in seconds]"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-create-role-role-name-optional-poll-length-in-seconds"
+
+[help.pingme_delete_role]
+help_string = "Deletes the roles mentioned."
+description = "Completely deletes all roles mentioned, as long as the roles mentioned are pingable roles. This command cannot delete roles that are not pingable roles."
+usage = "<one or many role mentions>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-delete-role-one-or-many-role-mentions"
+
+[help.pingme_convert_role]
+help_string = "Converts a mentioned role into a pingable one."
+description = "This creates the reaction menu for the role and makes it a role that has a ping cooldown, which by default is the server default ping cooldown timer."
+usage = "<one or many role mentions>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-convert-role-one-or-many-role-mentions"
+
+[help.pingme_convert_pingable]
+help_string = "Converts a mentioned role from a pingable role to a normal one."
+description = "This will make it so that the role is no longer bound by a cooldown as to how many often it can be mentioned. It will also mean that there will no longer be a reaction menu for users to receive a role."
+usage = "<one or many role mentions>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-convert-pingable-one-or-many-role-mentions"
+
+[help.pingme_role_cooldown]
+help_string = "Sets the ping cooldown for the given role."
+description = "This will set the number of seconds users must wait before the role can be mentioned again."
+usage = "<role mention | role ID> <cooldown in seconds>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-role-cooldown-role-mention--role-id-cooldown-in-seconds"
+
+[help.pingme_role_emoji]
+help_string = "Sets the emoji for the given role."
+description = "If the mentioned role is a pingable role, this will set the emoji used in the role's reaction menu."
+usage = "<role mention | role ID> <emoji>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-role-emoji-role-mention--role-id-emoji"
+
+[help.pingme_disable_role]
+help_string = "Disables a pingable role."
+description = "If the role mentioned is a pingable role, this will stop it from being mentioned and will also disable the reaction menu for the role."
+usage = "<one or many role mentions>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-disable-role-one-or-many-role-mentions"
+
+[help.pingme_enable_role]
+help_string = "Enables a pingable role."
+description = "If the role mentioned is a pingable role, it will allow the role to be mentioned with it's mention cooldown in place and will enable the reaction menu."
+usage = "<one or many role mentions>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-enable-role-one-or-many-role-mentions"
+
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
 channel_set_already = "Logging channel already set to this channel"
