@@ -310,22 +310,11 @@ class TwitterCog(commands.Cog):
             guild_info[str(item.twitter_user_id)].add(item.guild_id)
         return guild_info
 
-    @commands.group(
-        name="twitter",
-        help="Commands that are used to post twitter status updates to channels.",
-        invoke_without_command=True
-    )
+    @commands.group(name="twitter", invoke_without_command=True)
     async def command_group(self, context: commands.Context):
         pass
 
-    @command_group.command(
-        name="hook",
-        alias=["addtwitterhook",
-               "create-hook"],
-        usage="[text channel] [hook name]",
-        help="Creates a new Discord Webhook in a server. If the parameter for hook name is filled, "
-        "the channel parameter must also be filled."
-    )
+    @command_group.command(name="hook", alias=["addtwitterhook", "create-hook"])
     async def twitterhook(self, ctx: commands.Context, channel=None, hook_name=None) -> bool:
         """
         Creates a Webhook in a guild. If the channel is specified the Webhook will be bound to that channel
@@ -456,13 +445,7 @@ class TwitterCog(commands.Cog):
 
         return None, None
 
-    @command_group.command(
-        name="remove-hook",
-        alias=["deltwitterhook",
-               "delete-hook"],
-        usage="<hook name>",
-        help="Deletes a Discord Webhook with the name given."
-    )
+    @command_group.command(name="remove-hook", alias=["deltwitterhook", "delete-hook"])
     async def removetwitterhook(self, ctx: discord.ext.commands.Context, name: str) -> bool:
         """
         Deletes a discord Webhook from the calling guild using the name of the Webhook.
@@ -494,11 +477,7 @@ class TwitterCog(commands.Cog):
         await ctx.send(self.user_strings["webhook_deleted"].format(name=hook_info.get("name"), hook_id=h_id))
         return True
 
-    @command_group.command(
-        name="add",
-        usage="<account handle>",
-        help="Starts tracking a given twitter account in this server."
-    )
+    @command_group.command(name="add")
     async def addtwitter(self, ctx: discord.ext.commands.Context, account: str) -> bool:
         """
         Adds a new account to be tracked in the guild from which the command was called.
@@ -550,11 +529,7 @@ class TwitterCog(commands.Cog):
             await ctx.send(self.user_strings["account_missing_error"].format(account=account, operation="add"))
             return False
 
-    @command_group.command(
-        name="remove",
-        usage="<account handle>",
-        help="Stops tracking a given twitter account in this server."
-    )
+    @command_group.command(name="remove")
     async def removetwitter(self, ctx: discord.ext.commands.Context, account: str) -> bool:
         """
         Removes an account from the guild from which the command was called.
@@ -603,12 +578,7 @@ class TwitterCog(commands.Cog):
             await ctx.send(self.user_strings["account_missing_error".format(account=account, operation="remove")])
             return False
 
-    @command_group.command(
-        name="list",
-        alias=["accounts",
-               "get-all"],
-        help="Gets a list of the currently tracked accounts in this server."
-    )
+    @command_group.command(name="list", alias=["accounts", "get-all"])
     async def gettwitters(self, ctx: discord.ext.commands.Context):
         """
         Gets the list of Twitter handles that are currently tracked in the guild that called the command.

@@ -275,6 +275,36 @@ help_string = "Stops the current logging channel from being active."
 description = "The current logging channel will become a regular channel and logging events will no longer be posted to the channel."
 readme_url = "https://github.com/FragSoc/esports-bot#removelogchannel"
 
+[help.twitter]
+help_string = "This is the command group used to manage posting Twitter updates to discord channels. Use the help command for this command to see a list of all the Twitter related commands."
+readme_url = "https://github.com/FragSoc/esports-bot#twitter-integration"
+
+[help.twitter_hook]
+help_string = "Create a new Discord Webhook for Twitter."
+description = "This will create a new Discord Webhook that can then be used to post Twitter updates to the channel that the webhook is bound to. If you want a specific name you must include the channel parameter."
+usage = "[optional: channel mention] [optional: hook name]"
+readme_url = "https://github.com/FragSoc/esports-bot#twitter-hook-optional-channel-mention-optional-hook-name"
+
+[help.twitter_remove_hook]
+help_string = "Deletes an existing Discord Webhook for Twitter."
+description = "This will delete the given Discord Webhook. You do not need to include the Twitter Webhook prefix, but the Discord Webhook you are wanting to delete must be one that has the Twitter prefix in it. Once delete, Twitter updates will no longer be posted to that channel."
+usage = "<hook name>"
+readme_url = "https://github.com/FragSoc/esports-bot#twitter-remove-hook-hook-name"
+
+[help.twitter_add]
+help_string = "Adds a Twitter account to be tracked."
+usage = "<account handle>"
+readme_url = "https://github.com/FragSoc/esports-bot#twitter-add-twitter-handle"
+
+[help.twitter_remove]
+help_string = "Stops tracking a Twitter account."
+usage = "<account handle>"
+readme_url = "https://github.com/FragSoc/esports-bot#twitter-remove-twitter-handle"
+
+[help.twitter_list]
+help_string = "Lists all the Twitter accounts currently tracked."
+readme_url = "https://github.com/FragSoc/esports-bot#twitter-list"
+
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
 channel_set_already = "Logging channel already set to this channel"
