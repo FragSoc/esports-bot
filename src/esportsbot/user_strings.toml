@@ -432,6 +432,62 @@ description = "Resets a poll to have no votes on it. You must be the creator of 
 usage = "<poll menu ID>"
 readme_url = "https://github.com/FragSoc/esports-bot#votes-reset-poll-menu-id"
 
+[help.twitch]
+help_string = "This is a command group used to control the managing of posting Twitch live notifications. Use the help command of this command to see available subcommands."
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-integration"
+
+[help.twitch_createhook]
+help_string = "Create a new Discord Webhook for Twitch notifications."
+description = "Creates a Webhook with the given name that can be used to post live notifications of specific Twitch channels to the specific Discord text channel the Webhook is bound to."
+usage = "<channel mention> <hook name>"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-createhook-optional-channel_mention-optional-hook-name"
+
+[help.twitch_deletehook]
+help_string = "Delete an existing Discord Webhook for Twitch notifications."
+description = "Deletes a Webhook used for Twitch notifications. The name provided does not need to include the Twitch Webhook prefix, but it does have to be a Webhook used for Twitch notifications. Any channel that was bound to the given Webhook will no longer have it's live notifications posted to that Discord channel."
+usage = "<hook name>"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-deletehook-hook-name"
+
+[help.twitch_add]
+help_string = "Adds a Twitch channel to be tracked."
+description = "This will track the given Twitch channel and post its updates to the given discord Webhook. A channel can be bound to many Discord Webhooks. If a custom message is given, it will be used in the live notification and must be surrounded by double quotes."
+usage = "<channel name | channel url> <hook name> [optional: custom message]"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-add-twitch-handle--twitch-url-optional-custom-message"
+
+[help.twitch_remove]
+help_string = "Stops tracking a Twitch channel."
+description = "This will stop posting updates for the given Twitch channel in the given Webhook's text channel. If the Twitch channel is tracked in other channels, the notifications will still be posted there."
+usage = "<channel name | channel url> <hook name>"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-remove-twitch-handle"
+
+[help.twitch_list]
+help_string = "Shows a list of the current Discord Webhooks and their tracked channels."
+description = "To only see one Webhooks channels, specify the Webhook name in the command."
+usage = "[optional: hook name]"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-list"
+
+[help.twitch_webhooks]
+help_string = "Get a list of the current Discord Webhooks for Twitch."
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-webhooks"
+
+[help.twitch_setmessage]
+help_string = "Sets the custom message for a Twitch channel."
+description = "This will set the custom live message for a Twitch channel for a specific Webhook. If the custom message is left empty, the custom message is removed from the live notification."
+usage = "<channel name> <hook name> [optional: custom message]"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-setmessage-twitch-handle-hook-name-optional-custom-message"
+
+[help.twitch_getmessage]
+help_string = "Get the custom message(s) of a Twitch channel."
+description = "If no hook name is specified, it will return a list of all the custom messages for all the Webhooks the channel is tracked in. Otherwise it will return just the message for the given Webhook."
+usage = "<channel name> [optional: hook name]"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-getmessage-twitch-handle-optional-hook-name"
+
+[help.twitch_preview]
+help_string = "Preview the live notification for a Twitch channel."
+description = "See what a notification will look like in a given Discord Webhook for the given Twitch channel."
+usage = "<channel name> <hook name>"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-preview-twitch-handle-hook-name"
+
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
 channel_set_already = "Logging channel already set to this channel"
