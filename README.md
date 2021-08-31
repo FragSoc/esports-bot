@@ -79,9 +79,6 @@ python3 main.py
 ## Current Functions
 The list below describes the different "Cogs" of the bot, their associated commands, and any additional information required to set them up.
 
-<details>
-<summary>Voicemaster</summary>
-
 ### Voicemaster
  #### !setvmparent <channel_id>
 * Make the given ID a Voicemaster parent voice channel.
@@ -103,10 +100,6 @@ The list below describes the different "Cogs" of the bot, their associated comma
 
 #### !unlockvm 
 * Unlocks the Voicemaster child you're currently in.
-</details>
-
-<details>
-<summary>Default Role</summary>
 
 ### Default role
  #### !setdefaultroles <role_mention | role_id>
@@ -117,10 +110,6 @@ The list below describes the different "Cogs" of the bot, their associated comma
 
 #### !removedefaultroles
 * Removes the current default roles for the server.
-</details>
-
-<details>
-<summary>Log Channel</summary>
 
 ### Log Channel
  #### !setlogchannel <channel_mention | channel_id> 
@@ -131,10 +120,6 @@ The list below describes the different "Cogs" of the bot, their associated comma
 
 #### !removelogchannel 
 * Removes the current log channel value.
-</details>
-
-<details>
-<summary>Administrator Tools</summary>
 
 ### Administrator Tools
  Adds a few commands useful for admin operations.
@@ -160,11 +145,6 @@ The list below describes the different "Cogs" of the bot, their associated comma
 #### !reload-cog \<cog name>
 * Reloads the given cog.
 * *This command requires your user ID to be defined in the env file under `DEV_IDS`*
-
-</details>
-
-<details>
-<summary>Twitter Integration</summary>
 
 ### Twitter Integration
 
@@ -195,11 +175,6 @@ Requires the `ENABLE_TWITTER` variable to be set to `TRUE` in order to function.
 * Aliases: `accounts, get-all`.
 * Returns a list of the currently tracked Twitter accounts for the server.
 
-</details>
-
-<details>
-<summary>Event Channel Management</summary>
-
 ### Event Category Management
 
 Each server can have any number of named event categories, where each category creates a sign-in channel, a general chat, a voice chat and a role for the event. All commands in this cog required the `administrator` permission in Discord.
@@ -222,11 +197,6 @@ Each server can have any number of named event categories, where each category c
 #### !events delete-event \<event name>
 
 * Deletes all the channels in the category for the event and deletes the role created by the bot for the event.
-
-</details>
-
-<details>
-<summary>Twitch Integration</summary>
 
 ### Twitch Integration
 
@@ -314,11 +284,6 @@ The `TWITCH_CALLBACK` is the URL to your HTTPS server. For testing you can use `
 #### !twitch preview \<twitch handle> \<hook name>
 * Get a preview of the live notification for the given Twitch channel in the given Webhook.
 
-</details>
-
-<details>
-<summary>Role Reaction Menus</summary>
-
 ### Role Reaction Menus.
 
 Role reaction menus allow admins to create reactable menus that when reacted to grant defined roles to the user.
@@ -369,11 +334,6 @@ For devs:
 
 * Shows or Hides all role reaction menu footers, which contain the ID of the role reaction menu for ease of identification.
 * *Requires `administrator` permission in Discord*
-
-</details>
-
-<details>
-<summary>Poll Reaction Menus</summary>
 
 ### Poll Reaction menus.
 
@@ -432,11 +392,6 @@ For devs:
 * Aliases: `reset, clear, restart`
 * Removes all the current user-added reactions from the poll with the menu id given.
 * *You must be the owner of the poll or be an administrator*
-
-</details>
-
-<details>
-<summary>Music Bot</summary>
 
 ### Music Bot
 
@@ -540,11 +495,6 @@ For this cog to work, the `GOOGLE_API` env var must also be set, and instruction
 
 * Moves the song at position `from position` to position `to position` in the queue.
 
-</details>
-
-<details>
-<summary>Pingable Roles</summary>
-
 ### Pingable Roles
 
 Pingable roles are roles that can be voted in to be created by any user, and that once created have a cooldown tied to how often that role can be pinged.
@@ -636,5 +586,3 @@ After the poll finishes, a reaction menu gets created, allowing *any* user to re
 * Sets the emoji to use in the reaction menu for the given role.
 * The role provided __must__ be a pingable role created with this cog.
 * *Requires `administrator` permission in Discord*
-
-</details>
