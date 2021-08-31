@@ -103,11 +103,11 @@ description = "This will just stop the channel from processing song requests, th
 readme_url = "https://github.com/FragSoc/esports-bot#musicadmin-remove"
 
 [help.pingme]
-help_string = "This is a command group used to create custom roles that have ping cooldown timers."
+help_string = "This is a command group used to create custom roles that have ping cooldown timers. Use the help command to see a list of all `pingme` subcommands."
 readme_url = "https://github.com/FragSoc/esports-bot#pingable-roles"
 
 [help.pingme_settings]
-help_string = "This is a command group used to manage the default settings for pingable roles in this server. These commands require the `administrator` permission in this server."
+help_string = "This is a command group used to manage the default settings for pingable roles in this server. These commands require the `administrator` permission in this server. Use the help command to see a list of all subcommands."
 readme_url = "https://github.com/FragSoc/esports-bot#pingable-roles"
 
 [help.pingme_settings_get_settings]
