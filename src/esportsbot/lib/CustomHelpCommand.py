@@ -54,6 +54,9 @@ class CustomHelpCommand(HelpCommand):
         :param embed: THe embed to add the field to.
         :param command: The command to add the help field of.
         """
+        if command.hidden and not self.context.author.guild_permissions.administrator:
+            return
+
         checks = command.checks
         checks_to_add = []
         for check in checks:
