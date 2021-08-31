@@ -9,7 +9,6 @@ from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Voting_menus
 
 DELETE_ON_CREATE = os.getenv("DELETE_VOTING_CREATION", "FALSE").lower() == "true"
-MAKE_POLL_README = "#votes-make-poll-title-emoji-description"
 
 
 class VotingCog(commands.Cog):
@@ -82,7 +81,7 @@ class VotingCog(commands.Cog):
         self.db.delete(db_item)
         await menu.message.delete()
 
-    @commands.group(name="votes", help="Create reaction menus that can be used as a poll.")
+    @commands.group(name="votes")
     async def command_group(self, context: commands.Context):
         """
         The command group used to make all commands sub-commands .
@@ -90,13 +89,7 @@ class VotingCog(commands.Cog):
         """
         pass
 
-    @command_group.command(
-        name="make-poll",
-        usage="<title> \n[options]\n...",
-        help="Creates a new poll for users to vote on. "
-        "Each of the options to vote on are put on a new line, more help regarding this command can be found here: "
-        f"https://github.com/FragSoc/esports-bot{MAKE_POLL_README}."
-    )
+    @command_group.command(name="make-poll")
     async def create_poll_menu(self, context: commands.Context):
         """
         Creates a new poll with the options provided in the command .
@@ -124,13 +117,7 @@ class VotingCog(commands.Cog):
         if DELETE_ON_CREATE:
             await context.message.delete()
 
-    @command_group.command(
-        name="add-option",
-        usage="<menu id> <emoji> <description>",
-        help="Adds another option to an existing poll.",
-        aliases=["add",
-                 "aoption"]
-    )
+    @command_group.command(name="add-option", aliases=["add", "aoption"])
     async def add_poll_option(self, context: commands.Context, menu_id: int, emoji):
         """
         Adds another poll option to the given poll .
@@ -150,13 +137,7 @@ class VotingCog(commands.Cog):
         await voting_menu.update_message()
         self.add_or_update_db(voting_menu.id)
 
-    @command_group.command(
-        name="remove-option",
-        usage="<menu id> <emoji>",
-        help="Removes a poll option from an existing poll",
-        aliases=["remove",
-                 "roption"]
-    )
+    @command_group.command(name="remove-option", aliases=["remove", "roption"])
     async def remove_poll_option(self, context: commands.Context, menu_id: int, emoji):
         """
         Remove an option from a poll .
@@ -173,13 +154,7 @@ class VotingCog(commands.Cog):
         await voting_menu.update_message()
         self.add_or_update_db(voting_menu.id)
 
-    @command_group.command(
-        name="delete-poll",
-        usage="<menu id>",
-        help="Deletes a given role reaction menu.",
-        aliases=["delete",
-                 "del"]
-    )
+    @command_group.command(name="delete-poll",  aliases=["delete", "del"])
     async def delete_poll(self, context: commands.Context, menu_id: int):
         """
         Delete a poll .
@@ -197,7 +172,7 @@ class VotingCog(commands.Cog):
         self.db.delete(db_item)
         await context.reply(self.user_strings["delete_menu"].format(menu_id=voting_menu.id))
 
-    @command_group.command(name="end-poll", usage="<menu id>", help="Finishes a poll.", aliases=["finish", "complete", "end"])
+    @command_group.command(name="end-poll", aliases=["finish", "complete", "end"])
     async def finish_poll(self, context: commands.Context, menu_id: int):
         """
         Finishes a poll to get results and stop new votes from coming in .
@@ -211,14 +186,7 @@ class VotingCog(commands.Cog):
 
         await self.finalise_poll(voting_menu)
 
-    @command_group.command(
-        name="reset-poll",
-        usage="<menu id>",
-        help="Removes all user reactions from the poll.",
-        aliases=["reset",
-                 "clear",
-                 "restart"]
-    )
+    @command_group.command(name="reset-poll", aliases=["reset", "clear", "restart"])
     async def reset_poll_votes(self, context: commands.Context, menu_id: int):
         """
         Reset the current votes on a poll .

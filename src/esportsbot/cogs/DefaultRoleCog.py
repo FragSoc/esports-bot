@@ -46,11 +46,7 @@ class DefaultRoleCog(commands.Cog):
                 guildID=member.guild.id
             )
 
-    @commands.command(
-        name="setdefaultroles",
-        usage="<@role> <@role> <@role> ...",
-        help="Sets the roles that the server gives to members when they join the server"
-    )
+    @commands.command(name="setdefaultroles")
     @commands.has_permissions(administrator=True)
     async def setdefaultroles(self, ctx, *, args: str):
         role_list = args.split(" ")
@@ -86,11 +82,7 @@ class DefaultRoleCog(commands.Cog):
             else:
                 await ctx.channel.send(self.STRINGS['default_roles_set_error'])
 
-    @commands.command(
-        name="getdefaultroles",
-        usage="",
-        help="Gets the roles that the server gives to members when they join the server"
-    )
+    @commands.command(name="getdefaultroles")
     @commands.has_permissions(administrator=True)
     async def getdefaultroles(self, ctx):
         # Get all the default role for the server from database
@@ -106,11 +98,7 @@ class DefaultRoleCog(commands.Cog):
         else:
             await ctx.channel.send(self.STRINGS['default_role_missing'])
 
-    @commands.command(
-        name="removedefaultroles",
-        usage="",
-        help="Removes the roles that the server gives to members when they join the server"
-    )
+    @commands.command(name="removedefaultroles")
     @commands.has_permissions(administrator=True)
     async def removedefaultroles(self, ctx):
         # Get all the default role for the server from database

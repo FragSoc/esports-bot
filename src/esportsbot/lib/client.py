@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import Intents, Embed, Message, Colour
 from esportsbot.DiscordReactableMenus.EmojiHandler import MultiEmoji
 from esportsbot.db_gateway import DBGatewayActions
+from esportsbot.lib.CustomHelpCommand import CustomHelpCommand
 from esportsbot.models import Guild_info
 from typing import Dict, MutableMapping, Union
 from datetime import datetime
@@ -93,5 +94,12 @@ def instance() -> EsportsBot:
     if _instance is None:
         intents = Intents.default()
         intents.members = True
-        _instance = EsportsBot(os.getenv("COMMAND_PREFIX", "!"), "esportsbot/user_strings.toml", intents=intents)
+        _instance = EsportsBot(
+            os.getenv("COMMAND_PREFIX",
+                      "!"),
+            "esportsbot/user_strings.toml",
+            intents=intents,
+            help_command=None
+        )
+        _instance.help_command = CustomHelpCommand(help_strings=_instance.STRINGS["help"])
     return _instance

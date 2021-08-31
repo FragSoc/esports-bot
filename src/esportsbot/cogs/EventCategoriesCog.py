@@ -224,11 +224,7 @@ class EventCategoriesCog(commands.Cog):
         voice_channel = list(filter(lambda x: VOICE_CHANNEL_SUFFIX in x.name, event_menu.event_category.voice_channels))[0]
         return general_channel, sign_in_channel, voice_channel
 
-    @commands.group(
-        name="events",
-        help="Create events with sign in menus dedicated event roles, and event channels.",
-        invoke_without_command=True
-    )
+    @commands.group(name="events", invoke_without_command=True)
     async def event_command_group(self, context: commands.context):
         """
         The command group used to make all commands sub-commands .
@@ -236,13 +232,7 @@ class EventCategoriesCog(commands.Cog):
         """
         pass
 
-    @event_command_group.command(
-        name="create-event",
-        usage="<event name> [shared role]",
-        help="Creates a new category, text channel, voice channel and sign-in menu with the given name, and "
-        "once opened will, the sign-in channel will be available to the given role. If no role is given, the server default "
-        "role will be used as the shared role. If there is no shared role @everyone is used."
-    )
+    @event_command_group.command(name="create-event")
     @commands.has_permissions(administrator=True)
     async def create_event(self, context: commands.Context, event_name: str, shared_role: Role = None):
         """
@@ -342,11 +332,7 @@ class EventCategoriesCog(commands.Cog):
             )
         )
 
-    @event_command_group.command(
-        name="open-event",
-        usage="<event name>",
-        help="Reveal the sign-in channel for the name event channel."
-    )
+    @event_command_group.command(name="open-event")
     @commands.has_permissions(administrator=True)
     async def open_event(self, context: commands.Context, event_name: str):
         """
@@ -391,11 +377,7 @@ class EventCategoriesCog(commands.Cog):
         )
         return
 
-    @event_command_group.command(
-        name="close-event",
-        usage="<event name>",
-        help="Close off the event channels to everyone that isn't an admin"
-    )
+    @event_command_group.command(name="close-event")
     @commands.has_permissions(administrator=True)
     async def close_event(self, context: commands.Context, event_name: str):
         """
@@ -435,11 +417,7 @@ class EventCategoriesCog(commands.Cog):
         await context.reply(self.user_strings["success_event_closed"])
         return
 
-    @event_command_group.command(
-        name="delete-event",
-        usage="<event name>",
-        help="Deletes the event channels and the temporary event role"
-    )
+    @event_command_group.command(name="delete-event")
     @commands.has_permissions(administrator=True)
     async def delete_event(self, context: commands.Context, event_name: str):
         """

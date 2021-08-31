@@ -83,43 +83,54 @@ The list below describes the different "Cogs" of the bot, their associated comma
 <summary>Voicemaster</summary>
 
 ### Voicemaster
- #### !setvmmaster <channel_id>
-* Make the given ID a Voicemaster master.
+ #### !setvmparent <channel_id>
+* Make the given ID a Voicemaster parent voice channel.
 
-#### !getvmmasters * Get all the Voicemaster masters in the server.
+#### !getvmparents 
+* Get all the Voicemaster parent voice channels in the server.
 
-#### !removevmmaster <channel_id>
-* Remove the given ID as a Voicemaster master.
+#### !removevmparent <channel_id>
+* Remove the given ID as a Voicemaster parent voice channel.
 
-#### !removeallmasters * Remove all Voicemaster masters from the server.
+#### !removeallparents 
+* Remove all Voicemaster parents from the server.
 
-#### !killallslaves * Kill all the Voicemaster slave channels in the server.
+#### !removeallchildren 
+* Delete all the Voicemaster child channels in the server.
 
-#### !lockvm * Locks the Voicemaster slave you're currently in to the number of current members.
+#### !lockvm 
+* Locks the Voicemaster child you're currently in to the number of current members.
 
-#### !unlockvm * Unlocks the Voicemaster slave you're currently in.
+#### !unlockvm 
+* Unlocks the Voicemaster child you're currently in.
 </details>
 
 <details>
 <summary>Default Role</summary>
 
 ### Default role
- #### !setdefaultroles <role_mention | role_id> * Sets the roles that the server gives to members when they join the server.
+ #### !setdefaultroles <role_mention | role_id>
+* Sets the roles that the server gives to members when they join the server.
 
-#### !getdefaultroles * Gets the current default roles set for the server.
+#### !getdefaultroles 
+* Gets the current default roles set for the server.
 
-#### !removedefaultroles * Removes the current default roles for the server.
+#### !removedefaultroles
+* Removes the current default roles for the server.
 </details>
 
 <details>
 <summary>Log Channel</summary>
 
 ### Log Channel
- #### !setlogchannel <channel_mention | channel_id> * Set the log channel to the #'ed channel or given role ID.
+ #### !setlogchannel <channel_mention | channel_id> 
+* Set the log channel to the #'ed channel or given role ID.
 
-#### !getlogchannel * Gets the current log channel value.
+#### !getlogchannel 
+* Gets the current log channel value.
 
-#### !removelogchannel * Removes the current log channel value.
+#### !removelogchannel 
+* Removes the current log channel value.
 </details>
 
 <details>
@@ -127,8 +138,13 @@ The list below describes the different "Cogs" of the bot, their associated comma
 
 ### Administrator Tools
  Adds a few commands useful for admin operations.
-#### !clear_message * Aliases: `cls, purge, delete`
+
+#### !clear 
+* Aliases: `cls, purge, delete`
 * Clear the specified number of messages from the current text channel.
+
+#### !version
+* Get the current version of the bot.
 
 #### !members
 * List the current number of members in the server.
@@ -260,35 +276,43 @@ The `TWITCH_CALLBACK` is the URL to your HTTPS server. For testing you can use `
 
 - Run `ngrok http 443` and copy the `https` URL **not** the `htttp` URL and use that as your `TWITCH_CALLBACK` variable.
 
-#### !twitch createhook [optional: channel_mention] [optional: hook name]
+#### !twitch createhook \<channel mention> \<hook name>
 
-* Creates a Discord Webhook bound to the channel the command was executed in, unless a channel is given, and with a default name unless a name is given.
+* Creates a Discord Webhook bound to the channel given and with the name given, but prefixed with the Twitch Webhook prefix.
 
 #### !twitch deletehook \<hook name>
 
 * Deletes the given Discord Webhook.
 
-#### !twitch add \<twitch handle | twitch url> [optional: custom message]
+#### !twitch add \<channel name | channel url> \<hook name> [optional: custom message]
 
-* Adds a Twitch channel to be tracked in the current Discord server.
+* Adds a Twitch channel to be tracked in the given Webhook.
 * *__If a custom message is given, it must be surrounded by double quotes__*: `!twitch add <twitch_handle> "custom_message"`
 
-#### !twitch remove \<twitch handle>
+#### !twitch remove \<twitch handle> \<hook name>
 
 * Removes a Twitch channel from being tracked in the current Discord server.
 
-#### !twitch list
+#### !twitch list [optional: hook name]
 
 * Shows a list of all the currently tracked Twitch accounts and their custom messages.
+* If a hook name is given, only shows the information for the given hook.
 
-#### !twitch setmessage \<twitch handle> [optional: custom message]
+#### !twitch webhooks
+* Get a list of the current Discord Webhooks for Twitch notifications.
+
+#### !twitch setmessage \<twitch handle> \<hook name> [optional: custom message]
 
 * Sets the custom message of a Twitch channel. Can be left empty if the custom message is to be removed.
 * *__If a custom message is given, it must be surrounded by double quotes__*: `!twitch setmessage <twitch_handle> "custom_message"`
 
-#### !twitch getmessage \<twitch handle>
+#### !twitch getmessage \<twitch handle> [optional: hook name]
 
 * Gets the currently set custom message for a Twitch channel.
+* If a hook name is given, gets the currently set custom message for the Twitch channel in that Webhook.
+
+#### !twitch preview \<twitch handle> \<hook name>
+* Get a preview of the live notification for the given Twitch channel in the given Webhook.
 
 </details>
 
@@ -439,27 +463,27 @@ For this cog to work, the `GOOGLE_API` env var must also be set, and instruction
 1. Click on `Create Credentials` and then `API key`.
 1. Copy the key given. For security, it is recommended that you "restrict key" and only enable `YouTube Data API v3`.
 
-#### musicchannel set \<channel mention> [optional: [args]]
+#### !musicadmin set \<channel mention> [optional: [args]]
 
 * This sets the channel mentioned to be used as the music channel. All messages into this channel will be considered music requests, and any music commands must be sent in this channel.
 * Optional args:
   * Using `-c` will clear the entire channel before setting it up as the music channel.
 * *Requires `administrator` permission in Discord*
 
-#### musicchannel get
+#### !musicadmin get
 * Sends the currently set music channel for the server.
 * *Requires `administrator` permission in Discord*
 
-#### musicchannel reset
+#### !musicadmin reset
 * This clears the current music channel and resets the preview and queue messages.
 * *Requires `administrator` permission in Discord*
 
-#### musicchannel remove
+#### !musicadmin remove
 
 * Unlinks the currently linked music channel from being the music channel. This will not delete the channel or its contents.
 * *Requires `administrator` permission in Discord*
 
-#### !music fix
+#### !musicadmin fix
 * If the bot has broken and thinks it is still in a Voice Channel, use this command to force it to reset.
 * *Requires `administrator` permission in Discord*
 
@@ -601,13 +625,13 @@ After the poll finishes, a reaction menu gets created, allowing *any* user to re
 * The roles provided __must__ be pingable roles created with this cog.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme role-cooldown \<role mention | role ID> <cooldown in seconds>
+#### !pingme role-cooldown \<role mention | role ID> \<cooldown in seconds>
 
 * Sets the ping cooldown for a specific role which overrides the server default for that role.
 * The role provided __must__ be a pingable role created with this cog.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme role-emoji \<role mention | role ID> <emoji>
+#### !pingme role-emoji \<role mention | role ID> \<emoji>
 
 * Sets the emoji to use in the reaction menu for the given role.
 * The role provided __must__ be a pingable role created with this cog.
