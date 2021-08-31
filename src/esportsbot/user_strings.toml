@@ -347,6 +347,51 @@ description = "This will create a reaction menu to confirm your choice. If confi
 usage = "<event name>"
 readme_url = "https://github.com/FragSoc/esports-bot#events-delete-event-event-name"
 
+[help.roles]
+help_string = "This is a command group for controlling the creation of role reaction menus. Use the help command for this command to see the subcommands available."
+readme_url = "https://github.com/FragSoc/esports-bot#role-reaction-menus"
+
+[help.roles_make_menu]
+help_string = "Create a new role menu."
+description = "This will create a new role reaction menu with the given title and description, so long as each are surrounded with double quotes. Each option in the menu is defined with a role and an emoji as its identifier. Each emoji must be unique, but roles do not."
+usage = "<title> <description> [none or many: <role mention> <emoji>]"
+readme_url = "https://github.com/FragSoc/esports-bot#roles-make-menu-title-description-mentioned-role-emoji"
+
+[help.roles_add_option]
+help_string = "Add another option to an existing role menu."
+description = "Adds another option to an existing role menu. The emoji must not already be another option in the role menu, but the role can be any existing role."
+usage = "<role menu ID> [none or many: <role mention> <emoji>]"
+readme_url = "https://github.com/FragSoc/esports-bot#roles-add-option-optional-menu-id-mentioned-role-emoji"
+
+[help.roles_remove_option]
+help_string = "Remove an option from an existing role menu."
+description = "Using the emoji to identify which option you want to remove from the role menu, remove the option from that given menu."
+usage = "<role menu ID> <emoji option to remove>"
+readme_url = "https://github.com/FragSoc/esports-bot#roles-remove-option-emoji-optional-menu-id"
+
+[help.roles_disable_menu]
+help_string = "Disables a role menu."
+description = "This stops users from being able to react to a role reaction menu to receive the roles defined in the menu."
+usage = "<role menu ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#roles-disable-menu-optional-menu-id"
+
+[help.roles_enable_menu]
+help_string = "Enables a role menu."
+description = "Allows users to receive roles from a role reaction menu when they react with the defined emojis in the menu."
+usage = "<role menu ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#roles-enable-menu-optional-menu-id"
+
+[help.roles_delete_menu]
+help_string = "Deletes a role menu."
+description = "Deletes a menu entirely. Does not delete the roles or emojis associated with the menu."
+usage = "<role menu ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#roles-delete-menu-menu-id"
+
+[help.roles_toggle_ids]
+help_string = "Toggle showing IDs at the bottom of role menus."
+description = "This will hide or show the menu ID of all role reaction menus in their footer."
+readme_url = "https://github.com/FragSoc/esports-bot#roles-toggle-ids"
+
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
 channel_set_already = "Logging channel already set to this channel"

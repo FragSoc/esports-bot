@@ -10,7 +10,6 @@ from esportsbot.DiscordReactableMenus.reactable_lib import get_menu
 from esportsbot.models import Role_menus
 
 DELETE_ON_CREATE = os.getenv("DELETE_ROLE_CREATION", "FALSE").lower() == "true"
-MAKE_MENU_GIT_README = "#roles-make-menu-title-description-mentioned-role-emoji"
 
 
 class RoleReactCog(commands.Cog):
@@ -97,12 +96,7 @@ class RoleReactCog(commands.Cog):
         """
         pass
 
-    @command_group.command(
-        name="make-menu",
-        usage="<title> <description> [<mentioned role> <emoji>]",
-        help="Creates a new role reaction menu with the given roles and their emojis. "
-        f"Go to https://github.com/FragSoc/esports-bot{MAKE_MENU_GIT_README} for more help regarding usage."
-    )
+    @command_group.command(name="make-menu")
     @commands.has_permissions(administrator=True)
     async def create_role_menu(self, context: commands.Context):
         """
@@ -137,12 +131,7 @@ class RoleReactCog(commands.Cog):
         if DELETE_ON_CREATE:
             await context.message.delete()
 
-    @command_group.command(
-        name="add-option",
-        usage="[optional: menu id] [<mentioned role> <emoji>]",
-        help="Adds a new option to a reaction menu, can be one or many. "
-        "If no ID is given it will add the option to the latest menu."
-    )
+    @command_group.command(name="add-option")
     @commands.has_permissions(administrator=True)
     async def add_menu_option(self, context: commands.Context, menu_id: str = None):
         """
@@ -176,12 +165,7 @@ class RoleReactCog(commands.Cog):
         await found_menu.update_message()
         self.add_or_update_db(found_menu.id)
 
-    @command_group.command(
-        name="remove-option",
-        usage="<emoji> [optional: menu id]",
-        help="Removes the role associated with the emoji from the given menu. "
-        "If no ID is given it will remove the option from the latest menu."
-    )
+    @command_group.command(name="remove-option")
     @commands.has_permissions(administrator=True)
     async def remove_menu_option(self, context: commands.Context, option_key: MultiEmoji, menu_id=None):
         """
@@ -200,11 +184,7 @@ class RoleReactCog(commands.Cog):
         await menu.update_message()
         self.add_or_update_db(menu.id)
 
-    @command_group.command(
-        name="disable-menu",
-        usage="[optional: menu id]",
-        help="Stops users from using the reaction menu to get roles. If no ID is given the latest menu will be disabled."
-    )
+    @command_group.command(name="disable-menu")
     @commands.has_permissions(administrator=True)
     async def disable_menu(self, context: commands.Context, menu_id=None):
         """
@@ -221,11 +201,7 @@ class RoleReactCog(commands.Cog):
         self.add_or_update_db(menu.id)
         await context.reply(self.user_strings["disable_menu"].format(menu_id=menu.id))
 
-    @command_group.command(
-        name="enable-menu",
-        usage="[optional: menu id]",
-        help="Allows users to use a reaction menu to get its roles. If no ID is given the latest menu will be enabled."
-    )
+    @command_group.command(name="enable-menu")
     @commands.has_permissions(administrator=True)
     async def enable_menu(self, context: commands.Context, menu_id=None):
         """
@@ -242,7 +218,7 @@ class RoleReactCog(commands.Cog):
         self.add_or_update_db(menu.id)
         await context.reply(self.user_strings["enable_menu"].format(menu_id=menu.id))
 
-    @command_group.command(name="delete-menu", usage="<menu id>", help="Deletes a given role reaction menu.")
+    @command_group.command(name="delete-menu")
     @commands.has_permissions(administrator=True)
     async def delete_menu(self, context: commands.Context, menu_id):
         """
@@ -262,7 +238,7 @@ class RoleReactCog(commands.Cog):
         self.db.delete(db_item)
         await context.reply(self.user_strings["delete_menu"].format(menu_id=menu.id))
 
-    @command_group.command(name="toggle-ids", help="Toggles the footer displaying the menu ID for all role reaction menus.")
+    @command_group.command(name="toggle-ids")
     @commands.has_permissions(administrator=True)
     async def toggle_show_ids(self, context: commands.Context):
         """
