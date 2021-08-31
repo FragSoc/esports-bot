@@ -52,11 +52,7 @@ class VoicemasterCog(commands.Cog):
             DBGatewayActions().create(slave_db_entry)
             await member.move_to(slave_channel)
 
-    @commands.command(
-        name="setvmparent",
-        usage="<channel_id>",
-        help="Sets the passed voice channel to a Voicemaster master channel"
-    )
+    @commands.command(name="setvmparents")
     @commands.has_permissions(administrator=True)
     async def setvmmaster(self, ctx, given_channel_id=None):
         is_a_valid_id = given_channel_id and given_channel_id.isdigit() and len(given_channel_id) == 18
@@ -97,7 +93,7 @@ class VoicemasterCog(commands.Cog):
             else:
                 await ctx.channel.send(self.STRINGS['error_bad_id_format'])
 
-    @commands.command(name="getvmparents", usage="", help="Gets all of the Voicemaster master channels from the server")
+    @commands.command(name="getvmparents")
     @commands.has_permissions(administrator=True)
     async def getvmmasters(self, ctx):
         master_vm_exists = DBGatewayActions().list(Voicemaster_master, guild_id=ctx.author.guild.id)
@@ -110,11 +106,7 @@ class VoicemasterCog(commands.Cog):
         else:
             await ctx.channel.send(self.STRINGS['error_no_vms'])
 
-    @commands.command(
-        name="removevmparent",
-        usage="<channel_id>",
-        help="Removes the passed voice channel from being Voicemaster master channel"
-    )
+    @commands.command(name="removevmparent")
     @commands.has_permissions(administrator=True)
     async def removevmmaster(self, ctx, given_channel_id=None):
         if given_channel_id:
@@ -145,7 +137,7 @@ class VoicemasterCog(commands.Cog):
         else:
             await ctx.channel.send(self.STRINGS['error_no_id'])
 
-    @commands.command(name="removeallparents", usage="", help="Removes all the Voicemaster master channels from the server")
+    @commands.command(name="removeallparents")
     @commands.has_permissions(administrator=True)
     async def removeallmasters(self, ctx):
         all_vm_masters = DBGatewayActions().list(Voicemaster_master, guild_id=ctx.author.guild.id)
@@ -160,7 +152,7 @@ class VoicemasterCog(commands.Cog):
             },
         )
 
-    @commands.command(name="removeallchildren", usage="", help="Deletes all Voicemaster slave channels from the server")
+    @commands.command(name="removeallchildren")
     @commands.has_permissions(administrator=True)
     async def killallslaves(self, ctx):
         all_vm_slaves = DBGatewayActions().list(Voicemaster_slave, guild_id=ctx.author.guild.id)
@@ -178,7 +170,7 @@ class VoicemasterCog(commands.Cog):
             },
         )
 
-    @commands.command(name="lockvm", aliases=["lock"], usage="", help="Locks the Voicemaster slave that you are currently in")
+    @commands.command(name="lockvm", aliases=["lock"])
     async def lockvm(self, ctx):
         if not ctx.author.voice:
             await ctx.channel.send(self.STRINGS['error_not_in_slave'])
@@ -210,12 +202,7 @@ class VoicemasterCog(commands.Cog):
         else:
             await ctx.channel.send(self.STRINGS['error_not_in_slave'])
 
-    @commands.command(
-        name="unlockvm",
-        aliases=["unlock"],
-        usage="",
-        help="Unlocks the Voicemaster slave that you are currently in"
-    )
+    @commands.command(name="unlockvm", aliases=["unlock"])
     async def unlockvm(self, ctx):
         if not ctx.author.voice:
             await ctx.channel.send(self.STRINGS['error_not_in_slave'])

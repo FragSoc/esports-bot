@@ -95,7 +95,7 @@ The list below describes the different "Cogs" of the bot, their associated comma
 #### !removeallparents 
 * Remove all Voicemaster parents from the server.
 
-#### !deleteallchildren 
+#### !removeallchildren 
 * Delete all the Voicemaster child channels in the server.
 
 #### !lockvm 

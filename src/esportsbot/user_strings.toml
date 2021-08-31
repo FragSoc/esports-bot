@@ -197,6 +197,40 @@ description = "If the role mentioned is a pingable role, it will allow the role 
 usage = "<one or many role mentions>"
 readme_url = "https://github.com/FragSoc/esports-bot#pingme-enable-role-one-or-many-role-mentions"
 
+[help.setvmparent]
+help_string = "Sets a channel to be a parent channel."
+description = "This will set the voice channel given to act as a parent channel, so when users join they will be moved into their own child-channel. There can be more than 1 parent voice channel."
+usage = "<voice channel ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#setvmparent-channel_id"
+
+[help.getvmparents]
+help_string = "Get a list of all Voicemaster parent channels."
+readme_url = "https://github.com/FragSoc/esports-bot#getvmparents"
+
+[help.removevmparent]
+help_string = "Stops the given voice channel from acting as a Voicemaster parent."
+usage = "<voice channel ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#removevmparent-channel_id"
+
+[help.removeallparents]
+help_string = "Stops all voice channels from acting as Voicemaster parents."
+readme_url = "https://github.com/FragSoc/esports-bot#removeallparents"
+
+[help.removeallchildren]
+help_string = "Deletes all Voicemaster child voice channels."
+readme_url = "https://github.com/FragSoc/esports-bot#removeallchildren"
+
+[help.lockvm]
+help_string = "Locks your current Voicemaster voice channel."
+description = "If you are in a Voicemaster child channel and if you own the channel, it will lock the number of users allowed in the channel to the current number of users in the channel."
+readme_url = "https://github.com/FragSoc/esports-bot#lockvm"
+
+[help.unlockvm]
+help_string = "Unlocks your current Voicemaster voice channel."
+description = "If you are in a Voicemaster child channel and if you own the channel, it will remove the user-count limit."
+readme_url = "https://github.com/FragSoc/esports-bot#unlockvm"
+
+
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
 channel_set_already = "Logging channel already set to this channel"
