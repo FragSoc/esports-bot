@@ -319,6 +319,34 @@ help_string = "Removes all default roles."
 description = "This will stop applying the current list of default roles to new members. Does not affect existing members."
 readme_url = "https://github.com/FragSoc/esports-bot#removedefaultroles"
 
+[help.events]
+help_string = "This is a command group for controlling the creation and management of events and their text and voice channels. Use the help command for this command to see the subcommands available."
+readme_url = "https://github.com/FragSoc/esports-bot#event-category-management"
+
+[help.events_create_event]
+help_string = "Creates a new event with a given name."
+description = "This command will create the Discord category, the sign-in channel, a general text channel and a voice channel with the event's name as well as an event role. The sign-in menu will be a role react menu to receive the event role and until the event is open, all channels in the category will be set to private and only viewable by administrators. Once open, the sign-in channel will be visible to members with the given shared role. If no shared role is supplied, the shared role used will be one of the DefaultRoles."
+usage = "<event name> [optional: shared role]"
+readme_url = "https://github.com/FragSoc/esports-bot#events-create-event-event-name-role-mention--role-id"
+
+[help.events_open_event]
+help_string = "Reveal the sign-in menu to non-administrators."
+description = "Allows members with the shared role to see the sign-in channel, and then also react to the sign-in menu to receive the event role."
+usage = "<event name>"
+readme_url = "https://github.com/FragSoc/esports-bot#events-open-event-event-name"
+
+[help.events_close_event]
+help_string = "Stop members from seeing all event channels."
+description = "Stops all channels in the event category from being viewed by non-administrators. This does not remove the event role from users."
+usage = "<event name>"
+readme_url = "https://github.com/FragSoc/esports-bot#events-close-event-event-name"
+
+[help.events_delete_event]
+help_string = "Delete all event channels and the event role."
+description = "This will create a reaction menu to confirm your choice. If confirmed, all channels and the event role will be deleted."
+usage = "<event name>"
+readme_url = "https://github.com/FragSoc/esports-bot#events-delete-event-event-name"
+
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
 channel_set_already = "Logging channel already set to this channel"
