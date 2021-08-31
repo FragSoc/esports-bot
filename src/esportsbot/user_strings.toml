@@ -392,6 +392,46 @@ help_string = "Toggle showing IDs at the bottom of role menus."
 description = "This will hide or show the menu ID of all role reaction menus in their footer."
 readme_url = "https://github.com/FragSoc/esports-bot#roles-toggle-ids"
 
+[help.votes]
+help_string = "This is a command group used to create and manage reaction based polls."
+readme_url = "https://github.com/FragSoc/esports-bot#poll-reaction-menus"
+
+[help.votes_make_poll]
+help_string = "Creates a new poll with a given name."
+description = "Creates a new poll with the given name, if the name is more than 1 word long it must be surrounded by double quotes. Each option in the poll must be on a new line and in the format of: <emoji> <description> where if the description is more than 1 word long it must also be surrounded by double quotes. There can be up to 25 options"
+usage = "<title> \n [<emoji> <description>]"
+readme_url = "https://github.com/FragSoc/esports-bot#votes-make-poll-title-emoji-description"
+
+[help.votes_add_option]
+help_string = "Add another poll option to an existing poll."
+description = "The option added must be in the same for as when creating the menu, where if the description is longer than 1 word it must be surrounded by double quotes. You must be the creator of the poll to add an option."
+usage = "<poll menu ID> <emoji> <description>"
+readme_url = "https://github.com/FragSoc/esports-bot#votes-add-option-menu-id-emoji-description"
+
+[help.votes_remove_option]
+help_string = "Remove an existing poll option from a poll."
+description = "Using the emoji to identify the option, remove the option from the poll. You must be the creator of the poll to remove an option."
+usage = "<poll menu ID> <emoji to remove>"
+readme_url = "https://github.com/FragSoc/esports-bot#votes-remove-option-menu-id-emoji"
+
+[help.votes_delete_poll]
+help_string = "Delete a poll."
+description = "This will not get the poll results, but will just remove the message. You must be the creator of the poll to delete it."
+usage = "<poll menu ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#votes-delete-poll-menu-id"
+
+[help.votes_end_poll]
+help_string = "End the voting on a poll."
+description = "This will generate the results of the poll and stop people from voting on the poll. You must be the creator of the poll to end it."
+usage = "<poll menu ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#votes-end-poll-menu-id"
+
+[help.votes_reset_poll]
+help_string = "Remove all user votes on a poll."
+description = "Resets a poll to have no votes on it. You must be the creator of the poll to reset it."
+usage = "<poll menu ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#votes-reset-poll-menu-id"
+
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
 channel_set_already = "Logging channel already set to this channel"
