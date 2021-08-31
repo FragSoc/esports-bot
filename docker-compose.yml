@@ -2,10 +2,7 @@ version: "3"
 
 services:
   db:
-    environment:
-      - POSTGRES_USER=${PG_USER}
-      - POSTGRES_PASSWORD=${PG_PWD}
-      - POSTGRES_DB=${PG_DATABASE}
+    env_file: secrets.env
     image: "postgres:11"
     restart: unless-stopped
     volumes:
