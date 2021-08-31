@@ -2,6 +2,99 @@ command_error_generic = "There was an internal error while performing your comma
 command_error_required_arguments = "Arguments are required for this command! See `{command_prefix}help {command_used}` for more information."
 guild_leave = "Left the guild: {guild_name}"
 
+[help]
+command_footer = "• Parameters with `<>` around them are required parameters.\n• Parameters with `[]` are optional parameters.\n• The brackets are not required when executing the command."
+embed_footer = "For more help go to https://github.com/FragSoc/esports-bot"
+command_help = "• Help Command: {help_string}"
+command_alias = "• Aliases: {aliases}"
+empty_category = "No Category"
+embed_title = "Showing help for Showing help for — {prefix}{name}"
+usage_string = "{prefix}{fqn}"
+
+[help.music]
+help_string = "This is a command group for controlling music playback. All subcommands of this one can only be run in the music channel. Just executing this command will not do anything, use `{prefix}help music` to find a list of all the music commands."
+readme_url = "https://github.com/FragSoc/esports-bot#music-bot"
+
+[help.music_queue]
+help_string = "Gets the current list of songs in the queue."
+description = "Unlike the active queue in the music channel, this command will show the entire queue. This command does not take any parameters."
+readme_url = "https://github.com/FragSoc/esports-bot#music-queue"
+
+[help.music_join]
+help_string = "Make the bot join the channel."
+description = "This command makes the bot join a channel. If the bot is already in another channel it won't join. If an admin executes this command, they can force it to join by using `-f` or `force` at the end of the command."
+usage = "[optional: -f | force]"
+readme_url = "https://github.com/FragSoc/esports-bot#music-join-optional--f--force"
+
+[help.music_kick]
+help_string = "Kicks the bot from the voice channel."
+description = "This command makes the bot leave the current voice channel. If you are not in the channel with the bot, it won't leave. If an admin executes this command, they can force it to leave any channel by using `-f` or `force` at the end of the command."
+usage = "[optional: -f | force]"
+readme_url = "https://github.com/FragSoc/esports-bot#music-kick-optional--f--force"
+
+[help.music_skip]
+help_string = "Skips the currently playing song."
+description = "This command can skip 1 or many songs. If you give the command a number, it will skip to that song number in the queue. For example, if you give it the number `4`, it will start playing song number `4` in the queue, and remove all songs before that song. If you are not in the voice channel with the bot, this command will have no effect."
+usage = "[optional: skip to song number]"
+readme_url = "https://github.com/FragSoc/esports-bot#music-skip-optional-skip-to-position"
+
+[help.music_volume]
+help_string = "Sets the volume of the bot."
+description = "This sets the volume for all users in the channel, and gets reset if the bot leaves. Note that this will not change the bots independent volume slider that exists for all users. If you are not in the voice channel with the bot, this command will have no effect."
+usage = "<volume level %>"
+readme_url = "https://github.com/FragSoc/esports-bot#music-volume-volume-level"
+
+[help.music_clear]
+help_string = "Clears the entire queue."
+description = "This will clear the entire queue, but will not remove the currently playing song. If you are not in the voice channel with the bot, this command will have no effect."
+readme_url = "https://github.com/FragSoc/esports-bot#music-clear"
+
+[help.music_resume]
+help_string = "Resumes playback of the current song or starts playback of the given song."
+description = "If there is a song that is currently playing, it will continue playing. If there are no songs currently paused or in queue and a song is given to the command, it will start playing the given song. If there are songs in the queue, or there is a paused song, the song will be added to the queue. If you are not in the voice channel with the bot, this command will have no effect."
+usage = "[optional: song request]"
+readme_url = "https://github.com/FragSoc/esports-bot#music-play-optional-song-request"
+
+[help.music_pause]
+help_string = "Pauses the current song."
+readme_url = "https://github.com/FragSoc/esports-bot#music-pause"
+
+[help.music_remove]
+help_string = "Removes a song from the queue at a specific position."
+description = "If there is a song at the position given, it will remove that song from the queue. If no song position is given, it will remove the first song in the queue. If you are not in the voice channel with the bot, this command will have no effect."
+usage = "[optional: song number]"
+readme_url = "https://github.com/FragSoc/esports-bot#music-remove-song-position"
+
+[help.music_move]
+help_string = "Moves a song from one position in the queue to another."
+description = "This will move a song at the first position to the second position. It will not swap the song at the second position to the first position."
+usage = "<from position> <to position>"
+readme_url = "https://github.com/FragSoc/esports-bot#music-move-from-position-to-position"
+
+[help.musicadmin_fix]
+help_string = "Performs a hard reset on the music channels and the current state of the music bot in this server."
+description = "This should only be needed if there is an issue where the bot thinks it is still in a channel and then won't join a new one. Before using this command you should try the `join` or `kick` commands with `-f` or `force` first."
+readme_url = "https://github.com/FragSoc/esports-bot#musicadmin-fix"
+
+[help.musicadmin_set]
+help_string = "Sets the music channel for this server."
+description = "By default this command will just send the song queue and current song preview messages. You can also use the `-c` optional arg to clear the channel first."
+usage = "<channel mention> [optional: [args]"
+readme_url = "https://github.com/FragSoc/esports-bot#musicadmin-set-channel-mention-optional-args"
+
+[help.musicadmin_get]
+help_string = "Gets the channel that is currently set as the music channel in this server."
+readme_url = "https://github.com/FragSoc/esports-bot#musicadmin-get"
+
+[help.musicadmin_reset]
+help_string = "Clears the music channel and performs the setup again."
+readme_url = "https://github.com/FragSoc/esports-bot#musicadmin-reset"
+
+[help.musicadmin_remove]
+help_string = "Unlinks the currently set music channel from being the music channel."
+description = "This will just stop the channel from processing song requests, the channel will not be deleted with this command and will just be a regular text channel."
+readme_url = "https://github.com/FragSoc/esports-bot#musicadmin-remove"
+
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
 channel_set_already = "Logging channel already set to this channel"

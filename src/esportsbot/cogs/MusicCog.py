@@ -828,7 +828,7 @@ class MusicCog(commands.Cog):
         except AttributeError:
             return False
 
-    @commands.group(name="music", help="These are commands used to control the music bot.")
+    @commands.group(name="music")
     @commands.check(check_music_channel)
     @delete_after()
     async def command_group(self, context: commands.Context):
@@ -859,14 +859,7 @@ class MusicCog(commands.Cog):
         await context.send(self.unhandled_error_string)
         raise error
 
-    @command_group.command(
-        name="queue",
-        aliases=["songqueue",
-                 "songs",
-                 "songlist",
-                 "songslist"],
-        help="Gets the current list of songs in the queue"
-    )
+    @command_group.command(name="queue", aliases=["songqueue", "songs", "songlist", "songslist"])
     @delete_after()
     async def get_current_queue(self, context: commands.Context):
         """
@@ -884,13 +877,7 @@ class MusicCog(commands.Cog):
         queue_string = self.get_updated_queue_message(context.guild.id, complete_list=True)
         await send_timed_message(channel=context.channel, content=queue_string, timer=60)
 
-    @command_group.command(
-        name="join",
-        aliases=["connect"],
-        usage="[-f]",
-        help="Make the bot join the channel. If you are an admin you can force it join your voice channel "
-        "if it is currently in another channel with `-f` or `force`."
-    )
+    @command_group.command(name="join", aliases=["connect"])
     async def join_channel_command(self, context: commands.Context, force: str = ""):
         """
         Makes the bot join the channel of the author of the command. If the bot is in another channel and the author is an
@@ -912,13 +899,7 @@ class MusicCog(commands.Cog):
                 await send_timed_message(content=self.user_strings["unable_to_join"], channel=context.channel, timer=10)
                 return
 
-    @command_group.command(
-        name="kick",
-        aliases=["leave"],
-        usage="[-f]",
-        help="Kicks the bot from the channel. If you are an admin you can force it leave a voice channel "
-        "if it is currently in another channel with `-f` or `force`."
-    )
+    @command_group.command(name="kick", aliases=["leave"])
     async def leave_channel_command(self, context: commands.Context, force: str = ""):
         """
         Make the bot leave the voice channel of the author. If the author is not in the same voice channel as the bot and they
@@ -939,12 +920,7 @@ class MusicCog(commands.Cog):
                 await self.remove_active_guild(context.guild)
         await self.update_messages(context.guild.id)
 
-    @command_group.command(
-        name="skip",
-        usage="[skip to position]",
-        help="Skips the current song. If a number is given it will also skip to the song at the position given."
-        "For example, if 'songs to skip' is 4, the next song to play would be song 4 in the queue."
-    )
+    @command_group.command(name="skip")
     async def skip_song(self, context: commands.Context, skip_count=1):
         """
         The command used to skip the currently playing song. If the user also specifies a skip count,
@@ -980,11 +956,7 @@ class MusicCog(commands.Cog):
             self.active_guilds.get(guild_id)["queue"] = self.active_guilds.get(guild_id)["queue"][skip_count:]
             await self.play_queue(guild_id)
 
-    @command_group.command(
-        name="volume",
-        usage="<volume percentage>",
-        help="Sets the volume of the bot to the percentage given."
-    )
+    @command_group.command(name="volume")
     async def set_volume(self, context: commands.Context, volume_level):
         """
         Set the volume level of the current playback of the bot. This volume level will persist until the bot disconnects from
@@ -1022,7 +994,7 @@ class MusicCog(commands.Cog):
         self.active_guilds.get(guild_id)["volume"] = float(volume_level) / float(100)
         await self.update_messages(guild_id)
 
-    @command_group.command(name="shuffle", help="Shuffles the current queue.")
+    @command_group.command(name="shuffle")
     async def shuffle_queue(self, context: commands.Context):
         """
         Shuffles the current queue in a given guild.
@@ -1045,12 +1017,7 @@ class MusicCog(commands.Cog):
         shuffle(self.active_guilds.get(guild_id).get("queue"))
         await self.update_messages(guild_id)
 
-    @command_group.command(
-        name="clear",
-        aliases=["purge",
-                 "empty"],
-        help="Clears the current queue of all songs. Does not stop the currently playing song."
-    )
+    @command_group.command(name="clear", aliases=["purge", "empty"])
     async def clear_queue(self, context: commands.context):
         """
         Clear the current queue in a guild.
@@ -1072,13 +1039,7 @@ class MusicCog(commands.Cog):
             self.active_guilds.get(guild_id)["queue"] = []
         await self.update_messages(guild_id)
 
-    @command_group.command(
-        name="resume",
-        usage="[song to play]",
-        aliases=["play"],
-        help="Resumes playback of the current song. If a song is given and there is no current song, it is played,"
-        "otherwise it is added to the queue."
-    )
+    @command_group.command(name="resume", aliases=["play"])
     async def play_song(self, context: commands.Context, song_to_play=""):
         """
         Either resumes the current playback, adds a song to the queue or starts playback depending on the stats of the bot in
@@ -1119,7 +1080,7 @@ class MusicCog(commands.Cog):
         if member.guild.id not in self.playing_guilds:
             self.playing_guilds.append(member.guild.id)
 
-    @command_group.command(name="pause", help="Pauses the current song.")
+    @command_group.command(name="pause")
     async def pause_song(self, context: commands.Context):
         """
         Pauses the current playback of the bot in a given guild.
@@ -1143,12 +1104,7 @@ class MusicCog(commands.Cog):
         if self.active_guilds.get(guild_id)["voice_client"].is_playing():
             self.active_guilds.get(guild_id)["voice_client"].pause()
 
-    @command_group.command(
-        name="remove",
-        aliases=["removeat"],
-        usage="<song number>",
-        help="Removes a song from the given number in the queue."
-    )
+    @command_group.command(name="remove", aliases=["removeat"])
     async def remove_song(self, context: commands.Context, song_index: str = 1):
         """
         Removes a song from the queue using it's index. The index given as a param is 1-indexed, instead of 0-indexed.
@@ -1189,11 +1145,7 @@ class MusicCog(commands.Cog):
         except IndexError:
             return None
 
-    @command_group.command(
-        name="move",
-        usage="<from position> <to position>",
-        help="Moves a song from one position to another."
-    )
+    @command_group.command(name="move")
     async def move_song(self, context: commands.context, from_pos: str, to_pos: str):
         """
         Moves a song from one position in the queue to another position. The positions given as params are 1-indexed.
@@ -1260,11 +1212,16 @@ class MusicCog(commands.Cog):
         await self.update_messages(guild_id)
         return True
 
-    @command_group.command(
-        name="fix",
-        help="Kicks the bot from the current Voice Channel, clears the current queue and resets the music channel."
-    )
+    @commands.group(name="musicadmin")
     @commands.has_permissions(administrator=True)
+    async def music_channel_group(self, context: commands.Context):
+        """
+        The command group for the music channel management.
+        :param context: The context of the command.
+        """
+        pass
+
+    @music_channel_group.command(name="fix")
     async def guild_bot_reset_command(self, context: commands.Context):
         """
         Resets the music channel as well as attempts to disconnect the bot. This is to be used in-case there was an error
@@ -1275,21 +1232,7 @@ class MusicCog(commands.Cog):
         await self.disconnect_from_guild(context.guild)
         await self.reset_music_channel(context)
 
-    @commands.group(name="musicchannel", help="Manage music channel")
-    async def music_channel_group(self, context: commands.Context):
-        """
-        The command group for the music channel management.
-        :param context: The context of the command.
-        """
-        pass
-
-    @music_channel_group.command(
-        name="set",
-        usage="<channel mention> [optional args]",
-        help="Sets the music channel to the channel mentioned. To see possible optional args, "
-        "go to https://github.com/FragSoc/esports-bot#setmusicchannel-channel-mention-optional-args"
-    )
-    @commands.has_permissions(administrator=True)
+    @music_channel_group.command(name="set")
     async def set_music_channel_command(self, context: commands.Context, text_channel: TextChannel):
         """
         Sets the music channel for a given guild to the channel channel mentioned in the command. Extra args can be given to
@@ -1310,8 +1253,7 @@ class MusicCog(commands.Cog):
         await self.setup_music_channel(text_channel)
         await context.send(self.user_strings["music_channel_set"].format(channel=text_channel.mention))
 
-    @music_channel_group.command(name="get", help="Gets the current channel that is set as the music channel.")
-    @commands.has_permissions(administrator=True)
+    @music_channel_group.command(name="get")
     async def get_music_channel_command(self, context: commands.Context):
         """
         Gets the current channel that is set as the music channel.
@@ -1324,8 +1266,7 @@ class MusicCog(commands.Cog):
         else:
             await context.send(self.user_strings["music_channel_missing"])
 
-    @music_channel_group.command(name="reset", help="Clears the music channel and sends the preview and queue messages.")
-    @commands.has_permissions(administrator=True)
+    @music_channel_group.command(name="reset")
     async def reset_music_channel_command(self, context: commands.Context):
         """
         Resets the music channel to clear all the text and re-send the preview and queue messages.
@@ -1333,11 +1274,7 @@ class MusicCog(commands.Cog):
         """
         await self.reset_music_channel(context)
 
-    @music_channel_group.command(
-        name="remove",
-        help="Unlinks the currently set music channel from being the music channel. Does not delete the actual channel"
-    )
-    @commands.has_permissions(administrator=True)
+    @music_channel_group.command(name="remove")
     async def unlink_music_channel_command(self, context: commands.Context):
         if not self.music_channels.get(context.guild.id):
             await context.send(self.user_strings["music_channel_missing"])

@@ -439,27 +439,27 @@ For this cog to work, the `GOOGLE_API` env var must also be set, and instruction
 1. Click on `Create Credentials` and then `API key`.
 1. Copy the key given. For security, it is recommended that you "restrict key" and only enable `YouTube Data API v3`.
 
-#### musicchannel set \<channel mention> [optional: [args]]
+#### !musicadmin set \<channel mention> [optional: [args]]
 
 * This sets the channel mentioned to be used as the music channel. All messages into this channel will be considered music requests, and any music commands must be sent in this channel.
 * Optional args:
   * Using `-c` will clear the entire channel before setting it up as the music channel.
 * *Requires `administrator` permission in Discord*
 
-#### musicchannel get
+#### !musicadmin get
 * Sends the currently set music channel for the server.
 * *Requires `administrator` permission in Discord*
 
-#### musicchannel reset
+#### !musicadmin reset
 * This clears the current music channel and resets the preview and queue messages.
 * *Requires `administrator` permission in Discord*
 
-#### musicchannel remove
+#### !musicadmin remove
 
 * Unlinks the currently linked music channel from being the music channel. This will not delete the channel or its contents.
 * *Requires `administrator` permission in Discord*
 
-#### !music fix
+#### !musicadmin fix
 * If the bot has broken and thinks it is still in a Voice Channel, use this command to force it to reset.
 * *Requires `administrator` permission in Discord*
 

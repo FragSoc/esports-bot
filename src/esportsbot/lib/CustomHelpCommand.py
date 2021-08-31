@@ -6,7 +6,6 @@ from esportsbot.DiscordReactableMenus.ReactableMenu import ReactableMenu
 
 
 class CustomHelpCommand(HelpCommand):
-
     async def send_bot_help(self, mapping):
         """
         This function runs when the bare `help` command is run without any groups or commands specified.
