@@ -120,11 +120,14 @@ The list below describes the different "Cogs" of the bot, their associated comma
 <summary>Log Channel</summary>
 
 ### Log Channel
- #### !setlogchannel <channel_mention | channel_id> * Set the log channel to the #'ed channel or given role ID.
+ #### !setlogchannel <channel_mention | channel_id> 
+* Set the log channel to the #'ed channel or given role ID.
 
-#### !getlogchannel * Gets the current log channel value.
+#### !getlogchannel 
+* Gets the current log channel value.
 
-#### !removelogchannel * Removes the current log channel value.
+#### !removelogchannel 
+* Removes the current log channel value.
 </details>
 
 <details>
