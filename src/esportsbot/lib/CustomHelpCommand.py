@@ -55,10 +55,12 @@ class CustomHelpCommand(HelpCommand):
         :param command: The command to add the help field of.
         """
         checks = command.checks
+        checks_to_add = []
         for check in checks:
             # Remove any custom checks. Checks such as admin will not be removed.
             if check.__name__ != "predicate":
                 command.remove_check(check)
+                checks_to_add.append(check)
 
         try:
             # For some reason instead of returning False, this will just raise an error if the user is not able to run
@@ -66,6 +68,9 @@ class CustomHelpCommand(HelpCommand):
             await command.can_run(self.context)
         except MissingPermissions:
             return
+
+        for check in checks_to_add:
+            command.add_check(check)
 
         fully_qualified_name = command.name
         if command.full_parent_name:
