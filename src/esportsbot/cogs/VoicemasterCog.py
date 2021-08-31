@@ -52,7 +52,7 @@ class VoicemasterCog(commands.Cog):
             DBGatewayActions().create(slave_db_entry)
             await member.move_to(slave_channel)
 
-    @commands.command(name="setvmparents")
+    @commands.command(name="setvmparent")
     @commands.has_permissions(administrator=True)
     async def setvmmaster(self, ctx, given_channel_id=None):
         is_a_valid_id = given_channel_id and given_channel_id.isdigit() and len(given_channel_id) == 18
