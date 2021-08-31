@@ -601,13 +601,13 @@ After the poll finishes, a reaction menu gets created, allowing *any* user to re
 * The roles provided __must__ be pingable roles created with this cog.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme role-cooldown \<role mention | role ID> <cooldown in seconds>
+#### !pingme role-cooldown \<role mention | role ID> \<cooldown in seconds>
 
 * Sets the ping cooldown for a specific role which overrides the server default for that role.
 * The role provided __must__ be a pingable role created with this cog.
 * *Requires `administrator` permission in Discord*
 
-#### !pingme role-emoji \<role mention | role ID> <emoji>
+#### !pingme role-emoji \<role mention | role ID> \<emoji>
 
 * Sets the emoji to use in the reaction menu for the given role.
 * The role provided __must__ be a pingable role created with this cog.
