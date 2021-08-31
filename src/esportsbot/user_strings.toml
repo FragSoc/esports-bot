@@ -261,6 +261,20 @@ description = "Unloads and then reloads the given cog. Refer to the 'load cog' c
 usage = "<cog name>"
 readme_url = "https://github.com/FragSoc/esports-bot#reload-cog-cog-name"
 
+[help.setlogchannel]
+help_string = "Sets the given channel to the logging channel."
+usage = "<channel mention | channel ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#setlogchannel-channel_mention--channel_id"
+
+[help.getlogchannel]
+help_string = "Get the current logging channel."
+readme_url = "https://github.com/FragSoc/esports-bot#getlogchannel"
+
+[help.removelogchannel]
+help_string = "Stops the current logging channel from being active."
+description = "The current logging channel will become a regular channel and logging events will no longer be posted to the channel."
+readme_url = "https://github.com/FragSoc/esports-bot#removelogchannel"
+
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
 channel_set_already = "Logging channel already set to this channel"
