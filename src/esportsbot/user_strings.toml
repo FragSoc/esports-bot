@@ -74,6 +74,10 @@ description = "This will move a song at the first position to the second positio
 usage = "<from position> <to position>"
 readme_url = "https://github.com/FragSoc/esports-bot#music-move-from-position-to-position"
 
+[help.musicadmin]
+help_string = "This is a command group for managing the music channel, all of these commands require the `administrator` permission in this server. Just executing this command will not do anything, use the help command for this command to see the list of all admin commands."
+readme_url = "https://github.com/FragSoc/esports-bot#music-bot"
+
 [help.musicadmin_fix]
 help_string = "Performs a hard reset on the music channels and the current state of the music bot in this server."
 description = "This should only be needed if there is an issue where the bot thinks it is still in a channel and then won't join a new one. Before using this command you should try the `join` or `kick` commands with `-f` or `force` first."
