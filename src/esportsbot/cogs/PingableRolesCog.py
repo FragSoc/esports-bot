@@ -112,6 +112,7 @@ class PingableRolesCog(commands.Cog):
                 guild_id=guild.id,
                 default_poll_length=int(os.getenv("DEFAULT_POLL_LENGTH")),
                 default_poll_threshold=int(os.getenv("DEFAULT_POLL_THRESHOLD")),
+                default_cooldown_length=int(os.getenv("DEFAULT_COOLDOWN_LENGTH")),
                 default_poll_emoji=PINGABLE_POLL_EMOJI.to_dict(),
                 default_role_emoji=PINGABLE_ROLE_EMOJI.to_dict()
             )
