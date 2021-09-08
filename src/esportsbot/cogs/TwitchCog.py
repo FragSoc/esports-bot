@@ -441,7 +441,10 @@ class TwitchCog(commands.Cog):
 
         # Setup the TwitchListener to listen for /webhook requests.
         app = TwitchApp([(r"/webhook", TwitchListener)])
-        http_server = HTTPServer(app, ssl_options={"certfile": "../server.crt", "keyfile": "../server.key"})
+        http_server = HTTPServer(app,
+                                 ssl_options={"certfile": f"../{os.getenv('SSL_CERT_FILE')}",
+                                              "keyfile": f"../{os.getenv('SSL_KEY_FILE')}"}
+                                 )
         http_server.listen(443)
         return http_server, app
 
