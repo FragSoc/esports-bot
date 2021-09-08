@@ -13,8 +13,6 @@ services:
     depends_on:
       - db
     env_file: secrets.env
-    environment:
-      - PG_HOST=db
     restart: unless-stopped
     ports:
       - 443:443

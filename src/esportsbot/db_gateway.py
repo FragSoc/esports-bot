@@ -9,7 +9,7 @@ from esportsbot.models import *
 
 load_dotenv(dotenv_path=os.path.join("..", "secrets.env"))
 
-db_string = f"postgresql://{os.getenv('PG_USER')}:{os.getenv('PG_PWD')}@{os.getenv('PG_HOST')}:5432/{os.getenv('PG_DATABASE')}"
+db_string = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_HOST')}:5432/{os.getenv('POSTGRES_DB')}"
 
 db = create_engine(db_string)
 
