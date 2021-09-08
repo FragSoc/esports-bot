@@ -247,7 +247,9 @@ $ openssl req -new -out reqout.txt -key server.key
 $ openssl x509 -req -in reqout.txt -days 3650 -sha1 -CAcreateserial -CA root.crt -CAkey servercakey.pem -out server.crt
 ```
 
-6. Set the environment variable `SSL_CERT_FILE` to the path to your `server.crt` file and the variable `SSL_KEY_FILE` to the path of your `server.key` file.
+6. Move your `server.crt` and `server.key` files into the root of the project. (Level above src)
+
+7. Set the environment variable `SSL_CERT_FILE` to the name of your `server.crt` file and the variable `SSL_KEY_FILE` to the name of your `server.key` file.
 
 ### Getting your Twitch Credentials:
 
