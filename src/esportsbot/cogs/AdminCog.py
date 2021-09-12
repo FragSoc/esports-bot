@@ -119,6 +119,9 @@ class AdminCog(commands.Cog):
         :param context: The context of the command.
         :param user: The user to give the permissions to.
         """
+
+        channel_names = []
+
         for category in args:
             try:
                 category_id = int(category)
@@ -128,39 +131,47 @@ class AdminCog(commands.Cog):
                 # First remove any existing reps/overwrites.
                 await self.remove_user_permissions(discord_category)
                 # Then add the new user's permissions.
-                await self.set_rep_permissions(user, discord_category)
+                if await self.set_rep_permissions(user, discord_category):
+                    channel_names.append(discord_category.name)
             except ValueError:
                 continue
+
+        response_string = str(channel_names).replace("[", "").replace("]", "").strip()
+        await context.send(f"Successfully set the permissions for `{user.display_name}#{user.discriminator}` "
+                           f"in the following channels/categories: `{response_string}`")
 
     async def remove_user_permissions(self, guild_channel):
         """
         Removes permission overrides that are for specific users for a given GuildChannel.
         :param guild_channel: The channel to remove any user-based permission overrides.
+        :return True if any user-based permissions were removed, False if this process failed.
         """
-        current_overwrites = guild_channel.overwrites
-        for permission_group in guild_channel.overwrites:
-            # We can't remove the default owner permissions as this throws a Forbidden error.
-            if isinstance(permission_group, Member) and permission_group != guild_channel.guild.owner:
-                current_overwrites.pop(permission_group)
+        if not await self.check_editable(guild_channel):
+            return False
 
-        # Reduce API spam by only updating when the permissions have changed.
-        if current_overwrites != guild_channel.overwrites:
-            await guild_channel.edit(overwrites=current_overwrites)
+        for permission_group in guild_channel.overwrites:
+            if isinstance(permission_group, Member):
+                await guild_channel.set_permissions(target=permission_group, overwrite=None)
 
         # If the channel provided is category, go through the channels inside the category and remove the permissions.
         if not isinstance(guild_channel, CategoryChannel):
-            return
+            return True
 
         for channel in guild_channel.channels:
             await self.remove_user_permissions(channel)
 
-    @staticmethod
-    async def set_rep_permissions(user, guild_channel):
+        return True
+
+    async def set_rep_permissions(self, user, guild_channel):
         """
         Sets the permissions of a user to those that a rep would need in the given category/channel.
         :param user: The user to give the permissions to.
         :param guild_channel: The GuildChannel to set the permissions of.
+        :return True if the permissions were set for the given user, False otherwise.
         """
+        if not await self.check_editable(guild_channel):
+            return False
+
         overwrite = PermissionOverwrite(
             view_channel=True,
             manage_channels=True,
@@ -177,11 +188,29 @@ class AdminCog(commands.Cog):
 
         # If the channel provided is a category, ensure that the rep can type in any announcement channels.
         if not isinstance(guild_channel, CategoryChannel):
-            return
+            return True
 
         for channel in guild_channel.channels:
             if isinstance(channel, TextChannel) and channel.is_news():
                 await channel.set_permissions(target=user, send_messages=True)
+
+        return True
+
+    @staticmethod
+    async def check_editable(guild_channel):
+        """
+        Checks if the bot has permission to edit the permissions of a channel.
+        :param guild_channel: The channel to check the permissions of.
+        :return: True if the bot is able to edit the permissions of the channel, else False.
+        """
+        bot_perms = guild_channel.permissions_for(guild_channel.guild.me)
+        bot_overwrites = guild_channel.overwrites_for(guild_channel.guild.me)
+        if not bot_perms.manage_permissions:
+            return False
+        # Explicitly check for False, as None means no overwrite.
+        if bot_overwrites.manage_permissions is False:
+            return False
+        return True
 
 
 def setup(bot):
