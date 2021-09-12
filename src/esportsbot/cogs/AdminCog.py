@@ -1,6 +1,6 @@
 import os
 
-from discord import Member, TextChannel, CategoryChannel
+from discord import Member, TextChannel, CategoryChannel, PermissionOverwrite
 from discord.ext import commands
 
 devs = os.getenv("DEV_IDS").replace(" ", "").split(",")
@@ -113,7 +113,7 @@ class AdminCog(commands.Cog):
 
     @commands.has_permissions(administrator=True)
     @commands.command(name="set-rep")
-    async def set_rep_perms(self, context: commands.Context, user, *args):
+    async def set_rep_perms(self, context: commands.Context, user: Member, *args):
         """
         Sets the permissions for a game rep given a list of category or channel ids.
         :param context: The context of the command.
@@ -139,9 +139,13 @@ class AdminCog(commands.Cog):
         """
         current_overwrites = guild_channel.overwrites
         for permission_group in guild_channel.overwrites:
-            if isinstance(permission_group, Member):
+            # We can't remove the default owner permissions as this throws a Forbidden error.
+            if isinstance(permission_group, Member) and permission_group != guild_channel.guild.owner:
                 current_overwrites.pop(permission_group)
-        await guild_channel.edit(overwrites=current_overwrites)
+
+        # Reduce API spam by only updating when the permissions have changed.
+        if current_overwrites != guild_channel.overwrites:
+            await guild_channel.edit(overwrites=current_overwrites)
 
         # If the channel provided is category, go through the channels inside the category and remove the permissions.
         if not isinstance(guild_channel, CategoryChannel):
@@ -157,9 +161,8 @@ class AdminCog(commands.Cog):
         :param user: The user to give the permissions to.
         :param guild_channel: The GuildChannel to set the permissions of.
         """
-        await guild_channel.set_permissions(
-            target=user,
-            view_channels=True,
+        overwrite = PermissionOverwrite(
+            view_channel=True,
             manage_channels=True,
             manage_permissions=True,
             send_messages=True,
@@ -168,8 +171,9 @@ class AdminCog(commands.Cog):
             speak=True,
             mute_members=True,
             deafen_members=True,
-            move_members=True
+            move_members=True,
         )
+        await guild_channel.set_permissions(target=user, overwrite=overwrite)
 
         # If the channel provided is a category, ensure that the rep can type in any announcement channels.
         if not isinstance(guild_channel, CategoryChannel):
