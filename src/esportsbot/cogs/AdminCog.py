@@ -113,21 +113,16 @@ class AdminCog(commands.Cog):
 
     @commands.has_permissions(administrator=True)
     @commands.command(name="set-rep")
-    async def set_rep_perms(self, context: commands.Context, user):
+    async def set_rep_perms(self, context: commands.Context, user, *args):
         """
         Sets the permissions for a game rep given a list of category or channel ids.
         :param context: The context of the command.
         :param user: The user to give the permissions to.
         """
-        message = context.message.content
-        user_str = str(user)
-        category_list = message[message.index(user_str) + len(user_str):].strip()  # This gets just the channel ids.
-        category_ids = category_list.split(" ")  # Put them into a list.
-
-        for category in category_ids:
+        for category in args:
             try:
                 category_id = int(category)
-                discord_category = context.guild.get_Channel(category_id)
+                discord_category = context.guild.get_channel(category_id)
                 if not discord_category:
                     discord_category = await self.bot.fetch_channel(category_id)
                 # First remove any existing reps/overwrites.
