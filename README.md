@@ -161,6 +161,10 @@ The list below describes the different "Cogs" of the bot, their associated comma
 * Reloads the given cog.
 * *This command requires your user ID to be defined in the env file under `DEV_IDS`*
 
+#### !set-rep \<user mention> \<channel or category IDs>
+* Sets the permissions for a user in the channels/categories given.
+* *Requires `administrator` permission in Discord*
+
 </details>
 
 <details>

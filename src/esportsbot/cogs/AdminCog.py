@@ -1,5 +1,6 @@
 import os
 
+from discord import Member, TextChannel, CategoryChannel
 from discord.ext import commands
 
 devs = os.getenv("DEV_IDS").replace(" ", "").split(",")
@@ -109,6 +110,79 @@ class AdminCog(commands.Cog):
             await context.send(f"There is no cog with the name `{cog_name}`.")
         except commands.ExtensionNotLoaded:
             await context.send(f"The cog with name `{cog_name}` is not loaded.")
+
+    @commands.has_permissions(administrator=True)
+    @commands.command(name="set-rep")
+    async def set_rep_perms(self, context: commands.Context, user):
+        """
+        Sets the permissions for a game rep given a list of category or channel ids.
+        :param context: The context of the command.
+        :param user: The user to give the permissions to.
+        """
+        message = context.message.content
+        user_str = str(user)
+        category_list = message[message.index(user_str) + len(user_str):].strip()  # This gets just the channel ids.
+        category_ids = category_list.split(" ")  # Put them into a list.
+
+        for category in category_ids:
+            try:
+                category_id = int(category)
+                discord_category = context.guild.get_Channel(category_id)
+                if not discord_category:
+                    discord_category = await self.bot.fetch_channel(category_id)
+                # First remove any existing reps/overwrites.
+                await self.remove_user_permissions(discord_category)
+                # Then add the new user's permissions.
+                await self.set_rep_permissions(user, discord_category)
+            except ValueError:
+                continue
+
+    async def remove_user_permissions(self, guild_channel):
+        """
+        Removes permission overrides that are for specific users for a given GuildChannel.
+        :param guild_channel: The channel to remove any user-based permission overrides.
+        """
+        current_overwrites = guild_channel.overwrites
+        for permission_group in guild_channel.overwrites:
+            if isinstance(permission_group, Member):
+                current_overwrites.pop(permission_group)
+        await guild_channel.edit(overwrites=current_overwrites)
+
+        # If the channel provided is category, go through the channels inside the category and remove the permissions.
+        if not isinstance(guild_channel, CategoryChannel):
+            return
+
+        for channel in guild_channel.channels:
+            await self.remove_user_permissions(channel)
+
+    @staticmethod
+    async def set_rep_permissions(user, guild_channel):
+        """
+        Sets the permissions of a user to those that a rep would need in the given category/channel.
+        :param user: The user to give the permissions to.
+        :param guild_channel: The GuildChannel to set the permissions of.
+        """
+        await guild_channel.set_permissions(
+            target=user,
+            view_channels=True,
+            manage_channels=True,
+            manage_permissions=True,
+            send_messages=True,
+            manage_messages=True,
+            connect=True,
+            speak=True,
+            mute_members=True,
+            deafen_members=True,
+            move_members=True
+        )
+
+        # If the channel provided is a category, ensure that the rep can type in any announcement channels.
+        if not isinstance(guild_channel, CategoryChannel):
+            return
+
+        for channel in guild_channel.channels:
+            if isinstance(channel, TextChannel) and channel.is_news():
+                await channel.set_permissions(target=user, send_messages=True)
 
 
 def setup(bot):
