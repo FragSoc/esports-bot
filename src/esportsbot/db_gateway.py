@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import create_database, database_exists
 
-from esportsbot.models import *
+from esportsbot.models import base
 
 load_dotenv(dotenv_path=os.path.join("..", "secrets.env"))
 

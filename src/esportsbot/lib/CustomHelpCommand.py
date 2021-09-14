@@ -138,7 +138,7 @@ class CustomHelpCommand(HelpCommand):
         embed = Embed(title=title, description=description, colour=Colour.random())
         if help_dict and help_dict.get("readme_url"):
             embed.__setattr__("url", help_dict.get("readme_url"))
-        embed.add_field(name=f"Usage:", value=usage, inline=False)
+        embed.add_field(name="Usage:", value=usage, inline=False)
         embed.add_field(name="​", value=self.help_strings["command_footer"])
         embed.set_footer(text=self.help_strings["embed_footer"])
 

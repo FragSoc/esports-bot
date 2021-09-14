@@ -397,8 +397,7 @@ class PingableRolesCog(commands.Cog):
         for poll_id in self.polls:
             if self.polls.get(poll_id).get("menu").end_time <= current_time:
                 self.logger.info(
-                    f"Poll for pingable role %s is over, checking results!",
-                    self.polls.get(poll_id).get('menu').name
+                    f"Poll for pingable role {self.polls.get(poll_id).get('menu').name} is over, checking results!"
                 )
                 polls_ids_to_remove.append(poll_id)
                 await self.finish_poll(self.polls.get(poll_id).get("menu"))

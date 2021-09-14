@@ -60,7 +60,7 @@ class DefaultRoleCog(commands.Cog):
                     # Clean the inputted role to just the id
                     cleaned_role_id = role_id_from_mention(role)
                     # Obtain role object from the guild to check it exists
-                    role_obj = ctx.author.guild.get_role(cleaned_role_id)
+                    ctx.author.guild.get_role(cleaned_role_id)
                     # Add role to array to add post checks
                     checked_roles.append(cleaned_role_id)
                 except Exception as err:

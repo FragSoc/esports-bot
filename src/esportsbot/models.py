@@ -4,6 +4,23 @@ from sqlalchemy.ext.declarative import declarative_base
 
 base = declarative_base()
 
+__all__ = [
+    "GuildInfo",
+    "DefaultRoles",
+    "PingablePolls",
+    "PingableRoles",
+    "PingableSettings",
+    "EventCategories",
+    "RoleMenus",
+    "VotingMenus",
+    "VoicemasterMaster",
+    "VoicemasterSlave",
+    "TwitchInfo",
+    "TwitterInfo",
+    "MusicChannels",
+    "base"
+]
+
 
 class GuildInfo(base):
     __tablename__ = 'guild_info'

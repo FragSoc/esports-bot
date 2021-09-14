@@ -575,7 +575,7 @@ class TwitterCog(commands.Cog):
 
         except tweepy.TweepError as e:
             self.logger.warning("Unable to remove %s account due to the following error: %s", account, e)
-            await ctx.send(self.user_strings["account_missing_error".format(account=account, operation="remove")])
+            await ctx.send(self.user_strings["account_missing_error"].format(account=account, operation="remove"))
             return False
 
     @command_group.command(name="list", alias=["accounts", "get-all"])
