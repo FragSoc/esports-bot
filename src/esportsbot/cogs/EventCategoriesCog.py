@@ -33,6 +33,12 @@ class RoleTypeEnum(IntEnum):
 
 
 class EventCategoriesCog(commands.Cog):
+    """
+    An event category is used to manage a group of event channels. When an event is created, it creates a Discord Category
+    and inside the category it creates a sign-in menu/channel, a general event channel and a general event voice channel.
+
+    This module implements the ability to create and manage events, all the commands requiring administrator privileges to run.
+    """
     def __init__(self, bot):
         self.bot = bot
         self.user_strings = bot.STRINGS["event_categories"]
@@ -44,6 +50,10 @@ class EventCategoriesCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        """
+        When bot discord client is ready and has logged into the discord API, this function runs and is used to load and
+        initialise events, which include initialising the sign-in menus used to get the event roles.
+        """
         await self.load_event_menus()
         self.logger.info(f"{__name__} is now ready!")
 

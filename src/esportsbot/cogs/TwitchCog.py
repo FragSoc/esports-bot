@@ -106,6 +106,9 @@ class TwitchApp(Application):
         return self.bearer
 
     def load_bearer(self):
+        """
+        Load an existing bearer token from a file, if it exists.
+        """
         try:
             with open(BEARER_TEMP_FILE, "r") as f:
                 lines = f.readlines()
@@ -121,6 +124,9 @@ class TwitchApp(Application):
             self.bearer = None
 
     def save_bearer(self):
+        """
+        Save the current bearer token to a file, so that it can be reused while still valid.
+        """
         if self.bearer is not None:
             with open(BEARER_TEMP_FILE, "w") as f:
                 f.write(str(self.bearer.get("granted_on")) + "\n")
@@ -191,6 +197,11 @@ class TwitchApp(Application):
                 return False
 
     async def delete_channel_subscription(self, channel_id):
+        """
+        Delete the stream.online event subscription for the given channel. This means the bot will no longer receive
+        notifications when the given channel goes live.
+        :param channel_id: The ID of the channel to remove the subscription for.
+        """
         event = None
         for subscription in self.subscriptions:
             if subscription.get("condition").get("broadcaster_user_id") == channel_id:
@@ -302,6 +313,10 @@ class TwitchApp(Application):
         return True
 
     def set_hooks(self, hooks):
+        """
+        Set the dictionary of Webhooks for the Twitch noifications to use.
+        :param hooks:
+        """
         self.hooks = hooks
 
 
@@ -497,6 +512,11 @@ class TwitchCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_webhooks_update(self, channel):
+        """
+        When a webhook is changed (deleted/edited) this event fires. When this event occurs, if the webhook changed is a
+        webhook used by the Twitch Cog, it should be removed from the internal DB of webhooks that the cog uses.
+        :param channel: The Text Channel that had its webhooks updated.
+        """
         pass
         # TODO: Capture this event to determine when a webhook gets deleted not using the command.
 

@@ -43,10 +43,22 @@ def user_id_from_mention(pre_clean_data: str) -> int:
 
 
 def get_whether_in_vm_master(guild_id, channel_id):
+    """
+    Get if the given channel is a voicemaster parent channel.
+    :param guild_id: The ID of the guild to check in.
+    :param channel_id: The ID of the channel to check if it is a parent channel.
+    :return: True if the given channel ID is for a parent channel, False otherwise.
+    """
     in_master = DBGatewayActions().get(VoicemasterMaster, guild_id=guild_id, channel_id=channel_id)
     return bool(in_master)
 
 
 def get_whether_in_vm_slave(guild_id, channel_id):
+    """
+    Get if the given channel is a voicemaster child channel.
+    :param guild_id: The ID of the guild to check in.
+    :param channel_id: The ID of the channel to check if it is a child channel.
+    :return: True if the given channel ID is for a child channel, False otherwise.
+    """
     in_slave = DBGatewayActions().get(VoicemasterSlave, guild_id=guild_id, channel_id=channel_id)
     return bool(in_slave)

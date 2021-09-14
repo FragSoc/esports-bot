@@ -13,6 +13,11 @@ DELETE_ON_CREATE = os.getenv("DELETE_ROLE_CREATION", "FALSE").lower() == "true"
 
 
 class RoleReactCog(commands.Cog):
+    """
+    Role reaction menus allow admins to create reactable menus that when reacted to grant defined roles to the user.
+
+    This module implements the ability to create and manage role menus so that users can receive roles by reacting.
+    """
     def __init__(self, bot):
         self.bot = bot
         self.user_strings = self.bot.STRINGS["role_reacts"]
@@ -23,6 +28,10 @@ class RoleReactCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        """
+        When bot discord client is ready and has logged into the discord API, this function runs and is used to load and
+        initialise the existing reaction menus.
+        """
         self.reaction_menus = await self.load_menus()
         self.logger.info(f"{__name__} is now ready!")
 
@@ -255,6 +264,11 @@ class RoleReactCog(commands.Cog):
 
     @remove_menu_option.error
     async def remove_error(self, context: commands.Context, error):
+        """
+        This is the error handling function that runs when the `remove_menu_option` function encounters an error.
+        :param context: The context of the command.
+        :param error: The error that occurred.
+        """
         if isinstance(error, commands.BadArgument):
             await context.reply(self.user_strings["invalid_emoji"])
             return

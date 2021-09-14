@@ -5,11 +5,22 @@ from discord import PartialEmoji, Emoji
 
 
 def partial_from_emoji(full_emoji: Emoji) -> PartialEmoji:
+    """
+    Create a partial emoji from a full emoji.
+    :param full_emoji: The full emoji to create a partial from.
+    :return: A Partial Emoji with the data from the full one.
+    """
     data = {"name": full_emoji.name, "id": full_emoji.id, "animated": full_emoji.animated}
     return PartialEmoji.from_dict(data)
 
 
 def partial_data_from_string(emoji_str: str) -> Dict:
+    """
+    Get the dictionary representation of a partial emoji from a string representation of an emoji. This string will most
+    likely have come from the contents of a message.
+    :param emoji_str: The string of an emoji to convert.
+    :return: A dictionary that can be used to create a Partial Emoji.
+    """
     converted_emoji = emoji.demojize(emoji_str, use_aliases=True)
     if converted_emoji != emoji_str:
         return {"name": emoji_str, "id": None, "animated": False}
@@ -28,6 +39,11 @@ def partial_data_from_string(emoji_str: str) -> Dict:
 
 
 def partial_from_string(emoji_str: str) -> PartialEmoji:
+    """
+    Create a partial emoji from a string.This string will most likely have come from the contents of a message.
+    :param emoji_str: The string representation of an emoji.
+    :return: A Partial Emoji.
+    """
     data = None
     if isinstance(emoji_str, str):
         data = partial_data_from_string(emoji_str)
@@ -38,6 +54,10 @@ def partial_from_string(emoji_str: str) -> PartialEmoji:
 
 
 class MultiEmoji:
+    """
+    This class is used to unify every kind of emoji to a generic class. Including Unicode Emojis, Discord Emojis, Static Custom
+    Discord Emojis and Animated Custom Discord Emojis.
+    """
     def __init__(self, emoji_input: Union[str, dict, Emoji, PartialEmoji, "MultiEmoji"]):
 
         if isinstance(emoji_input, str):
@@ -60,6 +80,11 @@ class MultiEmoji:
 
     @classmethod
     def from_dict(cls, data):
+        """
+        Create a MultiEmoji from a dictionary.
+        :param data: A MultiEmoji in the form of a dictionary.
+        :return: A MultiEmoji from the given data.
+        """
         return MultiEmoji(PartialEmoji.from_dict(data))
 
     def __str__(self):
@@ -79,21 +104,39 @@ class MultiEmoji:
 
     @property
     def name(self):
+        """
+        Get the name of the emoji.
+        """
         return self._name
 
     @property
     def emoji_id(self):
+        """
+        Get the ID of the emoji.
+        """
         return self._emoji_id
 
     @property
     def animated(self):
+        """
+        Get whether or not the emoji is an animated emoji.
+        :return: True if the emoji is animated, False otherwise.
+        """
         return self._animated
 
     @property
     def discord_emoji(self):
+        """
+        Get a discord compatible version of the emoji. Can be used in things such as reactions.
+        :return: A discord Partial Emoji.
+        """
         return self._partial
 
     def to_dict(self):
+        """
+        Get the dictionary representation of a MultiEmoji.
+        :return:
+        """
         return self._partial.to_dict()
 
     def __hash__(self):
@@ -101,6 +144,9 @@ class MultiEmoji:
 
 
 class EmojiKeyError(Exception):
+    """
+    An error raised when the same emoji is used in a dictionary.
+    """
     def __init__(self, emoji_id, *args):
         super().__init__(*args)
         self.message = f"There is already an emoji with the ID {emoji_id} as an option."

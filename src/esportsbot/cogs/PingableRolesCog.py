@@ -32,6 +32,19 @@ TASK_INTERVAL = 10
 
 
 class PingableRolesCog(commands.Cog):
+    """
+    Pingable roles are roles that can be voted in to be created by any user, and that once created have a cooldown tied to how
+    often that role can be pinged.
+
+    A user can create a poll where if there are enough votes by the time the poll ends, a role will be created.
+    The length of the poll and the number of votes required are customisable by server admins.
+
+    After the poll finishes, a reaction menu gets created, allowing any user to react and receive the role.
+    Initially the role will have the default cooldown of the server, but can be overridden.
+
+    This module implements the above features through a set of commands and making use of a Pingable DB to store and load roles
+    between shutdowns.
+    """
     def __init__(self, bot):
         self.bot = bot
         self.db = DBGatewayActions()
@@ -53,6 +66,10 @@ class PingableRolesCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        """
+        When bot discord client is ready and has logged into the discord API, this function runs and is used to load and
+        initialise any saved Pingable Roles, as well as their reaction menus.
+        """
         guild_ids = [x.id for x in self.bot.guilds]
         self.roles = self.load_all_roles(guild_ids)
         self.polls = self.load_all_polls(guild_ids)
@@ -66,6 +83,11 @@ class PingableRolesCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        """
+        When a message is sent in a channel the bot is able to see, check if a Pingable Role was mentioned in the message, and
+        if so put it on cooldown.
+        :param message: The message sent.
+        """
         # Ignore messages that don't have mentions in them.
         if not message.role_mentions:
             return
@@ -92,6 +114,11 @@ class PingableRolesCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_role_delete(self, role):
+        """
+        When a role is deleted by a server administrator, check if the role deleted was a Pingable Role, and if it was, remove
+        the Pingable Role from the DB so it is not loaded again when the bot starts.
+        :param role: The role that was deleted.
+        """
         guild_roles = self.all_role_ids.get(role.guild.id)
         if not guild_roles:
             return
@@ -106,6 +133,10 @@ class PingableRolesCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
+        """
+        When the bot joins a server, initialise the default settings used when creating a Pingable Role in the DB.
+        :param guild: The server the bot joined.
+        """
         if guild not in self.guild_settings:
             db_item = PingableSettings(
                 guild_id=guild.id,
@@ -374,6 +405,9 @@ class PingableRolesCog(commands.Cog):
         return True
 
     def ensure_tasks(self):
+        """
+        Ensure that the repeatable tasks the bot needs to run are running.
+        """
         if not self.check_poll.is_running() or self.check_poll.is_being_cancelled():
             self.check_poll.start()
 

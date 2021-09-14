@@ -5,13 +5,30 @@ from esportsbot.models import VoicemasterMaster, VoicemasterSlave
 
 
 class VoicemasterCog(commands.Cog):
+    """
+    Voicemaster is used as a way to have a dynamic number of voice channels. By having a single parent voice channel, users can
+    easily create their own room/channel by joining, allowing them to easily talk with just the people they want to.
+
+    This module implements commands used to manage the parent and child channels, all commands require the administrator
+    permission in a server.
+    """
     def __init__(self, bot):
         self.bot = bot
         self.STRINGS = bot.STRINGS['voicemaster']
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
+        """
+        When any users voice state changes, such as joining, leaving or moving voice channels, check if the voice channel they
+        are in is a parent or child, and if so perform the necessary actions.
 
+        - If the user was the last to leave a child voice channel, delete it.
+        - If the user was the owner of the child voice channel, transfer the ownership to another user in the channel.
+        - If the user joined the parent voice channel, create a new child channel that they own.
+        :param member: The member whose voice state has changed.
+        :param before: The member's voice state before the change.
+        :param after: The member's voice state after the change.
+        """
         if not member.guild.me.guild_permissions.move_members:
             await self.bot.admin_log(
                 None,
@@ -55,6 +72,11 @@ class VoicemasterCog(commands.Cog):
     @commands.command(name="setvmparent")
     @commands.has_permissions(administrator=True)
     async def setvmmaster(self, ctx, given_channel_id=None):
+        """
+        Set the given voice channel as a parent voice channel. There can be more than one parent voice channel in a server.
+        :param ctx: The context of the command.
+        :param given_channel_id: The ID of the voice channel to set as the parent voice channel.
+        """
         is_a_valid_id = given_channel_id and given_channel_id.isdigit() and len(given_channel_id) == 18
 
         if is_a_valid_id:
@@ -97,6 +119,10 @@ class VoicemasterCog(commands.Cog):
     @commands.command(name="getvmparents")
     @commands.has_permissions(administrator=True)
     async def getvmmasters(self, ctx):
+        """
+        Get a list of the current voice channels set as parent voice channels.
+        :param ctx: The context of the command.
+        """
         master_vm_exists = DBGatewayActions().list(VoicemasterMaster, guild_id=ctx.author.guild.id)
 
         if master_vm_exists:
@@ -110,6 +136,11 @@ class VoicemasterCog(commands.Cog):
     @commands.command(name="removevmparent")
     @commands.has_permissions(administrator=True)
     async def removevmmaster(self, ctx, given_channel_id=None):
+        """
+        Remove a voice channel from being a parent voice channel.
+        :param ctx: The context of the command.
+        :param given_channel_id: The ID of the voice channel to remove from being a parent voice channel.
+        """
         if given_channel_id:
             channel_exists = DBGatewayActions().get(
                 VoicemasterMaster,
@@ -141,6 +172,10 @@ class VoicemasterCog(commands.Cog):
     @commands.command(name="removeallparents")
     @commands.has_permissions(administrator=True)
     async def removeallmasters(self, ctx):
+        """
+        Remove all the current parent voice channels from the current server.
+        :param ctx: The context of the command.
+        """
         all_vm_masters = DBGatewayActions().list(VoicemasterMaster, guild_id=ctx.author.guild.id)
         for vm_master in all_vm_masters:
             DBGatewayActions().delete(vm_master)
@@ -156,6 +191,10 @@ class VoicemasterCog(commands.Cog):
     @commands.command(name="removeallchildren")
     @commands.has_permissions(administrator=True)
     async def killallslaves(self, ctx):
+        """
+        Delete all the child voice channels, no matter if there are users in them or not.
+        :param ctx: THe context of the command.
+        """
         all_vm_slaves = DBGatewayActions().list(VoicemasterSlave, guild_id=ctx.author.guild.id)
         for vm_slave in all_vm_slaves:
             vm_slave_channel = self.bot.get_channel(vm_slave.channel_id)
@@ -173,6 +212,11 @@ class VoicemasterCog(commands.Cog):
 
     @commands.command(name="lockvm", aliases=["lock"])
     async def lockvm(self, ctx):
+        """
+        Locks a child voice channel to the current number of users. This command can only be run by the owner of the child
+        voice channel.
+        :param ctx: The context of the command.
+        """
         if not ctx.author.voice:
             await ctx.channel.send(self.STRINGS['error_not_in_slave'])
             return
@@ -205,6 +249,11 @@ class VoicemasterCog(commands.Cog):
 
     @commands.command(name="unlockvm", aliases=["unlock"])
     async def unlockvm(self, ctx):
+        """
+        Stops the restriction on the number of users allowed in a child voice channel. This command can only be run by the
+        owner of the child voice channel.
+        :param ctx: The context of the command.
+        """
         if not ctx.author.voice:
             await ctx.channel.send(self.STRINGS['error_not_in_slave'])
             return

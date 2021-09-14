@@ -27,6 +27,9 @@ ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
 
 class TwitterWebhook(tweepy.StreamListener):
+    """
+    Captures events from the Twitter API.
+    """
     def __init__(self, api, loop=None):
         super().__init__(api)
         self.loop = loop if loop is not None else asyncio.get_event_loop()
@@ -244,6 +247,12 @@ class TwitterWebhook(tweepy.StreamListener):
 
 
 class TwitterCog(commands.Cog):
+    """
+    Enables forwarding tweets when they are tweeted to a discord channel for specific Twitter accounts.
+
+    This module implements commands that can be used to manage which Twitter accounts are listened to, as well as to manage
+    the discord webhooks that are used to post the updates to.
+    """
     def __init__(self, bot, loop=None):
         self._bot = bot
         self.logger = logging.getLogger(__name__)
@@ -312,6 +321,10 @@ class TwitterCog(commands.Cog):
 
     @commands.group(name="twitter", invoke_without_command=True)
     async def command_group(self, context: commands.Context):
+        """
+        The command group used to group all the commands used in the TwitterCog.
+        :param context: The context of the command.
+        """
         pass
 
     @command_group.command(name="hook", alias=["addtwitterhook", "create-hook"])

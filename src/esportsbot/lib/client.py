@@ -17,6 +17,9 @@ StringTable = MutableMapping[str, Union[str, "StringTable"]]
 
 
 class EsportsBot(commands.Bot):
+    """
+    A slightly modified version of the basic Bot from discord.commands to include a few extra attributes.
+    """
     def __init__(self, command_prefix: str, user_strings_file: str, **options):
         """
         :param str command_prefix: The prefix to use for bot commands when evoking from discord.

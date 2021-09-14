@@ -12,6 +12,14 @@ DELETE_ON_CREATE = os.getenv("DELETE_VOTING_CREATION", "FALSE").lower() == "true
 
 
 class VotingCog(commands.Cog):
+    """
+    Poll reaction menus allow users to create polls with up to 25 different options for other users, and themselves,
+    to vote on.
+
+    The poll start and end is not time based, but instead controlled by the user that created the poll or administrators.
+
+    This module implements the ability for users to create voting polls, and to then get the results of those polls.
+    """
     def __init__(self, bot):
         self.bot = bot
         self.logger = logging.getLogger(__name__)
@@ -22,6 +30,10 @@ class VotingCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        """
+        When bot discord client is ready and has logged into the discord API, this function runs and is used to load and
+        initialise any polls that had started before the bot was shutdown.
+        """
         self.voting_menus = await self.load_menus()
         self.logger.info(f"{__name__} is now ready!")
 
@@ -211,6 +223,12 @@ class VotingCog(commands.Cog):
     @reset_poll_votes.error
     @remove_poll_option.error
     async def integer_parse_error(self, context: commands.Context, error: commands.CommandError):
+        """
+        An error handler for handling any functions that are prone to integer conversion exceptions.
+        :param context: The context of the command.
+        :param error: The error that occurred.
+        :return:
+        """
         if isinstance(error, commands.BadArgument):
             await context.reply(self.user_strings["needs_number"])
             return

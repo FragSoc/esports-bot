@@ -27,6 +27,10 @@ async def on_ready():
 
 @client.event
 async def on_guild_join(guild):
+    """
+    When the bot joins a new server, initialise the DB entry for that guild in the GuildInfo table in the DB.
+    :param guild: The server the bot just joined.
+    """
     exists = DBGatewayActions().get(GuildInfo, guild_id=guild.id)
     if not exists:
         db_item = GuildInfo(guild_id=guild.id)
@@ -35,6 +39,10 @@ async def on_guild_join(guild):
 
 @client.event
 async def on_guild_remove(guild):
+    """
+    When the bot leaves a server, remove the data in the GuildInfo table in the DB.
+    :param guild: The server the bot just left.
+    """
     guild_from_db = DBGatewayActions().get(GuildInfo, guild_id=guild.id)
     if guild_from_db:
         DBGatewayActions().delete(guild_from_db)
@@ -80,12 +88,18 @@ async def on_command_error(ctx: Context, exception: Exception):
 
 @client.event
 async def on_message(message):
+    """
+    When a message is sent, and it is not from a bot, check if the message was a command and if it was, execute the command.
+    :param message: The message that was sent.
+    """
     if not message.author.bot:
         await client.process_commands(message)
 
 
 def launch():
-
+    """
+    Load all the enabled cogs, and start the bot.
+    """
     if os.getenv("ENABLE_MUSIC", "FALSE").lower() == "true":
         client.load_extension("esportsbot.cogs.MusicCog")
 
