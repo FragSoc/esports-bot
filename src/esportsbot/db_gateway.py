@@ -28,7 +28,8 @@ class DBGatewayActions:
     """
     Base class for handling database queries
     """
-    def list(self, db_model, **args):
+    @staticmethod
+    def list(db_model, **args):
         """
         Method to return a list of results that suit the model criteria
 
@@ -45,7 +46,8 @@ class DBGatewayActions:
         except Exception as err:
             raise Exception(f"Error occured when using list - {err}")
 
-    def get(self, db_model, **args):
+    @staticmethod
+    def get(db_model, **args):
         """
         Method to return a record that suits the model criteria
 
@@ -62,7 +64,8 @@ class DBGatewayActions:
         except Exception as err:
             raise Exception(f"Error occured when using get - {err}")
 
-    def update(self, model):
+    @staticmethod
+    def update(model):
         """
         Method for updating a record in the database
 
@@ -75,7 +78,8 @@ class DBGatewayActions:
         except Exception as err:
             raise Exception(f"Error occured when using update - {err}")
 
-    def delete(self, model):
+    @staticmethod
+    def delete(model):
         """
         Method for deleting a record from the database
 
@@ -88,7 +92,8 @@ class DBGatewayActions:
         except Exception as err:
             raise Exception(f"Error occured when using delete - {err}")
 
-    def create(self, model):
+    @staticmethod
+    def create(model):
         """
         Method for adding a record to the database
 
