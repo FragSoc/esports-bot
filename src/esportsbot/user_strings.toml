@@ -261,6 +261,12 @@ description = "Unloads and then reloads the given cog. Refer to the 'load cog' c
 usage = "<cog name>"
 readme_url = "https://github.com/FragSoc/esports-bot#reload-cog-cog-name"
 
+[help.set_rep]
+help_string = "Sets the permissions for a game rep."
+description = "By mentioning a user, and then giving a set of category or channel IDs separated by a space, this command will give the required permissions for a Game Rep for the given channels."
+usage = "<user mention> <channel or category ids>"
+readme_url = "https://github.com/FragSoc/esports-bot#set-rep-user-mention-channel-or-category-ids"
+
 [help.setlogchannel]
 help_string = "Sets the given channel to the logging channel."
 usage = "<channel mention | channel ID>"
