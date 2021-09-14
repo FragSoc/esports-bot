@@ -9,7 +9,6 @@ from discord.ext import commands, tasks
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.DiscordReactableMenus.EmojiHandler import MultiEmoji
 from esportsbot.DiscordReactableMenus.PingableMenus import (PingableRoleMenu, PingableVoteMenu)
-# The emoji to use in the role menu:
 from esportsbot.lib.discordUtil import get_attempted_arg
 from esportsbot.models import (Guild_info, Pingable_polls, Pingable_roles, Pingable_settings)
 
