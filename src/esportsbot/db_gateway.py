@@ -44,7 +44,7 @@ class DBGatewayActions:
             query = session.query(db_model).filter_by(**args).all()
             return query
         except Exception as err:
-            raise Exception(f"Error occured when using list - {err}")
+            raise Exception(f"Error occurred when using list - {err}")
 
     @staticmethod
     def get(db_model, **args):
@@ -62,7 +62,7 @@ class DBGatewayActions:
             query = session.query(db_model).filter_by(**args).all()
             return query[0] if query != [] else query
         except Exception as err:
-            raise Exception(f"Error occured when using get - {err}")
+            raise Exception(f"Error occurred when using get - {err}")
 
     @staticmethod
     def update(model):
@@ -76,7 +76,7 @@ class DBGatewayActions:
             session.add(model)
             session.commit()
         except Exception as err:
-            raise Exception(f"Error occured when using update - {err}")
+            raise Exception(f"Error occurred when using update - {err}")
 
     @staticmethod
     def delete(model):
@@ -90,7 +90,7 @@ class DBGatewayActions:
             session.delete(model)
             session.commit()
         except Exception as err:
-            raise Exception(f"Error occured when using delete - {err}")
+            raise Exception(f"Error occurred when using delete - {err}")
 
     @staticmethod
     def create(model):
@@ -104,4 +104,4 @@ class DBGatewayActions:
             session.add(model)
             session.commit()
         except Exception as err:
-            raise Exception(f"Error occured when using create - {err}")
+            raise Exception(f"Error occurred when using create - {err}")
