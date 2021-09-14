@@ -247,6 +247,8 @@ class RoleReactCog(commands.Cog):
         """
         for menu_id in self.reaction_menus:
             menu = self.reaction_menus.get(menu_id)
+            if menu.guild.id != context.guild.id:
+                continue
             menu.toggle_footer()
             await menu.update_message()
             self.add_or_update_db(menu_id)

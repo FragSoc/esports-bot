@@ -677,7 +677,8 @@ class TwitchCog(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def add_twitch_channel(self, context, channel, webhook_name, custom_message=None):
         """
-        Allows the Live notifications of the given twitch channel to be sent to the Webhook given with the given custom message.
+        Allows the Live notifications of the given twitch channel to be sent to the Webhook given with the given custom
+        message.
         :param context: The context of the command.
         :param channel: The Twitch channel to track.
         :param webhook_name: The name of the webhook to send the notifications to.
@@ -864,7 +865,12 @@ class TwitchCog(commands.Cog):
             return
 
         if webhook_name:
-            webhook_id, webhook_info = get_webhook_by_name(self._twitch_app.hooks, webhook_name, context.guild.id, WEBHOOK_PREFIX)
+            webhook_id, webhook_info = get_webhook_by_name(
+                self._twitch_app.hooks,
+                webhook_name,
+                context.guild.id,
+                WEBHOOK_PREFIX
+            )
             custom_message = self._twitch_app.tracked_channels.get(channel_id).get(webhook_id)
             if not custom_message:
                 custom_message = "<empty>"

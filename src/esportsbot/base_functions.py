@@ -1,5 +1,5 @@
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.models import Voicemaster_master, Voicemaster_slave, Guild_info
+from esportsbot.models import Voicemaster_master, Voicemaster_slave
 
 
 def role_id_from_mention(pre_clean_data: str) -> int:

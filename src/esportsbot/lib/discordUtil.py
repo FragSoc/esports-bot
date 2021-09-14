@@ -123,7 +123,7 @@ async def channel_from_mention(bot, c_id):
     if channel is None:
         try:
             channel = await bot.fetch_channel(cleaned_id)
-        except Forbidden as e:
+        except Forbidden:
             # self.logger.error("Unable to access channel with id %s due to permission errors: %s", cleaned_id, e.text)
             return None
     return channel

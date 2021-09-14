@@ -24,7 +24,7 @@ base.metadata.create_all(db)
 print("[DATABASE] - Models created")
 
 
-class DBGatewayActions():
+class DBGatewayActions:
     """
     Base class for handling database queries
     """

@@ -1,5 +1,4 @@
 from discord.ext import commands
-from esportsbot.base_functions import role_id_from_mention
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import Guild_info, Default_roles
 from esportsbot.base_functions import role_id_from_mention

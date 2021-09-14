@@ -271,13 +271,13 @@ class EventCategoriesCog(commands.Cog):
             sync_permissions=False,
             reason=audit_reason
         )
-        event_general_channel = await context.guild.create_text_channel(
+        await context.guild.create_text_channel(
             name=f"{event_name} {GENERAL_CHANNEL_SUFFIX}",
             category=event_category,
             sync_permissions=False,
             reason=audit_reason
         )
-        event_voice_channel = await context.guild.create_voice_channel(
+        await context.guild.create_voice_channel(
             name=f"{event_name} {VOICE_CHANNEL_SUFFIX}",
             category=event_category,
             sync_permissions=False,

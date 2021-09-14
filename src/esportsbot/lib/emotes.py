@@ -26,8 +26,8 @@ MAX_EMOJI_LEN = 10
 # Special character indicating the display mode of an emoji
 VAR_SELECTOR = "️"
 # Regional indicator characters. Not technically classed as emojis, so they have to be special-cased.
-REGIONAL_INDICATORS = ('🇦', '🇧', '🇨', '🇩', '🇪', '🇫', '🇬', '🇭', '🇮', '🇯', '🇰', '🇱', '🇲', \
-                        '🇳', '🇴', '🇵', '🇶', '🇷', '🇸', '🇹', '🇺', '🇻', '🇼', '🇽', '🇾', '🇿')
+REGIONAL_INDICATORS = ('🇦', '🇧', '🇨', '🇩', '🇪', '🇫', '🇬', '🇭', '🇮', '🇯', '🇰', '🇱', '🇲',
+                       '🇳', '🇴', '🇵', '🇶', '🇷', '🇸', '🇹', '🇺', '🇻', '🇼', '🇽', '🇾', '🇿')
 
 
 def strIsUnicodeEmoji(c: str) -> bool:

@@ -240,7 +240,6 @@ class PollReactMenu(ReactableMenu):
         return False
 
     async def react_add_func(self, payload: RawReactionActionEvent) -> bool:
-        triggering_member = payload.member
         guild_from_react = payload.member.guild
         triggering_emoji = payload.emoji
 

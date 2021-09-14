@@ -49,7 +49,9 @@ def strIsUserMention(mention: str) -> bool:
 
 
 def strIsChannelMention(mention: str) -> bool:
-    """Decide whether the given string is a discord channel mention, being <@CHANNELID> where CHANNELID is an integer discord channel id.
+    """
+    Decide whether the given string is a discord channel mention, being <@CHANNELID> where CHANNELID is an integer discord
+    channel id.
 
     :param str mention: The string to check
     :return: True if mention matches the formatting of a discord channel mention, False otherwise
@@ -59,7 +61,9 @@ def strIsChannelMention(mention: str) -> bool:
 
 
 def strIsChannelMention(mention: str) -> bool:
-    """Decide whether the given string is a discord channel mention, being <@CHANNELID> where CHANNELID is an integer discord channel id.
+    """
+    Decide whether the given string is a discord channel mention, being <@CHANNELID> where CHANNELID is an integer discord
+    channel id.
     :param str mention: The string to check
     :return: True if mention matches the formatting of a discord channel mention, False otherwise
     :rtype: bool

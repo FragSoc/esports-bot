@@ -48,7 +48,7 @@ class AdminCog(commands.Cog):
         )
 
     @commands.check(is_dev)
-    @commands.command(name="version", help="Print the bot's version string", hidden=True)
+    @commands.command(name="version", hidden=True)
     async def print_version(self, ctx):
         await ctx.channel.send(self.bot_version)
 
