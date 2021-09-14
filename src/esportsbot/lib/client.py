@@ -4,7 +4,7 @@ from discord import Intents, Embed, Message, Colour
 from esportsbot.DiscordReactableMenus.EmojiHandler import MultiEmoji
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.lib.CustomHelpCommand import CustomHelpCommand
-from esportsbot.models import Guild_info
+from esportsbot.models import GuildInfo
 from typing import Dict, MutableMapping, Union
 from datetime import datetime
 import os
@@ -27,10 +27,10 @@ class EsportsBot(commands.Bot):
         self.unknown_command_emoji = MultiEmoji(os.getenv("UNKNOWN_COMMAND_EMOJI", "⁉"))
         self.STRINGS: StringTable = toml.load(user_strings_file)
 
-        signal.signal(signal.SIGINT, self.interruptReceived)  # keyboard interrupt
-        signal.signal(signal.SIGTERM, self.interruptReceived)  # graceful exit request
+        signal.signal(signal.SIGINT, self.interrupt_received)  # keyboard interrupt
+        signal.signal(signal.SIGTERM, self.interrupt_received)  # graceful exit request
 
-    def interruptReceived(self, signum: signal.Signals, frame: FrameType):
+    def interrupt_received(self, signum: signal.Signals, frame: FrameType):
         """Shut down the bot gracefully.
         This method is called automatically upon receipt of sigint/sigterm.
 
@@ -46,7 +46,7 @@ class EsportsBot(commands.Bot):
         print("[EsportsBot] Shutting down...")
         await self.logout()
 
-    async def adminLog(self, message: Message, actions: Dict[str, str], *args, guildID=None, **kwargs):
+    async def admin_log(self, message: Message, actions: Dict[str, str], *args, guild_id=None, **kwargs):
         """Log an event or series of events to the server's admin logging channel.
         To log an administration action which was not due to a user command, give message as None, and specify the guild in
         which to send the log with the guildID kwarg.
@@ -54,31 +54,31 @@ class EsportsBot(commands.Bot):
         :param Message message: The message that triggered this log. Probably a command.
         :param actions: A dictionary associating action types with action details. No key or value can be empty.
         :type actions: Dict[str, str]
-        :param int guildID: The ID of the guild in which to send the log, if message is given as None. Ignored otherwise.
+        :param int guild_id: The ID of the guild in which to send the log, if message is given as None. Ignored otherwise.
         """
         if message is None:
-            if guildID is None:
+            if guild_id is None:
                 raise ValueError("Must give at least one of message or guildID")
         else:
-            guildID = message.guild.id
-        db_logging_call = DBGatewayActions().get(Guild_info, guild_id=guildID)
+            guild_id = message.guild.id
+        db_logging_call = DBGatewayActions().get(GuildInfo, guild_id=guild_id)
         if db_logging_call and db_logging_call.log_channel_id:
             if "embed" not in kwargs:
                 if message is None:
-                    logEmbed = Embed(description="Responsible user unknown. Check the server's audit log.")
+                    log_embed = Embed(description="Responsible user unknown. Check the server's audit log.")
                 else:
-                    logEmbed = Embed(
+                    log_embed = Embed(
                         description=" | ".
                         join((message.author.mention,
                               "#" + message.channel.name,
                               "[message](" + message.jump_url + ")"))
                     )
-                logEmbed.set_author(icon_url=self.user.avatar_url_as(size=64), name="Admin Log")
-                logEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-                logEmbed.colour = Colour.random()
+                log_embed.set_author(icon_url=self.user.avatar_url_as(size=64), name="Admin Log")
+                log_embed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
+                log_embed.colour = Colour.random()
                 for aTitle, aDesc in actions.items():
-                    logEmbed.add_field(name=str(aTitle), value=str(aDesc), inline=False)
-                kwargs["embed"] = logEmbed
+                    log_embed.add_field(name=str(aTitle), value=str(aDesc), inline=False)
+                kwargs["embed"] = log_embed
             await self.get_channel(db_logging_call.log_channel_id).send(*args, **kwargs)
 
 

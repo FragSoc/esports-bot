@@ -11,7 +11,7 @@ from esportsbot.DiscordReactableMenus.ExampleMenus import ActionConfirmationMenu
 from esportsbot.DiscordReactableMenus.reactable_lib import get_menu
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.lib.discordUtil import get_attempted_arg
-from esportsbot.models import Event_categories, Default_roles
+from esportsbot.models import EventCategories, DefaultRoles
 
 denied_perms = PermissionOverwrite(read_messages=False, send_messages=False, connect=False)
 read_only_perms = PermissionOverwrite(read_messages=True, send_messages=False, connect=False)
@@ -68,7 +68,7 @@ class EventCategoriesCog(commands.Cog):
         :param guild_id: The ID of the guild to load the event menus of .
         :return: A Dictionary of the event menus in the guild .
         """
-        raw_events = self.db.list(Event_categories, guild_id=guild_id)
+        raw_events = self.db.list(EventCategories, guild_id=guild_id)
 
         to_load = []
 
@@ -124,7 +124,7 @@ class EventCategoriesCog(commands.Cog):
         :param guild_id: The ID of the guild the event is in .
         :param event_menu: The Reaction Menu instance of the event that has been updated .
         """
-        db_item = self.db.get(Event_categories, guild_id=guild_id, event_id=event_menu.id)
+        db_item = self.db.get(EventCategories, guild_id=guild_id, event_id=event_menu.id)
         db_item.event_menu = event_menu.to_dict()
         self.db.update(db_item)
 
@@ -134,7 +134,7 @@ class EventCategoriesCog(commands.Cog):
         :param guild_id: The ID of the guild where the event is in .
         :param event_id: The ID of the event in the guild .
         """
-        db_item = self.db.get(Event_categories, guild_id=guild_id, event_id=event_id)
+        db_item = self.db.get(EventCategories, guild_id=guild_id, event_id=event_id)
         self.db.delete(db_item)
 
     async def set_role_permissions_for_event(self, event_menu, role, role_type, reason):
@@ -246,7 +246,7 @@ class EventCategoriesCog(commands.Cog):
         audit_reason = "Done with `create-event` command"
 
         if not shared_role:
-            db_data = self.db.get(Default_roles, guild_id=context.guild.id)
+            db_data = self.db.get(DefaultRoles, guild_id=context.guild.id)
             if not db_data or not db_data.role_id:
                 shared_role = context.guild.default_role
             else:
@@ -311,7 +311,7 @@ class EventCategoriesCog(commands.Cog):
             reason=audit_reason
         )
 
-        db_item = Event_categories(
+        db_item = EventCategories(
             guild_id=context.guild.id,
             event_id=event_menu.id,
             event_name=event_menu.title,

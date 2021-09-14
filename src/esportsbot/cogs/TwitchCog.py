@@ -29,7 +29,7 @@ import logging
 
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.lib.discordUtil import get_webhook_by_name, load_discord_hooks
-from esportsbot.models import Twitch_info
+from esportsbot.models import TwitchInfo
 
 SUBSCRIPTION_SECRET = os.getenv("TWITCH_SUB_SECRET")
 CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
@@ -522,7 +522,7 @@ class TwitchCog(commands.Cog):
         :return: A dictionary of Twitch channel ID to a set of guild IDs.
         """
 
-        db_data = self._db.list(Twitch_info)
+        db_data = self._db.list(TwitchInfo)
         guild_info = {}
         for item in db_data:
             if str(item.channel_id) not in guild_info:
@@ -546,7 +546,7 @@ class TwitchCog(commands.Cog):
                 if hook in self._twitch_app.hooks:
                     cleaned_db[channel][hook] = hooks.get(hook)
                 else:
-                    db_item = self._db.get(Twitch_info, channel_id=channel, hook_id=hook)
+                    db_item = self._db.get(TwitchInfo, channel_id=channel, hook_id=hook)
                     if db_item:
                         self._db.delete(db_item)
             if not cleaned_db.get(channel):
@@ -567,7 +567,7 @@ class TwitchCog(commands.Cog):
         if hook_id not in self._twitch_app.tracked_channels.get(channel_id):
             return False
         self._twitch_app.tracked_channels.get(channel_id).pop(hook_id)
-        db_item = self._db.get(Twitch_info, channel_id=channel_id, hook_id=hook_id)
+        db_item = self._db.get(TwitchInfo, channel_id=channel_id, hook_id=hook_id)
         if db_item:
             self._db.delete(db_item)
 
@@ -592,7 +592,7 @@ class TwitchCog(commands.Cog):
         :param webhook_name: The name of the Webhook.
         :return: An embed representing the Twitch channels that post updates to the given Webhook.
         """
-        db_items = self._db.list(Twitch_info, hook_id=webhook_id)
+        db_items = self._db.list(TwitchInfo, hook_id=webhook_id)
         embed = Embed(
             title="**Currently Tracked Channels:**",
             description=f"These are the currently tracked channels for the Webhook: \n`{webhook_name}`",
@@ -663,7 +663,7 @@ class TwitchCog(commands.Cog):
             await webhook.delete(reason=f"Deleted {hook_name} Twitch Webhook with command!")
 
         # Ensure that channels that were posting to that webhook are no longer trying to:
-        hook_channels = self._db.list(Twitch_info, guild_id=context.guild.id, hook_id=hook_id)
+        hook_channels = self._db.list(TwitchInfo, guild_id=context.guild.id, hook_id=hook_id)
         if not hook_channels:
             await context.send(self.user_strings["webhook_deleted"].format(name=hook_info.get("name"), hook_id=hook_id))
             return
@@ -702,7 +702,7 @@ class TwitchCog(commands.Cog):
                 await context.send(self.user_strings["channel_already_tracked"].format(name=channel, webhook=webhook_name))
                 return
             self._twitch_app.tracked_channels[channel_id][webhook_id] = custom_message
-            db_item = Twitch_info(
+            db_item = TwitchInfo(
                 guild_id=context.guild.id,
                 hook_id=webhook_id,
                 channel_id=channel_id,
@@ -715,7 +715,7 @@ class TwitchCog(commands.Cog):
         if await self._twitch_app.create_subscription("stream.online", channel_name=channel):
             # Ensure that the Twitch EventSub was successful before adding the info to the DB.
             self._twitch_app.tracked_channels[channel_id] = {webhook_id: custom_message}
-            db_item = Twitch_info(
+            db_item = TwitchInfo(
                 guild_id=context.guild.id,
                 hook_id=webhook_id,
                 channel_id=channel_id,
@@ -834,7 +834,7 @@ class TwitchCog(commands.Cog):
                 await context.send(self.user_strings["channel_not_tracked"].format(name=channel, webhook=webhook_name))
                 return
             self._twitch_app.tracked_channels[channel_id][webhook_id] = custom_message
-            db_item = self._db.get(Twitch_info, guild_id=context.guild.id, channel_id=channel_id, hook_id=webhook_id)
+            db_item = self._db.get(TwitchInfo, guild_id=context.guild.id, channel_id=channel_id, hook_id=webhook_id)
             if db_item:
                 db_item.custom_message = custom_message
                 self._db.update(db_item)

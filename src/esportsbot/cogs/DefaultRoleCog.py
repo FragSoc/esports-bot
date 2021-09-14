@@ -1,6 +1,6 @@
 from discord.ext import commands
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.models import Guild_info, Default_roles
+from esportsbot.models import GuildInfo, DefaultRoles
 from esportsbot.base_functions import role_id_from_mention
 
 
@@ -11,18 +11,18 @@ class DefaultRoleCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        guild = DBGatewayActions().get(Guild_info, guild_id=member.guild.id)
+        guild = DBGatewayActions().get(GuildInfo, guild_id=member.guild.id)
         if not guild:
             return
         # Get all the default role for the server from database
-        guild_default_roles = DBGatewayActions().list(Default_roles, guild_id=member.guild.id)
+        guild_default_roles = DBGatewayActions().list(DefaultRoles, guild_id=member.guild.id)
         # Check to see if any roles exist
         if guild_default_roles:
             # Create list of roles from database response
             apply_roles = [member.guild.get_role(role.role_id) for role in guild_default_roles]
             # Add all the roles to the user, we don't check if they're valid as we do this on input
             await member.add_roles(*apply_roles)
-            await self.bot.adminLog(
+            await self.bot.admin_log(
                 None,
                 {
                     "Cog":
@@ -33,16 +33,16 @@ class DefaultRoleCog(commands.Cog):
                         role_ids=(' '.join(f'<@&{x.id}>' for x in apply_roles))
                     )
                 },
-                guildID=member.guild.id
+                guild_id=member.guild.id
             )
         else:
-            await self.bot.adminLog(
+            await self.bot.admin_log(
                 None,
                 {
                     "Cog": str(type(self)),
                     "Message": self.STRINGS['default_role_join_no_role'].format(member_name=member.mention)
                 },
-                guildID=member.guild.id
+                guild_id=member.guild.id
             )
 
     @commands.command(name="setdefaultroles")
@@ -68,9 +68,9 @@ class DefaultRoleCog(commands.Cog):
                     checking_error = True
             if not checking_error:
                 for role in checked_roles:
-                    DBGatewayActions().create(Default_roles(guild_id=ctx.author.guild.id, role_id=role))
+                    DBGatewayActions().create(DefaultRoles(guild_id=ctx.author.guild.id, role_id=role))
                 await ctx.channel.send(self.STRINGS['default_roles_set'].format(roles=args))
-                await self.bot.adminLog(
+                await self.bot.admin_log(
                     ctx.message,
                     {
                         "Cog": str(type(self)),
@@ -85,7 +85,7 @@ class DefaultRoleCog(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def getdefaultroles(self, ctx):
         # Get all the default role for the server from database
-        guild_default_roles = DBGatewayActions().list(Default_roles, guild_id=ctx.author.guild.id)
+        guild_default_roles = DBGatewayActions().list(DefaultRoles, guild_id=ctx.author.guild.id)
         # Check to see if any roles exist
         if guild_default_roles:
             # Create list of roles from database response
@@ -101,7 +101,7 @@ class DefaultRoleCog(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def removedefaultroles(self, ctx):
         # Get all the default role for the server from database
-        guild_default_roles = DBGatewayActions().list(Default_roles, guild_id=ctx.author.guild.id)
+        guild_default_roles = DBGatewayActions().list(DefaultRoles, guild_id=ctx.author.guild.id)
         # Check to see if any roles exist
         if guild_default_roles:
             for default_role in guild_default_roles:
@@ -109,7 +109,7 @@ class DefaultRoleCog(commands.Cog):
                 DBGatewayActions().delete(default_role)
             # Return a response to the user
             await ctx.channel.send(self.STRINGS['default_role_removed'])
-            await self.bot.adminLog(
+            await self.bot.admin_log(
                 ctx.message,
                 {
                     "Cog": str(type(self)),

@@ -7,7 +7,7 @@ from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.DiscordReactableMenus.EmojiHandler import (EmojiKeyError, MultiEmoji)
 from esportsbot.DiscordReactableMenus.ExampleMenus import RoleReactMenu
 from esportsbot.DiscordReactableMenus.reactable_lib import get_menu
-from esportsbot.models import Role_menus
+from esportsbot.models import RoleMenus
 
 DELETE_ON_CREATE = os.getenv("DELETE_ROLE_CREATION", "FALSE").lower() == "true"
 
@@ -31,7 +31,7 @@ class RoleReactCog(commands.Cog):
         Loads saved role reaction menus from the DB for all guilds .
         :return: A dictionary of reaction menu IDs and their reaction menus .
         """
-        all_menus = self.db.list(Role_menus)
+        all_menus = self.db.list(RoleMenus)
         loaded_menus = {}
         for menu in all_menus:
             loaded_menus[menu.menu_id] = await RoleReactMenu.from_dict(self.bot, menu.menu)
@@ -42,12 +42,12 @@ class RoleReactCog(commands.Cog):
         Creates a new DB item or updates an existing one for a given menu id .
         :param menu_id: The menu id to create or update .
         """
-        db_item = self.db.get(Role_menus, menu_id=menu_id)
+        db_item = self.db.get(RoleMenus, menu_id=menu_id)
         if db_item:
             db_item.menu = self.reaction_menus.get(menu_id).to_dict()
             self.db.update(db_item)
         else:
-            db_item = Role_menus(menu_id=menu_id, menu=self.reaction_menus.get(menu_id).to_dict())
+            db_item = RoleMenus(menu_id=menu_id, menu=self.reaction_menus.get(menu_id).to_dict())
             self.db.create(db_item)
 
     @staticmethod
@@ -234,7 +234,7 @@ class RoleReactCog(commands.Cog):
 
         await menu.message.delete()
         self.reaction_menus.pop(menu.id)
-        db_item = self.db.get(Role_menus, menu_id=menu.id)
+        db_item = self.db.get(RoleMenus, menu_id=menu.id)
         self.db.delete(db_item)
         await context.reply(self.user_strings["delete_menu"].format(menu_id=menu.id))
 

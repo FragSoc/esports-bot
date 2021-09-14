@@ -10,7 +10,7 @@ from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.DiscordReactableMenus.EmojiHandler import MultiEmoji
 from esportsbot.DiscordReactableMenus.PingableMenus import (PingableRoleMenu, PingableVoteMenu)
 from esportsbot.lib.discordUtil import get_attempted_arg
-from esportsbot.models import (Guild_info, Pingable_polls, Pingable_roles, Pingable_settings)
+from esportsbot.models import (GuildInfo, PingablePolls, PingableRoles, PingableSettings)
 
 # The default role emoji to use on the role react menus:
 PINGABLE_ROLE_EMOJI = MultiEmoji("💎")
@@ -84,7 +84,7 @@ class PingableRolesCog(commands.Cog):
                 await role.edit(mentionable=False)
                 self.roles_on_cooldown.append(role)
                 self.ensure_tasks()
-                db_item = self.db.get(Pingable_roles, guild_id=role.guild.id, role_id=role.id)
+                db_item = self.db.get(PingableRoles, guild_id=role.guild.id, role_id=role.id)
                 if db_item:
                     db_item.total_pings += 1
                     db_item.monthly_pings += 1
@@ -107,7 +107,7 @@ class PingableRolesCog(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         if guild not in self.guild_settings:
-            db_item = Pingable_settings(
+            db_item = PingableSettings(
                 guild_id=guild.id,
                 default_poll_length=int(os.getenv("DEFAULT_POLL_LENGTH")),
                 default_poll_threshold=int(os.getenv("DEFAULT_POLL_THRESHOLD")),
@@ -161,7 +161,7 @@ class PingableRolesCog(commands.Cog):
         self.roles.pop(menu_id)
         self.all_role_ids.get(guild_id).pop(role_id)
 
-        db_item = self.db.get(Pingable_roles, guild_id=guild_id, role_id=role_id, menu_id=menu_id)
+        db_item = self.db.get(PingableRoles, guild_id=guild_id, role_id=role_id, menu_id=menu_id)
         self.db.delete(db_item)
 
     async def remove_pingable_role(self, role):
@@ -170,7 +170,7 @@ class PingableRolesCog(commands.Cog):
         :param role: The role to delete .
         """
         self.logger.debug(f"{role.name} pingable role was just removed from {role.guild.name}")
-        db_item = self.db.get(Pingable_roles, guild_id=role.guild.id, role_id=role.id)
+        db_item = self.db.get(PingableRoles, guild_id=role.guild.id, role_id=role.id)
         menu_id = db_item.menu_id
         menu_data = self.roles.pop(menu_id)
         menu = menu_data.get("menu")
@@ -197,7 +197,7 @@ class PingableRolesCog(commands.Cog):
             menu_data = self.roles.get(menu_id).get("menu")
             loaded_menu = await PingableRoleMenu.from_dict(self.bot, menu_data)
             if isinstance(loaded_menu, dict):
-                db_item = self.db.get(Pingable_roles, guild_id=menu_data.get("guild_id"), role_id=menu_data.get("role_id"))
+                db_item = self.db.get(PingableRoles, guild_id=menu_data.get("guild_id"), role_id=menu_data.get("role_id"))
                 self.db.delete(db_item)
                 to_pop.append(menu_id)
             else:
@@ -213,7 +213,7 @@ class PingableRolesCog(commands.Cog):
             menu_data = self.polls.get(poll_id).get("menu")
             loaded_menu = await PingableVoteMenu.from_dict(self.bot, menu_data)
             if isinstance(loaded_menu, dict):
-                db_item = self.db.get(Pingable_polls, guild_id=menu_data.get("guild_id"), menu_id=poll_id)
+                db_item = self.db.get(PingablePolls, guild_id=menu_data.get("guild_id"), menu_id=poll_id)
                 self.db.delete(db_item)
                 to_pop.append(poll_id)
             else:
@@ -230,7 +230,7 @@ class PingableRolesCog(commands.Cog):
         :return:
         """
         self.logger.debug("Loading menu guild settings for all guilds")
-        db_data = self.db.list(Pingable_settings)
+        db_data = self.db.list(PingableSettings)
 
         loaded_data = {}
 
@@ -271,7 +271,7 @@ class PingableRolesCog(commands.Cog):
         :return: A dictionary of all the polls happening in the guild specified .
         """
         self.logger.debug(f"Loading pingable polls for guild with id: {guild_id}")
-        guild_polls: [Pingable_polls] = self.db.list(Pingable_polls, guild_id=guild_id)
+        guild_polls: [PingablePolls] = self.db.list(PingablePolls, guild_id=guild_id)
 
         guild_data = {}
 
@@ -306,7 +306,7 @@ class PingableRolesCog(commands.Cog):
         :return: A dictionary of pingable role reaction menus .
         """
         self.logger.debug(f"Loading pingable react menus for guild with id: {guild_id}")
-        guild_roles: [Pingable_roles] = self.db.list(Pingable_roles, guild_id=guild_id)
+        guild_roles: [PingableRoles] = self.db.list(PingableRoles, guild_id=guild_id)
 
         guild_data = {}
 
@@ -449,11 +449,11 @@ class PingableRolesCog(commands.Cog):
         embed_base.footer(text=f"Ping report for {today.strftime('%B %Y')}")
 
         for guild in self.bot.guilds:
-            guild_info = self.db.get(Guild_info, guild_id=guild.id)
+            guild_info = self.db.get(GuildInfo, guild_id=guild.id)
             if not guild_info or not guild_info.log_channel_id:
                 continue
 
-            guild_roles = self.db.list(Pingable_roles, guild_id=guild.id)
+            guild_roles = self.db.list(PingableRoles, guild_id=guild.id)
             guild_embed = embed_base.copy()
             for pingable_role in guild_roles:
                 role_instance = guild.get_role(pingable_role.role_id)
@@ -489,7 +489,7 @@ class PingableRolesCog(commands.Cog):
             await self.give_roles_to_reacts(poll_to_finish.message, role)
             self.logger.debug(f"Saved new pingable role information for {role.name} to DB!")
 
-        db_item = self.db.get(Pingable_polls, guild_id=channel.guild.id, poll_id=poll_to_finish.id)
+        db_item = self.db.get(PingablePolls, guild_id=channel.guild.id, poll_id=poll_to_finish.id)
         self.db.delete(db_item)
         await poll_to_finish.message.delete()
 
@@ -516,7 +516,7 @@ class PingableRolesCog(commands.Cog):
         self.all_role_ids[channel.guild.id][role.id] = current_menu.id
         self.roles[current_menu.id] = {"role_id": role.id, "menu": current_menu}
 
-        db_item = Pingable_roles(
+        db_item = PingableRoles(
             guild_id=channel.guild.id,
             role_id=role.id,
             menu_id=current_menu.id,
@@ -563,7 +563,7 @@ class PingableRolesCog(commands.Cog):
         :param context: The context of the command.
         :return: A Pingable_settings DB item if the guild is in the DB, else None.
         """
-        db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        db_item = self.db.get(PingableSettings, guild_id=context.guild.id)
         if not db_item:
             await context.send(
                 self.user_strings["needs_initialising"].format(
@@ -640,7 +640,7 @@ class PingableRolesCog(commands.Cog):
         """
         guild_id = context.guild.id
 
-        exists = self.db.get(Pingable_settings, guild_id=guild_id)
+        exists = self.db.get(PingableSettings, guild_id=guild_id)
 
         if exists:
             exists.default_poll_length = int(os.getenv("DEFAULT_POLL_LENGTH"))
@@ -650,7 +650,7 @@ class PingableRolesCog(commands.Cog):
             exists.default_role_emoji = PINGABLE_ROLE_EMOJI.to_dict()
             self.db.update(exists)
         else:
-            current_item = Pingable_settings(
+            current_item = PingableSettings(
                 guild_id=guild_id,
                 default_poll_length=int(os.getenv("DEFAULT_POLL_LENGTH")),
                 default_poll_threshold=int(os.getenv("DEFAULT_POLL_THRESHOLD")),
@@ -713,7 +713,7 @@ class PingableRolesCog(commands.Cog):
         :param context: The context of the command .
         :param role_cooldown: The number of seconds a role will be on cooldown for .
         """
-        db_item = self.db.get(Pingable_settings, guild_id=context.guild.id)
+        db_item = self.db.get(PingableSettings, guild_id=context.guild.id)
         if not db_item:
             await context.send(
                 self.user_strings["needs_initialising"].format(
@@ -798,7 +798,7 @@ class PingableRolesCog(commands.Cog):
 
         role_poll.add_option(self.guild_settings.get(context.guild.id).get("poll_emoji"), role_name)
         await role_poll.finalise_and_send(self.bot, context.channel)
-        db_item = Pingable_polls(
+        db_item = PingablePolls(
             guild_id=context.guild.id,
             pingable_name=role_name,
             poll_id=role_poll.id,
@@ -824,7 +824,7 @@ class PingableRolesCog(commands.Cog):
         deleted_roles = []
 
         for role in context.message.role_mentions:
-            db_item = self.db.get(Pingable_roles, guild_id=context.guild.id, role_id=role.id)
+            db_item = self.db.get(PingableRoles, guild_id=context.guild.id, role_id=role.id)
             if not db_item:
                 await context.send(self.user_strings["not_pingable_role"].format(role=role.name))
             else:
@@ -854,7 +854,7 @@ class PingableRolesCog(commands.Cog):
         converted_roles = []
 
         for role in context.message.role_mentions:
-            db_item = self.db.get(Pingable_roles, guild_id=context.guild.id, role_id=role.id)
+            db_item = self.db.get(PingableRoles, guild_id=context.guild.id, role_id=role.id)
             if db_item:
                 await context.send(self.user_strings["already_exists"].format(role=role.name))
             else:
@@ -910,12 +910,12 @@ class PingableRolesCog(commands.Cog):
         role_menu = await self.get_menu_from_role_ping(context, pingable_role)
         role_menu.cooldown = cooldown_seconds
 
-        db_item = self.db.get(Pingable_roles, guild_id=context.guild.id, role_id=pingable_role.id)
+        db_item = self.db.get(PingableRoles, guild_id=context.guild.id, role_id=pingable_role.id)
         if db_item:
             db_item.menu = role_menu.to_dict()
             self.db.update(db_item)
         else:
-            db_item = Pingable_roles(
+            db_item = PingableRoles(
                 guild_id=context.guild.id,
                 role_id=pingable_role.id,
                 menu_id=role_menu.id,

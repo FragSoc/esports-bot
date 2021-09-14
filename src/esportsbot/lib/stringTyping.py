@@ -11,7 +11,7 @@ It is modified and not actively synced with BASED, so will very likely be out of
 """
 
 
-def strIsInt(x) -> bool:
+def str_is_int(x) -> bool:
     """Decide whether or not something is either an integer, or is castable to integer.
 
     :param x: The object to type-check
@@ -28,7 +28,7 @@ def strIsInt(x) -> bool:
     return True
 
 
-def strIsRoleMention(mention: str) -> bool:
+def str_is_role_mention(mention: str) -> bool:
     """Decide whether the given string is a discord role mention, being <@&ROLEID> where ROLEID is an integer discord role id.
 
     :param str mention: The string to check
@@ -38,7 +38,7 @@ def strIsRoleMention(mention: str) -> bool:
     return ROLE_REGEX.match(mention) is not None
 
 
-def strIsUserMention(mention: str) -> bool:
+def str_is_user_mention(mention: str) -> bool:
     """Decide whether the given string is a discord user mention, being <@USERID> where USERID is an integer discord user id.
 
     :param str mention: The string to check
@@ -48,7 +48,7 @@ def strIsUserMention(mention: str) -> bool:
     return MENTION_REGEX.match(mention) is not None
 
 
-def strIsChannelMention(mention: str) -> bool:
+def str_is_channel_mention(mention: str) -> bool:
     """
     Decide whether the given string is a discord channel mention, being <@CHANNELID> where CHANNELID is an integer discord
     channel id.
@@ -58,14 +58,3 @@ def strIsChannelMention(mention: str) -> bool:
     :rtype: bool
     """
     return CHANNEL_REGEX.match(mention) is not None
-
-
-def strIsChannelMention(mention: str) -> bool:
-    """
-    Decide whether the given string is a discord channel mention, being <@CHANNELID> where CHANNELID is an integer discord
-    channel id.
-    :param str mention: The string to check
-    :return: True if mention matches the formatting of a discord channel mention, False otherwise
-    :rtype: bool
-    """
-    return len(mention) == 21 and mention[:2] == "<#" and mention[-1:] == ">" and strIsInt(mention[2:-1])

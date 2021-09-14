@@ -1,7 +1,7 @@
 from discord.ext import commands
 from esportsbot.base_functions import (get_whether_in_vm_master, get_whether_in_vm_slave)
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.models import Voicemaster_master, Voicemaster_slave
+from esportsbot.models import VoicemasterMaster, VoicemasterSlave
 
 
 class VoicemasterCog(commands.Cog):
@@ -13,10 +13,10 @@ class VoicemasterCog(commands.Cog):
     async def on_voice_state_update(self, member, before, after):
 
         if not member.guild.me.guild_permissions.move_members:
-            await self.bot.adminLog(
+            await self.bot.admin_log(
                 None,
                 {"Message": "I need the permission `move members` in this guild to be able to perform Voicemaster"},
-                guildID=member.guild.id
+                guild_id=member.guild.id
             )
             return
 
@@ -27,7 +27,7 @@ class VoicemasterCog(commands.Cog):
             # The user has either disconnected or moved voice channels.
             if get_whether_in_vm_slave(before.channel.guild.id, before.channel.id):
                 # If the user was in a VM slave.
-                vm_slave = DBGatewayActions().get(Voicemaster_slave, guild_id=member.guild.id, channel_id=before.channel.id)
+                vm_slave = DBGatewayActions().get(VoicemasterSlave, guild_id=member.guild.id, channel_id=before.channel.id)
                 if not before.channel.members:
                     # The VM is empty, delete it.
                     await before.channel.delete()
@@ -43,7 +43,7 @@ class VoicemasterCog(commands.Cog):
                 f"{member.display_name}'s VC",
                 category=after.channel.category
             )
-            slave_db_entry = Voicemaster_slave(
+            slave_db_entry = VoicemasterSlave(
                 guild_id=member.guild.id,
                 channel_id=slave_channel.id,
                 owner_id=member.id,
@@ -58,22 +58,23 @@ class VoicemasterCog(commands.Cog):
         is_a_valid_id = given_channel_id and given_channel_id.isdigit() and len(given_channel_id) == 18
 
         if is_a_valid_id:
-            is_a_master = DBGatewayActions().get(Voicemaster_master, guild_id=ctx.author.guild.id, channel_id=given_channel_id)
+            is_a_master = DBGatewayActions().get(VoicemasterMaster, guild_id=ctx.author.guild.id, channel_id=given_channel_id)
             is_voice_channel = hasattr(self.bot.get_channel(int(given_channel_id)), 'voice_states')
-            is_a_slave = DBGatewayActions().get(Voicemaster_slave, guild_id=ctx.author.guild.id, channel_id=given_channel_id)
+            is_a_slave = DBGatewayActions().get(VoicemasterSlave, guild_id=ctx.author.guild.id, channel_id=given_channel_id)
 
             if is_voice_channel and not (is_a_master or is_a_slave):
                 # Not currently a Master and is voice channel, add it
-                DBGatewayActions().create(Voicemaster_master(guild_id=ctx.author.guild.id, channel_id=given_channel_id))
+                DBGatewayActions().create(VoicemasterMaster(guild_id=ctx.author.guild.id, channel_id=given_channel_id))
                 await ctx.channel.send("This VC has now been set as a VM master")
                 new_vm_master_channel = self.bot.get_channel(int(given_channel_id))
-                await self.bot.adminLog(
+                await self.bot.admin_log(
                     ctx.message,
                     {
                         "Cog":
                         "VoiceMaster",
                         "Message":
-                        f"{ctx.author.mention} has made {new_vm_master_channel.name} - {new_vm_master_channel.id} a VM master VC"
+                        f"{ctx.author.mention} has made {new_vm_master_channel.name} - {new_vm_master_channel.id} "
+                        f"a VM master VC"
                     },
                 )
             elif is_a_master:
@@ -96,7 +97,7 @@ class VoicemasterCog(commands.Cog):
     @commands.command(name="getvmparents")
     @commands.has_permissions(administrator=True)
     async def getvmmasters(self, ctx):
-        master_vm_exists = DBGatewayActions().list(Voicemaster_master, guild_id=ctx.author.guild.id)
+        master_vm_exists = DBGatewayActions().list(VoicemasterMaster, guild_id=ctx.author.guild.id)
 
         if master_vm_exists:
             master_vm_str = str()
@@ -111,7 +112,7 @@ class VoicemasterCog(commands.Cog):
     async def removevmmaster(self, ctx, given_channel_id=None):
         if given_channel_id:
             channel_exists = DBGatewayActions().get(
-                Voicemaster_master,
+                VoicemasterMaster,
                 guild_id=ctx.author.guild.id,
                 channel_id=given_channel_id
             )
@@ -119,7 +120,7 @@ class VoicemasterCog(commands.Cog):
                 DBGatewayActions().delete(channel_exists)
                 await ctx.channel.send(self.STRINGS['success_vm_unset'])
                 removed_vm_master = self.bot.get_channel(given_channel_id)
-                await self.bot.adminLog(
+                await self.bot.admin_log(
                     ctx.message,
                     {
                         "Cog":
@@ -140,11 +141,11 @@ class VoicemasterCog(commands.Cog):
     @commands.command(name="removeallparents")
     @commands.has_permissions(administrator=True)
     async def removeallmasters(self, ctx):
-        all_vm_masters = DBGatewayActions().list(Voicemaster_master, guild_id=ctx.author.guild.id)
+        all_vm_masters = DBGatewayActions().list(VoicemasterMaster, guild_id=ctx.author.guild.id)
         for vm_master in all_vm_masters:
             DBGatewayActions().delete(vm_master)
         await ctx.channel.send(self.STRINGS['success_vm_masters_cleared'])
-        await self.bot.adminLog(
+        await self.bot.admin_log(
             ctx.message,
             {
                 "Cog": str(type(self)),
@@ -155,14 +156,14 @@ class VoicemasterCog(commands.Cog):
     @commands.command(name="removeallchildren")
     @commands.has_permissions(administrator=True)
     async def killallslaves(self, ctx):
-        all_vm_slaves = DBGatewayActions().list(Voicemaster_slave, guild_id=ctx.author.guild.id)
+        all_vm_slaves = DBGatewayActions().list(VoicemasterSlave, guild_id=ctx.author.guild.id)
         for vm_slave in all_vm_slaves:
             vm_slave_channel = self.bot.get_channel(vm_slave.channel_id)
             if vm_slave_channel:
                 await vm_slave_channel.delete()
             DBGatewayActions().delete(vm_slave)
         await ctx.channel.send(self.STRINGS['success_vm_slaves_cleared'])
-        await self.bot.adminLog(
+        await self.bot.admin_log(
             ctx.message,
             {
                 "Cog": str(type(self)),
@@ -176,7 +177,7 @@ class VoicemasterCog(commands.Cog):
             await ctx.channel.send(self.STRINGS['error_not_in_slave'])
             return
         in_vm_slave = DBGatewayActions().get(
-            Voicemaster_slave,
+            VoicemasterSlave,
             guild_id=ctx.author.guild.id,
             channel_id=ctx.author.voice.channel.id
         )
@@ -188,7 +189,7 @@ class VoicemasterCog(commands.Cog):
                     DBGatewayActions().update(in_vm_slave)
                     await ctx.author.voice.channel.edit(user_limit=len(ctx.author.voice.channel.members))
                     await ctx.channel.send(self.STRINGS['success_slave_locked'])
-                    await self.bot.adminLog(
+                    await self.bot.admin_log(
                         ctx.message,
                         {
                             "Cog": str(type(self)),
@@ -208,7 +209,7 @@ class VoicemasterCog(commands.Cog):
             await ctx.channel.send(self.STRINGS['error_not_in_slave'])
             return
         in_vm_slave = DBGatewayActions().get(
-            Voicemaster_slave,
+            VoicemasterSlave,
             guild_id=ctx.author.guild.id,
             channel_id=ctx.author.voice.channel.id
         )
@@ -219,7 +220,7 @@ class VoicemasterCog(commands.Cog):
                     in_vm_slave.locked = False
                     DBGatewayActions().update(in_vm_slave)
                     await ctx.author.voice.channel.edit(user_limit=0)
-                    await self.bot.adminLog(
+                    await self.bot.admin_log(
                         ctx.message,
                         {
                             "Cog": str(type(self)),

@@ -1,7 +1,7 @@
 from esportsbot import lib
 
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.models import Guild_info
+from esportsbot.models import GuildInfo
 
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 from discord.ext.commands.context import Context
@@ -27,15 +27,15 @@ async def on_ready():
 
 @client.event
 async def on_guild_join(guild):
-    exists = DBGatewayActions().get(Guild_info, guild_id=guild.id)
+    exists = DBGatewayActions().get(GuildInfo, guild_id=guild.id)
     if not exists:
-        db_item = Guild_info(guild_id=guild.id)
+        db_item = GuildInfo(guild_id=guild.id)
         DBGatewayActions().create(db_item)
 
 
 @client.event
 async def on_guild_remove(guild):
-    guild_from_db = DBGatewayActions().get(Guild_info, guild_id=guild.id)
+    guild_from_db = DBGatewayActions().get(GuildInfo, guild_id=guild.id)
     if guild_from_db:
         DBGatewayActions().delete(guild_from_db)
         print(client.STRINGS["guild_leave"].format(guild_name=guild.name))
@@ -65,15 +65,15 @@ async def on_command_error(ctx: Context, exception: Exception):
         except NotFound:
             raise ValueError("Invalid unknownCommandEmoji: " + client.unknown_command_emoji.discord_emoji)
     else:
-        sourceStr = str(ctx.message.id)
+        source_str = str(ctx.message.id)
         try:
-            sourceStr += "/" + ctx.channel.name + "#" + str(ctx.channel.id) \
+            source_str += "/" + ctx.channel.name + "#" + str(ctx.channel.id) \
                 + "/" + ctx.guild.name + "#" + str(ctx.guild.id)
         except AttributeError:
-            sourceStr += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
+            source_str += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
         print(
             datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught " + type(exception).__name__ + " '") + str(exception)
-            + "' from message " + sourceStr
+            + "' from message " + source_str
         )
         lib.exceptions.print_exception_trace(exception)
 

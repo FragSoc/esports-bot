@@ -1,5 +1,5 @@
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.models import Voicemaster_master, Voicemaster_slave
+from esportsbot.models import VoicemasterMaster, VoicemasterSlave
 
 
 def role_id_from_mention(pre_clean_data: str) -> int:
@@ -43,10 +43,10 @@ def user_id_from_mention(pre_clean_data: str) -> int:
 
 
 def get_whether_in_vm_master(guild_id, channel_id):
-    in_master = DBGatewayActions().get(Voicemaster_master, guild_id=guild_id, channel_id=channel_id)
+    in_master = DBGatewayActions().get(VoicemasterMaster, guild_id=guild_id, channel_id=channel_id)
     return bool(in_master)
 
 
 def get_whether_in_vm_slave(guild_id, channel_id):
-    in_slave = DBGatewayActions().get(Voicemaster_slave, guild_id=guild_id, channel_id=channel_id)
+    in_slave = DBGatewayActions().get(VoicemasterSlave, guild_id=guild_id, channel_id=channel_id)
     return bool(in_slave)

@@ -15,14 +15,14 @@ from discord import (ClientException, Colour, Embed, FFmpegPCMAudio, PCMVolumeTr
 from discord.ext import commands, tasks
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.lib.discordUtil import send_timed_message
-from esportsbot.models import Music_channels
+from esportsbot.models import MusicChannels
 from youtubesearchpython import VideosSearch
 
 
 # A discord command check that the command is in the music channel:
 def check_music_channel(context):
     guild_id = context.guild.id
-    if guild_data := DBGatewayActions().get(Music_channels, guild_id=guild_id):
+    if guild_data := DBGatewayActions().get(MusicChannels, guild_id=guild_id):
         if channel_id := guild_data.channel_id:
             return context.channel.id == channel_id
     return False
@@ -99,7 +99,7 @@ class MusicCog(commands.Cog):
         Loads the currently set music channels from the DB.
         :return: A dictionary of the guild and its music channel id.
         """
-        channels = self.db.list(Music_channels)
+        channels = self.db.list(MusicChannels)
         channels_dict = {}
         for channel in channels:
             channels_dict[channel.guild_id] = channel.channel_id
@@ -311,7 +311,7 @@ class MusicCog(commands.Cog):
         :param guild: The guild to find the music channel in.
         :return: A text channel if the text channel exists, else None.
         """
-        current_music_channel = self.db.get(Music_channels, guild_id=guild.id)
+        current_music_channel = self.db.get(MusicChannels, guild_id=guild.id)
         if not current_music_channel:
             return None
 
@@ -714,7 +714,7 @@ class MusicCog(commands.Cog):
         if not music_channel_instance:
             music_channel_instance = await self.bot.fetch_channel(self.music_channels.get(guild_id))
 
-        db_item = self.db.get(Music_channels, guild_id=guild_id)
+        db_item = self.db.get(MusicChannels, guild_id=guild_id)
 
         if not db_item:
             return
@@ -1282,7 +1282,7 @@ class MusicCog(commands.Cog):
 
         music_channel_instance = await self.find_music_channel_instance(context.guild)
         self.music_channels.pop(context.guild.id)
-        db_item = self.db.get(Music_channels, guild_id=context.guild.id)
+        db_item = self.db.get(MusicChannels, guild_id=context.guild.id)
         self.db.delete(db_item)
         await context.send(self.user_strings["music_channel_removed"].format(channel=music_channel_instance.mention))
 
@@ -1329,9 +1329,9 @@ class MusicCog(commands.Cog):
         queue_message = await channel.send(EMPTY_QUEUE_MESSAGE)
         preview_message = await channel.send(embed=default_preview)
 
-        db_item = self.db.get(Music_channels, guild_id=channel.guild.id)
+        db_item = self.db.get(MusicChannels, guild_id=channel.guild.id)
         if not db_item:
-            db_item = Music_channels(
+            db_item = MusicChannels(
                 guild_id=channel.guild.id,
                 channel_id=channel.id,
                 queue_message_id=queue_message.id,

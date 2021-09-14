@@ -38,7 +38,7 @@ class AdminCog(commands.Cog):
     @commands.has_permissions(manage_messages=True)
     async def clear_messages(self, ctx, amount=5):
         await ctx.channel.purge(limit=int(amount) + 1)
-        await self.bot.adminLog(
+        await self.bot.admin_log(
             ctx.message,
             {
                 "Cog": str(type(self)),

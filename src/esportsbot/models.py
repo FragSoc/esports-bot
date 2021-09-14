@@ -5,20 +5,20 @@ from sqlalchemy.ext.declarative import declarative_base
 base = declarative_base()
 
 
-class Guild_info(base):
+class GuildInfo(base):
     __tablename__ = 'guild_info'
     guild_id = Column(BigInteger, primary_key=True, nullable=False)
     log_channel_id = Column(BigInteger, nullable=True)
 
 
-class Default_roles(base):
+class DefaultRoles(base):
     __tablename__ = 'default_roles'
     default_roles_id = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
     role_id = Column(BigInteger, nullable=False)
 
 
-class Pingable_polls(base):
+class PingablePolls(base):
     __tablename__ = 'pingable_polls'
     guild_id = Column(BigInteger, primary_key=True, nullable=False)
     pingable_name = Column(String, primary_key=True, nullable=False)
@@ -26,7 +26,7 @@ class Pingable_polls(base):
     poll = Column(JSONB, nullable=False)
 
 
-class Pingable_roles(base):
+class PingableRoles(base):
     __tablename__ = 'pingable_roles'
     guild_id = Column(BigInteger, primary_key=True, nullable=False)
     role_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -36,7 +36,7 @@ class Pingable_roles(base):
     monthly_pings = Column(BigInteger, nullable=False)
 
 
-class Pingable_settings(base):
+class PingableSettings(base):
     __tablename__ = 'pingable_settings'
     guild_id = Column(BigInteger, primary_key=True, nullable=False)
     default_cooldown_length = Column(BigInteger, nullable=False)
@@ -46,7 +46,7 @@ class Pingable_settings(base):
     default_role_emoji = Column(JSONB, nullable=False)
 
 
-class Event_categories(base):
+class EventCategories(base):
     __tablename__ = 'event_categories'
     guild_id = Column(BigInteger, primary_key=True, nullable=False)
     event_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -54,26 +54,26 @@ class Event_categories(base):
     event_menu = Column(JSONB, nullable=False)
 
 
-class Role_menus(base):
+class RoleMenus(base):
     __tablename__ = 'role_menus'
     menu_id = Column(BigInteger, primary_key=True, nullable=False)
     menu = Column(JSONB, nullable=False)
 
 
-class Voting_menus(base):
+class VotingMenus(base):
     __tablename__ = 'voting_menus'
     menu_id = Column(BigInteger, primary_key=True, nullable=False)
     menu = Column(JSONB, nullable=False)
 
 
-class Voicemaster_master(base):
+class VoicemasterMaster(base):
     __tablename__ = 'voicemaster_master'
     master_id = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
     channel_id = Column(BigInteger, nullable=False)
 
 
-class Voicemaster_slave(base):
+class VoicemasterSlave(base):
     __tablename__ = 'voicemaster_slave'
     vc_id = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
@@ -82,7 +82,7 @@ class Voicemaster_slave(base):
     locked = Column(Boolean, nullable=False)
 
 
-class Twitch_info(base):
+class TwitchInfo(base):
     __tablename__ = 'twitch_info'
     guild_id = Column(BigInteger, nullable=False)
     channel_id = Column(BigInteger, primary_key=True, nullable=False)
@@ -91,7 +91,7 @@ class Twitch_info(base):
     custom_message = Column(String, nullable=True)
 
 
-class Twitter_info(base):
+class TwitterInfo(base):
     __tablename__ = 'twitter_info'
     id = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
@@ -99,7 +99,7 @@ class Twitter_info(base):
     twitter_handle = Column(String, nullable=False)
 
 
-class Music_channels(base):
+class MusicChannels(base):
     __tablename__ = 'music_channels'
     id = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
