@@ -1,9 +1,9 @@
-FROM python:3
+FROM python:3.8
 
 ENV PYTHONUNBUFFERED=1
 
-RUN apt update
-RUN apt install ffmpeg -y
+RUN apt-get update && \
+    apt-get install -y ffmpeg
 
 # Install requirements first to take advantage of docker build layer caching
 COPY ./src/requirements.txt /tmp/requirements.txt

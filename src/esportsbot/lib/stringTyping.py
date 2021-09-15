@@ -1,3 +1,8 @@
+import re
+
+MENTION_REGEX = re.compile(r"^<@!?[0-9]+>$")
+ROLE_REGEX = re.compile(r"^<@&[0-9]+>$")
+CHANNEL_REGEX = re.compile(r"^<#[0-9]+>$")
 """
 The lib package was partially copied over from the BASED template project: https://github.com/Trimatix/BASED
 It is modified and not actively synced with BASED, so will very likely be out of date.
@@ -5,7 +10,8 @@ It is modified and not actively synced with BASED, so will very likely be out of
 .. codeauthor:: Trimatix
 """
 
-def strIsInt(x) -> bool:
+
+def str_is_int(x) -> bool:
     """Decide whether or not something is either an integer, or is castable to integer.
 
     :param x: The object to type-check
@@ -22,25 +28,33 @@ def strIsInt(x) -> bool:
     return True
 
 
-def strIsRoleMention(mention: str) -> bool:
+def str_is_role_mention(mention: str) -> bool:
     """Decide whether the given string is a discord role mention, being <@&ROLEID> where ROLEID is an integer discord role id.
 
     :param str mention: The string to check
     :return: True if mention matches the formatting of a discord role mention, False otherwise
     :rtype: bool
     """
-    return mention.endswith(">") and mention.startswith("<@&") and strIsInt(mention[3:-1])
+    return ROLE_REGEX.match(mention) is not None
 
 
-# string extensions for numbers, e.g 11th, 1st, 23rd...
-NUM_EXTS = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"]
+def str_is_user_mention(mention: str) -> bool:
+    """Decide whether the given string is a discord user mention, being <@USERID> where USERID is an integer discord user id.
 
-
-def getNumExtension(num: int) -> str:
-    """Return the string extension for an integer, e.g 'th' or 'rd'.
-
-    :param int num: The integer to find the extension for
-    :return: string containing a number extension from numExtensions
-    :rtype: str
+    :param str mention: The string to check
+    :return: True if mention matches the formatting of a discord user mention, False otherwise
+    :rtype: bool
     """
-    return NUM_EXTS[int(str(num)[-1])] if not (num > 10 and num < 20) else "th"
+    return MENTION_REGEX.match(mention) is not None
+
+
+def str_is_channel_mention(mention: str) -> bool:
+    """
+    Decide whether the given string is a discord channel mention, being <@CHANNELID> where CHANNELID is an integer discord
+    channel id.
+
+    :param str mention: The string to check
+    :return: True if mention matches the formatting of a discord channel mention, False otherwise
+    :rtype: bool
+    """
+    return CHANNEL_REGEX.match(mention) is not None

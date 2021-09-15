@@ -1,30 +1,48 @@
-import asyncio
-import sys
+import datetime
+import functools
+import logging
 import os
-import time
-from typing import Union, List, Tuple
-
-import youtube_dl
 import re
-
+import sys
+import time
 from enum import IntEnum
-from youtubesearchpython import VideosSearch
-
-from discord import Message, VoiceClient, TextChannel, Embed, Colour, FFmpegPCMAudio, PCMVolumeTransformer
-from discord.ext import commands, tasks
-from discord.ext.commands import Context
-
-from ..base_functions import channel_id_from_mention
-from ..db_gateway import db_gateway
-from ..lib.client import EsportsBot
-
-import googleapiclient.discovery
+from random import shuffle
 from urllib.parse import parse_qs, urlparse
 
-from random import shuffle
+import googleapiclient.discovery
+import youtube_dl
+from discord import (ClientException, Colour, Embed, FFmpegPCMAudio, PCMVolumeTransformer, TextChannel)
+from discord.ext import commands, tasks
+from esportsbot.db_gateway import DBGatewayActions
+from esportsbot.lib.discordUtil import send_timed_message
+from esportsbot.models import MusicChannels
+from youtubesearchpython import VideosSearch
 
-from ..lib.discordUtil import send_timed_message
-from ..lib.stringTyping import strIsInt
+
+# A discord command check that the command is in the music channel:
+def check_music_channel(context):
+    guild_id = context.guild.id
+    if guild_data := DBGatewayActions().get(MusicChannels, guild_id=guild_id):
+        if channel_id := guild_data.channel_id:
+            return context.channel.id == channel_id
+    return False
+
+
+# A delete after done command wrapper:
+def delete_after():
+    def wrapper(func):
+        @functools.wraps(func)
+        async def wrapped(*args, **kwargs):
+            context = args[1]
+            if not isinstance(context, commands.Context):
+                raise ValueError("The second arg for a command should be a commands.Context object")
+            res = await func(*args, **kwargs)
+            await context.message.delete()
+            return res
+
+        return wrapped
+
+    return wrapper
 
 
 class EmbedColours:
@@ -35,1316 +53,1311 @@ class EmbedColours:
 
 
 class MessageTypeEnum(IntEnum):
-    url = 0
-    playlist = 1
-    string = 2
-    invalid = 3
+    youtube_url = 0
+    youtube_playlist = 1
+    youtube_thumbnail = 2
+    string = 3
+    invalid = 4
 
 
-EMPTY_QUEUE_MESSAGE = "**__Queue list:__**\n" \
-                      "Join a VoiceChannel and search a song by name or YouTube url.\n"
+EMPTY_QUEUE_MESSAGE = "Join a Voice Channel and search a song by name or paste a YouTube url.\n" \
+                      "**__Current Queue:__**\n"
 
 ESPORTS_LOGO_URL = "http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png"
 
-EMPTY_PREVIEW_MESSAGE = Embed(title="No song currently playing",
-                              colour=EmbedColours.music,
-                              footer="Use the prefix ! for commands"
-                              )
+EMPTY_PREVIEW_MESSAGE = Embed(
+    title="No song currently playing",
+    colour=EmbedColours.music,
+    footer="Use the prefix ! for commands"
+)
 EMPTY_PREVIEW_MESSAGE.set_image(url=ESPORTS_LOGO_URL)
 EMPTY_PREVIEW_MESSAGE.set_footer(text="Definitely not made by fuxticks#1809 on discord")
 
-# Bitrate quality can be 0,1,2: 0 is best, 2 is worst
-BITRATE_QUALITY = 0
+GOOGLE_API_KEY = os.getenv("GOOGLE_API")
+YOUTUBE_API = googleapiclient.discovery.build("youtube", "v3", developerKey=GOOGLE_API_KEY)
 
 FFMPEG_BEFORE_OPT = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
 
-GOOGLE_API_KEY = os.getenv('GOOGLE_API')
-YOUTUBE_API = googleapiclient.discovery.build("youtube", "v3", developerKey=GOOGLE_API_KEY)
-
-BOT_INACTIVE_MINUTES = 2
-
-
-# TODO: Change usage of db to use of bot dict of Music Channels
-# TODO: Update preview message to include volume and reaction controls
-# TODO: Add move song command to move a song from one position in the queue to another
+TIMEOUT_DELAY = 60
 
 
 class MusicCog(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.logger = logging.getLogger(__name__)
+        self.db = DBGatewayActions()
+        self.user_strings = bot.STRINGS["music"]
+        self.unhandled_error_string = bot.STRINGS["command_error_generic"]
+        self.music_channels = self.load_channels()
+        self.active_guilds = {}
+        self.playing_guilds = []
+        self.inactive_guilds = {}
+        self.logger.info(f"Finished loading {__name__}... cog is ready!")
 
-    def __init__(self, bot: EsportsBot, max_search_results=100):
-        print("Loaded music module")
-        self._bot = bot
-        self._max_results = max_search_results
-        self._song_location = 'songs' + os.path.sep
-        self._currently_active = {}
-        self._marked_channels = {}
-
-        self.__check_loops_alive()
-
-        self.__db_accessor = db_gateway()
-
-        self.user_strings: dict = bot.STRINGS["music"]
-
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def setmusicchannel(self, ctx: Context, args: str = None, given_channel_id: str = None) -> bool:
+    def load_channels(self):
         """
-        Sets the music channel for a given guild to a text channel in the given guild by passing the id of the channel
-        or by tagging the channel with #<name>.
-        :param ctx: The Context of the message sent.
-        :type ctx: discord.ext.commands.Context
-        :param args: Used to specify extra actions for the set command to perform.
-        :type args: str
-        :param given_channel_id: The channel to set as the music channel.
-        :type given_channel_id: str
-        :return: Whether the music channel was set successfully.
-        :rtype: bool
+        Loads the currently set music channels from the DB.
+        :return: A dictionary of the guild and its music channel id.
         """
+        channels = self.db.list(MusicChannels)
+        channels_dict = {}
+        for channel in channels:
+            channels_dict[channel.guild_id] = channel.channel_id
+        return channels_dict
 
-        if given_channel_id is None and args is not None:
-            # No args was given, but a channel id was given
-            given_channel_id = args
-            args = ""
-
-        if given_channel_id is None:
-            # No given channel id.. exit
-            message = Embed(title=self.user_strings["music_channel_set_missing_channel"], colour=EmbedColours.red)
-            await send_timed_message(ctx.channel, embed=message, timer=30)
-            return False
-        
-        try:
-            cleaned_channel_id = channel_id_from_mention(given_channel_id)
-        except ValueError:
-            is_valid_channel_id = False
-        else:
-            is_valid_channel_id = len(str(cleaned_channel_id)) == 18
-
-        if not is_valid_channel_id:
-            # The channel id given is not valid.. exit
-            message = Embed(title=self.user_strings["music_channel_invalid_channel"], colour=EmbedColours.red)
-            await send_timed_message(ctx.channel, embed=message, timer=30)
-            return False
-
-        music_channel_instance = ctx.guild.get_channel(cleaned_channel_id)
-
-        if not isinstance(music_channel_instance, TextChannel):
-            # The channel id given not for a text channel.. exit
-            message = Embed(title=self.user_strings["music_channel_set_not_text_channel"], colour=EmbedColours.red)
-            await send_timed_message(ctx.channel, embed=message, timer=30)
-            return False
-
-        current_channel_for_guild = self.__db_accessor.get('music_channels', params={
-            'guild_id': ctx.guild.id})
-
-        if len(current_channel_for_guild) > 0:
-            # There is already a channel set.. update
-            self.__db_accessor.update('music_channels', set_params={
-                'channel_id': cleaned_channel_id}, where_params={'guild_id': ctx.guild.id})
-        else:
-            # No channel for guild.. insert
-            self.__db_accessor.insert('music_channels', params={
-                'channel_id': int(cleaned_channel_id), 'guild_id': int(ctx.guild.id)})
-
-        await self.__setup_channel(ctx, int(cleaned_channel_id), args)
-        self._bot.update_music_channels()
-        return True
-
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def getmusicchannel(self, ctx: Context) -> Message:
+    @commands.Cog.listener()
+    async def on_message(self, message):
         """
-        Sends a tagged channel if the music channel has been set, otherwise will send an error message.
-        :param ctx: The context of the message.
-        :type ctx: discord.ext.commands.Context
-        :return: The response message that was sent.
-        :rtype: discord.Message
+        Handles messages that are not sent by a bot or that are Direct Messages.
+        :param message: The message received by the bot.
         """
+        if not message.author.bot and message.guild:
+            guild_id = message.guild.id
+            music_channel = self.music_channels.get(guild_id)
+            if music_channel and message.channel.id == music_channel:
+                if await self.on_message_handle(message):
+                    await message.delete()
 
-        current_channel_for_guild = self.__db_accessor.get('music_channels', params={
-            'guild_id': ctx.guild.id})
-
-        if current_channel_for_guild and current_channel_for_guild[0].get('channel_id'):
-            # If the music channel has been set in the guild
-            id_as_channel = ctx.guild.get_channel(current_channel_for_guild[0].get('channel_id'))
-            message = self.user_strings["music_channel_get"].format(music_channel=id_as_channel.mention)
-            return await ctx.channel.send(message)
-        else:
-            return await ctx.channel.send(self.user_strings["music_channel_missing"])
-
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def resetmusicchannel(self, ctx: Context) -> Message:
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
         """
-        If the music channel is set, clear it and re-setup the channel with the correct messages. Otherwise send an
-        error message.
-        :param ctx: The context of the message.
-        :type ctx: discord.ext.commands.Context
-        :return: The response message that was sent.
-        :rtype: discord.Message
+        If the bot is forcefully removed from the channel by an admin, we want to ensure that the bot doesn't think it is
+        still in a voice channel.
+        :param member: The member triggering the change.
+        :param before: The voice state before.
+        :param after: The voice state after.
         """
+        if member.id != self.bot.user.id:
+            if not after.channel:
+                # If the user has left a voice channel
+                if member.guild.id in self.active_guilds:
+                    guild_vc = self.active_guilds.get(member.guild.id).get("voice_channel")
+                    if before.channel.id == guild_vc.id:
+                        # And that voice channel is the one we are in
+                        # And the only users in the channel are bots
+                        non_bots = [x for x in guild_vc.members if not x.bot]
+                        if not non_bots:
+                            # Leave the channel
+                            await self.disconnect_from_guild(member.guild)
+                            await self.remove_active_guild(member.guild)
+            return
 
-        current_channel_for_guild = self.__db_accessor.get('music_channels', params={
-            'guild_id': ctx.guild.id})
+        if not before.channel and not after.channel:
+            # This should never happen but is here to ensure it won't cause an issue.
+            return
 
-        if current_channel_for_guild and current_channel_for_guild[0].get('channel_id'):
-            # If the music channel has been set for the guild
-            channel_id = current_channel_for_guild[0].get('channel_id')
-            await self.__setup_channel(ctx, arg='-c', channel_id=channel_id)
-            channel = self._bot.get_channel(current_channel_for_guild[0].get('channel_id'))
-            if channel is None:
-                channel = self._bot.fetch_channel(current_channel_for_guild[0].get('channel_id'))
-            message = self.user_strings["music_channel_reset"].format(music_channel=channel.mention)
-            return await ctx.channel.send(message)
-        else:
-            return await ctx.channel.send(self.user_strings["music_channel_missing"])
+        if not before.channel and after.channel:
+            # Bot has joined a voice channel.
+            self.new_active_guild(after.channel.guild)
+            return
 
-    @commands.command(aliases=["volume"])
-    async def setvolume(self, ctx: Context, volume_level) -> bool:
+        if before.channel and not after.channel:
+            # Bot has left a voice channel.
+            await self.remove_active_guild(before.channel.guild)
+            return
+
+        if before.channel and after.channel:
+            # Bot has been moved to another voice channel.
+            self.update_voice_client(after.channel.guild)
+            return
+
+    def run_tasks(self):
+        if not self.check_inactive_guilds.is_running() or self.check_inactive_guilds.is_being_cancelled():
+            self.check_inactive_guilds.start()
+
+        if not self.check_playing_guilds.is_running() or self.check_playing_guilds.is_being_cancelled():
+            self.check_playing_guilds.start()
+
+    @tasks.loop(seconds=5)
+    async def check_playing_guilds(self):
         """
-        Sets the volume level of the bot. Does not persist if the bot disconnects.
-        :param ctx: The context of the message.
-        :type ctx: discord.ext.commands.Context
-        :param volume_level: The volume level to set the bot to. Must be between 0 and 100.
-        :type volume_level: int
-        :return: Whether the volume of the bot was changed successfully.
-        :rtype: bool
+        Check the guilds who's voice client status is playing.
         """
+        if not self.playing_guilds:
+            # Stop running if no guilds playing.
+            self.check_playing_guilds.cancel()
+            self.check_playing_guilds.stop()
+            return
 
-        if not self._currently_active.get(ctx.guild.id):
-            # Not currently active
-            await send_timed_message(channel=ctx.channel, embed=Embed(title=self.user_strings["bot_inactive"],
-                                                                      colour=EmbedColours.music), timer=10)
-            return False
+        to_remove = []
 
-        if not await self.__check_valid_user_vc(ctx):
-            # Checks if the user is in a valid voice channel
-            return False
+        now = datetime.datetime.now()
 
-        if not strIsInt(volume_level):
-            await send_timed_message(channel=ctx.channel,
-                                     embed=Embed(title=self.user_strings["volume_set_invalid_value"],
-                                                 colour=EmbedColours.orange),
-                                     timer=10)
-            return False
+        for guild_id in self.playing_guilds:
+            if guild_id not in self.active_guilds:
+                # If the guild has been stopped from playing elsewhere it will no longer be in active guilds.
+                to_remove.append(guild_id)
+                continue
+            voice_client = self.active_guilds.get(guild_id).get("voice_client")
+            if not voice_client.is_playing() and not voice_client.is_paused():
+                if not await self.play_queue(guild_id):
+                    # play queue will return False if there is nothing to play or if it was unable to play something.
+                    self.inactive_guilds[guild_id] = now
+                    to_remove.append(guild_id)
+                    self.run_tasks()
 
-        if int(volume_level) < 0:
-            volume_level = 0
-
-        if int(volume_level) > 100:
-            volume_level = 100
-
-        client = self._currently_active.get(ctx.guild.id).get("voice_client")
-        client.source.volume = float(volume_level) / float(100)
-        self._currently_active.get(ctx.guild.id)["volume"] = client.source.volume
-        message_title = self.user_strings["volume_set_success"].format(volume_level=volume_level)
-        await send_timed_message(channel=ctx.channel,
-                                 embed=Embed(title=message_title, colour=EmbedColours.music),
-                                 timer=10)
-        return True
-
-    @commands.command(aliases=["remove", "removeat"])
-    async def removesong(self, ctx: Context, song_index=None) -> bool:
-        """
-        Remove a song at an index from the current queue.
-        :param ctx: The context of the message.
-        :type ctx: discord.ext.commands.Context
-        :param song_index: THe index of the song to remove. Index starting from 1.
-        :type song_index: int
-        :return: Whether the removal of the song at the given index was successful.
-        :rtype: bool
-        """
-
-        if not self._currently_active.get(ctx.guild.id):
-            # Not currently active
-            await send_timed_message(channel=ctx.channel, embed=Embed(title=self.user_strings["bot_inactive"],
-                                                                      colour=EmbedColours.music),
-                                     timer=10)
-            return False
-
-        if not await self.__check_valid_user_vc(ctx):
-            # Check if the user is in a valid voice channel
-            return False
-
-        if not strIsInt(song_index):
-            message_title = self.user_strings["song_remove_invalid_value"]
-            await send_timed_message(channel=ctx.channel,
-                                     embed=Embed(title=message_title, colour=EmbedColours.orange),
-                                     timer=10)
-            return False
-
-        queue_length = len(self._currently_active.get(ctx.guild.id).get("queue"))
-
-        if queue_length == 0:
-            await send_timed_message(channel=ctx.channel, embed=Embed(title=self.user_strings["bot_inactive"],
-                                                                      colour=EmbedColours.orange),
-                                     timer=10)
-            return False
-
-        if int(song_index) < 1:
-            message_title = self.user_strings["song_remove_invalid_value"]
-            message_body = self.user_strings["song_remove_valid_options"].format(start_index=1, end_index=queue_length)
-            await send_timed_message(channel=ctx.channel,
-                                     embed=Embed(title=message_title,
-                                                 colour=EmbedColours.orange),
-                                     timer=10)
-            return False
-
-        if int(song_index) == 1:
-            self.__pause_song(ctx.guild.id)
-            current_song = self._currently_active.get(ctx.guild.id).get("current_song").get("title")
-            await self.__check_next_song(ctx.guild.id)
-            message = Embed(title=self.user_strings["song_remove_success"].format(song_title=current_song,
-                                                                                  song_position=song_index),
-                            colour=EmbedColours.green)
-            await send_timed_message(channel=ctx.channel, embed=message, timer=10)
-            return True
-
-        if queue_length < (int(song_index) - 1):
-            # The index given is out of the bounds of the current queue
-            message_title = self.user_strings["song_remove_invalid_value"]
-            message_body = self.user_strings["song_remove_valid_options"].format(start_index=1, end_index=queue_length)
-            message = Embed(title=message_title,
-                            description=message_body,
-                            colour=EmbedColours.orange)
-            await send_timed_message(channel=ctx.channel, embed=message, timer=10)
-            return False
-
-        song_popped = self._currently_active[ctx.guild.id]['queue'].pop(int(song_index) - 1)
-        await self.__update_channel_messages(ctx.guild.id)
-        message = Embed(title=self.user_strings["song_remove_success"].format(song_title=song_popped,
-                                                                              song_position=song_index),
-                        colour=EmbedColours.green)
-        await send_timed_message(channel=ctx.channel, embed=message, timer=10)
-        return True
-
-    @commands.command(aliases=["pause", "stop"])
-    async def pausesong(self, ctx: Context) -> bool:
-        """
-        If the bot is currently playing in the context's guild, pauses the playback, else does nothing.
-        :param ctx: The context of the song.
-        :type ctx: discord.ext.commands.Context
-        :return: Whether the playback was paused in the guild which gave the command.
-        :rtype: bool
-        """
-
-        if not self._currently_active.get(ctx.guild.id):
-            # Not currently active
-            await send_timed_message(channel=ctx.channel, embed=Embed(title=self.user_strings["bot_inactive"],
-                                                                      colour=EmbedColours.music),
-                                     timer=10)
-            return False
-
-        if not await self.__check_valid_user_vc(ctx):
-            # Checks if the user is in a valid voice channel
-            return False
-
-        if self.__pause_song(ctx.guild.id):
-            await send_timed_message(channel=ctx.channel, embed=Embed(title=self.user_strings["song_pause_success"],
-                                                                      colour=EmbedColours.music),
-                                     timer=5)
-            return True
-
-        return False
-
-    @commands.command(aliases=["resume", "play"])
-    async def resumesong(self, ctx: Context) -> bool:
-        """
-        If the bot is currently paused, the playback is resumed, else does nothing.
-        :param ctx: The context of the message.
-        :type ctx: discord.ext.commands.Context
-        :return: Whether the playback was resumed in the guild which gave the command.
-        :rtype: bool
-        """
-
-        if not self._currently_active.get(ctx.guild.id):
-            # Not currently active
-            await send_timed_message(channel=ctx.channel,
-                                     embed=Embed(title=self.user_strings["bot_inactive"],
-                                                 colour=EmbedColours.music), timer=10)
-            return False
-
-        if not await self.__check_valid_user_vc(ctx):
-            # Checks if the user is in a valid voice channel
-            return False
-
-        if self.__resume_song(ctx.guild.id):
-            await send_timed_message(channel=ctx.channel, embed=Embed(title=self.user_strings["song_resume_success"],
-                                                                      colour=EmbedColours.music),
-                                     timer=5)
-            return True
-
-        return False
-
-    @commands.command(aliases=["kick"])
-    async def kickbot(self, ctx: Context) -> bool:
-        """
-        Remove the bot from the voice channel. Will also reset the queue.
-        :param ctx: The context of the message.
-        :type ctx: discord.ext.commands.Context
-        :return: Whether the bot was removed from the voice channel.
-        :rtype: bool
-        """
-
-        if not self._currently_active.get(ctx.guild.id):
-            # Not currently active
-            await send_timed_message(channel=ctx.channel, embed=Embed(title=self.user_strings["bot_inactive"],
-                                                                      colour=EmbedColours.music), timer=10)
-            return False
-
-        if not await self.__check_valid_user_vc(ctx):
-            # Checks if the user is in a valid voice channel
-            return False
-
-        if await self.__remove_active_channel(ctx.guild.id):
-            await send_timed_message(channel=ctx.channel, embed=Embed(title=self.user_strings["kick_bot_success"],
-                                                                      colour=EmbedColours.music), timer=10)
-            return True
-        return False
-
-    @commands.command(aliases=["skip"])
-    async def skipsong(self, ctx: Context) -> bool:
-        """
-        Skips the current song. If there are no more songs in the queue, the bot will leave.
-        :param ctx: The context of the message.
-        :type ctx: discord.ext.commands.Context
-        :return: Whether the current song was skipped in the guild which gave the command.
-        :rtype: bool
-        """
-
-        if not self._currently_active.get(ctx.guild.id):
-            # Not currently active
-            await send_timed_message(channel=ctx.channel,
-                                     embed=Embed(title=self.user_strings["bot_inactive"], colour=EmbedColours.music),
-                                     timer=10)
-            return False
-
-        if not await self.__check_valid_user_vc(ctx):
-            # Checks if the user is in a valid voice channel
-            return False
-
-        # TODO: Decide if the bot should leave the vc if the queue is empty after skipping.
-        if len(self._currently_active.get(ctx.guild.id).get('queue')) == 1:
-            # Skipping when only one song in the queue will just kick the bot
-            await self.__remove_active_channel(ctx.guild.id)
-            return True
-
-        await self.__check_next_song(ctx.guild.id)
-        await send_timed_message(channel=ctx.channel, embed=Embed(title=self.user_strings["song_skipped_success"],
-                                                                  colour=EmbedColours.music),
-                                 timer=5)
-        return True
-
-    @commands.command(aliases=["list", "queue"])
-    async def listqueue(self, ctx: Context) -> str:
-        """
-        Sends a message of the current queue to the channel the message was sent from.
-        :param ctx: The context of the message.
-        :type ctx: discord.ext.commands.Context
-        :return: The string representing the queue.
-        :rtype: str
-        """
-
-        if not self._currently_active.get(ctx.guild.id):
-            # Not currently active
-            await send_timed_message(channel=ctx.channel,
-                                     embed=Embed(title=self.user_strings["bot_inactive"], colour=EmbedColours.music),
-                                     timer=10)
-            return ""
-
-        # We don't want the song channel to be filled with the queue as it already shows it
-        music_channel_in_db = self.__db_accessor.get('music_channels', params={'guild_id': ctx.guild.id})
-        if ctx.message.channel.id == music_channel_in_db[0].get('channel_id'):
-            # Message is in the songs channel
-            message_title = self.user_strings["music_channel_wrong_channel"].format(command_option="cannot")
-            await send_timed_message(channel=ctx.channel,
-                                     embed=Embed(title=message_title,
-                                                 colour=EmbedColours.music), timer=10)
-            return ""
-
-        queue_string = self.__make_queue_list(ctx.guild.id)
-
-        if await ctx.channel.send(queue_string) is not None:
-            return queue_string
-        return ""
-
-    @commands.command(aliases=["clear", "empty"])
-    async def clearqueue(self, ctx: Context) -> bool:
-        """
-        Clear the current queue of all songs. The bot won't leave the vc with this command.
-        :param ctx: The context of the message.
-        :type ctx: discord.ext.commands.Context
-        :return: Whether the queue was cleared in the guild that called the command.
-        :rtype: bool
-        """
-
-        if not self._currently_active.get(ctx.guild.id):
-            # Not currently active
-            await self.__update_channel_messages(ctx.guild.id)
-            return False
-
-        if not await self.__check_valid_user_vc(ctx):
-            # Checks if the user is in a valid voice channel
-            return False
-
-        if self._currently_active.get(ctx.guild.id).get('voice_client').is_playing():
-            # If currently in a song, set the queue to what is currently playing
-            self._currently_active.get(ctx.guild.id)['queue'] = [
-                self._currently_active.get(ctx.guild.id).get('queue').pop(0)]
-        else:
-            # Else empty the queue and start the inactivity timer
-            self._currently_active.get(ctx.guild.id)['queue'] = [None]
-            await self.__check_next_song(ctx.guild.id)
-
-        await self.__update_channel_messages(ctx.guild.id)
-        await send_timed_message(channel=ctx.channel, embed=Embed(title=self.user_strings["clear_queue_success"],
-                                                                  colour=EmbedColours.music),
-                                 timer=10)
-        return True
-
-    @commands.command(aliases=["shuffle", "randomise"])
-    async def shufflequeue(self, ctx: Context) -> bool:
-        """
-        Shuffle the current queue of songs. Does not include the current song playing, which is index 0. Won't bother
-        with a shuffle unless there are 3 or more songs.
-        :param ctx: The context of the message.
-        :type ctx: discord.ext.commands.Context
-        :return: Whether the queue was shuffled in the guild that called the command.
-        :rtype: bool
-        """
-
-        if not self._currently_active.get(ctx.guild.id):
-            # Not currently active
-            await send_timed_message(channel=ctx.channel,
-                                     embed=Embed(title=self.user_strings["bot_inactive"], colour=EmbedColours.music),
-                                     timer=10)
-            return False
-
-        if not await self.__check_valid_user_vc(ctx):
-            # Checks if the user is in a valid voice channel
-            return False
-
-        if not len(self._currently_active.get(ctx.guild.id).get('queue')) > 2:
-            # Nothing to shuffle
-            return False
-
-        current_top = self._currently_active.get(ctx.guild.id).get('queue').pop(0)
-        shuffle(self._currently_active.get(ctx.guild.id)['queue'])
-        self._currently_active.get(ctx.guild.id).get('queue').insert(0, current_top)
-
-        await self.__update_channel_messages(ctx.guild.id)
-        await send_timed_message(channel=ctx.channel, embed=Embed(title=self.user_strings["shuffle_queue_success"],
-                                                                  colour=EmbedColours.green),
-                                 timer=10)
-
-    @tasks.loop(seconds=1)
-    async def check_active_channels(self):
-        """
-        Check the inactive channels if they are still playing. If its been more than the allotted time remove the
-        channel from any active/inactive status.
-        """
-        # Get a list of the keys to iterate through
-        active_copy = list(self._currently_active.keys())
-        for guild_id in active_copy:
-            if not self._currently_active.get(guild_id).get('voice_client').is_playing() \
-                    and not self._currently_active.get(guild_id).get('voice_client').is_paused():
-                # Check any voice_clients that are no longer playing but that aren't just paused
-                await self.__check_next_song(guild_id)
-            elif self.__check_empty_vc(guild_id):
-                # Check if the bot is in a channel by itself
-                guild = self._currently_active.pop(guild_id)
-                await guild['voice_client'].disconnect()
-                await self.__update_channel_messages(guild_id)
-
-        if len(self._currently_active) == 0:
-            # Stop the task when no channels to check
-            self.check_active_channels.stop()
+        for guild_id in to_remove:
+            self.playing_guilds.remove(guild_id)
 
     @tasks.loop(seconds=60)
-    async def check_marked_channels(self):
+    async def check_inactive_guilds(self):
         """
-        Check the current channels if they are still playing. If no longer playing, check for the next song. Also checks
-        if the bot is in a channel by itself.
+        Check the guilds that are in a voice channel but not playing anything.
         """
-        # Create a copy to avoid concurrent changes to _marked_channels
-        marked_copy = list(self._marked_channels.keys())
-        for guild_id in marked_copy:
-            guild_time = self._marked_channels.get(guild_id)
-            if time.time() - guild_time >= 60 * BOT_INACTIVE_MINUTES:
-                # If the time since inactivity has been more than the minutes specified by BOT_TIMEOUT_MINUTES,
-                # leave the channel
-                asyncio.create_task(self.__remove_active_channel(guild_id))
-                self._marked_channels.pop(guild_id)
-            elif self.__check_empty_vc(guild_id):
-                # The voice channel has no members in it
-                asyncio.create_task(self.__remove_active_channel(guild_id))
-                self._marked_channels.pop(guild_id)
+        if not self.inactive_guilds:
+            # Stop running if no guilds active.
+            self.check_inactive_guilds.cancel()
+            self.check_inactive_guilds.stop()
+            return
 
-        if len(self._marked_channels) == 0:
-            # Stop the task when no channels to check
-            self.check_marked_channels.stop()
+        to_remove = []
 
-    async def __setup_channel(self, ctx: Context, channel_id: int, arg: str):
+        now = datetime.datetime.now()
+
+        for guild_id in self.inactive_guilds:
+            if (now - self.inactive_guilds.get(guild_id)).seconds > TIMEOUT_DELAY:
+                # If the bot has been inactive for the given timeout delay.
+                to_remove.append(guild_id)
+
+        for guild_id in to_remove:
+            # These guilds have reached the timeout and should be disconnected.
+            self.inactive_guilds.pop(guild_id)
+            guild = self.active_guilds.get(guild_id).get("voice_channel").guild
+            await self.disconnect_from_guild(guild)
+            await self.remove_active_guild(guild)
+
+    def new_active_guild(self, guild):
         """
-        Sends the preview and queue messages to the music channel and adds the ids of the messages to the database.
-        If the music channel is not empty and the correct arg is set, also clears the channel.
-        :param ctx: The context of the messages, used to send the messages to the channels.
-        :type ctx: discord.ext.commands.Context
-        :param channel_id: The id of the music channel.
-        :type channel_id: int
-        :param arg: Optional arg to perform extra utilities while setting the channel up.
-        :type arg: str
-        :return: None
-        :rtype: NoneType
+        Add a new guild to the ones that are currently active.
+        :param guild: The that now has an active instance of the bot in a voice channel.
+        :return: A dictionary of the data stored about the current playback status in the guild.
         """
+        self.logger.info(f"Adding an active channel in {guild.name}")
+        guild_id = guild.id
+        guild_data = {
+            "voice_channel": guild.me.voice.channel,
+            "voice_client": self.get_guild_client(guild),
+            "queue": [],
+            "current_song": None,
+            "volume": 1
+        }
+        self.active_guilds[guild_id] = guild_data
+        return guild_data
 
-        # Get a discord object of the channel.
-        channel_instance = self._bot.get_channel(channel_id)
-        if channel_instance is None:
-            channel_instance = await self._bot.fetch_channel(channel_id)
-
-        # Only need to get a few messages to check if the channel is non-empty.
-        channel_messages = await channel_instance.history(limit=2).flatten()
-        if len(channel_messages) > 1:
-            # If there are messages in the channel.
-            if arg is None:
-                message = self.user_strings["music_channel_set_not_empty"].format(bot_prefix=self._bot.command_prefix)
-                await ctx.channel.send(message)
-            elif arg == '-c':
-                await channel_instance.purge(limit=int(sys.maxsize))
-
-        temp_default_preview = EMPTY_PREVIEW_MESSAGE.copy()
-
-        # Send the messages and record their ids.
-        default_queue_message = await channel_instance.send(EMPTY_QUEUE_MESSAGE)
-        default_preview_message = await channel_instance.send(embed=temp_default_preview)
-
-        self.__db_accessor.update('music_channels', set_params={'queue_message_id': int(default_queue_message.id)},
-                                  where_params={'guild_id': ctx.author.guild.id})
-
-        self.__db_accessor.update('music_channels', set_params={'preview_message_id': int(default_preview_message.id)},
-                                  where_params={'guild_id': ctx.author.guild.id})
-
-    async def __remove_active_channel(self, guild_id: int) -> bool:
+    def update_voice_client(self, guild):
         """
-        Disconnect the bot from the voice channel and remove it from the currently active channels.
-        :param guild_id: The id of the guild to remove the bot from.
-        :type guild_id: int
-        :return: If the guild specified was removed from the currently active channels.
-        :rtype: bool
+        Update the voice channel and voice client of the bot if it has become disconnected or been moved to a different
+        voice channel.
+        :param guild: The guild that needs updating.
+        :return: A dictionary of the data stored about the current playback status in the guild.
         """
+        self.logger.info(f"Updating the voice client for {guild.name}")
+        if guild.id not in self.active_guilds:
+            # If it has been removed from the active guilds dict, create a new one.
+            return self.new_active_guild(guild)
+        else:
+            # Otherwise keep the rest of the data and just update the voice channel and voice client.
+            guild_id = guild.id
+            guild_data = {
+                "voice_channel": guild.me.voice.channel,
+                "voice_client": self.get_guild_client(guild),
+                "queue": self.active_guilds.get(guild_id).get("queue"),
+                "current_song": self.active_guilds.get(guild_id).get("current_song"),
+                "volume": self.active_guilds.get(guild_id).get("volume")
+            }
+            self.active_guilds[guild_id] = guild_data
+            return guild_data
 
-        if guild_id in self._currently_active:
-            # If the guild is currently active.
-            voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
-            await voice_client.disconnect()
-            self._currently_active.get(guild_id)['queue'] = [None]
-            self._currently_active.pop(guild_id)
-            await self.__update_channel_messages(guild_id)
-            return True
-        return False
-
-    async def __check_next_song(self, guild_id: int):
+    def get_guild_client(self, guild):
         """
-        Check if there is another song to play after the current one. If no more songs, mark the channel as in active,
-        otherwise play the next song.
-        :param guild_id: The id of the guild to check the next song in.
-        :type guild_id: int
-        :return: None
-        :rtype: NoneType
+        Get a voice client of the bot in a given guild.
+        :param guild: The guild to find the voice client of.
+        :return: A voice client if there is one, else None.
         """
+        voice_clients = self.bot.voice_clients
+        for client in voice_clients:
+            if client.guild.id == guild.id:
+                return client
+        return None
 
-        if len(self._currently_active.get(guild_id).get('queue')) == 1:
-            # The queue will be empty so will be marked as inactive
-            self._currently_active.get(guild_id).get('queue').pop(0)
-            self._marked_channels[guild_id] = time.time()
-            await self.__update_channel_messages(guild_id)
-            if not self.check_marked_channels.is_running():
-                self.check_marked_channels.start()
-        elif len(self._currently_active.get(guild_id).get('queue')) > 1:
-            # The queue is not empty, play the next song
-            self._currently_active.get(guild_id).get('queue').pop(0)
-            await self.__play_queue(guild_id)
-            await self.__update_channel_messages(guild_id)
-
-    async def __add_song_to_queue(self, guild_id: int, song: Union[dict, List[dict]]) -> bool:
+    async def remove_active_guild(self, guild):
         """
-        Add a list of songs or a single song to the queue.
-        :param guild_id: The id of the guild to add the song to the queue.
-        :type guild_id:
-        :param song: The song or list of songs. A song is a dict of information that is needed to play the song.
-        :type song: Union[dict, List[dict]]
-        :return: If the song was added to the guild's queue or not.
-        :rtype: bool
+        Remove a guild from being active.
+        :param guild: The guild to remove activity from.
+        :return: A boolean if the removal was successful.
         """
-
+        self.logger.info(f"Removing active channel for {guild.name}")
         try:
-            if isinstance(song, list):
-                for item in song:
-                    self._currently_active.get(guild_id).get('queue').append(item)
-            elif isinstance(song, dict):
-                self._currently_active.get(guild_id).get('queue').append(song)
-            else:
-                raise ValueError("The values supplied to add to the queue were not a list or dict: \n" + str(song))
+            self.active_guilds.pop(guild.id)
+            await self.update_messages(guild.id)
+            return True
+        except AttributeError:
+            return False
+        except KeyError:
+            return False
 
-            if not self._currently_active.get(guild_id).get('voice_client').is_playing():
-                # If we are not currently playing, start playing
-                await self.__play_queue(guild_id)
+    async def disconnect_from_guild(self, guild):
+        guild_data = self.active_guilds.get(guild.id)
+        if guild_data:
+            await guild_data["voice_client"].disconnect()
+        else:
+            my_voice = guild.voice_client
+            if my_voice:
+                await my_voice.disconnect()
 
-            await self.__update_channel_messages(guild_id)
+    async def find_music_channel_instance(self, guild):
+        """
+        Find the instance of the music channel in a given guild.
+        :param guild: The guild to find the music channel in.
+        :return: A text channel if the text channel exists, else None.
+        """
+        current_music_channel = self.db.get(MusicChannels, guild_id=guild.id)
+        if not current_music_channel:
+            return None
+
+        channel_instance = guild.get_channel(current_music_channel.channel_id)
+        if not channel_instance:
+            channel_instance = await guild.fetch_channel(current_music_channel.channel_id)
+
+        if not channel_instance:
+            # Remove the currently set music channel as it doesn't exist anymore.
+            current_music_channel.channel_id = None
+            self.db.update(current_music_channel)
+            return None
+
+        return channel_instance
+
+    async def on_message_handle(self, message):
+        """
+        Handles when a message is sent to a music channel.
+        :param message: The message sent to the music channel.
+        :return: True if the message was handled by this function. False if the message was a command.
+        """
+        try:
+            if message.content.startswith(self.bot.command_prefix):
+                # Allow commands to be handled by the bot command handler.
+                return False
+
+            if not await self.join_member(message.author):
+                # If we were unable to join the member, tell them why:
+                if not message.author.voice:
+                    await send_timed_message(channel=message.channel, content=self.user_strings["unable_to_join"])
+                    return True
+                if not message.author.voice.channel.permissions_for(message.guild.me).connect:
+                    await send_timed_message(channel=message.channel, content=self.user_strings["no_connect_perms"])
+                    return True
+
+            # Split the message into it's lines and treat each non-blank line as a request.
+            message_content = re.sub(r"(`)+", "", message.content)
+            request_options = message_content.split("\n")
+            cleaned_requests = [k for k in request_options if k not in ('', ' ')]
+
+            debug_start_time = time.time()
+            results = []
+            for request in cleaned_requests:
+                results.append(await self.process_request(message.guild.id, request))
+
+            debug_end_time = time.time()
+
+            self.logger.info(
+                f"Processed {len(cleaned_requests)} song(s) in {debug_end_time - debug_start_time} seconds for "
+                f"{message.guild.name} and got {results.count(True)} successful result(s)"
+            )
+
+            failed_songs = ""
+
+            for i in range(len(results)):
+                if not results[i]:
+                    failed_songs += f"{i + 1}. {cleaned_requests[i]}\n"
+
+            # If any of the songs had errors, send a message:
+            if results.count(False) >= 1:
+                await send_timed_message(
+                    channel=message.channel,
+                    content=self.user_strings["song_process_failed"].format(songs=failed_songs),
+                    timer=10
+                )
+
+            # If any songs succeeded, ensure that the bot is not marked as inactive.
+            if results.count(True) >= 1:
+                if message.guild.id in self.inactive_guilds:
+                    self.inactive_guilds.pop(message.guild.id)
+
+            self.run_tasks()
+
             return True
         except Exception as e:
-            print("There was an error while adding to the queue: \n" + str(e))
-            return False
+            await send_timed_message(message.channel, content=self.unhandled_error_string, timer=120)
+            self.logger.error(f"There was an error handling the following message: {message.content} \n {e!s}")
+            return True
 
-    async def on_message_handle(self, message: Message) -> bool:
+    async def process_request(self, guild_id, request):
         """
-        The handle the is called whenever a message is sent in the music channel of a guild.
-        :param message: The message sent to the channel.
-        :type message: discord.Message
-        :return: Whether the message was processed successfully as a music request.
-        :rtype: bool
+        Processes a song request and adds it to the queue.
+        :param guild_id: The ID of the guild the song request is in.
+        :param request: The song requested.
+        :return: True if the song was added to the queue successfully, else False.
         """
-
-        if message.content.startswith(self._bot.command_prefix):
-            # Ignore commands, any MusicCog commands will get handled in the usual way
-            return True
-
-        if not message.author.voice:
-            # User is not in a voice channel.. exit
-            message_title = self.user_strings["no_voice_voice_channel"].format(author=message.author.mention)
-            await send_timed_message(channel=message.channel,
-                                     embed=Embed(title=message_title,
-                                                 colour=EmbedColours.orange), timer=10)
-            return True
-
-        if not message.author.voice.channel.permissions_for(message.guild.me).connect:
-            # The bot does not have permission to join the channel.. exit
-            message_title = self.user_strings["no_perms_voice_channel"].format(author=message.author.mention)
-            await send_timed_message(channel=message.channel, embed=Embed(title=message_title,
-                                                                          colour=EmbedColours.orange), timer=10)
-            return True
-
-        if not self._currently_active.get(message.guild.id):
-            # We aren't in a voice channel in the given guild
-            voice_client = await message.author.voice.channel.connect()
-            self.__add_new_active_channel(message.guild.id, voice_client=voice_client,
-                                          channel_id=message.author.voice.channel.id)
+        request_type = self.find_request_type(request)
+        if request_type == MessageTypeEnum.youtube_url or request_type == MessageTypeEnum.youtube_playlist:
+            # The request was a YouTube video or playlist
+            youtube_api_response = self.get_youtube_request(request, request_type)
+            formatted_response = self.format_youtube_response(youtube_api_response)
+        elif request_type == MessageTypeEnum.string:
+            # The request was a string
+            query_response = self.query_request(request)
+            formatted_response = self.format_query_response(query_response)
         else:
-            if self._currently_active.get(message.guild.id).get('channel_id') != message.author.voice.channel.id:
-                # The bot is already being used in the current guild.
-                message_title = self.user_strings["wrong_voice_voice_channel"].format(author=message.author.mention)
-                await send_timed_message(channel=message.channel,
-                                         embed=Embed(title=message_title,
-                                                     colour=EmbedColours.orange), timer=10)
-                return True
-
-        # Check if the loops for marked and active channels are running.
-        self.__check_loops_alive()
-
-        # Splits multiline messages into a list. Single line messages return a list of [message]
-        cleaned_contents = message.content
-        cleaned_contents = re.sub(r"(`)+", "", cleaned_contents)
-        split_message = cleaned_contents.split("\n")
-        split_message = [k for k in split_message if k not in ('', ' ')]
-        partial_success = False
-        total_success = True
-
-        # Add each line of the message to the queue
-        st = time.time()
-        for line in split_message:
-            result = await self.process_song_request(message, line)
-            partial_success = result or partial_success
-            total_success = result and total_success
-
-        print(f"Queue time: {time.strftime('%H:%M:%S', time.gmtime(time.time() - st))}")
-        # If any of the songs were successful, ensure that the channel is no long marked as inactive.
-        if partial_success:
-            if message.guild.id in self._marked_channels:
-                # Remove the channel from marked channels as it is no longer inactive
-                self._marked_channels.pop(message.guild.id)
-
-        if not total_success:
-            send = Embed(title=self.user_strings["song_error"], colour=EmbedColours.red)
-            await send_timed_message(message.channel, embed=send, timer=10)
-
-    async def process_song_request(self, message: Message, request: str) -> bool:
-        """
-        Process the incoming message as a song request
-        :param message: The instance of the discord message that sent the request.
-        :type message: discord.Message
-        :param request: The contents of the request made.
-        :type request: str
-        :return: Whether the request was able to be added to the queue of the guild.
-        :rtype: bool
-        """
-
-        message_type = self.__determine_message_type(request)
-        if message_type == MessageTypeEnum.url or message_type == MessageTypeEnum.playlist:
-            processed_request = self.__get_youtube_api_info(request, message_type)
-            formatted_request = self.__format_api_data(processed_request)
-            return await self.__add_song_to_queue(message.guild.id, formatted_request)
-        elif message_type == MessageTypeEnum.string:
-            queried_song = self.__find_query(request)
-            return await self.__add_song_to_queue(message.guild.id, queried_song)
-        elif message_type == MessageTypeEnum.invalid:
+            # The request was in an invalid format
             return False
+        res = await self.add_songs_to_queue(formatted_response, guild_id)
+        await self.update_messages(guild_id)
+        return res
+
+    def find_request_type(self, request):
+        """
+        Find what kind of string the request is. If the string is a URL, determine what kind of URL it is.
+        :param request: The request to identify.
+        :return: A MessageTypeEnum depicting the type of string.
+        """
+        if request.startswith("https://") or request.startswith("http://"):
+            return self.find_url_type(request)
+        else:
+            return MessageTypeEnum.string
 
     @staticmethod
-    def __get_youtube_api_info(request: str, message_type: int) -> Union[List[dict], None]:
+    def find_url_type(url):
         """
-        Downloads the video information associated with a url as a list for each video in the request.
-        :param request: The request to make to the YouTube API.
-        :type request: str
-        :param message_type: The kind of request: Video url or Playlist url.
-        :type message_type: int
-        :return: A list of dicts for the videos in the request each dict containing unique video information.
-                    Or None if the request to the API failed
-        :rtype: Union[List[dict]]
+        Finds what kind of url the given url is:
+        :param url: The url to identify.
+        :return: A MessageTypeEnum depicting what type of url the given url is.
         """
+        youtube_desktop_signature = r"(http[s]?://)?youtube.com/watch\?v="
+        if re.search(youtube_desktop_signature, url):
+            return MessageTypeEnum.youtube_url
 
-        # Determines if we access the videos or playlist part of the YouTube API.
-        func = YOUTUBE_API.videos() if message_type == MessageTypeEnum.url else YOUTUBE_API.playlistItems()
-        # Used to get the id of the url.
-        key = "v" if message_type == MessageTypeEnum.url else "list"
+        youtube_playlist_signature = r"(http[s]?://)?youtube.com/playlist\?list="
+        if re.search(youtube_playlist_signature, url):
+            return MessageTypeEnum.youtube_playlist
+
+        youtube_mobile_signature = r"(http[s]?://)?youtu.be/([a-zA-Z]|[0-9])+"
+        if re.search(youtube_mobile_signature, url):
+            return MessageTypeEnum.youtube_url
+
+        youtube_thumbnail_signature = r"(http[s]?://)?i.ytimg.com/vi/([a-zA-Z]|[0-9])+"
+        if re.search(youtube_thumbnail_signature, url):
+            return MessageTypeEnum.youtube_thumbnail
+
+        return MessageTypeEnum.invalid
+
+    @staticmethod
+    def get_youtube_request(request, request_type):
+        """
+        Get the data for a given request, when that request is a YouTube URL of some kind.
+        :param request: The request to find the data of.
+        :param request_type: The type of YouTube request the request is.
+        :return: A list of dictionaries for each video found that fits the request.
+        """
+        api_func = YOUTUBE_API.videos() if request_type == MessageTypeEnum.youtube_url else YOUTUBE_API.playlistItems()
+        key = "v" if request_type == MessageTypeEnum.youtube_url else "list"
 
         query = parse_qs(urlparse(request).query, keep_blank_values=True)
-        youtube_id = query[key][0]
-
-        # The args used to get the data from the API.
-        args = {"part": "snippet", "maxResults": 1 if message_type == MessageTypeEnum.url else 50}
-
-        if message_type == MessageTypeEnum.url:
-            args["id"] = youtube_id
+        if not query:
+            youtube_id = request.split("/")[-1]
         else:
-            args["playlistId"] = youtube_id
+            youtube_id = query[key][0]
 
-        youtube_request = func.list(**args)
+        api_args = {"part": "snippet", "maxResults": 1 if request_type == MessageTypeEnum.youtube_url else 50}
 
-        # The list of video data.
-        api_items = []
-        while youtube_request is not None:
-            response = youtube_request.execute()
-            api_items += response["items"]
-            youtube_request = func.list_next(youtube_request, response)
+        if request_type == MessageTypeEnum.youtube_url:
+            api_args["id"] = youtube_id
+        else:
+            api_args["playlistId"] = youtube_id
 
-        if len(api_items) == 0:
-            return None
-        return api_items
+        api_request = api_func.list(**api_args)
 
-    def __format_api_data(self, data: List[dict]) -> List[dict]:
+        video_responses = []
+        while api_request:
+            response = api_request.execute()
+            video_responses += response["items"]
+            api_request = api_func.list_next(api_request, response)
+
+        return video_responses
+
+    def format_youtube_response(self, response):
         """
-        Formats a list of data that was obtained from the YouTube API call, where each item in the list is a dict.
-        :param data: The list of dicts that obtained from the API call.
-        :type data: List[dict]
-        :return: A formatted list of dicts. Each dict contains the YouTube url, the thumbnail url and the title of the
-                 video.
-        :rtype: List[dict]
+        Formats a list of dicts that were gained from a YouTube request to be in a format that is the same across
+        request types.
+        :param response: The response from the YouTube request.
+        :return: A list of dictionaries formatted from the incoming list of dictionaries.
         """
-
-        formatted_data = []
-        for item in data:
+        formatted_response = []
+        for item in response:
             snippet = item.get("snippet")
-            info = {"title": snippet.get("title", "Unable to get title, this is a bug"),
-                    "thumbnail": snippet.get("thumbnails", {}).get("maxres", {}).get("url", "Unable to get thumbnail "
-                                                                                            "this is a bug")}
-            if item.get("kind", None) == "youtube#video":
-                info["link"] = item.get("id", "Unable to get link, this is a bug")
-            else:
-                info["link"] = snippet.get("resourceId", {}).get("videoId", "Unable to get link, this is a bug")
-
-            # Turn the id gained from the dict into an actual url.
-            if "Unable to get link, this is a bug" not in info.get("link"):
-                info["link"] = "https://www.youtube.com/watch?v=" + info.get("link")
-
-            # Generate the url from the video id if the video id was gotten successfully.
-            if not self.__is_url(info.get("thumbnail")):
-                thumbnail = snippet.get("thumbnails", {}).get("maxres", {}).get("url", "Unable to get thumbnail this "
-                                                                                       "is a bug")
-                info["thumbnail"] = thumbnail
-
-            formatted_data.append(info)
-
-        return formatted_data
-
-    async def __update_channel_messages(self, guild_id: int):
-        """
-        Update the queue and preview messages in the music channel.
-        :param guild_id: The guild id of the guild to be updated.
-        :type guild_id: int
-        :return: None
-        :rtype: NoneType
-        """
-
-        guild_db_data = self.__db_accessor.get('music_channels', params={'guild_id': guild_id})[0]
-
-        # Get the ids of the queue and preview messages
-        queue_message_id = guild_db_data.get('queue_message_id')
-        preview_message_id = guild_db_data.get('preview_message_id')
-
-        # Create the updated messages
-        queue_message = self.__make_updated_queue_message(guild_id)
-        preview_message = self.__make_update_preview_message(guild_id)
-
-        music_channel_id = guild_db_data.get('channel_id')
-        # Get the music channel id as a discord.TextChannel object
-        music_channel_instance = self._bot.get_channel(music_channel_id)
-        if music_channel_instance is None:
-            music_channel_instance = await self._bot.fetch_channel(music_channel_id)
-
-        # Get the message ids as discord.Message objects
-        queue_message_instance: Message = await music_channel_instance.fetch_message(queue_message_id)
-        preview_message_instance: Message = await music_channel_instance.fetch_message(preview_message_id)
-
-        # Update the messages
-        await queue_message_instance.edit(content=queue_message)
-        await preview_message_instance.edit(embed=preview_message)
-
-    def __make_updated_queue_message(self, guild_id: int) -> str:
-        """
-        Update the queue message in a given guild.
-        :param guild_id: The guild id of the guild to update the queue message in.
-        :type guild_id: int
-        :return: A string representing the queue.
-        :rtype: str
-        """
-
-        if not self._currently_active.get(guild_id) or len(self._currently_active.get(guild_id).get('queue')) == 0:
-            # If the queue is empty or the bot isn't active
-            updated_queue_message = EMPTY_QUEUE_MESSAGE
-        else:
-            updated_queue_message = self.__make_queue_list(guild_id)
-
-        return updated_queue_message
-
-    def __make_update_preview_message(self, guild_id: int) -> Embed:
-        """
-        Update the preview message in a given guild.
-        :param guild_id: The guild id of the guild to update the preview message in.
-        :type guild_id: int
-        :return: An Embed type that contains the updated information for the preview message in the given guild.
-        :rtype: discord.Embed
-        """
-
-        if not self._currently_active.get(guild_id) or len(self._currently_active.get(guild_id).get('queue')) == 0:
-            # If the queue is empty, provide the empty queue embed or the bot isn't active
-            updated_preview_message = EMPTY_PREVIEW_MESSAGE.copy()
-        else:
-            current_song = self._currently_active.get(guild_id).get('current_song')
-            updated_preview_message = Embed(title="Currently Playing: " + current_song.get('title'),
-                                            colour=EmbedColours.music, url=current_song.get('link'),
-                                            video=current_song.get('link'))
-            thumbnail = current_song.get('thumbnail')
-            # If the current thumbnail isn't a url, just use the default image.
-            if not self.__is_url(current_song.get('thumbnail')):
-                thumbnail = ESPORTS_LOGO_URL
-            updated_preview_message.set_image(url=thumbnail)
-
-        updated_preview_message.set_footer(text="Definitely not made by fuxticks#1809 on discord")
-        return updated_preview_message
-
-    def __generate_link_data_from_queue(self, guild_id: int) -> Tuple[dict, dict]:
-        """
-        Download the actual song information such as the opus stream for the first song in the queue of a guild.
-        :param guild_id: The guild id to get the queue from.
-        :type guild_id: int
-        :return: A tuple of dicts. First dict containing playback data, Second dict containing song information.
-        :rtype: Tuple[dict, dict]
-        """
-
-        current_song = self._currently_active.get(guild_id).get('queue')[0]
-        download_data = self.__download_video_info(current_song.get('link'))
-        return self.__format_download_data(download_data), current_song
-
-    def __check_loops_alive(self):
-        """
-        Check if the async task loops are alive and start any that are not.
-        """
-        if not self.check_active_channels.is_running():
-            self.check_active_channels.start()
-        if not self.check_marked_channels.is_running():
-            self.check_marked_channels.start()
-
-    def __add_new_active_channel(self, guild_id: int, channel_id: str = None, voice_client: VoiceClient = None) -> bool:
-        """
-        Add a new voice channel to the currently active channels.
-        :param guild_id: The id of the guild being made active.
-        :type guild_id: int
-        :param channel_id: The id of the voice channel the bot joined in the guild.
-        :type channel_id: int
-        :param voice_client: The instance of the bot's voice client
-        :type voice_client: discord.VoiceClient
-        :return: Whether the guild was able to be added to the currently active channels.
-        :rtype: bool
-        """
-
-        if guild_id not in self._currently_active:
-            # If the guild is not currently active we can add it
-            self._currently_active[guild_id] = {}
-            self._currently_active[guild_id]['channel_id'] = channel_id
-            self._currently_active[guild_id]['voice_client'] = voice_client
-            self._currently_active[guild_id]['queue'] = []
-            self._currently_active[guild_id]['current_song'] = None
-            self._currently_active[guild_id]['volume'] = 0.75
-            return True
-        return False
-
-    def __pause_song(self, guild_id: int) -> bool:
-        """
-        Pauses the playback of a specific guild if the guild is playing. Otherwise nothing.
-        :param guild_id: The id of the guild to pause the playback in.
-        :type guild_id: int
-        :return: Whether the guild's playback was paused.
-        :rtype: bool
-        """
-
-        if self._currently_active.get(guild_id).get('voice_client').is_playing():
-            # Can't pause if the bot isn't playing
-            voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
-            voice_client.pause()
-            return True
-        return False
-
-    def __resume_song(self, guild_id: int) -> bool:
-        """
-        Resumes the playback of a specific guild if the guild is paused. Otherwise nothing.
-        :param guild_id: The id of the guild to resume the playback in.
-        :type guild_id: int
-        :return: Whether the guild's playback was resumed.
-        :rtype: bool
-        """
-
-        if self._currently_active.get(guild_id).get('voice_client').is_paused():
-            # Only able to resume if currently paused
-            voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
-            voice_client.resume()
-            return True
-        return False
-
-    async def __check_valid_user_vc(self, ctx: Context) -> bool:
-        """
-        Checks if the user in in a valid voice channel, using the following criteria:
-        A) Is in a voice channel in the guild,
-        B) If the bot is in the voice channel, that the voice channel is the same as the user,
-        C) The message sent was in the music channel.
-        :param ctx: The context of the message sent.
-        :type ctx: discord.ext.commands.Context
-        :return: True if all criteria are True, else False.
-        :rtype: bool
-        """
-
-        music_channel_in_db = self.__db_accessor.get('music_channels', params={'guild_id': ctx.guild.id})
-        if ctx.message.channel.id != music_channel_in_db[0].get('channel_id'):
-            # Message is not in the songs channel
-            message_title = self.user_strings["music_channel_wrong_channel"].format(command_option="can only")
-            await send_timed_message(channel=ctx.channel, embed=Embed(title=message_title,
-                                                                      colour=EmbedColours.music), timer=10)
-            return False
-
-        if not ctx.author.voice:
-            # User is not in a voice channel
-            message_title = self.user_strings["no_voice_voice_channel"].format(author=ctx.author.mention)
-            await send_timed_message(channel=ctx.channel, embed=Embed(title=message_title,
-                                                                      colour=EmbedColours.music), timer=10)
-            return False
-
-        if self._currently_active.get(ctx.guild.id).get('channel_id') != ctx.author.voice.channel.id:
-            # The user is not in the same voice channel as the bot
-            message_title = self.user_strings["wrong_voice_voice_channel"].format(author=ctx.author.mention)
-            await send_timed_message(channel=ctx.channel, embed=Embed(title=message_title,
-                                                                      colour=EmbedColours.music), timer=10)
-            return False
-        return True
-
-    def __determine_message_type(self, message: str) -> MessageTypeEnum:
-        """
-        Determine if the message received is a video url, playlist url, a string that needs to be queried, or some other
-        invalid url (not a YouTube url).
-        :param message: The string to determine the type of.
-        :type message: str
-        :return: An integer enum representing the message type.
-        :rtype: MessageTypeEnum
-        """
-
-        if self.__is_url(message):
-            # The message is a url
-            if re.search(r'(list)', message):
-                # The message is a playlist
-                return MessageTypeEnum.playlist
-            else:
-                return MessageTypeEnum.url
-        else:
-            # TODO: Better URL identification
-            if "https://" in message or "http://" in message:
-                return MessageTypeEnum.invalid
-            else:
-                # The message is a string
-                return MessageTypeEnum.string
+            video_info = {
+                "title": snippet.get("title"),
+                "thumbnail": self.thumbnail_from_snippet(snippet),
+                "link": self.url_from_response(item)
+            }
+            formatted_response.append(video_info)
+        return formatted_response
 
     @staticmethod
-    def __get_opus_stream(formats: List[dict]) -> Tuple[str, float]:
+    def thumbnail_from_snippet(snippet):
         """
-        Get the opus formatted streaming url from the formats dictionary.
-        :param formats: A list format dictionaries that contain the different streaming urls.
-        :type formats: List[dict]
-        :return: A tuple of the opus stream url and the bitrate of the url.
-        :rtype: Tuple[str, float]
+        Get the thumbnail url from a YouTube `snippet` data-type.
+        :param snippet: The snippet from the YouTube response
+        :return: A string representing the URL of the thumbnail.
         """
-
-        # Limit the codecs to just opus, as that is required for streaming audio
-        opus_formats = [x for x in formats if x.get('acodec') == 'opus']
-
-        # Sort the formats from highest br to lowest
-        sorted_opus = list(sorted(opus_formats, key=lambda k: float(k.get('abr')), reverse=True))
-
-        chosen_stream = sorted_opus[BITRATE_QUALITY]
-
-        return chosen_stream.get('url'), float(chosen_stream.get('abr'))
-
-    def __format_download_data(self, download_data: dict) -> dict:
-        """
-        Format a songs data to only keep useful data.
-        :param download_data: The song data to format.
-        :type download_data:
-        :return: A dictionary formatted to keep useful data from the download_data param.
-        :rtype: dict
-        """
-
-        stream, rate = self.__get_opus_stream(download_data.get('formats'))
-        useful_data = {'length': download_data.get('duration'),
-                       'stream': stream,
-                       'bitrate': rate,
-                       'filename': download_data.get('filename')}
-        return useful_data
+        all_thumbnails = snippet.get("thumbnails")
+        if "maxres" in all_thumbnails:
+            return all_thumbnails.get("maxres").get("url")
+        else:
+            any_thumbnail_res = list(all_thumbnails)[0]
+            return all_thumbnails.get(any_thumbnail_res).get("url")
 
     @staticmethod
-    def __is_url(string: str) -> bool:
+    def url_from_response(response):
         """
-        Checks if the string given is a YouTube url or a YouTube thumbnail url.
-        :param string: The string to check.
-        :type string: str
-        :return: True if the string is a YouTube url, False otherwise.
-        :rtype: bool
+        Create a YouTube URL from the response using the response ID.
+        :param response: The response from a YouTube request.
+        :return: A string representing the YouTube URL of the video.
         """
+        if response.get("kind") == "youtube#video":
+            video_id = response.get("id")
+        else:
+            video_id = response.get("resourceId").get("videoId")
+        return "https://youtube.com/watch?v={}".format(video_id)
 
-        # Match desktop, mobile and playlist urls
-        re_desktop = r'(http[s]?://)?youtube.com/(watch\?v)|(playlist\?list)='
-        re_mobile = r'(http[s]?://)?youtu.be/([a-zA-Z]|[0-9])+'
-        re_thumbnail = r'(http[s]?://)?i.ytimg.com/vi/([a-zA-Z]|[0-9])+'
-
-        return bool(re.search(re_desktop, string) or re.search(re_mobile, string) or re.search(re_thumbnail, string))
-
-    def __download_video_info(self, url: str, download: bool = False) -> dict:
+    @staticmethod
+    def query_request(request):
         """
-        Download all the information about a given YouTube url.
-        :param url: The YouTube url.
-        :type url: str
-        :param download: If the video should be downloaded to a local file.
-        :type download: bool
-        :return: A dictionary of information pertaining to the YouTube url.
-        :rtype: dict
+        Finds the information for a request that is a string.
+        :param request: The request to find.
+        :return: A 2-tuple of dictionaries.
         """
+        results = VideosSearch(request, limit=50).result().get("result")
 
+        if not results:
+            # If unable to find any results
+            return {}, {}
+
+        # The music result is what will be playing, while official will be used for the title and thumbnail.
+        music_result = None
+        official_result = None
+        for result in results:
+            title_lower = result.get("title").lower()
+            if not music_result and "lyric" in title_lower or "audio" in title_lower:
+                music_result = result
+            if not official_result and "official" in title_lower:
+                official_result = result
+            if official_result and music_result:
+                # Break once a video has been found for both.
+                break
+
+        ret_val = official_result, music_result
+
+        # If one of them is not found just use the top result.
+        if not music_result:
+            ret_val = ret_val[0], results[0]
+        if not official_result:
+            ret_val = results[0], ret_val[1]
+        return ret_val
+
+    @staticmethod
+    def format_query_response(response):
+        """
+        Formats the 2-tuple that was gained from a queried request to be in a format that is the same across request types.
+        :param response: The response from the query.
+        :return: A list of dictionaries of song data.
+        """
+        official_result, music_result = response
+
+        if not official_result or not music_result:
+            # If either of the dictionaries are emtpy, return an empty list with an empty dictionary.
+            return [{}]
+
+        official_views = re.sub(r"view(s)?", "", official_result.get("viewCount").get("text").replace(",", ""))
+        music_views = re.sub(r"view(s)?", "", music_result.get("viewCount").get("text").replace(",", ""))
+
+        official_views = 0 if official_views is None or "No" in official_views else int(official_views)
+        music_views = 0 if music_views is None or "No" in music_views else int(music_views)
+
+        formatted_query = {
+            "title":
+            official_result.get("title") if official_views > music_views else music_result.get("title"),
+            "thumbnail":
+            official_result.get("thumbnails")[-1].get("url")
+            if official_views > music_views else music_result.get("thumbnails")[-1].get("url"),
+            "link":
+            music_result.get("link")
+        }
+        return [formatted_query]
+
+    async def add_songs_to_queue(self, songs, guild_id):
+        """
+        Add a list of dictionaries representing songs to the queue of a guild.
+        :param songs: The list of song dictionaries to add to the the guild.
+        :param guild_id: The ID of the guild to add the songs to.
+        :return: True if the song was added successfully, False otherwise.
+        """
+        try:
+            if guild_id not in self.active_guilds:
+                return False
+
+            ret_val = True
+            for song in songs:
+                if len(song) != 0:
+                    self.active_guilds.get(guild_id)["queue"].append(song)
+                else:
+                    ret_val = False
+
+            # If we are not currently playing, start playing.
+            if not self.active_guilds.get(guild_id).get("voice_client").is_playing():
+                return await self.play_queue(guild_id)
+            return ret_val
+        except Exception as e:
+            self.logger.error(f"There was an error adding a song to the queue for guild {guild_id}: {e!s}")
+            return False
+
+    async def __play_queue(self, guild_id):
+        """
+        The internal function for playing the current queue. Should not ever call this function explicitly.
+        :param guild_id: The ID of the guild to play the queue of.
+        :return: True if playback was started successfully, False otherwise.
+        """
+        if guild_id not in self.active_guilds:
+            return False
+
+        if not len(self.active_guilds.get(guild_id).get("queue")) > 0:
+            self.active_guilds.get(guild_id)["current_song"] = None
+            return False
+
+        voice_client = self.active_guilds.get(guild_id).get("voice_client")
+
+        # Voice client cannot be playing when calling play(), so must be stopped first.
+        if voice_client.is_playing():
+            voice_client.stop()
+
+        try:
+            next_song = self.set_next_song(guild_id)
+            source = PCMVolumeTransformer(
+                FFmpegPCMAudio(next_song.get("url"),
+                               before_options=FFMPEG_BEFORE_OPT,
+                               options="-vn"),
+                volume=self.active_guilds.get(guild_id).get("volume")
+            )
+            voice_client.play(source)
+            self.playing_guilds.append(guild_id)
+            return True
+        except AttributeError:
+            return False
+        except KeyError:
+            return False
+        except TypeError:
+            return False
+        except ClientException:
+            return False
+
+    async def play_queue(self, guild_id):
+        """
+        The function that calls the internal __play_queue, and should be used to initiate the queue playback.
+        :param guild_id: The ID of the guild to start the playback in .
+        :return: True if playback was started successfully, else False.
+        """
+        res = await self.__play_queue(guild_id)
+        await self.update_messages(guild_id)
+        return res
+
+    def set_next_song(self, guild_id):
+        """
+        Sets the current song to the next song in the queue.
+        :param guild_id: The ID of the guild to set the next song of.
+        :return: The next song in the queue.
+        """
+        next_song = self.active_guilds.get(guild_id).get("queue").pop(0)
+        current_song = {**self.get_youtube_info(next_song.get("link")), **next_song}
+        self.active_guilds.get(guild_id)["current_song"] = current_song
+        return current_song
+
+    @staticmethod
+    def get_youtube_info(url):
+        """
+        Download the information required to stream the audio to the voice client.
+        :param url: The URL to find the information of.
+        :return: A dictionary of data which contains the stream data.
+        """
         ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': self._song_location + '%(title)s-%(id)s.mp3',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
+            "quiet": "true",
+            "nowarning": "true",
+            "format": "bestaudio/best",
+            "outtmpl": "%(title)s-%(id)s.mp3",
+            "postprocessors": [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
             }],
         }
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=download)
-            file = ydl.prepare_filename(info)
-            info['filename'] = file
-
+            info = ydl.extract_info(url, download=False)
         return info
 
-    def __check_empty_vc(self, guild_id: int) -> bool:
+    async def update_messages(self, guild_id):
         """
-        Check if the voice channel the bot is in has no members in it.
-        :param guild_id: The id of the guild being checked.
-        :type guild_id: int
-        :return: True if the channel is empty or if the bot isn't in a channel, else False.
-        :rtype: bool
+        Update the queue and preview messages with the current queue and currently playing song in a given guild.
+        :param guild_id: The ID of the guild to update the messages of.
         """
+        queue_message_content = self.get_updated_queue_message(guild_id)
+        preview_message_content = self.get_updated_preview_message(guild_id)
 
-        voice_client = self._currently_active.get(guild_id).get('voice_client')
-        if not voice_client:
-            # The bot is not in a channel, just return True
-            return True
-        voice_channel = voice_client.channel
-        # TODO: Test commented version of self removal from list
-        members_not_bots = [x for x in voice_channel.members if not x.bot]
-        # members_not_bots = voice_channel.members.remove(voice_channel.guild.me)
+        music_channel_instance = self.bot.get_channel(self.music_channels.get(guild_id))
+        if not music_channel_instance:
+            music_channel_instance = await self.bot.fetch_channel(self.music_channels.get(guild_id))
 
-        return not len(members_not_bots) > 0
+        db_item = self.db.get(MusicChannels, guild_id=guild_id)
 
-    async def __play_queue(self, guild_id: int) -> bool:
+        if not db_item:
+            return
+
+        queue_message_instance = await music_channel_instance.fetch_message(db_item.queue_message_id)
+        preview_message_instance = await music_channel_instance.fetch_message(db_item.preview_message_id)
+
+        await queue_message_instance.edit(content=queue_message_content)
+        await preview_message_instance.edit(embed=preview_message_content)
+
+    def get_updated_queue_message(self, guild_id, complete_list=False):
         """
-        Starts the playback of the song at the top of the queue.
-        :param guild_id: The id of the guild to play in.
-        :type guild_id: int
-        :return: Whether the bot was able to start playing the queue.
-        :rtype: bool
+        Gets the most up-to-date message for the current queue information of a given guild.
+        :param guild_id: The ID of the guild to get the queue information of.
+        :param complete_list: If the string should be a complete list or a truncated list.
+        :return: A string representing the queue in the guild.
         """
-
-        if len(self._currently_active.get(guild_id).get('queue')) < 1:
-            # Queue is empty.. exit
-            return False
-
-        voice_client: VoiceClient = self._currently_active.get(guild_id).get('voice_client')
-
-        if voice_client.is_playing():
-            # Stop the bot if it is playing
-            voice_client.stop()
-
-        # Get the next song
-        extra_data, current_song = self.__generate_link_data_from_queue(guild_id)
-        next_song = {**current_song, **extra_data}
-
-        self._currently_active.get(guild_id)['current_song'] = next_song
-
-        # voice_client.play(FFmpegOpusAudio(next_song.get("stream"), before_options=FFMPEG_BEFORE_OPT,
-        #                                  bitrate=int(next_song.get("bitrate")) + 10))
-        source = PCMVolumeTransformer(FFmpegPCMAudio(next_song.get("stream"),
-                                                     before_options=FFMPEG_BEFORE_OPT, options="-vn"),
-                                      volume=self._currently_active.get(guild_id).get("volume"))
-        voice_client.play(source)
-
-        return True
-
-    def __make_queue_list(self, guild_id: int) -> str:
-        """
-        Create a formatted string representing the queue from a guild.
-        :param guild_id: The guild to get the queue from.
-        :type guild_id: int
-        :return: A string representing the queue.
-        :rtype: str
-        """
-
-        queue_string = EMPTY_QUEUE_MESSAGE
-        if len(self._currently_active.get(guild_id).get('queue')) > 30:
-            # The queue is too long to display
-            first_part = self._currently_active.get(guild_id).get('queue')[:10]
-            last_part = self._currently_active.get(guild_id).get('queue')[-10:]
-
-            extra = len(self._currently_active.get(guild_id).get('queue')) - 20
-
-            first_string = self.__song_list_to_string(first_part)
-            last_string = self.__song_list_to_string(last_part, start_index=extra+10)
-
-            queue_string += f"{first_string}\n\n... and **`{extra}`** more ... \n\n{last_string}"
+        if guild_id not in self.active_guilds:
+            return EMPTY_QUEUE_MESSAGE
         else:
-            queue_string += self.__song_list_to_string(self._currently_active.get(guild_id).get('queue'))
+            return self.make_queue_text(guild_id, complete_list=complete_list)
 
+    def make_queue_text(self, guild_id, complete_list=False):
+        """
+        Creates the text of the current queue in a given guild.
+        :param guild_id: The ID of the guild to get the queue of.
+        :param complete_list: If the string should be a complete list or a truncated list.
+        :return: A string representing the queue in a given guild.
+        """
+        queue_string = EMPTY_QUEUE_MESSAGE
+        queue = self.active_guilds.get(guild_id).get("queue")
+        if not queue:
+            return queue_string
+        elif complete_list:
+            queue_string = self.reversed_numbered_list(queue)
+        elif len(queue) > 25:
+            # If the queue is long, truncate it using the start and end with an indicator of how many extra songs are hidden.
+            first_ten = queue[:10]
+            last_ten = queue[-10:]
+            remainder = len(queue) - 20
+
+            first_string = self.reversed_numbered_list(first_ten)
+            last_string = self.reversed_numbered_list(last_ten, offset=remainder + 10)
+
+            queue_string += f"{last_string}\n\n... and **`{remainder}`** more ... \n\n{first_string}"
+        else:
+            queue_string += self.reversed_numbered_list(queue)
         return queue_string
 
     @staticmethod
-    def __song_list_to_string(songs: List[dict], start_index: int = 0) -> str:
+    def reversed_numbered_list(list_data, offset=0):
         """
-        Turn a list into a string.
-        :param songs: The list of songs to turn into a string.
-        :type songs: List[dict]
-        :return: A string representing a queue.
-        :rtype: str
+        Get a list as a numbered string, where the first index is at the bottom of the string.
+        :param list_data: The song data to turn into a string.
+        :param offset: The song index offset to start at.
+        :return: A string representing a list.
         """
+        reversed_list = list(reversed(list_data))
+        biggest = len(list_data) + offset
+        return "\n".join(f"{biggest - song_num}. {song.get('title')}" for song_num, song in enumerate(reversed_list))
 
-        return "\n".join(str(songNum + 1 + start_index) + ". " +
-                         song.get('title') for songNum, song in enumerate(songs))
-
-    def __find_query(self, message: str) -> dict:
+    @staticmethod
+    def numbered_list(list_data, offset=0):
         """
-        Query YouTube to find a search result and get return a url to the top hit of that query.
-        :param message: The message to query YouTube with.
-        :type message: str
-        :return: A url and some other basic information regarding the video found.
-        :rtype: dict
+        Get a list as a numbered string, where the first index is at the top of the string.
+        :param list_data: The song data to turn into a string.
+        :param offset: The song index offset to start at.
+        :return: A string representing a list.
         """
+        return "\n".join(f"{song_num + 1 + offset}. {song.get('title')}" for song_num, song in enumerate(list_data))
 
-        # Find the top results for a given query to YouTube.
-        search_info = self.__query_youtube(message)
-
-        # top_hit is the actual top hit, while best_audio_hit is the top hit when searching for lyrics or audio queries.
-        top_hit = search_info[-1]
-        best_audio_hit = search_info[0]
-
-        # Usually has a better thumbnail than the lyrics
-        best_audio_hit['thumbnail'] = top_hit['thumbnail']
-        # Better title to display
-        best_audio_hit['title'] = top_hit['title']
-
-        # Ensures that all the dicts returned from api or this are formatted the same.
-        best_audio_hit.pop('viewCount', None)
-
-        return best_audio_hit
-
-    def __clean_query_results(self, results: List[dict]) -> List[dict]:
+    def get_updated_preview_message(self, guild_id):
         """
-        Remove unnecessary data from a list of dicts gained from querying YouTube.
-        :param results: A list of dictionaries gained from a YouTube query.
-        :type results: List[dict]
-        :return: A list of dictionaries with the useful information kept.
-        :rtype: List[dict]
+        Gets the most up-to-date preview message for a given guild and its currently playing song.
+        :param guild_id: The ID of the guild to get the current song of.
+        :return: An Embed object of the currently playing song.
         """
+        if guild_id not in self.active_guilds:
+            return EMPTY_PREVIEW_MESSAGE
+        elif not self.active_guilds.get(guild_id).get("current_song"):
+            return EMPTY_PREVIEW_MESSAGE
+        else:
+            current_song = self.active_guilds.get(guild_id).get("current_song")
+            updated_message = Embed(
+                title=f"Currently Playing: {current_song.get('title')}",
+                description=f"Current Volume: {int(self.active_guilds.get(guild_id).get('volume') * 100)}%",
+                colour=EmbedColours.music,
+                url=current_song.get("link"),
+                video=current_song.get("link")
+            )
+            thumbnail = current_song.get("thumbnail")
+            if self.find_url_type(thumbnail) != MessageTypeEnum.youtube_thumbnail:
+                thumbnail = ESPORTS_LOGO_URL
+            updated_message.set_image(url=thumbnail)
+            updated_message.set_footer(text="Definitely not made by fuxticks#1809 on discord")
+            return updated_message
 
-        cleaned_data = []
-
-        # Gets the data that is actually useful and discards the rest of the data
-        for result in results:
-            new_result = {'title': result.get('title'),
-                          'thumbnail': result.get('thumbnails')[-1].get('url'),
-                          'link': result.get('link'),
-                          'viewCount': result.get('viewCount')
-                          }
-            filename = re.sub(r'\W+', '', new_result.get('title')) + f"{new_result.get('id')}.mp3"
-            new_result['localfile'] = self._song_location + filename
-
-            cleaned_data.append(new_result)
-
-        return cleaned_data
-
-    def __query_youtube(self, message: str) -> List[dict]:
+    @staticmethod
+    async def join_member(member):
         """
-        Search YouTube with a given string.
-        :param message: The message to query YouTube with.
-        :type message: str
-        :return: A list of dictionaries for each result returned from the query.
-        :rtype: List[dict]
+        Join a member's voice channel.
+        :param member: The member to join.
+        :return: A boolean if the bot was able to join the channel.
         """
+        try:
+            client = await member.voice.channel.connect()
+            await member.guild.change_voice_state(channel=client.channel, self_mute=False, self_deaf=True)
+            return True
+        except ClientException:
+            return False
+        except AttributeError:
+            return False
 
-        start = time.time()
-        results = VideosSearch(message, limit=self._max_results).result().get('result')
+    @commands.group(name="music")
+    @commands.check(check_music_channel)
+    @delete_after()
+    async def command_group(self, context: commands.Context):
+        """
+        This is the command group for all commands that are meant to be performed in the music channel.
+        :param context: The context of the command.
+        """
+        pass
 
-        # Sort the list by view count
-        top_results = sorted(results,
-                             key=lambda k: 0 if k["viewCount"]["text"] is None or "No" in k["viewCount"]["text"] else
-                             int(re.sub(r'view(s)?', '', k['viewCount']['text']).replace(',', '')),
-                             reverse=True)
+    @command_group.error
+    async def check_failed_error(self, context: commands.Context, error: commands.CheckFailure):
+        """
+        Handles when the @commands.check fails so that the log is not clogged with pseudo errors.
+        :param context: The context of the command that failed.
+        :param error: The error that occurred.
+        """
+        if isinstance(error, commands.CheckFailure):
+            await send_timed_message(
+                channel=context.channel,
+                content=self.user_strings["music_channel_wrong_channel"].format(command=context.command.name),
+                timer=10
+            )
+            await context.message.delete()
+            self.logger.debug(f"The check for command '{context.command.name}' failed")
+            return
 
-        music_results = []
+        # If the error was some other error, raise it so we know about it.
+        await context.send(self.unhandled_error_string)
+        raise error
 
-        # Get results that have words "lyric" or "audio" as it filters out music videos
-        for result in results:
-            title_lower = result.get('title').lower()
-            if 'lyric' in title_lower or 'audio' in title_lower:
-                music_results.append(result)
+    @command_group.command(name="queue", aliases=["songqueue", "songs", "songlist", "songslist"])
+    @delete_after()
+    async def get_current_queue(self, context: commands.Context):
+        """
+        Get the current queue as a string.
+        :param context: The context of the command.
+        """
+        if context.guild.id not in self.active_guilds:
+            await send_timed_message(channel=context.channel, content=self.user_strings["bot_inactive"], timer=20)
+            return
 
-        if len(music_results) == 0:
-            # If the song doesn't have a lyric video just use a generic search
-            music_results = results
+        if not self.active_guilds.get(context.guild.id).get("queue"):
+            await send_timed_message(channel=context.channel, content=self.user_strings["bot_inactive"], timer=20)
+            return
 
-        # Add the top result regardless if it uses the words lyrics or audio
-        music_results.append(top_results[0])
+        queue_string = self.get_updated_queue_message(context.guild.id, complete_list=True)
+        await send_timed_message(channel=context.channel, content=queue_string, timer=60)
 
-        # Remove useless data
-        cleaned_results = self.__clean_query_results(music_results)
+    @command_group.command(name="join", aliases=["connect"])
+    async def join_channel_command(self, context: commands.Context, force: str = ""):
+        """
+        Makes the bot join the channel of the author of the command. If the bot is in another channel and the author is an
+        administrator, they can force it to join the channel with -f or force.
+        :param context: The context of the command.
+        :param force: Whether or the author is forcing the bot to join the channel.
+        """
+        disable_checks = force.lower() == "-f" or force.lower() == "force"
+        if disable_checks:
+            if not context.author.guild_permissions.administrator:
+                await send_timed_message(context.channel, content=self.user_strings["not_admin"], timer=10)
+                return
+            await self.remove_active_guild(context.guild)
+            if not await self.join_member(context.author):
+                await send_timed_message(content=self.user_strings["unable_to_join"], channel=context.channel, timer=10)
+                return
+        else:
+            if not await self.join_member(context.author):
+                await send_timed_message(content=self.user_strings["unable_to_join"], channel=context.channel, timer=10)
+                return
 
-        end = time.time()
+    @command_group.command(name="kick", aliases=["leave"])
+    async def leave_channel_command(self, context: commands.Context, force: str = ""):
+        """
+        Make the bot leave the voice channel of the author. If the author is not in the same voice channel as the bot and they
+        are an administrator, they can force the bot to leave with -f or force.
+        :param context: The context of the command.
+        :param force: Whether or the author is forcing the bot to leave the channel.
+        """
+        disable_checks = force.lower() == "-f" or force.lower() == "force"
+        if disable_checks:
+            if not context.author.guild_permissions.administrator:
+                await send_timed_message(context.channel, content=self.user_strings["not_admin"], timer=10)
+                return
+            await self.disconnect_from_guild(context.guild)
+            await self.remove_active_guild(context.guild)
+        else:
+            if context.author in self.active_guilds.get(context.guild.id).get("voice_channel").members:
+                await self.disconnect_from_guild(context.guild)
+                await self.remove_active_guild(context.guild)
+        await self.update_messages(context.guild.id)
 
-        print("Time taken to query YouTube: " + str(end - start))
+    @command_group.command(name="skip")
+    async def skip_song(self, context: commands.Context, skip_count=1):
+        """
+        The command used to skip the currently playing song. If the user also specifies a skip count,
+        it will skip n-1 songs in the queue as well.
+        :param context: The context of the command.
+        :param skip_count: The amount of songs to skip + 1 in the queue.
+        """
+        try:
+            skip_count = int(skip_count) - 1
+        except ValueError:
+            skip_count = 0
 
-        return cleaned_results
+        if context.guild.id not in self.active_guilds:
+            return
+
+        if context.author in self.active_guilds.get(context.guild.id).get("voice_channel").members:
+            await self.__skip_song(context.guild.id, skip_count)
+
+    async def __skip_song(self, guild_id, skip_count):
+        """
+        The function that actually performs the song skipping.
+        :param guild_id: The ID of the guild to skip the songs in.
+        :param skip_count: The amount of extra songs to skip.
+        """
+        if guild_id not in self.active_guilds:
+            return
+
+        self.active_guilds.get(guild_id).get("voice_client").stop()
+        self.active_guilds.get(guild_id)["current_song"] = None
+        if skip_count > len(self.active_guilds.get(guild_id).get("queue")) or skip_count < 0:
+            await self.play_queue(guild_id)
+        else:
+            self.active_guilds.get(guild_id)["queue"] = self.active_guilds.get(guild_id)["queue"][skip_count:]
+            await self.play_queue(guild_id)
+
+    @command_group.command(name="volume")
+    async def set_volume(self, context: commands.Context, volume_level):
+        """
+        Set the volume level of the current playback of the bot. This volume level will persist until the bot disconnects from
+        a voice channel.
+        :param context: The context of the command.
+        :param volume_level: The level to set the volume to. A value between 0 and 100 inclusive.
+        """
+        if context.guild.id not in self.active_guilds:
+            return
+
+        volume_level = str(volume_level)
+        if not volume_level.isdigit():
+            await send_timed_message(channel=context.channel, content=self.user_strings["volume_set_invalid_value"], timer=10)
+            return
+
+        if context.author in self.active_guilds.get(context.guild.id).get("voice_channel").members:
+            await self.__set_volume(context.guild.id, int(volume_level))
+
+    async def __set_volume(self, guild_id, volume_level):
+        """
+        The function that actually performs the volume change for a given guild.
+        :param guild_id: The ID of the guild to change the volume of.
+        :param volume_level: The level to set the volume to. A value between 0 and 100 inclusive.
+        """
+        if guild_id not in self.active_guilds:
+            return
+
+        if volume_level < 0:
+            volume_level = 0
+
+        if volume_level > 100:
+            volume_level = 100
+
+        self.active_guilds.get(guild_id).get("voice_client").source.volume = float(volume_level) / float(100)
+        self.active_guilds.get(guild_id)["volume"] = float(volume_level) / float(100)
+        await self.update_messages(guild_id)
+
+    @command_group.command(name="shuffle")
+    async def shuffle_queue(self, context: commands.Context):
+        """
+        Shuffles the current queue in a given guild.
+        :param context: The context of the command.
+        """
+        if context.guild.id not in self.active_guilds:
+            return
+        if context.author in self.active_guilds.get(context.guild.id).get("voice_channel").members:
+            await self.__shuffle_queue(context.guild.id)
+            await send_timed_message(channel=context.channel, content=self.user_strings["shuffle_queue_success"], timer=10)
+
+    async def __shuffle_queue(self, guild_id):
+        """
+        The function that actually performs the shuffle in a given guild.
+        :param guild_id: The ID of the guild to shuffle the queue of.
+        """
+        if guild_id not in self.active_guilds:
+            return
+
+        shuffle(self.active_guilds.get(guild_id).get("queue"))
+        await self.update_messages(guild_id)
+
+    @command_group.command(name="clear", aliases=["purge", "empty"])
+    async def clear_queue(self, context: commands.context):
+        """
+        Clear the current queue in a guild.
+        :param context: The context of the command.
+        """
+        if context.guild.id in self.active_guilds:
+            if context.author not in self.active_guilds.get(context.guild.id).get("voice_channel").members:
+                if not context.author.guild_permissions.administrator:
+                    return
+
+        await self.__clear_queue(context.guild.id)
+
+    async def __clear_queue(self, guild_id):
+        """
+        The actual function that performs the clearing of the current queue in a given guild.
+        :param guild_id: The ID of the guild to clear the queue of.
+        """
+        if guild_id in self.active_guilds:
+            self.active_guilds.get(guild_id)["queue"] = []
+        await self.update_messages(guild_id)
+
+    @command_group.command(name="resume", aliases=["play"])
+    async def play_song(self, context: commands.Context, song_to_play=""):
+        """
+        Either resumes the current playback, adds a song to the queue or starts playback depending on the stats of the bot in
+        the given guild context.
+        :param context: The context of the guild.
+        :param song_to_play: The song to play. If none specified, the playback will be resumed and no song will be added.
+        """
+        if context.guild.id in self.active_guilds:
+            if context.author not in self.active_guilds.get(context.guild.id).get("voice_channel").members:
+                return
+
+        await self.__play_song(context.author, song_to_play)
+        await send_timed_message(channel=context.channel, content=self.user_strings["song_resume_success"], timer=10)
+
+    async def __play_song(self, member, song_to_play=""):
+        """
+        The function that actually performs the play_song command and handles the logic of if to play, resume or
+        queue the song.
+        :param member: The member requesting to play the song.
+        :param song_to_play: The song to play, if any.
+        """
+        if member.guild.id not in self.active_guilds and song_to_play == "":
+            return
+
+        if song_to_play != "":
+            if member.guild.id not in self.active_guilds:
+                await self.join_member(member)
+            await self.process_request(member.guild.id, song_to_play)
+        else:
+            if self.active_guilds.get(member.guild.id).get("voice_client").is_paused():
+                self.active_guilds.get(member.guild.id).get("voice_client").resume()
+            else:
+                await self.play_queue(member.guild.id)
+
+        if member.guild.id in self.inactive_guilds:
+            self.inactive_guilds.pop(member.guild.id)
+
+        if member.guild.id not in self.playing_guilds:
+            self.playing_guilds.append(member.guild.id)
+
+    @command_group.command(name="pause")
+    async def pause_song(self, context: commands.Context):
+        """
+        Pauses the current playback of the bot in a given guild.
+        :param context: The context of the command.
+        """
+        if context.guild.id in self.active_guilds:
+            if context.author not in self.active_guilds.get(context.guild.id).get("voice_channel").members:
+                return
+
+        self.__pause_song(context.guild.id)
+        await send_timed_message(channel=context.channel, content=self.user_strings["song_pause_success"], timer=10)
+
+    def __pause_song(self, guild_id):
+        """
+        The actual function that performs the pause in a given guild.
+        :param guild_id: The ID of the guild to pause the playback of the current song in.
+        """
+        if guild_id not in self.active_guilds:
+            return
+
+        if self.active_guilds.get(guild_id)["voice_client"].is_playing():
+            self.active_guilds.get(guild_id)["voice_client"].pause()
+
+    @command_group.command(name="remove", aliases=["removeat"])
+    async def remove_song(self, context: commands.Context, song_index: str = 1):
+        """
+        Removes a song from the queue using it's index. The index given as a param is 1-indexed, instead of 0-indexed.
+        :param context: The context of the command.
+        :param song_index: The 1-indexed index of the song to remove.
+        """
+        if context.guild.id not in self.active_guilds:
+            return
+
+        song_index = await self.song_index_str_to_int(context, song_index)
+        if song_index is None:
+            return
+
+        removed_song = await self.__remove_song(context.guild.id, song_index)
+        if removed_song:
+            await send_timed_message(
+                channel=context.channel,
+                content=self.user_strings["song_remove_success"].format(
+                    song_title=removed_song.get("title"),
+                    song_position=song_index + 1
+                )
+            )
+
+    async def __remove_song(self, guild_id, song_index):
+        """
+        The actual function that performs the removal of the song_index from the queue. The song index is 0-indexed.
+        :param guild_id: The ID of the guild to remove the song in.
+        :param song_index: The 0-indexed index of the song to remove.
+        :return: The song removed if one was removed, else None.
+        """
+        if guild_id not in self.active_guilds:
+            return None
+
+        try:
+            song = self.active_guilds.get(guild_id)["queue"].pop(song_index)
+            await self.update_messages(guild_id)
+            return song
+        except IndexError:
+            return None
+
+    @command_group.command(name="move")
+    async def move_song(self, context: commands.context, from_pos: str, to_pos: str):
+        """
+        Moves a song from one position in the queue to another position. The positions given as params are 1-indexed.
+        :param context: The context of the command.
+        :param from_pos: The 1-indexed position of the song to move.
+        :param to_pos: The 1-indexed position of the index to move to.
+        """
+        if context.guild.id not in self.active_guilds:
+            return
+        else:
+            if context.author not in self.active_guilds.get(context.guild.id).get("voice_channel").members:
+                return
+
+        from_pos = await self.song_index_str_to_int(context, from_pos)
+        # Explicitly check for None, as index 0 is counted as False
+        if from_pos is None:
+            return
+        to_pos = await self.song_index_str_to_int(context, to_pos)
+        if to_pos is None:
+            return
+
+        song_at_pos = self.active_guilds.get(context.guild.id).get("queue")[from_pos]
+
+        if await self.__move_song(context.guild.id, from_pos, to_pos):
+            await send_timed_message(
+                channel=context.channel,
+                content=self.user_strings["song_moved_success"].format(
+                    from_pos=from_pos + 1,
+                    to_pos=to_pos + 1,
+                    title=song_at_pos.get("title")
+                )
+            )
+
+    async def __move_song(self, guild_id, from_pos, to_pos):
+        """
+        The actual function that performs song move.
+        :param guild_id: The ID of the guild to move the song in.
+        :param from_pos: The 0-indexed position of the song to move.
+        :param to_pos: The 0-indexed position of where to move the song to.
+        :return: True if the song was moved, False otherwise.
+        """
+        if guild_id not in self.active_guilds:
+            return False
+
+        if from_pos == to_pos:
+            return True
+
+        queue = self.active_guilds.get(guild_id).get("queue")
+
+        if from_pos > to_pos:
+            queue_top = queue[:to_pos]
+            inserted_song = [queue[from_pos]]
+            queue_middle = queue[to_pos:from_pos]
+            queue_end = queue[from_pos + 1:]
+            new_queue = queue_top + inserted_song + queue_middle + queue_end
+        else:
+            queue_top = queue[:from_pos]
+            inserted_song = [queue[from_pos]]
+            queue_middle = queue[from_pos + 1:to_pos + 1]
+            queue_end = queue[to_pos + 1:]
+            new_queue = queue_top + queue_middle + inserted_song + queue_end
+
+        self.active_guilds.get(guild_id)["queue"] = new_queue
+        await self.update_messages(guild_id)
+        return True
+
+    @commands.group(name="musicadmin")
+    @commands.has_permissions(administrator=True)
+    async def music_channel_group(self, context: commands.Context):
+        """
+        The command group for the music channel management.
+        :param context: The context of the command.
+        """
+        pass
+
+    @music_channel_group.command(name="fix")
+    async def guild_bot_reset_command(self, context: commands.Context):
+        """
+        Resets the music channel as well as attempts to disconnect the bot. This is to be used in-case there was an error
+        and the bot was not able to reset itself.
+        :param context: The context of the command.
+        """
+        await self.remove_active_guild(context.guild)
+        await self.disconnect_from_guild(context.guild)
+        await self.reset_music_channel(context)
+
+    @music_channel_group.command(name="set")
+    async def set_music_channel_command(self, context: commands.Context, text_channel: TextChannel):
+        """
+        Sets the music channel for a given guild to the channel channel mentioned in the command. Extra args can be given to
+        indicate some extra process to perform while setting up the channel.
+        :param context: The context of the command.
+        :param text_channel: The text channel to set the music channel to.
+        """
+        # Using the text channel as the last official arg in the command, find any extras that occur after with a `-`
+        text_channel_str = str(text_channel.mention)
+        end_index = context.message.content.index(text_channel_str) + len(text_channel_str)
+        args = context.message.content[end_index:].strip().split("-")
+        args.pop(0)
+        args = [arg.lower() for arg in args]
+        if "c" in args:
+            # Use -c to clear the channel.
+            await self.clear_music_channel(text_channel)
+
+        await self.setup_music_channel(text_channel)
+        await context.send(self.user_strings["music_channel_set"].format(channel=text_channel.mention))
+
+    @music_channel_group.command(name="get")
+    async def get_music_channel_command(self, context: commands.Context):
+        """
+        Gets the current channel that is set as the music channel.
+        If there is no channel set it will return a message saying so.
+        :param context: The context of the command.
+        """
+        channel = await self.find_music_channel_instance(context.guild)
+        if channel:
+            await context.send(self.user_strings["music_channel_get"].format(channel=channel.mention))
+        else:
+            await context.send(self.user_strings["music_channel_missing"])
+
+    @music_channel_group.command(name="reset")
+    async def reset_music_channel_command(self, context: commands.Context):
+        """
+        Resets the music channel to clear all the text and re-send the preview and queue messages.
+        :param context: The context of the command.
+        """
+        await self.reset_music_channel(context)
+
+    @music_channel_group.command(name="remove")
+    async def unlink_music_channel_command(self, context: commands.Context):
+        if not self.music_channels.get(context.guild.id):
+            await context.send(self.user_strings["music_channel_missing"])
+            return
+
+        music_channel_instance = await self.find_music_channel_instance(context.guild)
+        self.music_channels.pop(context.guild.id)
+        db_item = self.db.get(MusicChannels, guild_id=context.guild.id)
+        self.db.delete(db_item)
+        await context.send(self.user_strings["music_channel_removed"].format(channel=music_channel_instance.mention))
+
+    async def song_index_str_to_int(self, context, song_index):
+        """
+        Convert a 1-indexed song index as a string to a 0-indexed index as an int.
+        :param context: The context of the command.
+        :param song_index: The 1-indexed song index.
+        :return: A 0-indexed song index if it is valid, else None.
+        """
+        song_index = str(song_index)
+        try:
+            song_index = int(song_index) - 1
+            queue_length = len(self.active_guilds.get(context.guild.id).get("queue"))
+            if song_index > queue_length or song_index < 0:
+                raise ValueError
+            return song_index
+        except ValueError:
+            if len(self.active_guilds.get(context.guild.id).get("queue")) == 0:
+                return None
+            help_string = self.user_strings["song_remove_valid_options"].format(
+                end_index=len(self.active_guilds.get(context.guild.id).get("queue"))
+            )
+            helpful_error = f"{self.user_strings['song_remove_invalid_value']}:\n{help_string}"
+            await send_timed_message(channel=context.channel, content=helpful_error, timer=10)
+            return None
+
+    @staticmethod
+    async def clear_music_channel(channel):
+        """
+        A function used to purge a channel.
+        :param channel: The channel to purge.
+        """
+        await channel.purge(limit=int(sys.maxsize))
+
+    async def setup_music_channel(self, channel):
+        """
+        Setup a new channel as the music channel for a guild.
+        :param channel: The channel to set as the music channel.
+        """
+        self.logger.info(f"Setting up {channel.name} as the music channel in {channel.guild.name}")
+        default_preview = EMPTY_PREVIEW_MESSAGE.copy()
+
+        queue_message = await channel.send(EMPTY_QUEUE_MESSAGE)
+        preview_message = await channel.send(embed=default_preview)
+
+        db_item = self.db.get(MusicChannels, guild_id=channel.guild.id)
+        if not db_item:
+            db_item = MusicChannels(
+                guild_id=channel.guild.id,
+                channel_id=channel.id,
+                queue_message_id=queue_message.id,
+                preview_message_id=preview_message.id
+            )
+            self.db.create(db_item)
+        else:
+            db_item.queue_message_id = queue_message.id
+            db_item.preview_message_id = preview_message.id
+            db_item.channel_id = channel.id
+            self.db.update(db_item)
+        self.music_channels[channel.guild.id] = channel.id
+
+    async def reset_music_channel(self, context):
+        """
+        Resets the contents of the music channel.
+        :param context: The context of the command.
+        """
+        channel = await self.find_music_channel_instance(context.guild)
+        if channel:
+            self.logger.info(f"Resetting music channel in {context.guild.name}")
+            await self.clear_music_channel(channel)
+            await self.setup_music_channel(channel)
+            await context.send(self.user_strings["music_channel_reset"].format(channel=channel.mention))
+        else:
+            await context.send(self.user_strings["music_channel_missing"])
 
 
 def setup(bot):
