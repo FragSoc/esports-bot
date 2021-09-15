@@ -30,26 +30,20 @@ class DefaultRoleCog(commands.Cog):
             # Add all the roles to the user, we don't check if they're valid as we do this on input
             await member.add_roles(*apply_roles)
             await self.bot.admin_log(
-                None,
-                {
-                    "Cog":
-                    str(type(self)),
-                    "Message":
-                    self.STRINGS['default_role_join'].format(
-                        member_name=member.mention,
-                        role_ids=(' '.join(f'<@&{x.id}>' for x in apply_roles))
-                    )
-                },
-                guild_id=member.guild.id
+                guild_id=member.guild.id,
+                actions={
+                    "Cog": self.__class__.__name__,
+                    "Action": self.STRINGS["default_role_join"].format(member_name=member.mention,
+                                                                       role_ids=" ".join(x.mention for x in apply_roles))
+                }
             )
         else:
             await self.bot.admin_log(
-                None,
-                {
-                    "Cog": str(type(self)),
-                    "Message": self.STRINGS['default_role_join_no_role'].format(member_name=member.mention)
-                },
-                guild_id=member.guild.id
+                guild_id=member.guild.id,
+                actions={
+                    "Cog": self.__class__.__name__,
+                    "Action": self.STRINGS["default_role_join_no_role"].format(member_name=member.mention)
+                }
             )
 
     @commands.command(name="setdefaultroles")
@@ -83,11 +77,12 @@ class DefaultRoleCog(commands.Cog):
                     DBGatewayActions().create(DefaultRoles(guild_id=ctx.author.guild.id, role_id=role))
                 await ctx.channel.send(self.STRINGS['default_roles_set'].format(roles=args))
                 await self.bot.admin_log(
-                    ctx.message,
-                    {
-                        "Cog": str(type(self)),
-                        "Message": self.STRINGS['default_roles_set_log'].format(author_mention=ctx.author.mention,
-                                                                                roles=args)
+                    responsible_user=ctx.author,
+                    guild_id=ctx.guild.id,
+                    actions={
+                        "Cog": self.__class__.__name__,
+                        "command": ctx.message,
+                        "Message": self.STRINGS["default_roles_set_log"].format(author_mention=ctx.author.mention, roles=args)
                     }
                 )
             else:
@@ -130,10 +125,12 @@ class DefaultRoleCog(commands.Cog):
             # Return a response to the user
             await ctx.channel.send(self.STRINGS['default_role_removed'])
             await self.bot.admin_log(
-                ctx.message,
-                {
-                    "Cog": str(type(self)),
-                    "Message": self.STRINGS['default_role_removed_log'].format(author_mention=ctx.author.mention)
+                responsible_user=ctx.author,
+                guild_id=ctx.guild.id,
+                actions={
+                    "Cog": self.__class__.__name__,
+                    "command": ctx.message,
+                    "Message": self.STRINGS["default_role_removed_log"].format(author_mention=ctx.author.mention)
                 }
             )
         else:

@@ -1,4 +1,4 @@
-from esportsbot import lib
+from esportsbot.lib import client, exceptions
 
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import GuildInfo
@@ -11,7 +11,7 @@ import discord
 from datetime import datetime
 
 # EsportsBot client instance
-client = lib.client.instance()
+client = client.instance()
 
 
 @client.event
@@ -77,13 +77,23 @@ async def on_command_error(ctx: Context, exception: Exception):
         try:
             source_str += "/" + ctx.channel.name + "#" + str(ctx.channel.id) \
                 + "/" + ctx.guild.name + "#" + str(ctx.guild.id)
+            await client.admin_log(
+                responsible_user=ctx.author,
+                guild_id=ctx.guild.id,
+                actions={
+                    "command": ctx.message,
+                    "Error Name": exception.__class__.__name__,
+                    "Error Message": str(exception)
+                },
+                colour=discord.Colour.red()
+            )
         except AttributeError:
             source_str += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
         print(
             datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught " + type(exception).__name__ + " '") + str(exception)
             + "' from message " + source_str
         )
-        lib.exceptions.print_exception_trace(exception)
+        exceptions.print_exception_trace(exception)
 
 
 @client.event

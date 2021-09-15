@@ -21,28 +21,21 @@ class LogChannelCog(commands.Cog):
         if not guild:
             db_item = GuildInfo(guild_id=ctx.guild.id, log_channel_id=cleaned_channel_id)
             DBGatewayActions().create(db_item)
-            await ctx.channel.send(self.STRINGS["channel_set"].format(channel_id=cleaned_channel_id))
-            await self.bot.admin_log(
-                ctx.message,
-                {
-                    "Cog": str(type(self)),
-                    "Message": self.STRINGS["channel_set_notify_in_channel"].format(author_mention=ctx.author.mention)
-                }
-            )
-            return
+        else:
+            current_log_channel_id = guild.log_channel_id
+            if current_log_channel_id == cleaned_channel_id:
+                await ctx.channel.send(self.STRINGS["channel_set_already"])
+                return
+            guild.log_channel_id = cleaned_channel_id
+            DBGatewayActions().update(guild)
 
-        current_log_channel_id = guild.log_channel_id
-        if current_log_channel_id == cleaned_channel_id:
-            await ctx.channel.send(self.STRINGS["channel_set_already"])
-            return
-
-        guild.log_channel_id = cleaned_channel_id
-        DBGatewayActions().update(guild)
         await ctx.channel.send(self.STRINGS["channel_set"].format(channel_id=cleaned_channel_id))
         await self.bot.admin_log(
-            ctx.message,
-            {
-                "Cog": str(type(self)),
+            responsible_user=ctx.author,
+            guild_id=ctx.guild.id,
+            actions={
+                "Cog": self.__class__.__name__,
+                "command": ctx.message,
                 "Message": self.STRINGS["channel_set_notify_in_channel"].format(author_mention=ctx.author.mention)
             }
         )
@@ -72,6 +65,15 @@ class LogChannelCog(commands.Cog):
             guild.log_channel_id = None
             DBGatewayActions().update(guild)
             await ctx.channel.send(self.STRINGS["channel_removed"])
+            await self.bot.admin_log(
+                responsible_user=ctx.author,
+                guild_id=ctx.guild.id,
+                actions={
+                    "Cog": self.__class__.__name__,
+                    "command": ctx.message,
+                    "Message": self.STRINGS["channel_removed_log"].format(author_mention=ctx.author.mention)
+                }
+            )
         else:
             await ctx.channel.send(self.STRINGS["channel_get_notfound"])
 
