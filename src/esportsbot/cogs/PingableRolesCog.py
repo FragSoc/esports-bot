@@ -26,7 +26,9 @@ PINGABLE_POLL_EMOJI = MultiEmoji("📋")
 THRESHOLD_EMOJI = MultiEmoji("🏆")
 # The title and description of the poll:
 PINGABLE_POLL_TITLE = "Vote to create {} Pingable Role"
-PINGABLE_POLL_DESCRIPTION = "If the vote is successful you will be given the role"
+PINGABLE_POLL_DESCRIPTION = "The number of votes required to make this role is: `>= {vote_num} votes`. " \
+                            "If the number of votes is reached and you have voted, you will be given the role automatically " \
+                            "when the poll finishes."
 
 TASK_INTERVAL = 10
 
@@ -821,11 +823,13 @@ class PingableRolesCog(commands.Cog):
         if poll_length is None:
             poll_length = self.guild_settings.get(context.guild.id).get("poll_length")
 
+        vote_threshold = self.guild_settings.get(context.guild.id).get("poll_threshold")
+
         role_poll = PingableVoteMenu(
             pingable_name=role_name,
             auto_enable=True,
             title=PINGABLE_POLL_TITLE.format(role_name),
-            description=PINGABLE_POLL_DESCRIPTION,
+            description=PINGABLE_POLL_DESCRIPTION.format(vote_num=vote_threshold),
             poll_length=poll_length,
             author=context.author
         )
