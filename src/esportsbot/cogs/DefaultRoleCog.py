@@ -1,4 +1,4 @@
-from discord.ext import commands
+from discord.ext import commands, tasks
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import GuildInfo, DefaultRoles
 from esportsbot.base_functions import role_id_from_mention
@@ -10,6 +10,7 @@ class DefaultRoleCog(commands.Cog):
     """
     def __init__(self, bot):
         self.bot = bot
+        self.pending_members = []
         self.STRINGS = bot.STRINGS["default_role"]
 
     @commands.Cog.listener()
@@ -18,6 +19,41 @@ class DefaultRoleCog(commands.Cog):
         When a member joins the server, get the currently set list of default roles and give the new user that set of roles.
         :param member: The member that joined the server.
         """
+        self.pending_members.append(member)
+        if not self.check_pending_members.is_running() or self.check_pending_members.is_being_cancelled():
+            self.check_pending_members.start()
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member):
+        """
+        When a member leaves, ensure that they are not a pending member, and if they were, remove them from the list.
+        :param member: The member that left.
+        """
+        if member in self.pending_members:
+            self.pending_members.remove(member)
+
+    @tasks.loop(seconds=1)
+    async def check_pending_members(self):
+        """
+        Check the members that have recently joined to see if they accepted the rules. If they have, give the roles. If the
+        list of pending members is empty, this check won't run.
+        """
+        if not self.pending_members:
+            self.check_pending_members.cancel()
+            self.check_pending_members.stop()
+            return
+
+        members_to_remove = []
+
+        for member in self.pending_members:
+            if not member.pending:
+                await self.apply_roles(member)
+                members_to_remove.append(member)
+
+        for member in members_to_remove:
+            self.pending_members.remove(member)
+
+    async def apply_roles(self, member):
         guild = DBGatewayActions().get(GuildInfo, guild_id=member.guild.id)
         if not guild:
             return
