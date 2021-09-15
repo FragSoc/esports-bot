@@ -1,10 +1,11 @@
 from types import FrameType
 from discord.ext import commands
-from discord import Intents, Embed, Message, Colour
+from discord import Intents, Embed, Colour, Member, User
 from esportsbot.DiscordReactableMenus.EmojiHandler import MultiEmoji
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.models import Guild_info
-from typing import Dict, MutableMapping, Union
+from esportsbot.lib.CustomHelpCommand import CustomHelpCommand
+from esportsbot.models import GuildInfo
+from typing import Dict, MutableMapping, Union, Any
 from datetime import datetime
 import os
 import signal
@@ -16,6 +17,9 @@ StringTable = MutableMapping[str, Union[str, "StringTable"]]
 
 
 class EsportsBot(commands.Bot):
+    """
+    A slightly modified version of the basic Bot from discord.commands to include a few extra attributes.
+    """
     def __init__(self, command_prefix: str, user_strings_file: str, **options):
         """
         :param str command_prefix: The prefix to use for bot commands when evoking from discord.
@@ -26,10 +30,10 @@ class EsportsBot(commands.Bot):
         self.unknown_command_emoji = MultiEmoji(os.getenv("UNKNOWN_COMMAND_EMOJI", "⁉"))
         self.STRINGS: StringTable = toml.load(user_strings_file)
 
-        signal.signal(signal.SIGINT, self.interruptReceived)  # keyboard interrupt
-        signal.signal(signal.SIGTERM, self.interruptReceived)  # graceful exit request
+        signal.signal(signal.SIGINT, self.interrupt_received)  # keyboard interrupt
+        signal.signal(signal.SIGTERM, self.interrupt_received)  # graceful exit request
 
-    def interruptReceived(self, signum: signal.Signals, frame: FrameType):
+    def interrupt_received(self, signum: signal.Signals, frame: FrameType):
         """Shut down the bot gracefully.
         This method is called automatically upon receipt of sigint/sigterm.
 
@@ -45,40 +49,40 @@ class EsportsBot(commands.Bot):
         print("[EsportsBot] Shutting down...")
         await self.logout()
 
-    async def adminLog(self, message: Message, actions: Dict[str, str], *args, guildID=None, **kwargs):
-        """Log an event or series of events to the server's admin logging channel.
-        To log an administration action which was not due to a user command, give message as None, and specify the guild in
-        which to send the log with the guildID kwarg.
+    async def admin_log(self,
+                        guild_id: int,
+                        actions: Dict[str, Any],
+                        responsible_user: Union[Member, User] = None,
+                        colour=None):
+        guild_settings = DBGatewayActions().get(GuildInfo, guild_id=guild_id)
+        if not guild_settings or not guild_settings.log_channel_id:
+            return
+        log_channel = await self.fetch_channel(guild_settings.log_channel_id)
 
-        :param Message message: The message that triggered this log. Probably a command.
-        :param actions: A dictionary associating action types with action details. No key or value can be empty.
-        :type actions: Dict[str, str]
-        :param int guildID: The ID of the guild in which to send the log, if message is given as None. Ignored otherwise.
-        """
-        if message is None:
-            if guildID is None:
-                raise ValueError("Must give at least one of message or guildID")
+        if not responsible_user:
+            responsible_user = self.user
+
+        if not colour:
+            colour = Colour.random()
+
+        log_info = [responsible_user.mention]
+
+        if "command" in actions:
+            # The action to log came from a message
+            message = actions.pop("command")
+            log_info.append(message.channel.mention)
+            log_info.append(f"[message]({message.jump_url})")
         else:
-            guildID = message.guild.id
-        db_logging_call = DBGatewayActions().get(Guild_info, guild_id=guildID)
-        if db_logging_call and db_logging_call.log_channel_id:
-            if "embed" not in kwargs:
-                if message is None:
-                    logEmbed = Embed(description="Responsible user unknown. Check the server's audit log.")
-                else:
-                    logEmbed = Embed(
-                        description=" | ".
-                        join((message.author.mention,
-                              "#" + message.channel.name,
-                              "[message](" + message.jump_url + ")"))
-                    )
-                logEmbed.set_author(icon_url=self.user.avatar_url_as(size=64), name="Admin Log")
-                logEmbed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-                logEmbed.colour = Colour.random()
-                for aTitle, aDesc in actions.items():
-                    logEmbed.add_field(name=str(aTitle), value=str(aDesc), inline=False)
-                kwargs["embed"] = logEmbed
-            await self.get_channel(db_logging_call.log_channel_id).send(*args, **kwargs)
+            log_info.append("Action Performed:")
+
+        log_embed = Embed(description=" | ".join(log_info), colour=colour)
+        log_embed.set_author(icon_url=self.user.avatar_url_as(size=64), name="Admin Log")
+        log_embed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
+
+        for key, value in actions.items():
+            log_embed.add_field(name=key, value=value, inline=False)
+
+        await log_channel.send(embed=log_embed)
 
 
 # Singular class instance of EsportsBot
@@ -93,5 +97,12 @@ def instance() -> EsportsBot:
     if _instance is None:
         intents = Intents.default()
         intents.members = True
-        _instance = EsportsBot(os.getenv("COMMAND_PREFIX", "!"), "esportsbot/user_strings.toml", intents=intents)
+        _instance = EsportsBot(
+            os.getenv("COMMAND_PREFIX",
+                      "!"),
+            "esportsbot/user_strings.toml",
+            intents=intents,
+            help_command=None
+        )
+        _instance.help_command = CustomHelpCommand(help_strings=_instance.STRINGS["help"])
     return _instance

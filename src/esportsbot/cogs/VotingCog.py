@@ -6,13 +6,20 @@ from discord.ext import commands
 from esportsbot.DiscordReactableMenus.ExampleMenus import PollReactMenu
 from esportsbot.DiscordReactableMenus.reactable_lib import get_all_options
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.models import Voting_menus
+from esportsbot.models import VotingMenus
 
 DELETE_ON_CREATE = os.getenv("DELETE_VOTING_CREATION", "FALSE").lower() == "true"
-MAKE_POLL_README = "#votes-make-poll-title-emoji-description"
 
 
 class VotingCog(commands.Cog):
+    """
+    Poll reaction menus allow users to create polls with up to 25 different options for other users, and themselves,
+    to vote on.
+
+    The poll start and end is not time based, but instead controlled by the user that created the poll or administrators.
+
+    This module implements the ability for users to create voting polls, and to then get the results of those polls.
+    """
     def __init__(self, bot):
         self.bot = bot
         self.logger = logging.getLogger(__name__)
@@ -23,6 +30,10 @@ class VotingCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        """
+        When bot discord client is ready and has logged into the discord API, this function runs and is used to load and
+        initialise any polls that had started before the bot was shutdown.
+        """
         self.voting_menus = await self.load_menus()
         self.logger.info(f"{__name__} is now ready!")
 
@@ -31,7 +42,7 @@ class VotingCog(commands.Cog):
         Loads saved role reaction menus from the DB for all guilds .
         :return: A dictionary of reaction menu IDs and their reaction menus .
         """
-        all_menus = self.db.list(Voting_menus)
+        all_menus = self.db.list(VotingMenus)
         loaded_menus = {}
         for menu in all_menus:
             loaded_menus[menu.menu_id] = await PollReactMenu.from_dict(self.bot, menu.menu)
@@ -62,12 +73,12 @@ class VotingCog(commands.Cog):
         Creates a new DB item or updates an existing one for a given menu id .
         :param menu_id: The menu id to create or update .
         """
-        db_item = self.db.get(Voting_menus, menu_id=menu_id)
+        db_item = self.db.get(VotingMenus, menu_id=menu_id)
         if db_item:
             db_item.menu = self.voting_menus.get(menu_id).to_dict()
             self.db.update(db_item)
         else:
-            db_item = Voting_menus(menu_id=menu_id, menu=self.voting_menus.get(menu_id).to_dict())
+            db_item = VotingMenus(menu_id=menu_id, menu=self.voting_menus.get(menu_id).to_dict())
             self.db.create(db_item)
 
     async def finalise_poll(self, menu):
@@ -78,11 +89,11 @@ class VotingCog(commands.Cog):
         results = await menu.generate_results()
         await menu.message.channel.send(embed=results)
         self.voting_menus.pop(menu.id)
-        db_item = self.db.get(Voting_menus, menu_id=menu.id)
+        db_item = self.db.get(VotingMenus, menu_id=menu.id)
         self.db.delete(db_item)
         await menu.message.delete()
 
-    @commands.group(name="votes", help="Create reaction menus that can be used as a poll.")
+    @commands.group(name="votes")
     async def command_group(self, context: commands.Context):
         """
         The command group used to make all commands sub-commands .
@@ -90,13 +101,7 @@ class VotingCog(commands.Cog):
         """
         pass
 
-    @command_group.command(
-        name="make-poll",
-        usage="<title> \n[options]\n...",
-        help="Creates a new poll for users to vote on. "
-        "Each of the options to vote on are put on a new line, more help regarding this command can be found here: "
-        f"https://github.com/FragSoc/esports-bot{MAKE_POLL_README}."
-    )
+    @command_group.command(name="make-poll")
     async def create_poll_menu(self, context: commands.Context):
         """
         Creates a new poll with the options provided in the command .
@@ -124,13 +129,7 @@ class VotingCog(commands.Cog):
         if DELETE_ON_CREATE:
             await context.message.delete()
 
-    @command_group.command(
-        name="add-option",
-        usage="<menu id> <emoji> <description>",
-        help="Adds another option to an existing poll.",
-        aliases=["add",
-                 "aoption"]
-    )
+    @command_group.command(name="add-option", aliases=["add", "aoption"])
     async def add_poll_option(self, context: commands.Context, menu_id: int, emoji):
         """
         Adds another poll option to the given poll .
@@ -150,13 +149,7 @@ class VotingCog(commands.Cog):
         await voting_menu.update_message()
         self.add_or_update_db(voting_menu.id)
 
-    @command_group.command(
-        name="remove-option",
-        usage="<menu id> <emoji>",
-        help="Removes a poll option from an existing poll",
-        aliases=["remove",
-                 "roption"]
-    )
+    @command_group.command(name="remove-option", aliases=["remove", "roption"])
     async def remove_poll_option(self, context: commands.Context, menu_id: int, emoji):
         """
         Remove an option from a poll .
@@ -173,13 +166,7 @@ class VotingCog(commands.Cog):
         await voting_menu.update_message()
         self.add_or_update_db(voting_menu.id)
 
-    @command_group.command(
-        name="delete-poll",
-        usage="<menu id>",
-        help="Deletes a given role reaction menu.",
-        aliases=["delete",
-                 "del"]
-    )
+    @command_group.command(name="delete-poll",  aliases=["delete", "del"])
     async def delete_poll(self, context: commands.Context, menu_id: int):
         """
         Delete a poll .
@@ -193,11 +180,11 @@ class VotingCog(commands.Cog):
 
         await voting_menu.message.delete()
         self.voting_menus.pop(voting_menu.id)
-        db_item = self.db.get(Voting_menus, menu_id=voting_menu.id)
+        db_item = self.db.get(VotingMenus, menu_id=voting_menu.id)
         self.db.delete(db_item)
         await context.reply(self.user_strings["delete_menu"].format(menu_id=voting_menu.id))
 
-    @command_group.command(name="end-poll", usage="<menu id>", help="Finishes a poll.", aliases=["finish", "complete", "end"])
+    @command_group.command(name="end-poll", aliases=["finish", "complete", "end"])
     async def finish_poll(self, context: commands.Context, menu_id: int):
         """
         Finishes a poll to get results and stop new votes from coming in .
@@ -211,14 +198,7 @@ class VotingCog(commands.Cog):
 
         await self.finalise_poll(voting_menu)
 
-    @command_group.command(
-        name="reset-poll",
-        usage="<menu id>",
-        help="Removes all user reactions from the poll.",
-        aliases=["reset",
-                 "clear",
-                 "restart"]
-    )
+    @command_group.command(name="reset-poll", aliases=["reset", "clear", "restart"])
     async def reset_poll_votes(self, context: commands.Context, menu_id: int):
         """
         Reset the current votes on a poll .
@@ -243,6 +223,12 @@ class VotingCog(commands.Cog):
     @reset_poll_votes.error
     @remove_poll_option.error
     async def integer_parse_error(self, context: commands.Context, error: commands.CommandError):
+        """
+        An error handler for handling any functions that are prone to integer conversion exceptions.
+        :param context: The context of the command.
+        :param error: The error that occurred.
+        :return:
+        """
         if isinstance(error, commands.BadArgument):
             await context.reply(self.user_strings["needs_number"])
             return

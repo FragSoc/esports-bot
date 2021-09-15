@@ -7,13 +7,17 @@ from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.DiscordReactableMenus.EmojiHandler import (EmojiKeyError, MultiEmoji)
 from esportsbot.DiscordReactableMenus.ExampleMenus import RoleReactMenu
 from esportsbot.DiscordReactableMenus.reactable_lib import get_menu
-from esportsbot.models import Role_menus
+from esportsbot.models import RoleMenus
 
 DELETE_ON_CREATE = os.getenv("DELETE_ROLE_CREATION", "FALSE").lower() == "true"
-MAKE_MENU_GIT_README = "#roles-make-menu-title-description-mentioned-role-emoji"
 
 
 class RoleReactCog(commands.Cog):
+    """
+    Role reaction menus allow admins to create reactable menus that when reacted to grant defined roles to the user.
+
+    This module implements the ability to create and manage role menus so that users can receive roles by reacting.
+    """
     def __init__(self, bot):
         self.bot = bot
         self.user_strings = self.bot.STRINGS["role_reacts"]
@@ -24,6 +28,10 @@ class RoleReactCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        """
+        When bot discord client is ready and has logged into the discord API, this function runs and is used to load and
+        initialise the existing reaction menus.
+        """
         self.reaction_menus = await self.load_menus()
         self.logger.info(f"{__name__} is now ready!")
 
@@ -32,7 +40,7 @@ class RoleReactCog(commands.Cog):
         Loads saved role reaction menus from the DB for all guilds .
         :return: A dictionary of reaction menu IDs and their reaction menus .
         """
-        all_menus = self.db.list(Role_menus)
+        all_menus = self.db.list(RoleMenus)
         loaded_menus = {}
         for menu in all_menus:
             loaded_menus[menu.menu_id] = await RoleReactMenu.from_dict(self.bot, menu.menu)
@@ -43,12 +51,12 @@ class RoleReactCog(commands.Cog):
         Creates a new DB item or updates an existing one for a given menu id .
         :param menu_id: The menu id to create or update .
         """
-        db_item = self.db.get(Role_menus, menu_id=menu_id)
+        db_item = self.db.get(RoleMenus, menu_id=menu_id)
         if db_item:
             db_item.menu = self.reaction_menus.get(menu_id).to_dict()
             self.db.update(db_item)
         else:
-            db_item = Role_menus(menu_id=menu_id, menu=self.reaction_menus.get(menu_id).to_dict())
+            db_item = RoleMenus(menu_id=menu_id, menu=self.reaction_menus.get(menu_id).to_dict())
             self.db.create(db_item)
 
     @staticmethod
@@ -97,12 +105,7 @@ class RoleReactCog(commands.Cog):
         """
         pass
 
-    @command_group.command(
-        name="make-menu",
-        usage="<title> <description> [<mentioned role> <emoji>]",
-        help="Creates a new role reaction menu with the given roles and their emojis. "
-        f"Go to https://github.com/FragSoc/esports-bot{MAKE_MENU_GIT_README} for more help regarding usage."
-    )
+    @command_group.command(name="make-menu")
     @commands.has_permissions(administrator=True)
     async def create_role_menu(self, context: commands.Context):
         """
@@ -137,12 +140,7 @@ class RoleReactCog(commands.Cog):
         if DELETE_ON_CREATE:
             await context.message.delete()
 
-    @command_group.command(
-        name="add-option",
-        usage="[optional: menu id] [<mentioned role> <emoji>]",
-        help="Adds a new option to a reaction menu, can be one or many. "
-        "If no ID is given it will add the option to the latest menu."
-    )
+    @command_group.command(name="add-option")
     @commands.has_permissions(administrator=True)
     async def add_menu_option(self, context: commands.Context, menu_id: str = None):
         """
@@ -176,12 +174,7 @@ class RoleReactCog(commands.Cog):
         await found_menu.update_message()
         self.add_or_update_db(found_menu.id)
 
-    @command_group.command(
-        name="remove-option",
-        usage="<emoji> [optional: menu id]",
-        help="Removes the role associated with the emoji from the given menu. "
-        "If no ID is given it will remove the option from the latest menu."
-    )
+    @command_group.command(name="remove-option")
     @commands.has_permissions(administrator=True)
     async def remove_menu_option(self, context: commands.Context, option_key: MultiEmoji, menu_id=None):
         """
@@ -200,11 +193,7 @@ class RoleReactCog(commands.Cog):
         await menu.update_message()
         self.add_or_update_db(menu.id)
 
-    @command_group.command(
-        name="disable-menu",
-        usage="[optional: menu id]",
-        help="Stops users from using the reaction menu to get roles. If no ID is given the latest menu will be disabled."
-    )
+    @command_group.command(name="disable-menu")
     @commands.has_permissions(administrator=True)
     async def disable_menu(self, context: commands.Context, menu_id=None):
         """
@@ -221,11 +210,7 @@ class RoleReactCog(commands.Cog):
         self.add_or_update_db(menu.id)
         await context.reply(self.user_strings["disable_menu"].format(menu_id=menu.id))
 
-    @command_group.command(
-        name="enable-menu",
-        usage="[optional: menu id]",
-        help="Allows users to use a reaction menu to get its roles. If no ID is given the latest menu will be enabled."
-    )
+    @command_group.command(name="enable-menu")
     @commands.has_permissions(administrator=True)
     async def enable_menu(self, context: commands.Context, menu_id=None):
         """
@@ -242,7 +227,7 @@ class RoleReactCog(commands.Cog):
         self.add_or_update_db(menu.id)
         await context.reply(self.user_strings["enable_menu"].format(menu_id=menu.id))
 
-    @command_group.command(name="delete-menu", usage="<menu id>", help="Deletes a given role reaction menu.")
+    @command_group.command(name="delete-menu")
     @commands.has_permissions(administrator=True)
     async def delete_menu(self, context: commands.Context, menu_id):
         """
@@ -258,11 +243,11 @@ class RoleReactCog(commands.Cog):
 
         await menu.message.delete()
         self.reaction_menus.pop(menu.id)
-        db_item = self.db.get(Role_menus, menu_id=menu.id)
+        db_item = self.db.get(RoleMenus, menu_id=menu.id)
         self.db.delete(db_item)
         await context.reply(self.user_strings["delete_menu"].format(menu_id=menu.id))
 
-    @command_group.command(name="toggle-ids", help="Toggles the footer displaying the menu ID for all role reaction menus.")
+    @command_group.command(name="toggle-ids")
     @commands.has_permissions(administrator=True)
     async def toggle_show_ids(self, context: commands.Context):
         """
@@ -271,12 +256,19 @@ class RoleReactCog(commands.Cog):
         """
         for menu_id in self.reaction_menus:
             menu = self.reaction_menus.get(menu_id)
+            if menu.guild.id != context.guild.id:
+                continue
             menu.toggle_footer()
             await menu.update_message()
             self.add_or_update_db(menu_id)
 
     @remove_menu_option.error
     async def remove_error(self, context: commands.Context, error):
+        """
+        This is the error handling function that runs when the `remove_menu_option` function encounters an error.
+        :param context: The context of the command.
+        :param error: The error that occurred.
+        """
         if isinstance(error, commands.BadArgument):
             await context.reply(self.user_strings["invalid_emoji"])
             return

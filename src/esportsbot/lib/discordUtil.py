@@ -1,77 +1,7 @@
 import shlex
 
-from discord import Forbidden, RawReactionActionEvent, Message, Member, User, Client, DMChannel, GroupChannel, TextChannel
-from typing import List, Tuple, Union
-from . import emotes, exceptions
-
-# Link to an empty image, to allow for an author name in embeds without providing an icon.
-from .stringTyping import strIsChannelMention
-
-EMPTY_IMAGE = "https://i.imgur.com/sym17F7.png"
-
-
-async def reactionFromRaw(client: Client,
-                          payload: RawReactionActionEvent) -> Tuple[Message,
-                                                                    Union[User,
-                                                                          Member],
-                                                                    emotes.Emote]:
-    """Retrieve complete Reaction and user info from a RawReactionActionEvent payload.
-
-    :param RawReactionActionEvent payload: Payload describing the reaction action
-    :return: The message whose reactions changed, the user who completed the action, and the emoji that changed.
-    :rtype: Tuple[Message, Union[User, Member], Emote]
-    """
-    emoji = None
-    user = None
-    message = None
-
-    if payload.member is None:
-        # Get the channel containing the reacted message
-        if payload.guild_id is None:
-            channel = client.get_channel(payload.channel_id)
-        else:
-            guild = client.get_guild(payload.guild_id)
-            if guild is None:
-                return None, None, None
-            channel = guild.get_channel(payload.channel_id)
-
-        # Individual handling for each channel type for efficiency
-        if isinstance(channel, DMChannel):
-            if channel.recipient.id == payload.user_id:
-                user = channel.recipient
-            else:
-                user = channel.me
-        elif isinstance(channel, GroupChannel):
-            # Group channels should be small and far between, so iteration is fine here.
-            for currentUser in channel.recipients:
-                if currentUser.id == payload.user_id:
-                    user = currentUser
-                if user is None:
-                    user = channel.me
-        # Guild text channels
-        elif isinstance(channel, TextChannel):
-            user = channel.guild.get_member(payload.user_id)
-        else:
-            return None, None, None
-
-        # Fetch the reacted message (api call)
-        message = await channel.fetch_message(payload.message_id)
-
-    # If a reacting member was given, the guild can be inferred from the member.
-    else:
-        user = payload.member
-        message = await payload.member.guild.get_channel(payload.channel_id).fetch_message(payload.message_id)
-
-    if message is None:
-        return None, None, None
-
-    # Convert reacted emoji to BasedEmoji
-    try:
-        emoji = emotes.Emote.fromPartial(payload.emoji, rejectInvalid=True)
-    except exceptions.UnrecognisedCustomEmoji:
-        return None, None, None
-
-    return message, user, emoji
+from discord import TextChannel
+from typing import List
 
 
 async def send_timed_message(channel: TextChannel, *args, timer: int = 15, **kwargs):
@@ -103,30 +33,6 @@ def load_discord_hooks(prefix_to_filter, guild_hooks, bot_user_id: int):
                 hooks[g_hook.id] = {"token": g_hook.token, "name": g_hook.name, "guild_id": g_hook.guild_id}
 
     return hooks
-
-
-async def channel_from_mention(bot, c_id):
-    """
-    Gets an instance of a channel when the channel was mentioned in the message.
-    :param bot: The instance of the bot to access discord with.
-    :param c_id: The mentioned channel.
-    :return: An instance of a channel or None if there is no channel with the given mention.
-    """
-
-    if not strIsChannelMention(c_id):
-        # The string was not a mentioned channel.
-        return None
-
-    # Gets just the ID of the channel.
-    cleaned_id = c_id[2:-1]
-    channel = bot.get_channel(cleaned_id)
-    if channel is None:
-        try:
-            channel = await bot.fetch_channel(cleaned_id)
-        except Forbidden as e:
-            # self.logger.error("Unable to access channel with id %s due to permission errors: %s", cleaned_id, e.text)
-            return None
-    return channel
 
 
 def get_webhook_by_name(current_hooks, name, guild_id, prefix_to_filter):

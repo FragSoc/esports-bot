@@ -2,6 +2,498 @@ command_error_generic = "There was an internal error while performing your comma
 command_error_required_arguments = "Arguments are required for this command! See `{command_prefix}help {command_used}` for more information."
 guild_leave = "Left the guild: {guild_name}"
 
+[help]
+missing_help_string = ":warning: Missing help string :warning:"
+empty_category = "No Category"
+embed_title = "Showing help for — {prefix}{fqn}"
+embed_footer = "For more help go to https://github.com/FragSoc/esports-bot"
+usage_string = "{prefix}{fqn} "
+command_help_short = "• {help_string}"
+command_description = "{short_string} \n\n {long_string}"
+command_help = "• Help Command: {prefix}help {fqn}"
+command_alias = "• Aliases: {aliases}"
+command_footer = "• Parameters with `<>` around them are required parameters.\n• Parameters with `[]` are optional parameters.\n• The brackets are not required when executing the command."
+
+[help.music]
+help_string = "This is a command group for controlling music playback. All subcommands of this one can only be run in the music channel. Just executing this command will not do anything, use the help command for this command to see the list of all music commands."
+readme_url = "https://github.com/FragSoc/esports-bot#music-bot"
+
+[help.music_queue]
+help_string = "Gets the current list of songs in the queue."
+description = "Unlike the active queue in the music channel, this command will show the entire queue. This command does not take any parameters."
+readme_url = "https://github.com/FragSoc/esports-bot#music-queue"
+
+[help.music_join]
+help_string = "Make the bot join the channel."
+description = "This command makes the bot join a channel. If the bot is already in another channel it won't join. If an admin executes this command, they can force it to join by using `-f` or `force` at the end of the command."
+usage = "[optional: -f | force]"
+readme_url = "https://github.com/FragSoc/esports-bot#music-join-optional--f--force"
+
+[help.music_kick]
+help_string = "Kicks the bot from the voice channel."
+description = "This command makes the bot leave the current voice channel. If you are not in the channel with the bot, it won't leave. If an admin executes this command, they can force it to leave any channel by using `-f` or `force` at the end of the command."
+usage = "[optional: -f | force]"
+readme_url = "https://github.com/FragSoc/esports-bot#music-kick-optional--f--force"
+
+[help.music_skip]
+help_string = "Skips the currently playing song."
+description = "This command can skip 1 or many songs. If you give the command a number, it will skip to that song number in the queue. For example, if you give it the number `4`, it will start playing song number `4` in the queue, and remove all songs before that song. If you are not in the voice channel with the bot, this command will have no effect."
+usage = "[optional: skip to song number]"
+readme_url = "https://github.com/FragSoc/esports-bot#music-skip-optional-skip-to-position"
+
+[help.music_volume]
+help_string = "Sets the volume of the bot."
+description = "This sets the volume for all users in the channel, and gets reset if the bot leaves. Note that this will not change the bots independent volume slider that exists for all users. If you are not in the voice channel with the bot, this command will have no effect."
+usage = "<volume level %>"
+readme_url = "https://github.com/FragSoc/esports-bot#music-volume-volume-level"
+
+[help.music_clear]
+help_string = "Clears the entire queue."
+description = "This will clear the entire queue, but will not remove the currently playing song. If you are not in the voice channel with the bot, this command will have no effect."
+readme_url = "https://github.com/FragSoc/esports-bot#music-clear"
+
+[help.music_resume]
+help_string = "Resumes playback of the current song or starts playback of the given song."
+description = "If there is a song that is currently playing, it will continue playing. If there are no songs currently paused or in queue and a song is given to the command, it will start playing the given song. If there are songs in the queue, or there is a paused song, the song will be added to the queue. If you are not in the voice channel with the bot, this command will have no effect."
+usage = "[optional: song request]"
+readme_url = "https://github.com/FragSoc/esports-bot#music-play-optional-song-request"
+
+[help.music_pause]
+help_string = "Pauses the current song."
+readme_url = "https://github.com/FragSoc/esports-bot#music-pause"
+
+[help.music_remove]
+help_string = "Removes a song from the queue at a specific position."
+description = "If there is a song at the position given, it will remove that song from the queue. If no song position is given, it will remove the first song in the queue. If you are not in the voice channel with the bot, this command will have no effect."
+usage = "[optional: song number]"
+readme_url = "https://github.com/FragSoc/esports-bot#music-remove-song-position"
+
+[help.music_move]
+help_string = "Moves a song from one position in the queue to another."
+description = "This will move a song at the first position to the second position. It will not swap the song at the second position to the first position."
+usage = "<from position> <to position>"
+readme_url = "https://github.com/FragSoc/esports-bot#music-move-from-position-to-position"
+
+[help.musicadmin]
+help_string = "This is a command group for managing the music channel, all of these commands require the `administrator` permission in this server. Just executing this command will not do anything, use the help command for this command to see the list of all admin commands."
+readme_url = "https://github.com/FragSoc/esports-bot#music-bot"
+
+[help.musicadmin_fix]
+help_string = "Performs a hard reset on the music channels and the current state of the music bot in this server."
+description = "This should only be needed if there is an issue where the bot thinks it is still in a channel and then won't join a new one. Before using this command you should try the `join` or `kick` commands with `-f` or `force` first."
+readme_url = "https://github.com/FragSoc/esports-bot#musicadmin-fix"
+
+[help.musicadmin_set]
+help_string = "Sets the music channel for this server."
+description = "By default this command will just send the song queue and current song preview messages. You can also use the `-c` optional arg to clear the channel first."
+usage = "<channel mention> [optional: [args]"
+readme_url = "https://github.com/FragSoc/esports-bot#musicadmin-set-channel-mention-optional-args"
+
+[help.musicadmin_get]
+help_string = "Gets the channel that is currently set as the music channel in this server."
+readme_url = "https://github.com/FragSoc/esports-bot#musicadmin-get"
+
+[help.musicadmin_reset]
+help_string = "Clears the music channel and performs the setup again."
+readme_url = "https://github.com/FragSoc/esports-bot#musicadmin-reset"
+
+[help.musicadmin_remove]
+help_string = "Unlinks the currently set music channel from being the music channel."
+description = "This will just stop the channel from processing song requests, the channel will not be deleted with this command and will just be a regular text channel."
+readme_url = "https://github.com/FragSoc/esports-bot#musicadmin-remove"
+
+[help.pingme]
+help_string = "This is a command group used to create custom roles that have ping cooldown timers. Use the help command to see a list of all `pingme` subcommands."
+readme_url = "https://github.com/FragSoc/esports-bot#pingable-roles"
+
+[help.pingme_settings]
+help_string = "This is a command group used to manage the default settings for pingable roles in this server. These commands require the `administrator` permission in this server. Use the help command to see a list of all subcommands."
+readme_url = "https://github.com/FragSoc/esports-bot#pingable-roles"
+
+[help.pingme_settings_get_settings]
+help_string = "Shows the current settings for this server."
+description = "The settings shown are the default settings applied to new roles when they are created. Polls and Roles can have some of their settings overridden with other pingme settings commands."
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-settings-get-settings"
+
+[help.pingme_settings_default_settings]
+help_string = "Resets all settings for this server to the bot-defined defaults."
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-settings-default-settings"
+
+[help.pingme_settings_poll_length]
+help_string = "Sets the default poll length to the given time in seconds."
+description = "This is the default length used in a poll if when no poll length is given when creating a poll."
+usage = "<poll length in seconds>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-settings-poll-length-poll-length-in-seconds"
+
+[help.pingme_settings_poll_threshold]
+help_string = "Sets the number of votes required for a poll to pass."
+description = "If a poll passes or equals the value set here, when finished a pingable role will be created with the default settings and all users who voted will be granted the new role."
+usage = "<number of votes required>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-settings-poll-threshold-number-of-votes-threshold"
+
+[help.pingme_settings_ping_cooldown]
+help_string = "Sets the default ping cooldown for new pingable roles."
+description = "This cooldown is the time in which the role cannot be mentioned again. This ping cooldown will only apply to new roles created, and will not affect roles previously created with the default ping cooldown."
+usage = "<ping cooldown in seconds>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-settings-ping-cooldown-cooldown-in-seconds"
+
+[help.pingme_settings_poll_emoji]
+help_string = "Sets the emoji used in voting polls."
+description = "This sets the emoji that users use to vote on if they want a new pingable role. This will not affect any already running polls."
+usage = "<emoji>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-settings-poll-emoji-emoji"
+
+[help.pingme_settings_role_emoji]
+help_string = "Sets the emoji used in the role reaction menu."
+description = "Once a role is created it will also create a role reaction menu so that users who didn't vote but want the role can get the role. This command sets the emoji for the reaction used to get or remove the role from a user. This will not affect any already existing role reaction menus."
+usage = "<emoji>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-settings-role-emoji-emoji"
+
+[help.pingme_create_role]
+help_string = "Creates a new poll to create a new role."
+description = "Creates a new poll for users to vote on. If the number of votes surpasses the servers defined vote threshold, a new role is created with the name given in this command. The role will be given to all users who voted and a reaction menu will be created so users who have the role can remove it and users who want the role can receive it."
+usage="<role name> [Optional: poll length in seconds]"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-create-role-role-name-optional-poll-length-in-seconds"
+
+[help.pingme_delete_role]
+help_string = "Deletes the roles mentioned."
+description = "Completely deletes all roles mentioned, as long as the roles mentioned are pingable roles. This command cannot delete roles that are not pingable roles."
+usage = "<one or many role mentions>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-delete-role-one-or-many-role-mentions"
+
+[help.pingme_convert_role]
+help_string = "Converts a mentioned role into a pingable one."
+description = "This creates the reaction menu for the role and makes it a role that has a ping cooldown, which by default is the server default ping cooldown timer."
+usage = "<one or many role mentions>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-convert-role-one-or-many-role-mentions"
+
+[help.pingme_convert_pingable]
+help_string = "Converts a mentioned role from a pingable role to a normal one."
+description = "This will make it so that the role is no longer bound by a cooldown as to how many often it can be mentioned. It will also mean that there will no longer be a reaction menu for users to receive a role."
+usage = "<one or many role mentions>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-convert-pingable-one-or-many-role-mentions"
+
+[help.pingme_role_cooldown]
+help_string = "Sets the ping cooldown for the given role."
+description = "This will set the number of seconds users must wait before the role can be mentioned again."
+usage = "<role mention | role ID> <cooldown in seconds>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-role-cooldown-role-mention--role-id-cooldown-in-seconds"
+
+[help.pingme_role_emoji]
+help_string = "Sets the emoji for the given role."
+description = "If the mentioned role is a pingable role, this will set the emoji used in the role's reaction menu."
+usage = "<role mention | role ID> <emoji>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-role-emoji-role-mention--role-id-emoji"
+
+[help.pingme_disable_role]
+help_string = "Disables a pingable role."
+description = "If the role mentioned is a pingable role, this will stop it from being mentioned and will also disable the reaction menu for the role."
+usage = "<one or many role mentions>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-disable-role-one-or-many-role-mentions"
+
+[help.pingme_enable_role]
+help_string = "Enables a pingable role."
+description = "If the role mentioned is a pingable role, it will allow the role to be mentioned with it's mention cooldown in place and will enable the reaction menu."
+usage = "<one or many role mentions>"
+readme_url = "https://github.com/FragSoc/esports-bot#pingme-enable-role-one-or-many-role-mentions"
+
+[help.setvmparent]
+help_string = "Sets a channel to be a parent channel."
+description = "This will set the voice channel given to act as a parent channel, so when users join they will be moved into their own child-channel. There can be more than 1 parent voice channel."
+usage = "<voice channel ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#setvmparent-channel_id"
+
+[help.getvmparents]
+help_string = "Get a list of all Voicemaster parent channels."
+readme_url = "https://github.com/FragSoc/esports-bot#getvmparents"
+
+[help.removevmparent]
+help_string = "Stops the given voice channel from acting as a Voicemaster parent."
+usage = "<voice channel ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#removevmparent-channel_id"
+
+[help.removeallparents]
+help_string = "Stops all voice channels from acting as Voicemaster parents."
+readme_url = "https://github.com/FragSoc/esports-bot#removeallparents"
+
+[help.removeallchildren]
+help_string = "Deletes all Voicemaster child voice channels."
+readme_url = "https://github.com/FragSoc/esports-bot#removeallchildren"
+
+[help.lockvm]
+help_string = "Locks your current Voicemaster voice channel."
+description = "If you are in a Voicemaster child channel and if you own the channel, it will lock the number of users allowed in the channel to the current number of users in the channel."
+readme_url = "https://github.com/FragSoc/esports-bot#lockvm"
+
+[help.unlockvm]
+help_string = "Unlocks your current Voicemaster voice channel."
+description = "If you are in a Voicemaster child channel and if you own the channel, it will remove the user-count limit."
+readme_url = "https://github.com/FragSoc/esports-bot#unlockvm"
+
+[help.clear]
+help_string = "Deletes the given number of messages. Defaults to 5 messages."
+usage = "<number of messages>"
+readme_url = "https://github.com/FragSoc/esports-bot#clear"
+
+[help.version]
+help_string = "Get the current bot version."
+readme_url = "https://github.com/FragSoc/esports-bot#version"
+
+[help.members]
+help_string = "Get the number of members in the server."
+readme_url = "https://github.com/FragSoc/esports-bot#members"
+
+[help.remove_cog]
+help_string = "Unloads the given cog."
+description = "This removes a cog from being loaded and removes all its commands. This can only be run by a member that is defined in the dev_ids section of the bots environment. If a cog makes use of the `on_ready` function, it will not work properly if loaded through the command, and will require a full restart to re-enable."
+usage = "<cog name>"
+readme_url = "https://github.com/FragSoc/esports-bot#remove-cog-cog-name"
+
+[help.add_cog]
+help_string = "Loads the given cog."
+description = "Enables a Cog and adds its commands. This can only be run by a member that is defined in the dev_ids section of the bots environment. If the given cog uses the `on_ready` function, it will not work as expected and will require a full restart to properly enable."
+usage ="<cog name>"
+readme_url = "https://github.com/FragSoc/esports-bot#add-cog-cog-name"
+
+[help.reload_cog]
+help_string = "Reloads the given cog."
+description = "Unloads and then reloads the given cog. Refer to the 'load cog' command to see potential side-effects. This can only be run by a member that is defined in the dev_ids section of the bots environment."
+usage = "<cog name>"
+readme_url = "https://github.com/FragSoc/esports-bot#reload-cog-cog-name"
+
+[help.set_rep]
+help_string = "Sets the permissions for a game rep."
+description = "By mentioning a user, and then giving a set of category or channel IDs separated by a space, this command will give the required permissions for a Game Rep for the given channels."
+usage = "<user mention> <channel or category ids>"
+readme_url = "https://github.com/FragSoc/esports-bot#set-rep-user-mention-channel-or-category-ids"
+
+[help.setlogchannel]
+help_string = "Sets the given channel to the logging channel."
+usage = "<channel mention | channel ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#setlogchannel-channel_mention--channel_id"
+
+[help.getlogchannel]
+help_string = "Get the current logging channel."
+readme_url = "https://github.com/FragSoc/esports-bot#getlogchannel"
+
+[help.removelogchannel]
+help_string = "Stops the current logging channel from being active."
+description = "The current logging channel will become a regular channel and logging events will no longer be posted to the channel."
+readme_url = "https://github.com/FragSoc/esports-bot#removelogchannel"
+
+[help.twitter]
+help_string = "This is the command group used to manage posting Twitter updates to discord channels. Use the help command for this command to see a list of all the Twitter related commands."
+readme_url = "https://github.com/FragSoc/esports-bot#twitter-integration"
+
+[help.twitter_hook]
+help_string = "Create a new Discord Webhook for Twitter."
+description = "This will create a new Discord Webhook that can then be used to post Twitter updates to the channel that the webhook is bound to. If you want a specific name you must include the channel parameter."
+usage = "[optional: channel mention] [optional: hook name]"
+readme_url = "https://github.com/FragSoc/esports-bot#twitter-hook-optional-channel-mention-optional-hook-name"
+
+[help.twitter_remove_hook]
+help_string = "Deletes an existing Discord Webhook for Twitter."
+description = "This will delete the given Discord Webhook. You do not need to include the Twitter Webhook prefix, but the Discord Webhook you are wanting to delete must be one that has the Twitter prefix in it. Once delete, Twitter updates will no longer be posted to that channel."
+usage = "<hook name>"
+readme_url = "https://github.com/FragSoc/esports-bot#twitter-remove-hook-hook-name"
+
+[help.twitter_add]
+help_string = "Adds a Twitter account to be tracked."
+usage = "<account handle>"
+readme_url = "https://github.com/FragSoc/esports-bot#twitter-add-twitter-handle"
+
+[help.twitter_remove]
+help_string = "Stops tracking a Twitter account."
+usage = "<account handle>"
+readme_url = "https://github.com/FragSoc/esports-bot#twitter-remove-twitter-handle"
+
+[help.twitter_list]
+help_string = "Lists all the Twitter accounts currently tracked."
+readme_url = "https://github.com/FragSoc/esports-bot#twitter-list"
+
+[help.setdefaultroles]
+help_string = "Sets the list of roles to be given to users when they join the server."
+usage = "<one or many role mentions>"
+readme_url = "https://github.com/FragSoc/esports-bot#setdefaultroles-role_mention--role_id"
+
+[help.getdefaultroles]
+help_string = "Get the list of current default roles."
+readme_url = "https://github.com/FragSoc/esports-bot#getdefaultroles"
+
+[help.removedefaultroles]
+help_string = "Removes all default roles."
+description = "This will stop applying the current list of default roles to new members. Does not affect existing members."
+readme_url = "https://github.com/FragSoc/esports-bot#removedefaultroles"
+
+[help.events]
+help_string = "This is a command group for controlling the creation and management of events and their text and voice channels. Use the help command for this command to see the subcommands available."
+readme_url = "https://github.com/FragSoc/esports-bot#event-category-management"
+
+[help.events_create_event]
+help_string = "Creates a new event with a given name."
+description = "This command will create the Discord category, the sign-in channel, a general text channel and a voice channel with the event's name as well as an event role. The sign-in menu will be a role react menu to receive the event role and until the event is open, all channels in the category will be set to private and only viewable by administrators. Once open, the sign-in channel will be visible to members with the given shared role. If no shared role is supplied, the shared role used will be one of the DefaultRoles."
+usage = "<event name> [optional: shared role]"
+readme_url = "https://github.com/FragSoc/esports-bot#events-create-event-event-name-role-mention--role-id"
+
+[help.events_open_event]
+help_string = "Reveal the sign-in menu to non-administrators."
+description = "Allows members with the shared role to see the sign-in channel, and then also react to the sign-in menu to receive the event role."
+usage = "<event name>"
+readme_url = "https://github.com/FragSoc/esports-bot#events-open-event-event-name"
+
+[help.events_close_event]
+help_string = "Stop members from seeing all event channels."
+description = "Stops all channels in the event category from being viewed by non-administrators. This does not remove the event role from users."
+usage = "<event name>"
+readme_url = "https://github.com/FragSoc/esports-bot#events-close-event-event-name"
+
+[help.events_delete_event]
+help_string = "Delete all event channels and the event role."
+description = "This will create a reaction menu to confirm your choice. If confirmed, all channels and the event role will be deleted."
+usage = "<event name>"
+readme_url = "https://github.com/FragSoc/esports-bot#events-delete-event-event-name"
+
+[help.roles]
+help_string = "This is a command group for controlling the creation of role reaction menus. Use the help command for this command to see the subcommands available."
+readme_url = "https://github.com/FragSoc/esports-bot#role-reaction-menus"
+
+[help.roles_make_menu]
+help_string = "Create a new role menu."
+description = "This will create a new role reaction menu with the given title and description, so long as each are surrounded with double quotes. Each option in the menu is defined with a role and an emoji as its identifier. Each emoji must be unique, but roles do not."
+usage = "<title> <description> [none or many: <role mention> <emoji>]"
+readme_url = "https://github.com/FragSoc/esports-bot#roles-make-menu-title-description-mentioned-role-emoji"
+
+[help.roles_add_option]
+help_string = "Add another option to an existing role menu."
+description = "Adds another option to an existing role menu. The emoji must not already be another option in the role menu, but the role can be any existing role."
+usage = "<role menu ID> [none or many: <role mention> <emoji>]"
+readme_url = "https://github.com/FragSoc/esports-bot#roles-add-option-optional-menu-id-mentioned-role-emoji"
+
+[help.roles_remove_option]
+help_string = "Remove an option from an existing role menu."
+description = "Using the emoji to identify which option you want to remove from the role menu, remove the option from that given menu."
+usage = "<role menu ID> <emoji option to remove>"
+readme_url = "https://github.com/FragSoc/esports-bot#roles-remove-option-emoji-optional-menu-id"
+
+[help.roles_disable_menu]
+help_string = "Disables a role menu."
+description = "This stops users from being able to react to a role reaction menu to receive the roles defined in the menu."
+usage = "<role menu ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#roles-disable-menu-optional-menu-id"
+
+[help.roles_enable_menu]
+help_string = "Enables a role menu."
+description = "Allows users to receive roles from a role reaction menu when they react with the defined emojis in the menu."
+usage = "<role menu ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#roles-enable-menu-optional-menu-id"
+
+[help.roles_delete_menu]
+help_string = "Deletes a role menu."
+description = "Deletes a menu entirely. Does not delete the roles or emojis associated with the menu."
+usage = "<role menu ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#roles-delete-menu-menu-id"
+
+[help.roles_toggle_ids]
+help_string = "Toggle showing IDs at the bottom of role menus."
+description = "This will hide or show the menu ID of all role reaction menus in their footer."
+readme_url = "https://github.com/FragSoc/esports-bot#roles-toggle-ids"
+
+[help.votes]
+help_string = "This is a command group used to create and manage reaction based polls."
+readme_url = "https://github.com/FragSoc/esports-bot#poll-reaction-menus"
+
+[help.votes_make_poll]
+help_string = "Creates a new poll with a given name."
+description = "Creates a new poll with the given name, if the name is more than 1 word long it must be surrounded by double quotes. Each option in the poll must be on a new line and in the format of: <emoji> <description> where if the description is more than 1 word long it must also be surrounded by double quotes. There can be up to 25 options"
+usage = "<title> \n [<emoji> <description>]"
+readme_url = "https://github.com/FragSoc/esports-bot#votes-make-poll-title-emoji-description"
+
+[help.votes_add_option]
+help_string = "Add another poll option to an existing poll."
+description = "The option added must be in the same for as when creating the menu, where if the description is longer than 1 word it must be surrounded by double quotes. You must be the creator of the poll to add an option."
+usage = "<poll menu ID> <emoji> <description>"
+readme_url = "https://github.com/FragSoc/esports-bot#votes-add-option-menu-id-emoji-description"
+
+[help.votes_remove_option]
+help_string = "Remove an existing poll option from a poll."
+description = "Using the emoji to identify the option, remove the option from the poll. You must be the creator of the poll to remove an option."
+usage = "<poll menu ID> <emoji to remove>"
+readme_url = "https://github.com/FragSoc/esports-bot#votes-remove-option-menu-id-emoji"
+
+[help.votes_delete_poll]
+help_string = "Delete a poll."
+description = "This will not get the poll results, but will just remove the message. You must be the creator of the poll to delete it."
+usage = "<poll menu ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#votes-delete-poll-menu-id"
+
+[help.votes_end_poll]
+help_string = "End the voting on a poll."
+description = "This will generate the results of the poll and stop people from voting on the poll. You must be the creator of the poll to end it."
+usage = "<poll menu ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#votes-end-poll-menu-id"
+
+[help.votes_reset_poll]
+help_string = "Remove all user votes on a poll."
+description = "Resets a poll to have no votes on it. You must be the creator of the poll to reset it."
+usage = "<poll menu ID>"
+readme_url = "https://github.com/FragSoc/esports-bot#votes-reset-poll-menu-id"
+
+[help.twitch]
+help_string = "This is a command group used to control the managing of posting Twitch live notifications. Use the help command of this command to see available subcommands."
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-integration"
+
+[help.twitch_createhook]
+help_string = "Create a new Discord Webhook for Twitch notifications."
+description = "Creates a Webhook with the given name that can be used to post live notifications of specific Twitch channels to the specific Discord text channel the Webhook is bound to."
+usage = "<channel mention> <hook name>"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-createhook-channel_mention-hook-name"
+
+[help.twitch_deletehook]
+help_string = "Delete an existing Discord Webhook for Twitch notifications."
+description = "Deletes a Webhook used for Twitch notifications. The name provided does not need to include the Twitch Webhook prefix, but it does have to be a Webhook used for Twitch notifications. Any channel that was bound to the given Webhook will no longer have it's live notifications posted to that Discord channel."
+usage = "<hook name>"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-deletehook-hook-name"
+
+[help.twitch_add]
+help_string = "Adds a Twitch channel to be tracked."
+description = "This will track the given Twitch channel and post its updates to the given discord Webhook. A channel can be bound to many Discord Webhooks. If a custom message is given, it will be used in the live notification and must be surrounded by double quotes."
+usage = "<channel name | channel url> <hook name> [optional: custom message]"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-add-channel-name--channel-url--hook name-optional-custom-message"
+
+[help.twitch_remove]
+help_string = "Stops tracking a Twitch channel."
+description = "This will stop posting updates for the given Twitch channel in the given Webhook's text channel. If the Twitch channel is tracked in other channels, the notifications will still be posted there."
+usage = "<channel name | channel url> <hook name>"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-remove-twitch-handle-hook-name"
+
+[help.twitch_list]
+help_string = "Shows a list of the current Discord Webhooks and their tracked channels."
+description = "To only see one Webhooks channels, specify the Webhook name in the command."
+usage = "[optional: hook name]"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-list-optional-hook-name"
+
+[help.twitch_webhooks]
+help_string = "Get a list of the current Discord Webhooks for Twitch."
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-webhooks"
+
+[help.twitch_setmessage]
+help_string = "Sets the custom message for a Twitch channel."
+description = "This will set the custom live message for a Twitch channel for a specific Webhook. If the custom message is left empty, the custom message is removed from the live notification."
+usage = "<channel name> <hook name> [optional: custom message]"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-setmessage-twitch-handle-hook-name-optional-custom-message"
+
+[help.twitch_getmessage]
+help_string = "Get the custom message(s) of a Twitch channel."
+description = "If no hook name is specified, it will return a list of all the custom messages for all the Webhooks the channel is tracked in. Otherwise it will return just the message for the given Webhook."
+usage = "<channel name> [optional: hook name]"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-getmessage-twitch-handle-optional-hook-name"
+
+[help.twitch_preview]
+help_string = "Preview the live notification for a Twitch channel."
+description = "See what a notification will look like in a given Discord Webhook for the given Twitch channel."
+usage = "<channel name> <hook name>"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-preview-twitch-handle-hook-name"
+
 [logging]
 channel_set = "Logging channel has been set to <#{channel_id!s}>"
 channel_set_already = "Logging channel already set to this channel"
@@ -11,6 +503,7 @@ channel_get = "Logging channel is set to <#{channel_id!s}>"
 channel_get_notfound = "Logging channel has not been set"
 
 channel_removed = "Log channel has been removed"
+channel_removed_log = "{author_mention} has set removed the logging channel"
 
 [admin]
 channel_cleared = "{author_mention} has cleared {message_amount} messages from {author_mention}"
@@ -25,7 +518,7 @@ default_role_missing = "Default role(s) have not been set"
 default_roles_set = "Default role(s) are now set to {roles}"
 default_roles_set_empty = "No roles were passed, please review your usage"
 default_roles_set_error = "Error occurred during this operation, please check that you have formatted these inputs correctly"
-default_role_set_log = "{author_mention} has set the default role(s) to: {roles}"
+default_roles_set_log = "{author_mention} has set the default role(s) to: {roles}"
 
 default_role_get = "Default role(s) are set to {role_ids}"
 
@@ -123,12 +616,12 @@ reserve_emoji = ":x: Sorry, the emoji `{emoji}` cannot be used as it is reserved
 default_settings_set = "✅ Default pingable settings have been applied"
 
 [voicemaster]
-success_slave_locked = "Your VM slave has been locked 🔒"
-success_slave_unlocked = "Your VM slave has been unlocked 🔓"
-success_vm_masters_cleared = "Cleared all VM masters from this server"
-success_vm_set = "This VC has now been set as a VM master"
-success_vm_slaves_cleared = "Cleared all VM slaves from this server"
-success_vm_unset = "This VC is no longer a VM master"
+success_slave_locked = "Your VM child has been locked 🔒"
+success_slave_unlocked = "Your VM child has been unlocked 🔓"
+success_vm_masters_cleared = "Cleared all VM parents from this server"
+success_vm_set = "This VC has now been set as a VM parent"
+success_vm_slaves_cleared = "Cleared all VM children from this server"
+success_vm_unset = "This VC is no longer a VM parent"
 
 show_current_vcs = "Current VM master VCs in this server:\n{master_vms}"
 
@@ -144,6 +637,7 @@ error_not_in_slave = "You are not currently in a VM slave"
 error_not_owned = "You are not the owner of this VM slave"
 error_not_vm = "This VC is not currently a VM master"
 
+log_vm_master_added = "{author} has made {channel} - {channel_id} a VM master VC"
 log_vm_master_removed = "{mention} has removed {channel_name} - {channel_id} from VM master VC"
 log_vm_masters_cleared = "{mention} has removed all VM masters"
 log_vm_slaves_cleared = "{mention} has removed all VM slaves"

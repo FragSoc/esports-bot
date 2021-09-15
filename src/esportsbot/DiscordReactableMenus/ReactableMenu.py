@@ -11,6 +11,9 @@ DISABLED_STRING = "(Currently Disabled)"
 
 
 class ReactableMenu:
+    """
+    The base class for all ReactionMenus.
+    """
     def __init__(self, add_func=None, remove_func=None, show_ids=True, auto_enable=False, **kwargs):
         self.react_add_func = add_func
         self.react_remove_func = remove_func

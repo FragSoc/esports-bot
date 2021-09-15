@@ -28,6 +28,9 @@ CANCEL_DESC = "Cancel"
 
 
 class RoleReactMenu(ReactableMenu):
+    """
+    The base class for all Role giving reaction menus.
+    """
     @classmethod
     async def from_dict(cls, bot, data) -> ReactableMenu:
         kwargs = await super().load_dict(bot, data)
@@ -104,6 +107,9 @@ class RoleReactMenu(ReactableMenu):
 
 
 class PollReactMenu(ReactableMenu):
+    """
+    The base class for all reaction menus that count the number of reactions in a reactable menu.
+    """
     def __init__(self, **kwargs):
         if kwargs.get("title") is None:
             kwargs["title"] = DEFAULT_PING_TITLE
@@ -240,7 +246,6 @@ class PollReactMenu(ReactableMenu):
         return False
 
     async def react_add_func(self, payload: RawReactionActionEvent) -> bool:
-        triggering_member = payload.member
         guild_from_react = payload.member.guild
         triggering_emoji = payload.emoji
 
@@ -254,6 +259,9 @@ class PollReactMenu(ReactableMenu):
 
 
 class ActionConfirmationMenu(ReactableMenu):
+    """
+    The reaction menu for confirming or cancelling any given action.
+    """
     def __init__(self, **kwargs):
         if not kwargs.get("use_inline"):
             kwargs["use_inline"] = True

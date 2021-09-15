@@ -1,7 +1,7 @@
-from esportsbot import lib
+from esportsbot.lib import client, exceptions
 
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.models import Guild_info
+from esportsbot.models import GuildInfo
 
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 from discord.ext.commands.context import Context
@@ -11,7 +11,7 @@ import discord
 from datetime import datetime
 
 # EsportsBot client instance
-client = lib.client.instance()
+client = client.instance()
 
 
 @client.event
@@ -27,15 +27,23 @@ async def on_ready():
 
 @client.event
 async def on_guild_join(guild):
-    exists = DBGatewayActions().get(Guild_info, guild_id=guild.id)
+    """
+    When the bot joins a new server, initialise the DB entry for that guild in the GuildInfo table in the DB.
+    :param guild: The server the bot just joined.
+    """
+    exists = DBGatewayActions().get(GuildInfo, guild_id=guild.id)
     if not exists:
-        db_item = Guild_info(guild_id=guild.id)
+        db_item = GuildInfo(guild_id=guild.id)
         DBGatewayActions().create(db_item)
 
 
 @client.event
 async def on_guild_remove(guild):
-    guild_from_db = DBGatewayActions().get(Guild_info, guild_id=guild.id)
+    """
+    When the bot leaves a server, remove the data in the GuildInfo table in the DB.
+    :param guild: The server the bot just left.
+    """
+    guild_from_db = DBGatewayActions().get(GuildInfo, guild_id=guild.id)
     if guild_from_db:
         DBGatewayActions().delete(guild_from_db)
         print(client.STRINGS["guild_leave"].format(guild_name=guild.name))
@@ -65,27 +73,43 @@ async def on_command_error(ctx: Context, exception: Exception):
         except NotFound:
             raise ValueError("Invalid unknownCommandEmoji: " + client.unknown_command_emoji.discord_emoji)
     else:
-        sourceStr = str(ctx.message.id)
+        source_str = str(ctx.message.id)
         try:
-            sourceStr += "/" + ctx.channel.name + "#" + str(ctx.channel.id) \
+            source_str += "/" + ctx.channel.name + "#" + str(ctx.channel.id) \
                 + "/" + ctx.guild.name + "#" + str(ctx.guild.id)
+            await client.admin_log(
+                responsible_user=ctx.author,
+                guild_id=ctx.guild.id,
+                actions={
+                    "command": ctx.message,
+                    "Error Name": exception.__class__.__name__,
+                    "Error Message": str(exception)
+                },
+                colour=discord.Colour.red()
+            )
         except AttributeError:
-            sourceStr += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
+            source_str += "/DM@" + ctx.author.name + "#" + str(ctx.author.id)
         print(
             datetime.now().strftime("%m/%d/%Y %H:%M:%S - Caught " + type(exception).__name__ + " '") + str(exception)
-            + "' from message " + sourceStr
+            + "' from message " + source_str
         )
-        lib.exceptions.print_exception_trace(exception)
+        exceptions.print_exception_trace(exception)
 
 
 @client.event
 async def on_message(message):
+    """
+    When a message is sent, and it is not from a bot, check if the message was a command and if it was, execute the command.
+    :param message: The message that was sent.
+    """
     if not message.author.bot:
         await client.process_commands(message)
 
 
 def launch():
-
+    """
+    Load all the enabled cogs, and start the bot.
+    """
     if os.getenv("ENABLE_MUSIC", "FALSE").lower() == "true":
         client.load_extension("esportsbot.cogs.MusicCog")
 
