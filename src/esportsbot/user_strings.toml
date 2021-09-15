@@ -616,12 +616,12 @@ reserve_emoji = ":x: Sorry, the emoji `{emoji}` cannot be used as it is reserved
 default_settings_set = "✅ Default pingable settings have been applied"
 
 [voicemaster]
-success_slave_locked = "Your VM slave has been locked 🔒"
-success_slave_unlocked = "Your VM slave has been unlocked 🔓"
-success_vm_masters_cleared = "Cleared all VM masters from this server"
-success_vm_set = "This VC has now been set as a VM master"
-success_vm_slaves_cleared = "Cleared all VM slaves from this server"
-success_vm_unset = "This VC is no longer a VM master"
+success_slave_locked = "Your VM child has been locked 🔒"
+success_slave_unlocked = "Your VM child has been unlocked 🔓"
+success_vm_masters_cleared = "Cleared all VM parents from this server"
+success_vm_set = "This VC has now been set as a VM parent"
+success_vm_slaves_cleared = "Cleared all VM children from this server"
+success_vm_unset = "This VC is no longer a VM parent"
 
 show_current_vcs = "Current VM master VCs in this server:\n{master_vms}"
 
@@ -637,6 +637,7 @@ error_not_in_slave = "You are not currently in a VM slave"
 error_not_owned = "You are not the owner of this VM slave"
 error_not_vm = "This VC is not currently a VM master"
 
+log_vm_master_added = "{author} has made {channel} - {channel_id} a VM master VC"
 log_vm_master_removed = "{mention} has removed {channel_name} - {channel_id} from VM master VC"
 log_vm_masters_cleared = "{mention} has removed all VM masters"
 log_vm_slaves_cleared = "{mention} has removed all VM slaves"

@@ -94,9 +94,11 @@ class VoicemasterCog(commands.Cog):
                     {
                         "Cog":
                         "VoiceMaster",
-                        "Message":
-                        f"{ctx.author.mention} has made {new_vm_master_channel.name} - {new_vm_master_channel.id} "
-                        f"a VM master VC"
+                        "Message": self.STRINGS["log_vm_master_added"].format(
+                            author=ctx.author.mention,
+                            channel=new_vm_master_channel.name,
+                            channel_id=new_vm_master_channel.id
+                        )
                     },
                 )
             elif is_a_master:
