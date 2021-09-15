@@ -31,9 +31,11 @@ class VoicemasterCog(commands.Cog):
         """
         if not member.guild.me.guild_permissions.move_members:
             await self.bot.admin_log(
-                None,
-                {"Message": "I need the permission `move members` in this guild to be able to perform Voicemaster"},
-                guild_id=member.guild.id
+                guild_id=member.guild.id,
+                actions={
+                    "Cog": self.__class__.__name__,
+                    "Message": "I need the permission `move members` in this guild to be able to perform Voicemaster"
+                }
             )
             return
 
@@ -90,16 +92,17 @@ class VoicemasterCog(commands.Cog):
                 await ctx.channel.send("This VC has now been set as a VM master")
                 new_vm_master_channel = self.bot.get_channel(int(given_channel_id))
                 await self.bot.admin_log(
-                    ctx.message,
-                    {
-                        "Cog":
-                        "VoiceMaster",
+                    responsible_user=ctx.author,
+                    guild_id=ctx.guild.id,
+                    actions={
+                        "Cog": self.__class__.__name__,
+                        "command": ctx.message,
                         "Message": self.STRINGS["log_vm_master_added"].format(
                             author=ctx.author.mention,
                             channel=new_vm_master_channel.name,
                             channel_id=new_vm_master_channel.id
                         )
-                    },
+                    }
                 )
             elif is_a_master:
                 # This already exists as a master
@@ -154,17 +157,18 @@ class VoicemasterCog(commands.Cog):
                 await ctx.channel.send(self.STRINGS['success_vm_unset'])
                 removed_vm_master = self.bot.get_channel(given_channel_id)
                 await self.bot.admin_log(
-                    ctx.message,
-                    {
-                        "Cog":
-                        "VoiceMaster",
+                    responsible_user=ctx.author,
+                    guild_id=ctx.guild.id,
+                    actions={
+                        "Cog": self.__class__.__name__,
+                        "command": ctx.message,
                         "Message":
                         self.STRINGS['log_vm_master_removed'].format(
                             mention=ctx.author.guild.id,
                             channel_name=removed_vm_master.name,
                             channel_id=removed_vm_master.id
                         )
-                    },
+                    }
                 )
             else:
                 await ctx.channel.send(self.STRINGS['error_not_vm'])
@@ -183,11 +187,13 @@ class VoicemasterCog(commands.Cog):
             DBGatewayActions().delete(vm_master)
         await ctx.channel.send(self.STRINGS['success_vm_masters_cleared'])
         await self.bot.admin_log(
-            ctx.message,
-            {
-                "Cog": str(type(self)),
+            responsible_user=ctx.author,
+            guild_id=ctx.guild.id,
+            actions={
+                "Cog": self.__class__.__name__,
+                "command": ctx.message,
                 "Message": self.STRINGS['log_vm_masters_cleared'].format(mention=ctx.author.mention)
-            },
+            }
         )
 
     @commands.command(name="removeallchildren")
@@ -205,11 +211,13 @@ class VoicemasterCog(commands.Cog):
             DBGatewayActions().delete(vm_slave)
         await ctx.channel.send(self.STRINGS['success_vm_slaves_cleared'])
         await self.bot.admin_log(
-            ctx.message,
-            {
-                "Cog": str(type(self)),
+            responsible_user=ctx.author,
+            guild_id=ctx.guild.id,
+            actions={
+                "Cog": self.__class__.__name__,
+                "command": ctx.message,
                 "Message": self.STRINGS['log_vm_slaves_cleared'].format(mention=ctx.author.mention)
-            },
+            }
         )
 
     @commands.command(name="lockvm", aliases=["lock"])
