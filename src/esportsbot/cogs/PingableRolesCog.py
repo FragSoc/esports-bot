@@ -816,14 +816,25 @@ class PingableRolesCog(commands.Cog):
         :param role_name: The name of the role to create .
         :param poll_length: The number of seconds to run the poll for .
         """
+        guild_settings = self.guild_settings.get(context.guild.id)
+
+        if not guild_settings:
+            await context.send(
+                self.user_strings["needs_initialising"].format(
+                    prefix=self.bot.command_prefix,
+                    command="pingme settings default-settings"
+                )
+            )
+            return
+
         if self.role_exists(role_name):
             await context.reply(self.user_strings["already_exists"].format(role=role_name))
             return
 
         if poll_length is None:
-            poll_length = self.guild_settings.get(context.guild.id).get("poll_length")
+            poll_length = guild_settings.get("poll_length")
 
-        vote_threshold = self.guild_settings.get(context.guild.id).get("poll_threshold")
+        vote_threshold = guild_settings.get("poll_threshold")
 
         role_poll = PingableVoteMenu(
             pingable_name=role_name,
