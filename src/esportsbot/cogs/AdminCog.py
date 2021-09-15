@@ -7,6 +7,12 @@ devs = os.getenv("DEV_IDS").replace(" ", "").split(",")
 
 
 class AdminCog(commands.Cog):
+    """
+    Adds a few commands useful for admin operations.
+
+    This module makes use of a custom command check for if the user is a develop of the bot. Dev users are defined in the
+    *.env file.
+    """
     def __init__(self, bot):
         self.bot = bot
         self.STRINGS = bot.STRINGS["admin"]
@@ -20,6 +26,10 @@ class AdminCog(commands.Cog):
             self.bot_version = self.STRINGS['no_version']
 
     def is_dev(ctx):
+        """
+        The command check used to check if a user executing the command is a developer of the bot.
+        :return:
+        """
         if not devs:
             return ctx.author.guild_permissions.administrator
         return str(ctx.author.id) in devs
@@ -37,8 +47,14 @@ class AdminCog(commands.Cog):
     )
     @commands.has_permissions(manage_messages=True)
     async def clear_messages(self, ctx, amount=5):
+        """
+        Clears the given number of messages from the current channel. If no number is given, this command will delete 5
+        messages.
+        :param ctx: The context of the command.
+        :param amount: The number of messages to delete.
+        """
         await ctx.channel.purge(limit=int(amount) + 1)
-        await self.bot.adminLog(
+        await self.bot.admin_log(
             ctx.message,
             {
                 "Cog": str(type(self)),
@@ -48,8 +64,12 @@ class AdminCog(commands.Cog):
         )
 
     @commands.check(is_dev)
-    @commands.command(name="version", help="Print the bot's version string", hidden=True)
+    @commands.command(name="version", hidden=True)
     async def print_version(self, ctx):
+        """
+        Get the version the bot is running on.
+        :param ctx: The context of the command.
+        """
         await ctx.channel.send(self.bot_version)
 
     @commands.command(
@@ -60,11 +80,20 @@ class AdminCog(commands.Cog):
     )
     @commands.has_permissions(manage_messages=True)
     async def members(self, ctx):
+        """
+        Get the number of members in the current server.
+        :param ctx: The context of the command.
+        """
         await ctx.channel.send(self.STRINGS['members'].format(member_count=ctx.guild.member_count))
 
     @commands.check(is_dev)
     @commands.command(name="remove-cog", hidden=True)
     async def remove_cog(self, context: commands.Context, cog_name: str):
+        """
+        Unloads a cog. This removes all commands/functionality associated with that cog until the bot is restarted.
+        :param context: The context of the command.
+        :param cog_name: The name of the cog to disable.
+        """
         if "AdminCog" in cog_name:
             return
         try:
@@ -82,6 +111,12 @@ class AdminCog(commands.Cog):
     @commands.check(is_dev)
     @commands.command(name="add-cog", hidden=True)
     async def add_cog(self, context: commands.Context, cog_name: str):
+        """
+        Loads a cog. This adds a cogs commands/functionality to the bot dynamically. This lasts until the bot is restarted.
+        If a cog makes use of `on_ready` it will not run, which can cause issues for those that load data in that method.
+        :param context: The context of the command.
+        :param cog_name: The name of the cog to enable.
+        """
         if "AdminCog" in cog_name:
             return
         try:
@@ -99,6 +134,12 @@ class AdminCog(commands.Cog):
     @commands.check(is_dev)
     @commands.command(name="reload-cog", hidden=True)
     async def reload_cog(self, context: commands.Context, cog_name: str):
+        """
+        Reload a cog. Firsts unloads, then loads the cog. If a cog makes use of `on_ready` it will not run, which can cause
+        issues for those that load data in that method.
+        :param context: The context of the command.
+        :param cog_name: The name of the command to reload.
+        """
         try:
             package = "esportsbot.cogs."
             if package not in cog_name:

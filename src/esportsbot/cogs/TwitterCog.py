@@ -8,7 +8,7 @@ from discord import Webhook, AsyncWebhookAdapter
 from discord.errors import Forbidden
 
 from esportsbot.db_gateway import DBGatewayActions
-from esportsbot.lib.stringTyping import strIsInt, strIsChannelMention
+from esportsbot.lib.stringTyping import str_is_int, str_is_channel_mention
 import aiohttp
 import asyncio
 import logging
@@ -16,7 +16,7 @@ from collections import defaultdict
 
 import os
 
-from esportsbot.models import Twitter_info
+from esportsbot.models import TwitterInfo
 
 bot_hook_prefix = "TwitterHook-"
 CONSUMER_KEY = os.getenv("TWITTER_CONSUMER_KEY")
@@ -27,6 +27,9 @@ ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
 
 class TwitterWebhook(tweepy.StreamListener):
+    """
+    Captures events from the Twitter API.
+    """
     def __init__(self, api, loop=None):
         super().__init__(api)
         self.loop = loop if loop is not None else asyncio.get_event_loop()
@@ -125,7 +128,7 @@ class TwitterWebhook(tweepy.StreamListener):
         :return: Whether a Webhook with the given ID was removed from the list of Webhooks.
         :rtype: bool
         """
-        if not strIsInt(hook_id):
+        if not str_is_int(hook_id):
             return False
 
         hook_id = int(hook_id)
@@ -244,6 +247,12 @@ class TwitterWebhook(tweepy.StreamListener):
 
 
 class TwitterCog(commands.Cog):
+    """
+    Enables forwarding tweets when they are tweeted to a discord channel for specific Twitter accounts.
+
+    This module implements commands that can be used to manage which Twitter accounts are listened to, as well as to manage
+    the discord webhooks that are used to post the updates to.
+    """
     def __init__(self, bot, loop=None):
         self._bot = bot
         self.logger = logging.getLogger(__name__)
@@ -304,7 +313,7 @@ class TwitterCog(commands.Cog):
         :rtype: dict
         """
 
-        db_data = self._db.list(Twitter_info)
+        db_data = self._db.list(TwitterInfo)
         guild_info = defaultdict(set)
         for item in db_data:
             guild_info[str(item.twitter_user_id)].add(item.guild_id)
@@ -312,6 +321,10 @@ class TwitterCog(commands.Cog):
 
     @commands.group(name="twitter", invoke_without_command=True)
     async def command_group(self, context: commands.Context):
+        """
+        The command group used to group all the commands used in the TwitterCog.
+        :param context: The context of the command.
+        """
         pass
 
     @command_group.command(name="hook", alias=["addtwitterhook", "create-hook"])
@@ -409,7 +422,7 @@ class TwitterCog(commands.Cog):
         :rtype: Union[Union[discord.TextChannel, discord.VoiceChannel], None]
         """
 
-        if not strIsChannelMention(c_id):
+        if not str_is_channel_mention(c_id):
             # The string was not a mentioned channel.
             return None
 
@@ -518,7 +531,7 @@ class TwitterCog(commands.Cog):
                 asyncio.create_task(self.refresh_filter(current_following))
 
             if tracked_guilds is None or ctx.guild.id not in tracked_guilds:
-                db_item = Twitter_info(guild_id=ctx.guild.id, twitter_user_id=user_id, twitter_handle=account)
+                db_item = TwitterInfo(guild_id=ctx.guild.id, twitter_user_id=user_id, twitter_handle=account)
                 self._db.create(db_item)
 
             self.logger.info("Added %s to accounts tracked", account)
@@ -568,14 +581,14 @@ class TwitterCog(commands.Cog):
                 # The account is no longer tracked in any guild, can be removed from the filter.
                 current_filter.remove(user_id)
                 asyncio.create_task(self.refresh_filter(current_filter))
-            db_item = self._db.get(Twitter_info, guild_id=ctx.guild.id, twitter_user_id=user_id)
+            db_item = self._db.get(TwitterInfo, guild_id=ctx.guild.id, twitter_user_id=user_id)
             self._db.delete(db_item)
             self.logger.info("Removed %s from being tracked in %s(%s)", account, ctx.guild.name, ctx.guild.id)
             await ctx.send(self.user_strings["account_removed"].format(account=account))
 
         except tweepy.TweepError as e:
             self.logger.warning("Unable to remove %s account due to the following error: %s", account, e)
-            await ctx.send(self.user_strings["account_missing_error".format(account=account, operation="remove")])
+            await ctx.send(self.user_strings["account_missing_error"].format(account=account, operation="remove"))
             return False
 
     @command_group.command(name="list", alias=["accounts", "get-all"])
@@ -587,7 +600,7 @@ class TwitterCog(commands.Cog):
         :return: None
         :rtype: NoneType
         """
-        handles = self._db.list(Twitter_info, guild_id=ctx.guild.id)
+        handles = self._db.list(TwitterInfo, guild_id=ctx.guild.id)
         if not handles:
             await ctx.send(self.user_strings["accounts_empty"])
             return

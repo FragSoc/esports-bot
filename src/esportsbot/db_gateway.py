@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import create_database, database_exists
 
-from esportsbot.models import *
+from esportsbot.models import base
 
 load_dotenv(dotenv_path=os.path.join("..", "secrets.env"))
 
@@ -24,11 +24,12 @@ base.metadata.create_all(db)
 print("[DATABASE] - Models created")
 
 
-class DBGatewayActions():
+class DBGatewayActions:
     """
     Base class for handling database queries
     """
-    def list(self, db_model, **args):
+    @staticmethod
+    def list(db_model, **args):
         """
         Method to return a list of results that suit the model criteria
 
@@ -43,9 +44,10 @@ class DBGatewayActions():
             query = session.query(db_model).filter_by(**args).all()
             return query
         except Exception as err:
-            raise Exception(f"Error occured when using list - {err}")
+            raise Exception(f"Error occurred when using list - {err}")
 
-    def get(self, db_model, **args):
+    @staticmethod
+    def get(db_model, **args):
         """
         Method to return a record that suits the model criteria
 
@@ -60,9 +62,10 @@ class DBGatewayActions():
             query = session.query(db_model).filter_by(**args).all()
             return query[0] if query != [] else query
         except Exception as err:
-            raise Exception(f"Error occured when using get - {err}")
+            raise Exception(f"Error occurred when using get - {err}")
 
-    def update(self, model):
+    @staticmethod
+    def update(model):
         """
         Method for updating a record in the database
 
@@ -73,9 +76,10 @@ class DBGatewayActions():
             session.add(model)
             session.commit()
         except Exception as err:
-            raise Exception(f"Error occured when using update - {err}")
+            raise Exception(f"Error occurred when using update - {err}")
 
-    def delete(self, model):
+    @staticmethod
+    def delete(model):
         """
         Method for deleting a record from the database
 
@@ -86,9 +90,10 @@ class DBGatewayActions():
             session.delete(model)
             session.commit()
         except Exception as err:
-            raise Exception(f"Error occured when using delete - {err}")
+            raise Exception(f"Error occurred when using delete - {err}")
 
-    def create(self, model):
+    @staticmethod
+    def create(model):
         """
         Method for adding a record to the database
 
@@ -99,4 +104,4 @@ class DBGatewayActions():
             session.add(model)
             session.commit()
         except Exception as err:
-            raise Exception(f"Error occured when using create - {err}")
+            raise Exception(f"Error occurred when using create - {err}")

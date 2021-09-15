@@ -6,6 +6,10 @@ from esportsbot.DiscordReactableMenus.ReactableMenu import ReactableMenu
 
 
 class CustomHelpCommand(HelpCommand):
+    """
+    A Custom Help Command implementation that uses reactable menus so that each Cog has its own page and improves readability
+    of the help commands.
+    """
     def __init__(self, **options):
         self.help_strings = options.pop("help_strings")
         super().__init__(**options)
@@ -138,7 +142,7 @@ class CustomHelpCommand(HelpCommand):
         embed = Embed(title=title, description=description, colour=Colour.random())
         if help_dict and help_dict.get("readme_url"):
             embed.__setattr__("url", help_dict.get("readme_url"))
-        embed.add_field(name=f"Usage:", value=usage, inline=False)
+        embed.add_field(name="Usage:", value=usage, inline=False)
         embed.add_field(name="​", value=self.help_strings["command_footer"])
         embed.set_footer(text=self.help_strings["embed_footer"])
 
@@ -183,6 +187,9 @@ class CustomHelpCommand(HelpCommand):
 
 
 class HelpMenu(ReactableMenu):
+    """
+    The Reactable Menu used to implement the custom help command.
+    """
     def __init__(self, **kwargs):
         if kwargs.get("add_func") is None:
             kwargs["add_func"] = self.react_add_func
@@ -234,4 +241,8 @@ class HelpMenu(ReactableMenu):
             await self.message.delete()
 
     def generate_embed(self) -> Embed:
+        """
+        Generate the embed that is sent to the channel based on the current page index.
+        :return: A discord Embed object.
+        """
         return self.embeds[self.current_index]
