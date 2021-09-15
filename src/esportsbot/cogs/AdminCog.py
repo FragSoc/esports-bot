@@ -55,11 +55,11 @@ class AdminCog(commands.Cog):
         """
         await ctx.channel.purge(limit=int(amount) + 1)
         await self.bot.admin_log(
-            ctx.message,
-            {
-                "Cog": str(type(self)),
-                "Message": self.STRINGS['channel_cleared'].format(author_mention=ctx.author.mention,
-                                                                  message_amount=amount)
+            responsible_user=ctx.author,
+            guild_id=ctx.guild.id,
+            actions={
+                "command": ctx.message,
+                "Message": self.STRINGS["channel_cleared"].format(author_mention=ctx.author.mention, message_amount=amount)
             }
         )
 

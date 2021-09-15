@@ -234,11 +234,13 @@ class VoicemasterCog(commands.Cog):
                     await ctx.author.voice.channel.edit(user_limit=len(ctx.author.voice.channel.members))
                     await ctx.channel.send(self.STRINGS['success_slave_locked'])
                     await self.bot.admin_log(
-                        ctx.message,
-                        {
-                            "Cog": str(type(self)),
-                            "Message": self.STRINGS['log_slave_locked'].format(mention=ctx.author.mention)
-                        },
+                        responsible_user=ctx.author,
+                        guild_id=ctx.guild.id,
+                        actions={
+                            "Cog": self.__class__.__name__,
+                            "command": ctx.message,
+                            "Message": self.STRINGS["log_slave_locked"].format(mention=ctx.author.mention)
+                        }
                     )
                 else:
                     await ctx.channel.send(self.STRINGS['error_already_locked'])
@@ -270,11 +272,13 @@ class VoicemasterCog(commands.Cog):
                     DBGatewayActions().update(in_vm_slave)
                     await ctx.author.voice.channel.edit(user_limit=0)
                     await self.bot.admin_log(
-                        ctx.message,
-                        {
-                            "Cog": str(type(self)),
-                            "Message": self.STRINGS['log_slave_unlocked'].format(mention=ctx.author.mention)
-                        },
+                        responsible_user=ctx.author,
+                        guild_id=ctx.guild.id,
+                        actions={
+                            "Cog": self.__class__.__name__,
+                            "command": ctx.message,
+                            "Message": self.STRINGS["log_slave_unlocked"].format(mention=ctx.author.mention)
+                        }
                     )
                 else:
                     await ctx.channel.send(self.STRINGS['error_already_unlocked'])
