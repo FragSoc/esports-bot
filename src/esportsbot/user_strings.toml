@@ -230,6 +230,11 @@ help_string = "Unlocks your current Voicemaster voice channel."
 description = "If you are in a Voicemaster child channel and if you own the channel, it will remove the user-count limit."
 readme_url = "https://github.com/FragSoc/esports-bot#unlockvm"
 
+[help.renamevm]
+help_string = "Renames your current Voicemaster voice channel."
+description = "If you are in a Voicemaster child channel and if you own the channel, it will change the name to the name given. If no name is given, it gets reset to the default name."
+readme_url = "https://github.com/FragSoc/esports-bot#renamevm"
+
 [help.clear]
 help_string = "Deletes the given number of messages. Defaults to 5 messages."
 usage = "<number of messages>"

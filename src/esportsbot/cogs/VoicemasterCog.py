@@ -301,6 +301,11 @@ class VoicemasterCog(commands.Cog):
 
     @commands.command(name="renamevm", aliases=["rename"])
     async def renamevm(self, ctx):
+        """
+        Sets the name of the voice channel to the string given after the command. If no string is given, the name is set back
+        to the default name of a voicemaster slave channel.
+        :param ctx: The context of the command.
+        """
         if not ctx.author.voice:
             await ctx.channel.send(self.STRINGS['error_not_in_slave'])
             return
