@@ -96,9 +96,12 @@ class VoicemasterCog(commands.Cog):
                     responsible_user=ctx.author,
                     guild_id=ctx.guild.id,
                     actions={
-                        "Cog": self.__class__.__name__,
-                        "command": ctx.message,
-                        "Message": self.STRINGS["log_vm_master_added"].format(
+                        "Cog":
+                        self.__class__.__name__,
+                        "command":
+                        ctx.message,
+                        "Message":
+                        self.STRINGS["log_vm_master_added"].format(
                             author=ctx.author.mention,
                             channel=new_vm_master_channel.name,
                             channel_id=new_vm_master_channel.id
@@ -161,8 +164,10 @@ class VoicemasterCog(commands.Cog):
                     responsible_user=ctx.author,
                     guild_id=ctx.guild.id,
                     actions={
-                        "Cog": self.__class__.__name__,
-                        "command": ctx.message,
+                        "Cog":
+                        self.__class__.__name__,
+                        "command":
+                        ctx.message,
                         "Message":
                         self.STRINGS['log_vm_master_removed'].format(
                             mention=ctx.author.guild.id,
@@ -333,7 +338,8 @@ class VoicemasterCog(commands.Cog):
                     actions={
                         "Cog": self.__class__.__name__,
                         "command": ctx.message,
-                        "Message": self.STRINGS["log_slave_renamed"].format(mention=ctx.author.mention, new_name=set_name)
+                        "Message": self.STRINGS["log_slave_renamed"].format(mention=ctx.author.mention,
+                                                                            new_name=set_name)
                     }
                 )
                 DBGatewayActions().update(in_vm_slave)

@@ -166,7 +166,7 @@ class VotingCog(commands.Cog):
         await voting_menu.update_message()
         self.add_or_update_db(voting_menu.id)
 
-    @command_group.command(name="delete-poll",  aliases=["delete", "del"])
+    @command_group.command(name="delete-poll", aliases=["delete", "del"])
     async def delete_poll(self, context: commands.Context, menu_id: int):
         """
         Delete a poll .

@@ -59,7 +59,8 @@ class AdminCog(commands.Cog):
             guild_id=ctx.guild.id,
             actions={
                 "command": ctx.message,
-                "Message": self.STRINGS["channel_cleared"].format(author_mention=ctx.author.mention, message_amount=amount)
+                "Message": self.STRINGS["channel_cleared"].format(author_mention=ctx.author.mention,
+                                                                  message_amount=amount)
             }
         )
 
@@ -178,8 +179,10 @@ class AdminCog(commands.Cog):
                 continue
 
         response_string = str(channel_names).replace("[", "").replace("]", "").strip()
-        await context.send(f"Successfully set the permissions for `{user.display_name}#{user.discriminator}` "
-                           f"in the following channels/categories: `{response_string}`")
+        await context.send(
+            f"Successfully set the permissions for `{user.display_name}#{user.discriminator}` "
+            f"in the following channels/categories: `{response_string}`"
+        )
 
     async def remove_user_permissions(self, guild_channel):
         """

@@ -68,9 +68,13 @@ class DefaultRoleCog(commands.Cog):
             await self.bot.admin_log(
                 guild_id=member.guild.id,
                 actions={
-                    "Cog": self.__class__.__name__,
-                    "Action": self.STRINGS["default_role_join"].format(member_name=member.mention,
-                                                                       role_ids=" ".join(x.mention for x in apply_roles))
+                    "Cog":
+                    self.__class__.__name__,
+                    "Action":
+                    self.STRINGS["default_role_join"].format(
+                        member_name=member.mention,
+                        role_ids=" ".join(x.mention for x in apply_roles)
+                    )
                 }
             )
         else:
@@ -118,7 +122,8 @@ class DefaultRoleCog(commands.Cog):
                     actions={
                         "Cog": self.__class__.__name__,
                         "command": ctx.message,
-                        "Message": self.STRINGS["default_roles_set_log"].format(author_mention=ctx.author.mention, roles=args)
+                        "Message": self.STRINGS["default_roles_set_log"].format(author_mention=ctx.author.mention,
+                                                                                roles=args)
                     }
                 )
             else:

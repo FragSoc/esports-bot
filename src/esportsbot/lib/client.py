@@ -49,11 +49,15 @@ class EsportsBot(commands.Bot):
         print("[EsportsBot] Shutting down...")
         await self.logout()
 
-    async def admin_log(self,
-                        guild_id: int,
-                        actions: Dict[str, Any],
-                        responsible_user: Union[Member, User] = None,
-                        colour=None):
+    async def admin_log(
+        self,
+        guild_id: int,
+        actions: Dict[str,
+                      Any],
+        responsible_user: Union[Member,
+                                User] = None,
+        colour=None
+    ):
         guild_settings = DBGatewayActions().get(GuildInfo, guild_id=guild_id)
         if not guild_settings or not guild_settings.log_channel_id:
             return
