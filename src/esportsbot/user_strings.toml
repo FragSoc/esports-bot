@@ -643,6 +643,7 @@ log_vm_masters_cleared = "{mention} has removed all VM masters"
 log_vm_slaves_cleared = "{mention} has removed all VM slaves"
 log_slave_locked = "{mention} has locked their VM slave"
 log_slave_unlocked = "{mention} has unlocked their VM slave"
+log_slave_renamed = "{mention} has renamed their VM slave to `{new_name}`"
 
 [twitch]
 generic_error = "There was an error while trying to add `{channel}` as a tracked channel"

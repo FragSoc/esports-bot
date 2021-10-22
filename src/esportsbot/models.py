@@ -97,6 +97,7 @@ class VoicemasterSlave(base):
     channel_id = Column(BigInteger, nullable=False)
     owner_id = Column(BigInteger, nullable=False)
     locked = Column(Boolean, nullable=False)
+    custom_name = Column(Boolean, nullable=False)
 
 
 class TwitchInfo(base):
