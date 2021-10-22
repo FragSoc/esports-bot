@@ -53,7 +53,8 @@ class VoicemasterCog(commands.Cog):
                     DBGatewayActions().delete(vm_slave)
                 elif vm_slave.owner_id == member.id:
                     # It was the owner of the channel that left, transfer ownership.
-                    await before.channel.edit(name=f"{before.channel.members[0].display_name}'s VC")
+                    if not vm_slave.custom_name:
+                        await before.channel.edit(name=f"{before.channel.members[0].display_name}'s VC")
                     vm_slave.owner_id = before.channel.members[0].id
                     DBGatewayActions().update(vm_slave)
 
