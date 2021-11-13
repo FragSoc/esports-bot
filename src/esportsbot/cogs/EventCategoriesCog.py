@@ -533,9 +533,10 @@ class EventCategoriesCog(commands.Cog):
         # When the user forgets to supply required arguments.
         if isinstance(error, commands.MissingRequiredArgument):
             self.logger.warning(f"Unable to perform {context.command.name} as the command lacked sufficient arguments")
+            command_name = context.command.full_parent_name + " " + context.command.name
             await context.reply(
                 self.user_strings["missing_arguments"].format(prefix=self.bot.command_prefix,
-                                                              command=context.command.name)
+                                                              command=command_name)
             )
             return
 
