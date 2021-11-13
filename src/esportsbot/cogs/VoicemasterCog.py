@@ -53,7 +53,8 @@ class VoicemasterCog(commands.Cog):
                     DBGatewayActions().delete(vm_slave)
                 elif vm_slave.owner_id == member.id:
                     # It was the owner of the channel that left, transfer ownership.
-                    await before.channel.edit(name=f"{before.channel.members[0].display_name}'s VC")
+                    if not vm_slave.custom_name:
+                        await before.channel.edit(name=f"{before.channel.members[0].display_name}'s VC")
                     vm_slave.owner_id = before.channel.members[0].id
                     DBGatewayActions().update(vm_slave)
 
@@ -66,7 +67,8 @@ class VoicemasterCog(commands.Cog):
                 guild_id=member.guild.id,
                 channel_id=slave_channel.id,
                 owner_id=member.id,
-                locked=False
+                locked=False,
+                custom_name=False
             )
             DBGatewayActions().create(slave_db_entry)
             await member.move_to(slave_channel)
@@ -95,9 +97,12 @@ class VoicemasterCog(commands.Cog):
                     responsible_user=ctx.author,
                     guild_id=ctx.guild.id,
                     actions={
-                        "Cog": self.__class__.__name__,
-                        "command": ctx.message,
-                        "Message": self.STRINGS["log_vm_master_added"].format(
+                        "Cog":
+                        self.__class__.__name__,
+                        "command":
+                        ctx.message,
+                        "Message":
+                        self.STRINGS["log_vm_master_added"].format(
                             author=ctx.author.mention,
                             channel=new_vm_master_channel.name,
                             channel_id=new_vm_master_channel.id
@@ -160,8 +165,10 @@ class VoicemasterCog(commands.Cog):
                     responsible_user=ctx.author,
                     guild_id=ctx.guild.id,
                     actions={
-                        "Cog": self.__class__.__name__,
-                        "command": ctx.message,
+                        "Cog":
+                        self.__class__.__name__,
+                        "command":
+                        ctx.message,
                         "Message":
                         self.STRINGS['log_vm_master_removed'].format(
                             mention=ctx.author.guild.id,
@@ -281,6 +288,7 @@ class VoicemasterCog(commands.Cog):
                     in_vm_slave.locked = False
                     DBGatewayActions().update(in_vm_slave)
                     await ctx.author.voice.channel.edit(user_limit=0)
+                    await ctx.channel.send(self.STRINGS['success_slave_unlocked'])
                     await self.bot.admin_log(
                         responsible_user=ctx.author,
                         guild_id=ctx.guild.id,
@@ -292,6 +300,50 @@ class VoicemasterCog(commands.Cog):
                     )
                 else:
                     await ctx.channel.send(self.STRINGS['error_already_unlocked'])
+            else:
+                await ctx.channel.send(self.STRINGS['error_not_owned'])
+        else:
+            await ctx.channel.send(self.STRINGS['error_not_in_slave'])
+
+    @commands.command(name="renamevm", aliases=["rename"])
+    async def renamevm(self, ctx):
+        """
+        Sets the name of the voice channel to the string given after the command. If no string is given, the name is set back
+        to the default name of a voicemaster slave channel.
+        :param ctx: The context of the command.
+        """
+        if not ctx.author.voice:
+            await ctx.channel.send(self.STRINGS['error_not_in_slave'])
+            return
+        in_vm_slave = DBGatewayActions().get(
+            VoicemasterSlave,
+            guild_id=ctx.author.guild.id,
+            channel_id=ctx.author.voice.channel.id
+        )
+
+        if in_vm_slave:
+            if in_vm_slave.owner_id == ctx.author.id:
+                command_invoke_string_index = ctx.message.content.index(ctx.invoked_with) + len(ctx.invoked_with)
+                new_name = ctx.message.content[command_invoke_string_index:].strip()
+                if new_name:
+                    await ctx.author.voice.channel.edit(name=new_name)
+                    in_vm_slave.custom_name = True
+                    set_name = new_name
+                else:
+                    await ctx.author.voice.channel.edit(name=f"{ctx.author.display_name}'s VC")
+                    in_vm_slave.custom_name = False
+                    set_name = f"{ctx.author.display_name}'s VC"
+                await self.bot.admin_log(
+                    responsible_user=ctx.author,
+                    guild_id=ctx.guild.id,
+                    actions={
+                        "Cog": self.__class__.__name__,
+                        "command": ctx.message,
+                        "Message": self.STRINGS["log_slave_renamed"].format(mention=ctx.author.mention,
+                                                                            new_name=set_name)
+                    }
+                )
+                DBGatewayActions().update(in_vm_slave)
             else:
                 await ctx.channel.send(self.STRINGS['error_not_owned'])
         else:

@@ -230,6 +230,11 @@ help_string = "Unlocks your current Voicemaster voice channel."
 description = "If you are in a Voicemaster child channel and if you own the channel, it will remove the user-count limit."
 readme_url = "https://github.com/FragSoc/esports-bot#unlockvm"
 
+[help.renamevm]
+help_string = "Renames your current Voicemaster voice channel."
+description = "If you are in a Voicemaster child channel and if you own the channel, it will change the name to the name given. If no name is given, it gets reset to the default name."
+readme_url = "https://github.com/FragSoc/esports-bot#renamevm"
+
 [help.clear]
 help_string = "Deletes the given number of messages. Defaults to 5 messages."
 usage = "<number of messages>"
@@ -643,6 +648,7 @@ log_vm_masters_cleared = "{mention} has removed all VM masters"
 log_vm_slaves_cleared = "{mention} has removed all VM slaves"
 log_slave_locked = "{mention} has locked their VM slave"
 log_slave_unlocked = "{mention} has unlocked their VM slave"
+log_slave_renamed = "{mention} has renamed their VM slave to `{new_name}`"
 
 [twitch]
 generic_error = "There was an error while trying to add `{channel}` as a tracked channel"

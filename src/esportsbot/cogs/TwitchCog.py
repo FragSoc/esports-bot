@@ -456,10 +456,13 @@ class TwitchCog(commands.Cog):
 
         # Setup the TwitchListener to listen for /webhook requests.
         app = TwitchApp([(r"/webhook", TwitchListener)])
-        http_server = HTTPServer(app,
-                                 ssl_options={"certfile": f"{os.getenv('SSL_CERT_FILE')}",
-                                              "keyfile": f"{os.getenv('SSL_KEY_FILE')}"}
-                                 )
+        http_server = HTTPServer(
+            app,
+            ssl_options={
+                "certfile": f"{os.getenv('SSL_CERT_FILE')}",
+                "keyfile": f"{os.getenv('SSL_KEY_FILE')}"
+            }
+        )
         http_server.listen(443)
         return http_server, app
 
@@ -631,7 +634,7 @@ class TwitchCog(commands.Cog):
             embed.add_field(name=item.twitch_handle, value=custom_message, inline=False)
         return embed
 
-    @commands.group(name="twitch",  invoke_without_command=True)
+    @commands.group(name="twitch", invoke_without_command=True)
     async def twitch(self, ctx):
         """
         Empty command, purely used to organise subcommands to be under twitch <command> instead of having to ensure name
@@ -640,7 +643,7 @@ class TwitchCog(commands.Cog):
 
         pass
 
-    @twitch.command(name="createhook", aliases=["newhook",  "makehook", "addhook"])
+    @twitch.command(name="createhook", aliases=["newhook", "makehook", "addhook"])
     @commands.has_permissions(administrator=True)
     async def create_new_hook(self, context, bound_channel: discord.TextChannel, hook_name: str):
         """

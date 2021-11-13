@@ -103,6 +103,9 @@ The list below describes the different "Cogs" of the bot, their associated comma
 
 #### !unlockvm 
 * Unlocks the Voicemaster child you're currently in.
+
+#### !renamevm 
+* Renames your current Voicemaster voice channel.
 </details>
 
 <details>
