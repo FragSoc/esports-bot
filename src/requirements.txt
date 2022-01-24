@@ -6,7 +6,7 @@ python-dotenv
 emoji
 lxml
 google-api-python-client
-youtube-dl
+yt-dlp
 youtube-search-python
 PyNaCl
 aiohttp[speedups]

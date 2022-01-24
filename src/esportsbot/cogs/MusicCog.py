@@ -10,7 +10,7 @@ from random import shuffle
 from urllib.parse import parse_qs, urlparse
 
 import googleapiclient.discovery
-import youtube_dl
+from yt_dlp import YoutubeDL
 from discord import (ClientException, Colour, Embed, FFmpegPCMAudio, PCMVolumeTransformer, TextChannel)
 from discord.ext import commands, tasks
 from esportsbot.db_gateway import DBGatewayActions
@@ -698,7 +698,7 @@ class MusicCog(commands.Cog):
                 "preferredquality": "192",
             }],
         }
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
         return info
 
