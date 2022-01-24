@@ -1,3 +1,4 @@
+import re
 from discord.ext import commands
 from esportsbot.base_functions import (get_whether_in_vm_master, get_whether_in_vm_slave)
 from esportsbot.db_gateway import DBGatewayActions
@@ -15,6 +16,11 @@ class VoicemasterCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.STRINGS = bot.STRINGS['voicemaster']
+        self.banned_words = []
+        with open("esportsbot/banned_words.txt", "r") as f:
+            for line in f.readlines():
+                if not line.startswith("#"):
+                    self.banned_words.append(line.strip())
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -97,15 +103,12 @@ class VoicemasterCog(commands.Cog):
                     responsible_user=ctx.author,
                     guild_id=ctx.guild.id,
                     actions={
-                        "Cog":
-                        self.__class__.__name__,
-                        "command":
-                        ctx.message,
-                        "Message":
-                        self.STRINGS["log_vm_master_added"].format(
-                            author=ctx.author.mention,
-                            channel=new_vm_master_channel.name,
-                            channel_id=new_vm_master_channel.id
+                        "Cog": self.__class__.__name__,
+                        "command": ctx.message,
+                        "Message": self.STRINGS["log_vm_master_added"].format(
+                                author=ctx.author.mention,
+                                channel=new_vm_master_channel.name,
+                                channel_id=new_vm_master_channel.id
                         )
                     }
                 )
@@ -165,16 +168,13 @@ class VoicemasterCog(commands.Cog):
                     responsible_user=ctx.author,
                     guild_id=ctx.guild.id,
                     actions={
-                        "Cog":
-                        self.__class__.__name__,
-                        "command":
-                        ctx.message,
-                        "Message":
-                        self.STRINGS['log_vm_master_removed'].format(
+                        "Cog": self.__class__.__name__,
+                        "command": ctx.message,
+                        "Message": self.STRINGS['log_vm_master_removed'].format(
                             mention=ctx.author.guild.id,
                             channel_name=removed_vm_master.name,
                             channel_id=removed_vm_master.id
-                        )
+                         )
                     }
                 )
             else:
@@ -321,10 +321,25 @@ class VoicemasterCog(commands.Cog):
             channel_id=ctx.author.voice.channel.id
         )
 
+        command_invoke_string_index = ctx.message.content.index(ctx.invoked_with) + len(ctx.invoked_with)
+        new_name = ctx.message.content[command_invoke_string_index:].strip()
+
+        if not self.check_vm_name(new_name):
+            await ctx.channel.send(self.STRINGS['error_bad_vm_name'])
+            await ctx.message.delete()
+            await self.bot.admin_log(
+                responsible_user=ctx.author,
+                guild_id=ctx.guild.id,
+                actions={
+                    "Cog": self.__class__.__name__,
+                    "Message": f"The user {ctx.author.mention} tried to rename a voice channel using banned words.",
+                    "Attempted Rename": f"Hidden for safety: ||{new_name}||"
+                }
+            )
+            return
+
         if in_vm_slave:
             if in_vm_slave.owner_id == ctx.author.id:
-                command_invoke_string_index = ctx.message.content.index(ctx.invoked_with) + len(ctx.invoked_with)
-                new_name = ctx.message.content[command_invoke_string_index:].strip()
                 if new_name:
                     await ctx.author.voice.channel.edit(name=new_name)
                     in_vm_slave.custom_name = True
@@ -348,6 +363,35 @@ class VoicemasterCog(commands.Cog):
                 await ctx.channel.send(self.STRINGS['error_not_owned'])
         else:
             await ctx.channel.send(self.STRINGS['error_not_in_slave'])
+
+    def check_vm_name(self, vm_name):
+        hidden_chars = r"[\s\W​   ﻿]*"
+        removed_hidden = re.sub(hidden_chars, "", vm_name)
+        leet_word = self.simple_leet_translation(removed_hidden)
+        for bad_word in self.banned_words:
+            if bad_word in leet_word or bad_word in removed_hidden:
+                return False
+        return True
+
+    @staticmethod
+    def simple_leet_translation(word):
+        characters = {
+            "a": ["4", "@"],
+            "b": ["8", "ß"],
+            "e": ["3"],
+            "g": ["6"],
+            "i": ["1", "!"],
+            "r": ["2"],
+            "s": ["5"],
+            "t": ["7"],
+        }
+
+        translated = word
+        for character, replaces in characters.items():
+            for i in replaces:
+                translated = translated.replace(i, character)
+
+        return translated
 
 
 def setup(bot):

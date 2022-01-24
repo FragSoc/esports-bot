@@ -641,6 +641,7 @@ error_no_vms = "No VCs in this server currently set as VM masters"
 error_not_in_slave = "You are not currently in a VM slave"
 error_not_owned = "You are not the owner of this VM slave"
 error_not_vm = "This VC is not currently a VM master"
+error_bad_vm_name = "Sorry, but that is not a valid name for a Voice Channel"
 
 log_vm_master_added = "{author} has made {channel} - {channel_id} a VM master VC"
 log_vm_master_removed = "{mention} has removed {channel_name} - {channel_id} from VM master VC"
