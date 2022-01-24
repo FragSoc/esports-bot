@@ -1,6 +1,6 @@
 import re
 from discord.ext import commands
-from esportsbot.base_functions import (get_whether_in_vm_master, get_whether_in_vm_slave)
+from esportsbot.base_functions import (get_whether_in_vm_parent, get_whether_in_vm_child)
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import VoicemasterMaster, VoicemasterSlave
 
@@ -50,38 +50,46 @@ class VoicemasterCog(commands.Cog):
 
         if before.channel:
             # The user has either disconnected or moved voice channels.
-            if get_whether_in_vm_slave(before.channel.guild.id, before.channel.id):
-                # If the user was in a VM slave.
-                vm_slave = DBGatewayActions().get(VoicemasterSlave, guild_id=member.guild.id, channel_id=before.channel.id)
+            if get_whether_in_vm_child(before.channel.guild.id, before.channel.id):
+                # If the user was in a VM child.
+                vm_child = DBGatewayActions().get(VoicemasterSlave, guild_id=member.guild.id, channel_id=before.channel.id)
                 if not before.channel.members:
                     # The VM is empty, delete it.
                     await before.channel.delete()
-                    DBGatewayActions().delete(vm_slave)
-                elif vm_slave.owner_id == member.id:
+                    DBGatewayActions().delete(vm_child)
+                elif vm_child.owner_id == member.id:
                     # It was the owner of the channel that left, transfer ownership.
-                    if not vm_slave.custom_name:
+                    if not vm_child.custom_name:
                         await before.channel.edit(name=f"{before.channel.members[0].display_name}'s VC")
-                    vm_slave.owner_id = before.channel.members[0].id
-                    DBGatewayActions().update(vm_slave)
+                    vm_child.owner_id = before.channel.members[0].id
+                    DBGatewayActions().update(vm_child)
 
-        if after.channel and get_whether_in_vm_master(after.channel.guild.id, after.channel.id):
-            slave_channel = await member.guild.create_voice_channel(
+        if after.channel and get_whether_in_vm_parent(after.channel.guild.id, after.channel.id):
+            child_channel = await member.guild.create_voice_channel(
                 f"{member.display_name}'s VC",
                 category=after.channel.category
             )
-            slave_db_entry = VoicemasterSlave(
+            child_db_entry = VoicemasterSlave(
                 guild_id=member.guild.id,
-                channel_id=slave_channel.id,
+                channel_id=child_channel.id,
                 owner_id=member.id,
                 locked=False,
                 custom_name=False
             )
-            DBGatewayActions().create(slave_db_entry)
-            await member.move_to(slave_channel)
+            DBGatewayActions().create(child_db_entry)
+            await member.move_to(child_channel)
 
-    @commands.command(name="setvmparent")
+    @commands.group("voice", aliases=["vm"])
+    async def command_group(self, ctx):
+        """
+        The command group used to make all commands sub-commands .
+        :param ctx: The context of the command .
+        """
+        pass
+
+    @command_group.command(name="setparent", aliases=["setvmparent"])
     @commands.has_permissions(administrator=True)
-    async def setvmmaster(self, ctx, given_channel_id=None):
+    async def setvmparent(self, ctx, given_channel_id=None):
         """
         Set the given voice channel as a parent voice channel. There can be more than one parent voice channel in a server.
         :param ctx: The context of the command.
@@ -90,34 +98,34 @@ class VoicemasterCog(commands.Cog):
         is_a_valid_id = given_channel_id and given_channel_id.isdigit() and len(given_channel_id) == 18
 
         if is_a_valid_id:
-            is_a_master = DBGatewayActions().get(VoicemasterMaster, guild_id=ctx.author.guild.id, channel_id=given_channel_id)
+            is_a_parent = DBGatewayActions().get(VoicemasterMaster, guild_id=ctx.author.guild.id, channel_id=given_channel_id)
             is_voice_channel = hasattr(self.bot.get_channel(int(given_channel_id)), 'voice_states')
-            is_a_slave = DBGatewayActions().get(VoicemasterSlave, guild_id=ctx.author.guild.id, channel_id=given_channel_id)
+            is_a_child = DBGatewayActions().get(VoicemasterSlave, guild_id=ctx.author.guild.id, channel_id=given_channel_id)
 
-            if is_voice_channel and not (is_a_master or is_a_slave):
-                # Not currently a Master and is voice channel, add it
+            if is_voice_channel and not (is_a_parent or is_a_child):
+                # Not currently a Parent and is voice channel, add it
                 DBGatewayActions().create(VoicemasterMaster(guild_id=ctx.author.guild.id, channel_id=given_channel_id))
-                await ctx.channel.send("This VC has now been set as a VM master")
-                new_vm_master_channel = self.bot.get_channel(int(given_channel_id))
+                await ctx.channel.send("This VC has now been set as a VM parent")
+                new_vm_parent_channel = self.bot.get_channel(int(given_channel_id))
                 await self.bot.admin_log(
                     responsible_user=ctx.author,
                     guild_id=ctx.guild.id,
                     actions={
                         "Cog": self.__class__.__name__,
                         "command": ctx.message,
-                        "Message": self.STRINGS["log_vm_master_added"].format(
+                        "Message": self.STRINGS["log_vm_parent_added"].format(
                                 author=ctx.author.mention,
-                                channel=new_vm_master_channel.name,
-                                channel_id=new_vm_master_channel.id
+                                channel=new_vm_parent_channel.name,
+                                channel_id=new_vm_parent_channel.id
                         )
                     }
                 )
-            elif is_a_master:
-                # This already exists as a master
-                await ctx.channel.send(self.STRINGS['error_already_setm'])
-            elif is_a_slave:
-                # This is a slave VC
-                await ctx.channel.send(self.STRINGS['error_already_sets'])
+            elif is_a_parent:
+                # This already exists as a parent
+                await ctx.channel.send(self.STRINGS['error_already_set_parent'])
+            elif is_a_child:
+                # This is a child VC
+                await ctx.channel.send(self.STRINGS['error_already_set_child'])
             elif not is_voice_channel:
                 # This is not a VC ID
                 await ctx.channel.send(self.STRINGS['error_bad_id'])
@@ -129,24 +137,24 @@ class VoicemasterCog(commands.Cog):
             else:
                 await ctx.channel.send(self.STRINGS['error_bad_id_format'])
 
-    @commands.command(name="getvmparents")
+    @command_group.command(name="getparents", aliases=["getvmparents"])
     @commands.has_permissions(administrator=True)
-    async def getvmmasters(self, ctx):
+    async def getvmparents(self, ctx):
         """
         Get a list of the current voice channels set as parent voice channels.
         :param ctx: The context of the command.
         """
-        master_vm_exists = DBGatewayActions().list(VoicemasterMaster, guild_id=ctx.author.guild.id)
+        parent_vm_exists = DBGatewayActions().list(VoicemasterMaster, guild_id=ctx.author.guild.id)
 
-        if master_vm_exists:
-            master_vm_str = str()
-            for record in master_vm_exists:
-                master_vm_str += f"{self.bot.get_channel(record.channel_id).name} - {record.channel_id}\n"
-            await ctx.channel.send(self.STRINGS['show_current_vcs'].format(master_vms=master_vm_str))
+        if parent_vm_exists:
+            parent_vm_str = str()
+            for record in parent_vm_exists:
+                parent_vm_str += f"{self.bot.get_channel(record.channel_id).name} - {record.channel_id}\n"
+            await ctx.channel.send(self.STRINGS['show_current_vcs'].format(parent_vms=parent_vm_str))
         else:
             await ctx.channel.send(self.STRINGS['error_no_vms'])
 
-    @commands.command(name="removevmparent")
+    @command_group.command(name="removeparent", aliases=["removevmparent"])
     @commands.has_permissions(administrator=True)
     async def removevmmaster(self, ctx, given_channel_id=None):
         """
@@ -163,17 +171,17 @@ class VoicemasterCog(commands.Cog):
             if channel_exists:
                 DBGatewayActions().delete(channel_exists)
                 await ctx.channel.send(self.STRINGS['success_vm_unset'])
-                removed_vm_master = self.bot.get_channel(given_channel_id)
+                removed_vm_parent = self.bot.get_channel(given_channel_id)
                 await self.bot.admin_log(
                     responsible_user=ctx.author,
                     guild_id=ctx.guild.id,
                     actions={
                         "Cog": self.__class__.__name__,
                         "command": ctx.message,
-                        "Message": self.STRINGS['log_vm_master_removed'].format(
+                        "Message": self.STRINGS['log_vm_parent_removed'].format(
                             mention=ctx.author.guild.id,
-                            channel_name=removed_vm_master.name,
-                            channel_id=removed_vm_master.id
+                            channel_name=removed_vm_parent.name,
+                            channel_id=removed_vm_parent.id
                          )
                     }
                 )
@@ -182,52 +190,52 @@ class VoicemasterCog(commands.Cog):
         else:
             await ctx.channel.send(self.STRINGS['error_no_id'])
 
-    @commands.command(name="removeallparents")
+    @command_group.command(name="removeallparents")
     @commands.has_permissions(administrator=True)
-    async def removeallmasters(self, ctx):
+    async def removeallparents(self, ctx):
         """
         Remove all the current parent voice channels from the current server.
         :param ctx: The context of the command.
         """
-        all_vm_masters = DBGatewayActions().list(VoicemasterMaster, guild_id=ctx.author.guild.id)
-        for vm_master in all_vm_masters:
-            DBGatewayActions().delete(vm_master)
-        await ctx.channel.send(self.STRINGS['success_vm_masters_cleared'])
+        all_vm_parents = DBGatewayActions().list(VoicemasterMaster, guild_id=ctx.author.guild.id)
+        for vm_parent in all_vm_parents:
+            DBGatewayActions().delete(vm_parent)
+        await ctx.channel.send(self.STRINGS['success_vm_parents_cleared'])
         await self.bot.admin_log(
             responsible_user=ctx.author,
             guild_id=ctx.guild.id,
             actions={
                 "Cog": self.__class__.__name__,
                 "command": ctx.message,
-                "Message": self.STRINGS['log_vm_masters_cleared'].format(mention=ctx.author.mention)
+                "Message": self.STRINGS['log_vm_parents_cleared'].format(mention=ctx.author.mention)
             }
         )
 
-    @commands.command(name="removeallchildren")
+    @command_group.command(name="removeallchildren")
     @commands.has_permissions(administrator=True)
-    async def killallslaves(self, ctx):
+    async def removeallchildren(self, ctx):
         """
         Delete all the child voice channels, no matter if there are users in them or not.
         :param ctx: THe context of the command.
         """
-        all_vm_slaves = DBGatewayActions().list(VoicemasterSlave, guild_id=ctx.author.guild.id)
-        for vm_slave in all_vm_slaves:
-            vm_slave_channel = self.bot.get_channel(vm_slave.channel_id)
-            if vm_slave_channel:
-                await vm_slave_channel.delete()
-            DBGatewayActions().delete(vm_slave)
-        await ctx.channel.send(self.STRINGS['success_vm_slaves_cleared'])
+        all_vm_children = DBGatewayActions().list(VoicemasterSlave, guild_id=ctx.author.guild.id)
+        for vm_child in all_vm_children:
+            vm_child_channel = self.bot.get_channel(vm_child.channel_id)
+            if vm_child_channel:
+                await vm_child_channel.delete()
+            DBGatewayActions().delete(vm_child)
+        await ctx.channel.send(self.STRINGS['success_vm_children_cleared'])
         await self.bot.admin_log(
             responsible_user=ctx.author,
             guild_id=ctx.guild.id,
             actions={
                 "Cog": self.__class__.__name__,
                 "command": ctx.message,
-                "Message": self.STRINGS['log_vm_slaves_cleared'].format(mention=ctx.author.mention)
+                "Message": self.STRINGS['log_vm_children_cleared'].format(mention=ctx.author.mention)
             }
         )
 
-    @commands.command(name="lockvm", aliases=["lock"])
+    @command_group.command(name="lock", aliases=["lockvm"])
     async def lockvm(self, ctx):
         """
         Locks a child voice channel to the current number of users. This command can only be run by the owner of the child
@@ -235,28 +243,28 @@ class VoicemasterCog(commands.Cog):
         :param ctx: The context of the command.
         """
         if not ctx.author.voice:
-            await ctx.channel.send(self.STRINGS['error_not_in_slave'])
+            await ctx.channel.send(self.STRINGS['error_not_in_vm_child'])
             return
-        in_vm_slave = DBGatewayActions().get(
+        in_vm_child = DBGatewayActions().get(
             VoicemasterSlave,
             guild_id=ctx.author.guild.id,
             channel_id=ctx.author.voice.channel.id
         )
 
-        if in_vm_slave:
-            if in_vm_slave.owner_id == ctx.author.id:
-                if not in_vm_slave.locked:
-                    in_vm_slave.locked = True
-                    DBGatewayActions().update(in_vm_slave)
+        if in_vm_child:
+            if in_vm_child.owner_id == ctx.author.id:
+                if not in_vm_child.locked:
+                    in_vm_child.locked = True
+                    DBGatewayActions().update(in_vm_child)
                     await ctx.author.voice.channel.edit(user_limit=len(ctx.author.voice.channel.members))
-                    await ctx.channel.send(self.STRINGS['success_slave_locked'])
+                    await ctx.channel.send(self.STRINGS['success_child_locked'])
                     await self.bot.admin_log(
                         responsible_user=ctx.author,
                         guild_id=ctx.guild.id,
                         actions={
                             "Cog": self.__class__.__name__,
                             "command": ctx.message,
-                            "Message": self.STRINGS["log_slave_locked"].format(mention=ctx.author.mention)
+                            "Message": self.STRINGS["log_child_locked"].format(mention=ctx.author.mention)
                         }
                     )
                 else:
@@ -264,9 +272,9 @@ class VoicemasterCog(commands.Cog):
             else:
                 await ctx.channel.send(self.STRINGS['error_not_owned'])
         else:
-            await ctx.channel.send(self.STRINGS['error_not_in_slave'])
+            await ctx.channel.send(self.STRINGS['error_not_in_vm_child'])
 
-    @commands.command(name="unlockvm", aliases=["unlock"])
+    @command_group.command(name="unlock", aliases=["unlockvm"])
     async def unlockvm(self, ctx):
         """
         Stops the restriction on the number of users allowed in a child voice channel. This command can only be run by the
@@ -274,28 +282,28 @@ class VoicemasterCog(commands.Cog):
         :param ctx: The context of the command.
         """
         if not ctx.author.voice:
-            await ctx.channel.send(self.STRINGS['error_not_in_slave'])
+            await ctx.channel.send(self.STRINGS['error_not_in_vm_child'])
             return
-        in_vm_slave = DBGatewayActions().get(
+        in_vm_child = DBGatewayActions().get(
             VoicemasterSlave,
             guild_id=ctx.author.guild.id,
             channel_id=ctx.author.voice.channel.id
         )
 
-        if in_vm_slave:
-            if in_vm_slave.owner_id == ctx.author.id:
-                if in_vm_slave.locked:
-                    in_vm_slave.locked = False
-                    DBGatewayActions().update(in_vm_slave)
+        if in_vm_child:
+            if in_vm_child.owner_id == ctx.author.id:
+                if in_vm_child.locked:
+                    in_vm_child.locked = False
+                    DBGatewayActions().update(in_vm_child)
                     await ctx.author.voice.channel.edit(user_limit=0)
-                    await ctx.channel.send(self.STRINGS['success_slave_unlocked'])
+                    await ctx.channel.send(self.STRINGS['success_child_unlocked'])
                     await self.bot.admin_log(
                         responsible_user=ctx.author,
                         guild_id=ctx.guild.id,
                         actions={
                             "Cog": self.__class__.__name__,
                             "command": ctx.message,
-                            "Message": self.STRINGS["log_slave_unlocked"].format(mention=ctx.author.mention)
+                            "Message": self.STRINGS["log_child_unlocked"].format(mention=ctx.author.mention)
                         }
                     )
                 else:
@@ -303,19 +311,19 @@ class VoicemasterCog(commands.Cog):
             else:
                 await ctx.channel.send(self.STRINGS['error_not_owned'])
         else:
-            await ctx.channel.send(self.STRINGS['error_not_in_slave'])
+            await ctx.channel.send(self.STRINGS['error_not_in_vm_child'])
 
-    @commands.command(name="renamevm", aliases=["rename"])
+    @command_group.command(name="rename", aliases=["renamevm"])
     async def renamevm(self, ctx):
         """
         Sets the name of the voice channel to the string given after the command. If no string is given, the name is set back
-        to the default name of a voicemaster slave channel.
+        to the default name of a voicemaster child channel.
         :param ctx: The context of the command.
         """
         if not ctx.author.voice:
-            await ctx.channel.send(self.STRINGS['error_not_in_slave'])
+            await ctx.channel.send(self.STRINGS['error_not_in_vm_child'])
             return
-        in_vm_slave = DBGatewayActions().get(
+        in_vm_child = DBGatewayActions().get(
             VoicemasterSlave,
             guild_id=ctx.author.guild.id,
             channel_id=ctx.author.voice.channel.id
@@ -338,15 +346,15 @@ class VoicemasterCog(commands.Cog):
             )
             return
 
-        if in_vm_slave:
-            if in_vm_slave.owner_id == ctx.author.id:
+        if in_vm_child:
+            if in_vm_child.owner_id == ctx.author.id:
                 if new_name:
                     await ctx.author.voice.channel.edit(name=new_name)
-                    in_vm_slave.custom_name = True
+                    in_vm_child.custom_name = True
                     set_name = new_name
                 else:
                     await ctx.author.voice.channel.edit(name=f"{ctx.author.display_name}'s VC")
-                    in_vm_slave.custom_name = False
+                    in_vm_child.custom_name = False
                     set_name = f"{ctx.author.display_name}'s VC"
                 await self.bot.admin_log(
                     responsible_user=ctx.author,
@@ -354,15 +362,15 @@ class VoicemasterCog(commands.Cog):
                     actions={
                         "Cog": self.__class__.__name__,
                         "command": ctx.message,
-                        "Message": self.STRINGS["log_slave_renamed"].format(mention=ctx.author.mention,
+                        "Message": self.STRINGS["log_child_renamed"].format(mention=ctx.author.mention,
                                                                             new_name=set_name)
                     }
                 )
-                DBGatewayActions().update(in_vm_slave)
+                DBGatewayActions().update(in_vm_child)
             else:
                 await ctx.channel.send(self.STRINGS['error_not_owned'])
         else:
-            await ctx.channel.send(self.STRINGS['error_not_in_slave'])
+            await ctx.channel.send(self.STRINGS['error_not_in_vm_child'])
 
     def check_vm_name(self, vm_name):
         hidden_chars = r"[\s\W​   ﻿]*"
