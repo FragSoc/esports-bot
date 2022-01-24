@@ -197,38 +197,47 @@ description = "If the role mentioned is a pingable role, it will allow the role 
 usage = "<one or many role mentions>"
 readme_url = "https://github.com/FragSoc/esports-bot#pingme-enable-role-one-or-many-role-mentions"
 
-[help.setvmparent]
+[help.voice]
+help_string = "This is the command group to manage the Voice Master functions of this bot. Use the help command for this command to see a list of all the Voice Master related commands."
+readme_url = "https://github.com/FragSoc/esports-bot#voicemaster"
+
+[help.voice_setparent]
 help_string = "Sets a channel to be a parent channel."
 description = "This will set the voice channel given to act as a parent channel, so when users join they will be moved into their own child-channel. There can be more than 1 parent voice channel."
 usage = "<voice channel ID>"
-readme_url = "https://github.com/FragSoc/esports-bot#setvmparent-channel_id"
+readme_url = "https://github.com/FragSoc/esports-bot#voice-setparent-channel_id"
 
-[help.getvmparents]
+[help.voice_getparents]
 help_string = "Get a list of all Voicemaster parent channels."
-readme_url = "https://github.com/FragSoc/esports-bot#getvmparents"
+readme_url = "https://github.com/FragSoc/esports-bot#voice-getparents"
 
-[help.removevmparent]
+[help.voice_removeparent]
 help_string = "Stops the given voice channel from acting as a Voicemaster parent."
 usage = "<voice channel ID>"
-readme_url = "https://github.com/FragSoc/esports-bot#removevmparent-channel_id"
+readme_url = "https://github.com/FragSoc/esports-bot#voice-removeparent-channel_id"
 
-[help.removeallparents]
+[help.voice_removeallparents]
 help_string = "Stops all voice channels from acting as Voicemaster parents."
-readme_url = "https://github.com/FragSoc/esports-bot#removeallparents"
+readme_url = "https://github.com/FragSoc/esports-bot#voice-removeallparents"
 
-[help.removeallchildren]
+[help.voice_removeallchildren]
 help_string = "Deletes all Voicemaster child voice channels."
-readme_url = "https://github.com/FragSoc/esports-bot#removeallchildren"
+readme_url = "https://github.com/FragSoc/esports-bot#voice-removeallchildren"
 
-[help.lockvm]
+[help.voice_lock]
 help_string = "Locks your current Voicemaster voice channel."
 description = "If you are in a Voicemaster child channel and if you own the channel, it will lock the number of users allowed in the channel to the current number of users in the channel."
-readme_url = "https://github.com/FragSoc/esports-bot#lockvm"
+readme_url = "https://github.com/FragSoc/esports-bot#voice-lock"
 
-[help.unlockvm]
+[help.voice_unlock]
 help_string = "Unlocks your current Voicemaster voice channel."
 description = "If you are in a Voicemaster child channel and if you own the channel, it will remove the user-count limit."
-readme_url = "https://github.com/FragSoc/esports-bot#unlockvm"
+readme_url = "https://github.com/FragSoc/esports-bot#voice-unlock"
+
+[help.voice_rename]
+help_string = "Renames your current Voicemaster voice channel."
+description = "If you are in a Voicemaster child channel and if you own the channel, it will change the name to the name given. If no name is given, it gets reset to the default name."
+readme_url = "https://github.com/FragSoc/esports-bot#voice-rename"
 
 [help.clear]
 help_string = "Deletes the given number of messages. Defaults to 5 messages."
@@ -616,33 +625,35 @@ reserve_emoji = ":x: Sorry, the emoji `{emoji}` cannot be used as it is reserved
 default_settings_set = "✅ Default pingable settings have been applied"
 
 [voicemaster]
-success_slave_locked = "Your VM child has been locked 🔒"
-success_slave_unlocked = "Your VM child has been unlocked 🔓"
-success_vm_masters_cleared = "Cleared all VM parents from this server"
+success_child_locked = "Your VM child has been locked 🔒"
+success_child_unlocked = "Your VM child has been unlocked 🔓"
+success_vm_parents_cleared = "Cleared all VM parents from this server"
 success_vm_set = "This VC has now been set as a VM parent"
-success_vm_slaves_cleared = "Cleared all VM children from this server"
+success_vm_children_cleared = "Cleared all VM children from this server"
 success_vm_unset = "This VC is no longer a VM parent"
 
-show_current_vcs = "Current VM master VCs in this server:\n{master_vms}"
+show_current_vcs = "Current VM parent VCs in this server:\n{parent_vms}"
 
-error_already_locked = "Your VM slave is already locked"
-error_already_setm = "This VC is already set as a VM master"
-error_already_sets = "This VC is already set as a VM slave"
-error_already_unlocked = "Your VM slave is already unlocked"
+error_already_locked = "Your VM child is already locked"
+error_already_set_parent = "This VC is already set as a VM parent"
+error_already_set_child = "This VC is already set as a VM child"
+error_already_unlocked = "Your VM child is already unlocked"
 error_bad_id = "The ID entered is not a VC"
 error_bad_id_format = "The ID argument is not a valid discord ID format"
 error_no_id = "You need to provide a VC ID"
-error_no_vms = "No VCs in this server currently set as VM masters"
-error_not_in_slave = "You are not currently in a VM slave"
-error_not_owned = "You are not the owner of this VM slave"
-error_not_vm = "This VC is not currently a VM master"
+error_no_vms = "No VCs in this server currently set as VM parents"
+error_not_in_vm_child = "You are not currently in a VM child"
+error_not_owned = "You are not the owner of this VM child"
+error_not_vm = "This VC is not currently a VM parent"
+error_bad_vm_name = "Sorry, but that is not a valid name for a Voice Channel"
 
-log_vm_master_added = "{author} has made {channel} - {channel_id} a VM master VC"
-log_vm_master_removed = "{mention} has removed {channel_name} - {channel_id} from VM master VC"
-log_vm_masters_cleared = "{mention} has removed all VM masters"
-log_vm_slaves_cleared = "{mention} has removed all VM slaves"
-log_slave_locked = "{mention} has locked their VM slave"
-log_slave_unlocked = "{mention} has unlocked their VM slave"
+log_vm_parent_added = "{author} has made {channel} - {channel_id} a VM parent VC"
+log_vm_parent_removed = "{mention} has removed {channel_name} - {channel_id} from VM parent VC"
+log_vm_parents_cleared = "{mention} has removed all VM parents"
+log_vm_children_cleared = "{mention} has removed all VM children"
+log_child_locked = "{mention} has locked their VM child"
+log_child_unlocked = "{mention} has unlocked their VM child"
+log_child_renamed = "{mention} has renamed their VM child to `{new_name}`"
 
 [twitch]
 generic_error = "There was an error while trying to add `{channel}` as a tracked channel"

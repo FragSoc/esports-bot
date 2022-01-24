@@ -10,7 +10,7 @@ from random import shuffle
 from urllib.parse import parse_qs, urlparse
 
 import googleapiclient.discovery
-import youtube_dl
+from yt_dlp import YoutubeDL
 from discord import (ClientException, Colour, Embed, FFmpegPCMAudio, PCMVolumeTransformer, TextChannel)
 from discord.ext import commands, tasks
 from esportsbot.db_gateway import DBGatewayActions
@@ -63,7 +63,7 @@ class MessageTypeEnum(IntEnum):
 EMPTY_QUEUE_MESSAGE = "Join a Voice Channel and search a song by name or paste a YouTube url.\n" \
                       "**__Current Queue:__**\n"
 
-ESPORTS_LOGO_URL = "http://fragsoc.co.uk/wpsite/wp-content/uploads/2020/08/logo1-450x450.png"
+ESPORTS_LOGO_URL = "https://static.wixstatic.com/media/d8a4c5_b42c82e4532c4f8e9f9b2f2d9bb5a53e~mv2.png/v1/fill/w_287,h_287,al_c,q_85,usm_0.66_1.00_0.01/esportslogo.webp"
 
 EMPTY_PREVIEW_MESSAGE = Embed(
     title="No song currently playing",
@@ -698,7 +698,7 @@ class MusicCog(commands.Cog):
                 "preferredquality": "192",
             }],
         }
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
         return info
 
