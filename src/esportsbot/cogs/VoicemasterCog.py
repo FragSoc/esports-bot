@@ -373,7 +373,7 @@ class VoicemasterCog(commands.Cog):
             await ctx.channel.send(self.STRINGS['error_not_in_vm_child'])
 
     def check_vm_name(self, vm_name):
-        hidden_chars = r"[\s\W​   ﻿]*"
+        hidden_chars = r"[\s​   ﻿]*"
         removed_hidden = re.sub(hidden_chars, "", vm_name)
         leet_word = self.simple_leet_translation(removed_hidden)
         for bad_word in self.banned_words:
@@ -385,13 +385,14 @@ class VoicemasterCog(commands.Cog):
     def simple_leet_translation(word):
         characters = {
             "a": ["4", "@"],
-            "b": ["8", "ß"],
+            "b": ["8", "ß", "l3"],
             "e": ["3"],
             "g": ["6"],
             "i": ["1", "!"],
             "r": ["2"],
             "s": ["5"],
-            "t": ["7"],
+            "t": ["7", "+"],
+            "": ["_", "-", "'", "|", "~"]
         }
 
         translated = word
