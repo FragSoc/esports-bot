@@ -392,7 +392,7 @@ class VoicemasterCog(commands.Cog):
             "r": ["2"],
             "s": ["5"],
             "t": ["7", "+"],
-            "": ["_", "-", "'", "|", "~"]
+            "": ["_", "-", "'", "|", "~", "\""]
         }
 
         translated = word
