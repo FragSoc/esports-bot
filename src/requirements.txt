@@ -12,4 +12,4 @@ PyNaCl
 aiohttp[speedups]
 toml
 tornado
-tweepy
+tweepy==3.10.0
