@@ -381,7 +381,7 @@ readme_url = "https://github.com/FragSoc/esports-bot#roles-add-option-optional-m
 [help.roles_remove_option]
 help_string = "Remove an option from an existing role menu."
 description = "Using the emoji to identify which option you want to remove from the role menu, remove the option from that given menu."
-usage = "<role menu ID> <emoji option to remove>"
+usage = "<emoji option to remove> <role menu ID>"
 readme_url = "https://github.com/FragSoc/esports-bot#roles-remove-option-emoji-optional-menu-id"
 
 [help.roles_disable_menu]
