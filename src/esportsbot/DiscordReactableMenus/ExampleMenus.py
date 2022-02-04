@@ -57,6 +57,15 @@ class RoleReactMenu(ReactableMenu):
 
         super().__init__(**kwargs)
 
+    def generate_embed(self) -> Embed:
+        embed = Embed(title=f"{self.title} {self.title_suffix}", description=self.description, colour=self.colour)
+        for emoji_id in self.options:
+            emoji = self.options.get(emoji_id).get("emoji").discord_emoji
+            descriptor = self.options.get(emoji_id).get("descriptor")
+            embed.add_field(name="​", value=f"{emoji} — {descriptor}", inline=self.use_inline)
+
+        return embed
+
     async def react_add_func(self, payload: RawReactionActionEvent) -> bool:
         message_id: int = payload.message_id
         channel_id: int = payload.channel_id
