@@ -1,4 +1,5 @@
 from discord.ext import commands, tasks
+from discord import Embed
 from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.models import GuildInfo, DefaultRoles
 from esportsbot.base_functions import role_id_from_mention
@@ -54,9 +55,6 @@ class DefaultRoleCog(commands.Cog):
             self.pending_members.remove(member)
 
     async def apply_roles(self, member):
-        guild = DBGatewayActions().get(GuildInfo, guild_id=member.guild.id)
-        if not guild:
-            return
         # Get all the default role for the server from database
         guild_default_roles = DBGatewayActions().list(DefaultRoles, guild_id=member.guild.id)
         # Check to see if any roles exist
@@ -144,7 +142,7 @@ class DefaultRoleCog(commands.Cog):
             apply_roles = [ctx.author.guild.get_role(role.role_id) for role in guild_default_roles]
             # Return all the default roles to the user
             await ctx.channel.send(
-                self.STRINGS['default_role_get'].format(role_ids=(' '.join(f'<@&{x.id}>' for x in apply_roles)))
+                embed=Embed(title=self.STRINGS['default_role_get'], description="— "+('\n— '.join(f'<@&{x.id}>' for x in apply_roles)))
             )
         else:
             await ctx.channel.send(self.STRINGS['default_role_missing'])
