@@ -51,7 +51,6 @@ class PingableRolesCog(commands.Cog):
         self.bot = bot
         self.db = DBGatewayActions()
         self.user_strings = self.bot.STRINGS["pingable_roles"]
-        self.command_error_message = bot.STRINGS["command_error_generic"]
         self.logger = logging.getLogger(__name__)
 
         self.guild_settings = self.load_guild_settings()  # Guild ID: Pingable_settings as dict
@@ -1072,9 +1071,6 @@ class PingableRolesCog(commands.Cog):
             )
             await context.reply(self.user_strings["invalid_argument"])
             return
-
-        await context.reply(self.command_error_message)
-        raise error
 
     @change_pingable_role_cooldown.error
     async def role_cooldown_error(self, context: commands.Context, error: commands.CommandError):
