@@ -64,6 +64,8 @@ class PingableRolesCog(commands.Cog):
         self.current_menu = None
         self.current_role = None
         self.on_cooldown = False
+
+        self.init_command_string = "pingme settings default-settings"
         self.logger.info(f"Finished loading {__name__}... waiting for ready")
 
     @commands.Cog.listener()
@@ -604,7 +606,7 @@ class PingableRolesCog(commands.Cog):
             await context.send(
                 self.user_strings["needs_initialising"].format(
                     prefix=self.bot.command_prefix,
-                    command="pingme settings default-settings"
+                    command=self.init_command_string
                 )
             )
             return None
@@ -637,7 +639,7 @@ class PingableRolesCog(commands.Cog):
         if not guild_settings:
             await context.send(
                 self.user_strings["needs_initialising"].format(prefix=self.bot.command_prefix,
-                                                               command="default-settings")
+                                                               command=self.init_command_string)
             )
             return
 
@@ -754,7 +756,7 @@ class PingableRolesCog(commands.Cog):
             await context.send(
                 self.user_strings["needs_initialising"].format(
                     prefix=self.bot.command_prefix,
-                    command="pingme settings default-settings"
+                    command=self.init_command_string
                 )
             )
             return
@@ -822,7 +824,7 @@ class PingableRolesCog(commands.Cog):
             await context.send(
                 self.user_strings["needs_initialising"].format(
                     prefix=self.bot.command_prefix,
-                    command="pingme settings default-settings"
+                    command=self.init_command_string
                 )
             )
             return
