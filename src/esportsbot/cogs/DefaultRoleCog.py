@@ -55,9 +55,6 @@ class DefaultRoleCog(commands.Cog):
             self.pending_members.remove(member)
 
     async def apply_roles(self, member):
-        guild = DBGatewayActions().get(GuildInfo, guild_id=member.guild.id)
-        if not guild:
-            return
         # Get all the default role for the server from database
         guild_default_roles = DBGatewayActions().list(DefaultRoles, guild_id=member.guild.id)
         # Check to see if any roles exist
