@@ -21,7 +21,7 @@ async def on_ready():
     await client.change_presence(
         status=discord.Status.dnd,
         activity=discord.Activity(type=discord.ActivityType.listening,
-                                  name="your commands")
+                                  name=f"commands using {os.getenv('COMMAND_PREFIX')}")
     )
 
 
