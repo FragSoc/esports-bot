@@ -24,7 +24,7 @@ if test -f "src/esportsbot/version.txt"; then
 	rm "src/esportsbot/version.txt"
 fi
 
-echo latest_tag >> src/esportsbot/version.txt
+echo $latest_tag >> src/esportsbot/version.txt
 if test $use_docker == 1; then
 	docker-compose up --build --detach
 fi
