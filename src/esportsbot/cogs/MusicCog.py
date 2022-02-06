@@ -526,7 +526,7 @@ class MusicCog(commands.Cog):
         if response.get("kind") == "youtube#video":
             video_id = response.get("id")
         else:
-            video_id = response.get("resourceId").get("videoId")
+            video_id = response.get("snippet").get("resourceId").get("videoId")
         return "https://youtube.com/watch?v={}".format(video_id)
 
     @staticmethod

@@ -5,3 +5,5 @@ test-file.py
 .vscode
 .idea
 secrets.env
+*.cer
+*.key

@@ -42,7 +42,6 @@ class EventCategoriesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.user_strings = bot.STRINGS["event_categories"]
-        self.command_error_message = bot.STRINGS["command_error_generic"]
         self.db = DBGatewayActions()
         self.event_menus = defaultdict(dict)
         self.logger = logging.getLogger(__name__)
@@ -554,11 +553,6 @@ class EventCategoriesCog(commands.Cog):
             permissions = "view channel, send messages, manage channels, manage roles"
             await context.reply(self.user_strings["bot_missing_perms"].format(permissions=permissions))
             return
-
-        # If an error occurred that wasn't one of the above, send a message telling the user to contact a dev as something
-        # unexpected has occurred.
-        await context.reply(self.command_error_message)
-        raise error
 
 
 def setup(bot):
