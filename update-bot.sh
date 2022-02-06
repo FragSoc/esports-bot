@@ -14,8 +14,8 @@ if test $use_docker == 1; then
 	docker-compose down
 fi
 
-git pull
 git checkout master
+git pull
 latest_tag=$(git describe --tags)
 echo "Latest tag on master is: $latest_tag"
 git checkout tags/$latest_tag --quiet
@@ -25,7 +25,7 @@ if test -f "src/esportsbot/version.txt"; then
 fi
 
 echo latest_tag >> src/esportsbot/version.txt
-if $use_docker == 1; then
+if test $use_docker == 1; then
 	docker-compose up --build --detach
 fi
 echo "Done updating esportsbot to $latest_tag!"
