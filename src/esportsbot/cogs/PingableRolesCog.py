@@ -59,11 +59,6 @@ class PingableRolesCog(commands.Cog):
         self.all_role_ids = None  # Guild ID: {role id : menu id}
         self.roles_on_cooldown = []  # List of roles that are on cooldown
 
-        self.current_poll = None
-        self.current_menu = None
-        self.current_role = None
-        self.on_cooldown = False
-
         self.init_command_string = "pingme settings default-settings"
         self.logger.info(f"Finished loading {__name__}... waiting for ready")
 
@@ -575,20 +570,25 @@ class PingableRolesCog(commands.Cog):
                 if not user.bot:
                     await user.add_roles(role)
 
-    def role_exists(self, name: str) -> bool:
+    def role_exists(self, name: str, guild_id: int) -> bool:
         """
         Checks if there is a role with the name given as a pingable role .
-        :param name:
+        :param name: The name of the role to check for existence.
+        :param guild_id: The ID of the guild to check in.
         :return:
         """
         # Check current polls:
         for menu_id in self.polls:
             menu_name = self.polls.get(menu_id).get("name")
+            if guild_id != self.polls.get(menu_id).guild.id:
+                continue
             if name.lower() in menu_name.lower():
                 return True
 
         for menu_id in self.roles:
             menu = self.roles.get(menu_id).get("menu")
+            if guild_id != self.roles.get(menu_id).guild.id:
+                continue
             if name.lower() in menu.role.name.lower():
                 return True
 
@@ -828,7 +828,7 @@ class PingableRolesCog(commands.Cog):
             )
             return
 
-        if self.role_exists(role_name):
+        if self.role_exists(role_name, context.guild.id):
             await context.reply(self.user_strings["already_exists"].format(role=role_name))
             return
 
