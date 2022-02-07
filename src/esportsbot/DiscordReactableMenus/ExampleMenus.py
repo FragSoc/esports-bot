@@ -67,8 +67,6 @@ class RoleReactMenu(ReactableMenu):
         return embed
 
     async def react_add_func(self, payload: RawReactionActionEvent) -> bool:
-        message_id: int = payload.message_id
-        channel_id: int = payload.channel_id
         emoji_triggered = payload.emoji
         member = payload.member
         guild = self.message.guild
@@ -82,9 +80,7 @@ class RoleReactMenu(ReactableMenu):
             role_id = 0
 
         if not role_id:
-            channel = guild.get_channel(channel_id)
-            message = await channel.fetch_message(message_id)
-            await message.clear_reaction(emoji_triggered)
+            await self.message.clear_reaction(emoji_triggered)
             return False
 
         role_to_add = get_role_from_id(guild, role_id)
@@ -128,6 +124,9 @@ class PollReactMenu(ReactableMenu):
 
         if kwargs.get("add_func") is None:
             kwargs["add_func"] = self.react_add_func
+
+        if kwargs.get("remove_func") is None:
+            kwargs["remove_func"] = self.react_remove_func
 
         if kwargs.get("auto_enable") is None:
             kwargs["auto_enable"] = AUTO_ENABLE_POLL_REACT
@@ -255,15 +254,29 @@ class PollReactMenu(ReactableMenu):
         return False
 
     async def react_add_func(self, payload: RawReactionActionEvent) -> bool:
-        guild_from_react = payload.member.guild
         triggering_emoji = payload.emoji
 
         if triggering_emoji not in self:
-            channel = guild_from_react.get_channel(payload.channel_id)
-            message = await channel.fetch_message(payload.message_id)
-            await message.clear_reaction(triggering_emoji)
+            await self.message.clear_reaction(triggering_emoji)
             return False
 
+        self_user = self.message.guild.me
+
+        for reaction in self.message.reactions:
+            if reaction.count > 1 and reaction.me:
+                await self.message.remove_reaction(reaction, self_user)
+
+        return True
+
+    async def react_remove_func(self, payload: RawReactionActionEvent) -> bool:
+        if payload.user_id == self.message.guild.me.id:
+            return False
+
+        reaction_emojis = [x.emoji for x in self.message.reactions]
+        event_emoji = payload.emoji
+
+        if event_emoji not in reaction_emojis:
+            await self.message.add_reaction(event_emoji)
         return True
 
 
@@ -318,15 +331,12 @@ class ActionConfirmationMenu(ReactableMenu):
 
     async def react_add_func(self, payload):
         triggering_member = payload.member
-        guild_from_react = payload.member.guild
         triggering_emoji = payload.emoji
 
         formatted_emoji = MultiEmoji(triggering_emoji)
 
         if formatted_emoji not in self:
-            channel = guild_from_react.get_channel(payload.channel_id)
-            message = await channel.fetch_message(payload.message_id)
-            await message.clear_reaction(triggering_emoji)
+            await self.message.clear_reaction(triggering_emoji)
             return False
 
         if formatted_emoji == CONFIRM_EMOJI:
