@@ -260,6 +260,7 @@ class ReactableMenu:
         if payload is None:
             return None
         if self.enabled and self.react_add_func and not payload.member.bot and payload.message_id == self.id:
+            self.message = await self.channel.fetch_message(payload.message_id)
             return await self.react_add_func(payload)
         return None
 
@@ -267,5 +268,6 @@ class ReactableMenu:
         if payload is None:
             return None
         if self.enabled and self.react_remove_func and payload.message_id == self.id:
+            self.message = await self.channel.fetch_message(payload.message_id)
             return await self.react_remove_func(payload)
         return None
