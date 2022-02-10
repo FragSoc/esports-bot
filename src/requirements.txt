@@ -13,3 +13,4 @@ aiohttp[speedups]
 toml
 tornado
 tweepy==3.10.0
+coloredlogs
