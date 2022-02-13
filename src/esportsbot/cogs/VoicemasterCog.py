@@ -378,7 +378,7 @@ class VoicemasterCog(commands.Cog):
         leet_word = self.simple_leet_translation(removed_hidden)
         for bad_word in self.banned_words:
             if bad_word in leet_word or bad_word in removed_hidden:
-                return False
+                return self.double_check(removed_hidden, bad_word) and self.double_check(leet_word, bad_word)
         return True
 
     @staticmethod
@@ -401,6 +401,18 @@ class VoicemasterCog(commands.Cog):
                 translated = translated.replace(i, character)
 
         return translated
+
+    @staticmethod
+    def double_check(word, bad_word):
+        if word == bad_word:
+            # If the word is the bad word it should not be allowed
+            return False
+
+        if word.index(bad_word) == 0 or word.index(bad_word) == len(word) - len(bad_word):
+            # If the bad word is at the end or beginning it is likely to be intentionally bad rather than accidentally caught
+            return False
+        
+        return True
 
 
 def setup(bot):
