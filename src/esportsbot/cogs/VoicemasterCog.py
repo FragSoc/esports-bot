@@ -332,7 +332,7 @@ class VoicemasterCog(commands.Cog):
         command_invoke_string_index = ctx.message.content.index(ctx.invoked_with) + len(ctx.invoked_with)
         new_name = ctx.message.content[command_invoke_string_index:].strip()
 
-        if not self.check_vm_name(new_name):
+        if not self.check_vm_name(new_name.lower()):
             await ctx.channel.send(self.STRINGS['error_bad_vm_name'])
             await ctx.message.delete()
             await self.bot.admin_log(
