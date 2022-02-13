@@ -44,6 +44,7 @@ class DBGatewayActions:
             query = session.query(db_model).filter_by(**args).all()
             return query
         except Exception as err:
+            session.rollback()
             raise Exception(f"Error occurred when using list - {err}")
 
     @staticmethod
@@ -62,6 +63,7 @@ class DBGatewayActions:
             query = session.query(db_model).filter_by(**args).all()
             return query[0] if query != [] else query
         except Exception as err:
+            session.rollback()
             raise Exception(f"Error occurred when using get - {err}")
 
     @staticmethod
@@ -76,6 +78,7 @@ class DBGatewayActions:
             session.add(model)
             session.commit()
         except Exception as err:
+            session.rollback()
             raise Exception(f"Error occurred when using update - {err}")
 
     @staticmethod
@@ -90,6 +93,7 @@ class DBGatewayActions:
             session.delete(model)
             session.commit()
         except Exception as err:
+            session.rollback()
             raise Exception(f"Error occurred when using delete - {err}")
 
     @staticmethod
@@ -104,4 +108,5 @@ class DBGatewayActions:
             session.add(model)
             session.commit()
         except Exception as err:
+            session.rollback()
             raise Exception(f"Error occurred when using create - {err}")
