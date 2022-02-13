@@ -336,11 +336,12 @@ readme_url = "https://github.com/FragSoc/esports-bot#removedefaultroles"
 
 [help.events]
 help_string = "This is a command group for controlling the creation and management of events and their text and voice channels. Use the help command for this command to see the subcommands available."
+description = "Useful terminology for this command group are: \n — Shared Role: The role that every user already has. \n — Event Role: The role that is used in the sign-in menu and is created with the event."
 readme_url = "https://github.com/FragSoc/esports-bot#event-category-management"
 
 [help.events_create_event]
 help_string = "Creates a new event with a given name."
-description = "This command will create the Discord category, the sign-in channel, a general text channel and a voice channel with the event's name as well as an event role. The sign-in menu will be a role react menu to receive the event role and until the event is open, all channels in the category will be set to private and only viewable by administrators. Once open, the sign-in channel will be visible to members with the given shared role. If no shared role is supplied, the shared role used will be one of the DefaultRoles."
+description = "This command creates an event category, event role and the sign-in menu for the event. If the `shared role` parameter is left empty and the `DefaultRolesCog` is enabled, the bot will attempt to use one of the defined default roles. Once an event is created, it will by default not be viewable by users until the event is opened."
 usage = "<event name> [optional: shared role]"
 readme_url = "https://github.com/FragSoc/esports-bot#events-create-event-event-name-role-mention--role-id"
 

@@ -166,7 +166,11 @@ class CustomHelpCommand(HelpCommand):
         else:
             description = help_dict.get("help_string", "​")
 
-        description += "\n​"
+        if help_dict.get('description'):
+            description += f"\n\n{help_dict.get('description')}\n​"
+        else:
+            description += f"\n​"
+
         embed = Embed(title=title, description=description, colour=Colour.random())
 
         if help_dict and help_dict.get("readme_url"):
