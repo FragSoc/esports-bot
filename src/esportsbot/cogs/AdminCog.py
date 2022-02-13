@@ -1,6 +1,7 @@
 import os
+from datetime import datetime
 
-from discord import Member, TextChannel, CategoryChannel, PermissionOverwrite
+from discord import Member, TextChannel, CategoryChannel, PermissionOverwrite, Embed, Color
 from discord.ext import commands
 
 devs = os.getenv("DEV_IDS").replace(" ", "").split(",")
@@ -34,18 +35,25 @@ class AdminCog(commands.Cog):
             return ctx.author.guild_permissions.administrator
         return str(ctx.author.id) in devs
 
-    @commands.command(
+    @commands.group(name="admin")
+    @commands.has_permissions(administrator=True)
+    async def admin_group(self, context):
+        pass
+
+    @commands.group(name="dev")
+    @commands.check(is_dev)
+    async def dev_group(self, context):
+        pass
+
+    @admin_group.command(
         name="clear",
         aliases=['cls',
                  'purge',
                  'delete',
                  'Cls',
                  'Purge',
-                 'Delete'],
-        usage="<number_of_messages>",
-        help="Clears the specified number of messages from the channel. Default value of 5."
+                 'Delete']
     )
-    @commands.has_permissions(manage_messages=True)
     async def clear_messages(self, ctx, amount=5):
         """
         Clears the given number of messages from the current channel. If no number is given, this command will delete 5
@@ -64,8 +72,7 @@ class AdminCog(commands.Cog):
             }
         )
 
-    @commands.check(is_dev)
-    @commands.command(name="version", hidden=True)
+    @dev_group.command(name="version", hidden=True)
     async def print_version(self, ctx):
         """
         Get the version the bot is running on.
@@ -73,13 +80,10 @@ class AdminCog(commands.Cog):
         """
         await ctx.channel.send(self.bot_version)
 
-    @commands.command(
+    @admin_group.command(
         name="members",
-        aliases=['Members'],
-        usage="",
-        help="Calculates the number of members in the current server"
+        aliases=['Members']
     )
-    @commands.has_permissions(manage_messages=True)
     async def members(self, ctx):
         """
         Get the number of members in the current server.
@@ -87,8 +91,26 @@ class AdminCog(commands.Cog):
         """
         await ctx.channel.send(self.STRINGS['members'].format(member_count=ctx.guild.member_count))
 
-    @commands.check(is_dev)
-    @commands.command(name="remove-cog", hidden=True)
+    @admin_group.command(name="user-info", aliases=["info", "get-user", "user"])
+    async def get_user_info(self, context, user: Member):
+        user_embed = Embed(
+            title=f"{user.name} — User Info",
+            description=f"Showing the user info for {user.mention}\n",
+            colour=Color.random()
+        )
+
+        user_embed.add_field(name="​", value=f"• Pending Status? `{user.pending}`", inline=False)
+        user_embed.add_field(name="​", value=f"• Current Display Name — {user.display_name}", inline=False)
+        user_embed.add_field(name="​", value=f"• Date Joined — {user.joined_at.strftime('%m/%d/%Y, %H:%M:%S')}", inline=False)
+        user_embed.add_field(name="​", value=f"• Account Creation Date — {user.created_at.strftime('%m/%d/%Y, %H:%M:%S')}", inline=False)
+
+        user_embed.set_thumbnail(url=user.default_avatar_url)
+
+        user_embed.set_footer(text=datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
+
+        await context.send(embed=user_embed)
+
+    @dev_group.command(name="remove-cog", hidden=True)
     async def remove_cog(self, context: commands.Context, cog_name: str):
         """
         Unloads a cog. This removes all commands/functionality associated with that cog until the bot is restarted.
@@ -109,8 +131,7 @@ class AdminCog(commands.Cog):
         except commands.ExtensionNotLoaded:
             await context.send(f"The cog with name `{cog_name}` is not loaded.")
 
-    @commands.check(is_dev)
-    @commands.command(name="add-cog", hidden=True)
+    @dev_group.command(name="add-cog", hidden=True)
     async def add_cog(self, context: commands.Context, cog_name: str):
         """
         Loads a cog. This adds a cogs commands/functionality to the bot dynamically. This lasts until the bot is restarted.
@@ -132,8 +153,7 @@ class AdminCog(commands.Cog):
         except commands.ExtensionAlreadyLoaded:
             await context.send(f"The cog with name `{cog_name}` is already loaded.")
 
-    @commands.check(is_dev)
-    @commands.command(name="reload-cog", hidden=True)
+    @dev_group.command(name="reload-cog", hidden=True)
     async def reload_cog(self, context: commands.Context, cog_name: str):
         """
         Reload a cog. Firsts unloads, then loads the cog. If a cog makes use of `on_ready` it will not run, which can cause
@@ -153,8 +173,7 @@ class AdminCog(commands.Cog):
         except commands.ExtensionNotLoaded:
             await context.send(f"The cog with name `{cog_name}` is not loaded.")
 
-    @commands.has_permissions(administrator=True)
-    @commands.command(name="set-rep")
+    @admin_group.command(name="set-rep")
     async def set_rep_perms(self, context: commands.Context, user: Member, *args):
         """
         Sets the permissions for a game rep given a list of category or channel ids.

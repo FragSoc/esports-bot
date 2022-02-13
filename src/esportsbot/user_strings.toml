@@ -239,42 +239,56 @@ help_string = "Renames your current Voicemaster voice channel."
 description = "If you are in a Voicemaster child channel and if you own the channel, it will change the name to the name given. If no name is given, it gets reset to the default name."
 readme_url = "https://github.com/FragSoc/esports-bot#voice-rename"
 
-[help.clear]
+[help.admin]
+help_string = "This command group contains a few admin-related commands."
+readme_url = "https://github.com/FragSoc/esports-bot#administrator-tools"
+
+[help.dev]
+help_string = "This command group contains commands used by this bot's developers."
+readme_url = "https://github.com/FragSoc/esports-bot#administrator-tools"
+
+[help.admin_clear]
 help_string = "Deletes the given number of messages. Defaults to 5 messages."
 usage = "<number of messages>"
-readme_url = "https://github.com/FragSoc/esports-bot#clear"
+readme_url = "https://github.com/FragSoc/esports-bot#admin-clear"
 
-[help.version]
+[help.admin_version]
 help_string = "Get the current bot version."
-readme_url = "https://github.com/FragSoc/esports-bot#version"
+readme_url = "https://github.com/FragSoc/esports-bot#admin-version"
 
-[help.members]
+[help.admin_members]
 help_string = "Get the number of members in the server."
-readme_url = "https://github.com/FragSoc/esports-bot#members"
+readme_url = "https://github.com/FragSoc/esports-bot#admin-members"
 
-[help.remove_cog]
+[help.dev_remove_cog]
 help_string = "Unloads the given cog."
 description = "This removes a cog from being loaded and removes all its commands. This can only be run by a member that is defined in the dev_ids section of the bots environment. If a cog makes use of the `on_ready` function, it will not work properly if loaded through the command, and will require a full restart to re-enable."
 usage = "<cog name>"
-readme_url = "https://github.com/FragSoc/esports-bot#remove-cog-cog-name"
+readme_url = "https://github.com/FragSoc/esports-bot#dev-remove-cog-cog-name"
 
-[help.add_cog]
+[help.dev_add_cog]
 help_string = "Loads the given cog."
 description = "Enables a Cog and adds its commands. This can only be run by a member that is defined in the dev_ids section of the bots environment. If the given cog uses the `on_ready` function, it will not work as expected and will require a full restart to properly enable."
 usage ="<cog name>"
-readme_url = "https://github.com/FragSoc/esports-bot#add-cog-cog-name"
+readme_url = "https://github.com/FragSoc/esports-bot#dev-add-cog-cog-name"
 
-[help.reload_cog]
+[help.dev_reload_cog]
 help_string = "Reloads the given cog."
 description = "Unloads and then reloads the given cog. Refer to the 'load cog' command to see potential side-effects. This can only be run by a member that is defined in the dev_ids section of the bots environment."
 usage = "<cog name>"
-readme_url = "https://github.com/FragSoc/esports-bot#reload-cog-cog-name"
+readme_url = "https://github.com/FragSoc/esports-bot#dev-reload-cog-cog-name"
 
-[help.set_rep]
+[help.admin_set_rep]
 help_string = "Sets the permissions for a game rep."
 description = "By mentioning a user, and then giving a set of category or channel IDs separated by a space, this command will give the required permissions for a Game Rep for the given channels."
 usage = "<user mention> <channel or category ids>"
-readme_url = "https://github.com/FragSoc/esports-bot#set-rep-user-mention-channel-or-category-ids"
+readme_url = "https://github.com/FragSoc/esports-bot#admin-set-rep-user-mention-channel-or-category-ids"
+
+[help.admin_user_info]
+help_string = "Get basic information about a users profile."
+description = "Shows an embed with the basic information about a user's profile. Useful for seeing join date, creation date and other information."
+usage = "<user mention>"
+readme_url = "https://github.com/FragSoc/esports-bot#admin-user-info-user-mention"
 
 [help.setlogchannel]
 help_string = "Sets the given channel to the logging channel."
