@@ -202,7 +202,11 @@ class EventCategoriesCog(commands.Cog):
         }
 
         # Create the channels for the event:
-        event_category = await context.guild.create_category(name=event_name, overwrites=category_overwrites, reason=audit_reason)
+        event_category = await context.guild.create_category(
+            name=event_name,
+            overwrites=category_overwrites,
+            reason=audit_reason
+        )
         event_sign_in_channel = await event_category.create_text_channel(
             name=f"{event_name} {SIGN_IN_CHANNEL_SUFFIX}",
             sync_permissions=False,
