@@ -350,11 +350,12 @@ readme_url = "https://github.com/FragSoc/esports-bot#removedefaultroles"
 
 [help.events]
 help_string = "This is a command group for controlling the creation and management of events and their text and voice channels. Use the help command for this command to see the subcommands available."
+description = "Useful terminology for this command group are: \n — Shared Role: The role that every user already has. \n — Event Role: The role that is used in the sign-in menu and is created with the event."
 readme_url = "https://github.com/FragSoc/esports-bot#event-category-management"
 
 [help.events_create_event]
 help_string = "Creates a new event with a given name."
-description = "This command will create the Discord category, the sign-in channel, a general text channel and a voice channel with the event's name as well as an event role. The sign-in menu will be a role react menu to receive the event role and until the event is open, all channels in the category will be set to private and only viewable by administrators. Once open, the sign-in channel will be visible to members with the given shared role. If no shared role is supplied, the shared role used will be one of the DefaultRoles."
+description = "This command creates an event category, event role and the sign-in menu for the event. If the `shared role` parameter is left empty and the `DefaultRolesCog` is enabled, the bot will attempt to use one of the defined default roles. Once an event is created, it will by default not be viewable by users until the event is opened."
 usage = "<event name> [optional: shared role]"
 readme_url = "https://github.com/FragSoc/esports-bot#events-create-event-event-name-role-mention--role-id"
 
@@ -469,7 +470,7 @@ readme_url = "https://github.com/FragSoc/esports-bot#twitch-integration"
 help_string = "Create a new Discord Webhook for Twitch notifications."
 description = "Creates a Webhook with the given name that can be used to post live notifications of specific Twitch channels to the specific Discord text channel the Webhook is bound to."
 usage = "<channel mention> <hook name>"
-readme_url = "https://github.com/FragSoc/esports-bot#twitch-createhook-channel_mention-hook-name"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-createhook-channel-mention-hook-name"
 
 [help.twitch_deletehook]
 help_string = "Delete an existing Discord Webhook for Twitch notifications."
@@ -481,7 +482,7 @@ readme_url = "https://github.com/FragSoc/esports-bot#twitch-deletehook-hook-name
 help_string = "Adds a Twitch channel to be tracked."
 description = "This will track the given Twitch channel and post its updates to the given discord Webhook. A channel can be bound to many Discord Webhooks. If a custom message is given, it will be used in the live notification and must be surrounded by double quotes."
 usage = "<channel name | channel url> <hook name> [optional: custom message]"
-readme_url = "https://github.com/FragSoc/esports-bot#twitch-add-channel-name--channel-url--hook name-optional-custom-message"
+readme_url = "https://github.com/FragSoc/esports-bot#twitch-add-channel-name--channel-url-hook-name-optional-custom-message"
 
 [help.twitch_remove]
 help_string = "Stops tracking a Twitch channel."
