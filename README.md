@@ -148,30 +148,34 @@ The list below describes the different "Cogs" of the bot, their associated comma
 ### Administrator Tools
  Adds a few commands useful for admin operations.
 
-#### !clear 
+#### !admin clear 
 * Aliases: `cls, purge, delete`
 * Clear the specified number of messages from the current text channel.
 
-#### !version
+#### !admin version
 * Get the current version of the bot.
 
-#### !members
+#### !admin members
 * List the current number of members in the server.
 
-#### !remove-cog \<cog name>
+#### !dev remove-cog \<cog name>
 * Unloads the given cog.
 * *This command requires your user ID to be defined in the env file under `DEV_IDS`*
 
-#### !add-cog \<cog name>
+#### !dev add-cog \<cog name>
 * Loads the given cog.
 * *This command requires your user ID to be defined in the env file under `DEV_IDS`*
 
-#### !reload-cog \<cog name>
+#### !dev reload-cog \<cog name>
 * Reloads the given cog.
 * *This command requires your user ID to be defined in the env file under `DEV_IDS`*
 
-#### !set-rep \<user mention> \<channel or category IDs>
+#### !admin set-rep \<user mention> \<channel or category IDs>
 * Sets the permissions for a user in the channels/categories given.
+* *Requires `administrator` permission in Discord*
+
+#### !admin user-info \<user mention>
+* Get basic information about a users profile.
 * *Requires `administrator` permission in Discord*
 
 </details>
