@@ -111,12 +111,15 @@ class VoicemasterCog(commands.Cog):
                     responsible_user=ctx.author,
                     guild_id=ctx.guild.id,
                     actions={
-                        "Cog": self.__class__.__name__,
-                        "command": ctx.message,
-                        "Message": self.STRINGS["log_vm_parent_added"].format(
-                                author=ctx.author.mention,
-                                channel=new_vm_parent_channel.name,
-                                channel_id=new_vm_parent_channel.id
+                        "Cog":
+                        self.__class__.__name__,
+                        "command":
+                        ctx.message,
+                        "Message":
+                        self.STRINGS["log_vm_parent_added"].format(
+                            author=ctx.author.mention,
+                            channel=new_vm_parent_channel.name,
+                            channel_id=new_vm_parent_channel.id
                         )
                     }
                 )
@@ -176,13 +179,16 @@ class VoicemasterCog(commands.Cog):
                     responsible_user=ctx.author,
                     guild_id=ctx.guild.id,
                     actions={
-                        "Cog": self.__class__.__name__,
-                        "command": ctx.message,
-                        "Message": self.STRINGS['log_vm_parent_removed'].format(
+                        "Cog":
+                        self.__class__.__name__,
+                        "command":
+                        ctx.message,
+                        "Message":
+                        self.STRINGS['log_vm_parent_removed'].format(
                             mention=ctx.author.guild.id,
                             channel_name=removed_vm_parent.name,
                             channel_id=removed_vm_parent.id
-                         )
+                        )
                     }
                 )
             else:
@@ -332,7 +338,7 @@ class VoicemasterCog(commands.Cog):
         command_invoke_string_index = ctx.message.content.index(ctx.invoked_with) + len(ctx.invoked_with)
         new_name = ctx.message.content[command_invoke_string_index:].strip()
 
-        if not self.check_vm_name(new_name):
+        if not self.check_vm_name(new_name.lower()):
             await ctx.channel.send(self.STRINGS['error_bad_vm_name'])
             await ctx.message.delete()
             await self.bot.admin_log(
@@ -378,21 +384,31 @@ class VoicemasterCog(commands.Cog):
         leet_word = self.simple_leet_translation(removed_hidden)
         for bad_word in self.banned_words:
             if bad_word in leet_word or bad_word in removed_hidden:
-                return False
+                return self.double_check(removed_hidden, bad_word) and self.double_check(leet_word, bad_word)
         return True
 
     @staticmethod
     def simple_leet_translation(word):
         characters = {
-            "a": ["4", "@"],
-            "b": ["8", "ß", "l3"],
+            "a": ["4",
+                  "@"],
+            "b": ["8",
+                  "ß",
+                  "l3"],
             "e": ["3"],
             "g": ["6"],
-            "i": ["1", "!"],
+            "i": ["1",
+                  "!"],
             "r": ["2"],
             "s": ["5"],
-            "t": ["7", "+"],
-            "": ["_", "-", "'", "|", "~", "\""]
+            "t": ["7",
+                  "+"],
+            "": ["_",
+                 "-",
+                 "'",
+                 "|",
+                 "~",
+                 "\""]
         }
 
         translated = word
@@ -401,6 +417,18 @@ class VoicemasterCog(commands.Cog):
                 translated = translated.replace(i, character)
 
         return translated
+
+    @staticmethod
+    def double_check(word, bad_word):
+        if word == bad_word:
+            # If the word is the bad word it should not be allowed
+            return False
+
+        if word.index(bad_word) == 0 or word.index(bad_word) == len(word) - len(bad_word):
+            # If the bad word is at the end or beginning it is likely to be intentionally bad rather than accidentally caught
+            return False
+
+        return True
 
 
 def setup(bot):
