@@ -13,9 +13,9 @@ from esportsbot.db_gateway import DBGatewayActions
 from esportsbot.lib.discordUtil import get_attempted_arg
 from esportsbot.models import EventCategories, DefaultRoles
 
-denied_perms = PermissionOverwrite(read_messages=False, send_messages=False, connect=False)
-read_only_perms = PermissionOverwrite(read_messages=True, send_messages=False, connect=False)
-writable_perms = PermissionOverwrite(read_messages=True, send_messages=True, connect=True)
+denied_perms = PermissionOverwrite(read_messages=False, send_messages=False, connect=False, view_channel=False)
+read_only_perms = PermissionOverwrite(read_messages=True, send_messages=False, connect=False, view_channel=True)
+writable_perms = PermissionOverwrite(read_messages=True, send_messages=True, connect=True, view_channel=True)
 SIGN_IN_EMOJI = "✅"
 SIGN_IN_DESCRIPTION = "Welcome to {}, react to this message to join the event so that you " \
                       "receive notifications for when things are happening!"
@@ -146,93 +146,6 @@ class EventCategoriesCog(commands.Cog):
         db_item = self.db.get(EventCategories, guild_id=guild_id, event_id=event_id)
         self.db.delete(db_item)
 
-    async def set_role_permissions_for_event(self, event_menu, role, role_type, reason):
-        """
-        Sets the permissions for the event channels for the given role based on its role type.
-        :param event_menu: The event menu of the event to update the roles of.
-        :param role: The role to update the permissions of.
-        :param role_type: The type of role the role is.
-        :param reason: The audit log reason to log with.
-        """
-        if event_menu.enabled:
-            await self.set_open_perms(event_menu, role, role_type, reason)
-        else:
-            await self.set_closed_perms(event_menu, role, role_type, reason)
-
-    async def set_open_perms(self, event_menu, role, role_type, reason):
-        """
-        Sets the permissions for the given role and role type for when the event is open.
-        :param event_menu: The menu of the event.
-        :param role: The role to update the permissions of.
-        :param role_type: The type of role the role is.
-        :param reason: The audit log reason to log with.
-        """
-        general_channel, sign_in_channel, voice_channel = self.get_event_channels(event_menu)
-
-        current_general_perms = general_channel.overwrites
-        current_vc_perms = voice_channel.overwrites
-        current_sign_in_perms = sign_in_channel.overwrites
-
-        if role_type == RoleTypeEnum.DEFAULT:
-            current_sign_in_perms[role] = denied_perms
-            current_vc_perms[role] = denied_perms
-            current_general_perms[role] = denied_perms
-        if role_type == RoleTypeEnum.SHARED:
-            current_sign_in_perms[role] = read_only_perms
-            current_vc_perms[role] = denied_perms
-            current_general_perms[role] = denied_perms
-        if role_type == RoleTypeEnum.EVENT:
-            current_sign_in_perms[role] = read_only_perms
-            current_vc_perms[role] = writable_perms
-            current_general_perms[role] = writable_perms
-        if role_type == RoleTypeEnum.TOP:
-            current_sign_in_perms[role] = writable_perms
-            current_vc_perms[role] = writable_perms
-            current_general_perms[role] = writable_perms
-
-        await general_channel.edit(overwrites=current_general_perms, reason=reason)
-        await sign_in_channel.edit(overwrites=current_sign_in_perms, reason=reason)
-        await voice_channel.edit(overwrites=current_vc_perms, reason=reason)
-
-    async def set_closed_perms(self, event_menu, role, role_type, reason):
-        """
-        Sets the permissions for the given role and role type for when the event is closed.
-        :param event_menu: The menu of the event.
-        :param role: The role to update the permissions of.
-        :param role_type: The type of role the role is.
-        :param reason: The audit log reason to log with.
-        """
-        general_channel, sign_in_channel, voice_channel = self.get_event_channels(event_menu)
-
-        current_general_perms = general_channel.overwrites
-        current_vc_perms = voice_channel.overwrites
-        current_sign_in_perms = sign_in_channel.overwrites
-
-        if role_type == RoleTypeEnum.TOP:
-            current_sign_in_perms[role] = writable_perms
-            current_vc_perms[role] = writable_perms
-            current_general_perms[role] = writable_perms
-        else:
-            current_sign_in_perms[role] = denied_perms
-            current_vc_perms[role] = denied_perms
-            current_general_perms[role] = denied_perms
-
-        await general_channel.edit(overwrites=current_general_perms, reason=reason)
-        await sign_in_channel.edit(overwrites=current_sign_in_perms, reason=reason)
-        await voice_channel.edit(overwrites=current_vc_perms, reason=reason)
-
-    @staticmethod
-    def get_event_channels(event_menu):
-        """
-        Gets the channels in a category that were created by the bot for the event .
-        :param event_menu: The event menu of the event to find the channels of .
-        :return: A triple Tuple of general channel, sign in channel, and voice channel .
-        """
-        sign_in_channel = event_menu.message.channel
-        general_channel = list(filter(lambda x: GENERAL_CHANNEL_SUFFIX in x.name, event_menu.event_category.text_channels))[0]
-        voice_channel = list(filter(lambda x: VOICE_CHANNEL_SUFFIX in x.name, event_menu.event_category.voice_channels))[0]
-        return general_channel, sign_in_channel, voice_channel
-
     @commands.group(name="events", invoke_without_command=True)
     async def event_command_group(self, context: commands.context):
         """
@@ -272,30 +185,40 @@ class EventCategoriesCog(commands.Cog):
                 await context.reply(self.user_strings["event_exists"].format(event_name=event_name))
                 return
 
-        # Create the channels for the event:
-        event_category = await context.guild.create_category(name=event_name, reason=audit_reason)
-        event_sign_in_channel = await context.guild.create_text_channel(
-            name=f"{event_name} {SIGN_IN_CHANNEL_SUFFIX}",
-            category=event_category,
-            sync_permissions=False,
-            reason=audit_reason
-        )
-        await context.guild.create_text_channel(
-            name=f"{event_name} {GENERAL_CHANNEL_SUFFIX}",
-            category=event_category,
-            sync_permissions=False,
-            reason=audit_reason
-        )
-        await context.guild.create_voice_channel(
-            name=f"{event_name} {VOICE_CHANNEL_SUFFIX}",
-            category=event_category,
-            sync_permissions=False,
-            reason=audit_reason
-        )
         event_role = await context.guild.create_role(name=event_name, reason=audit_reason)
 
-        # Used to ensure that the bot can always see/type in the channel.
-        bot_top_role = context.me.roles[-1]
+        category_overwrites = {
+            context.me: writable_perms,
+            event_role: writable_perms,
+            shared_role: denied_perms,
+            context.guild.default_role: denied_perms
+        }
+
+        signin_overwrites = {
+            context.me: writable_perms,
+            event_role: read_only_perms,
+            shared_role: denied_perms,
+            context.guild.default_role: denied_perms
+        }
+
+        # Create the channels for the event:
+        event_category = await context.guild.create_category(name=event_name, overwrites=category_overwrites, reason=audit_reason)
+        event_sign_in_channel = await event_category.create_text_channel(
+            name=f"{event_name} {SIGN_IN_CHANNEL_SUFFIX}",
+            sync_permissions=False,
+            overwrites=signin_overwrites,
+            reason=audit_reason
+        )
+        await event_category.create_text_channel(
+            name=f"{event_name} {GENERAL_CHANNEL_SUFFIX}",
+            sync_permissions=True,
+            reason=audit_reason
+        )
+        await event_category.create_voice_channel(
+            name=f"{event_name} {VOICE_CHANNEL_SUFFIX}",
+            sync_permissions=True,
+            reason=audit_reason
+        )
 
         # Create the sign-in message:
         event_menu = EventReactMenu(
@@ -309,16 +232,6 @@ class EventCategoriesCog(commands.Cog):
         event_menu.add_option(SIGN_IN_EMOJI, event_role)
 
         await event_menu.finalise_and_send(self.bot, event_sign_in_channel)
-
-        await self.set_role_permissions_for_event(event_menu, bot_top_role, RoleTypeEnum.TOP, reason=audit_reason)
-        await self.set_role_permissions_for_event(event_menu, shared_role, RoleTypeEnum.SHARED, reason=audit_reason)
-        await self.set_role_permissions_for_event(event_menu, event_role, RoleTypeEnum.EVENT, reason=audit_reason)
-        await self.set_role_permissions_for_event(
-            event_menu,
-            context.guild.default_role,
-            RoleTypeEnum.DEFAULT,
-            reason=audit_reason
-        )
 
         db_item = EventCategories(
             guild_id=context.guild.id,
@@ -362,20 +275,13 @@ class EventCategoriesCog(commands.Cog):
             await self.send_current_events(context)
             return
 
-        bot_top_role = context.me.roles[-1]
-
         await event_menu.enable_menu(self.bot)
         self.update_event(context.guild.id, event_menu)
 
-        await self.set_role_permissions_for_event(event_menu, bot_top_role, RoleTypeEnum.TOP, reason=audit_reason)
-        await self.set_role_permissions_for_event(event_menu, event_menu.shared_role, RoleTypeEnum.SHARED, reason=audit_reason)
-        await self.set_role_permissions_for_event(event_menu, event_menu.event_role, RoleTypeEnum.EVENT, reason=audit_reason)
-        await self.set_role_permissions_for_event(
-            event_menu,
-            context.guild.default_role,
-            RoleTypeEnum.DEFAULT,
-            reason=audit_reason
-        )
+        signin_channel = event_menu.message.channel
+        current_perms = signin_channel.overwrites
+        current_perms[event_menu.shared_role] = read_only_perms
+        await signin_channel.edit(overwrites=current_perms, reason=audit_reason)
 
         self.logger.info(f"Successfully opened an event with the name {event_name} in {context.guild.name}")
         await context.reply(
@@ -407,20 +313,15 @@ class EventCategoriesCog(commands.Cog):
             await self.send_current_events(context)
             return
 
-        bot_top_role = context.me.roles[-1]
-
         await event_menu.disable_menu(self.bot)
         self.update_event(context.guild.id, event_menu)
 
-        await self.set_role_permissions_for_event(event_menu, bot_top_role, RoleTypeEnum.TOP, reason=audit_reason)
-        await self.set_role_permissions_for_event(event_menu, event_menu.shared_role, RoleTypeEnum.SHARED, reason=audit_reason)
-        await self.set_role_permissions_for_event(event_menu, event_menu.event_role, RoleTypeEnum.EVENT, reason=audit_reason)
-        await self.set_role_permissions_for_event(
-            event_menu,
-            context.guild.default_role,
-            RoleTypeEnum.DEFAULT,
-            reason=audit_reason
-        )
+        signin_channel = event_menu.message.channel
+        current_perms = signin_channel.overwrites
+        current_perms[event_menu.shared_role] = denied_perms
+        await signin_channel.edit(overwrites=current_perms, reason=audit_reason)
+
+        await self.remove_react_roles(context, event_menu, event_name)
 
         self.logger.info(f"Successfully closed an event with the name {event_name} in {context.guild.name}")
         await context.reply(self.user_strings["success_event_closed"])
@@ -487,6 +388,18 @@ class EventCategoriesCog(commands.Cog):
 
         self.logger.info(f"Deletion of {event_name} menu cancelled by {context.author.name}#{context.author.discriminator}")
         await context.reply(self.user_strings["delete_cancelled"].format(event_name=event_name))
+
+    @staticmethod
+    async def remove_react_roles(context, event_menu, event_name):
+        all_members = context.guild.members
+        for member in all_members:
+            if event_menu.event_role in member.roles:
+                await member.remove_roles(event_menu.event_role, reason=f"{event_name} Event Closed")
+
+        reactions = event_menu.message.reactions
+
+        for reaction in reactions:
+            await reaction.clear()
 
     @create_event.error
     async def on_create_event_error(self, context: commands.Context, error: commands.CommandError):
