@@ -89,6 +89,14 @@ class VoiceAdmin(Cog):
     async def limit_channel(self, interaction: Interaction, user_limit: int = 0):
         pass
 
+    @command(
+        name=COG_STRINGS["vc_unlimit_name"],
+        description=f"{COG_STRINGS['vc_unlimit_description']} {COG_STRINGS['vc_must_be_owner']}"
+    )
+    @guild_only()
+    async def unlimit_channel(self, interaction: Interaction):
+        pass
+
 
 async def setup(bot: Bot):
     await bot.add_cog(VoiceAdmin(bot))
