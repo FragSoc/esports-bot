@@ -1,6 +1,6 @@
 from discord import Interaction
 from discord.ext.commands import Bot, Cog
-from discord.app_commands import command, default_permissions, checks, guild_only
+from discord.app_commands import command, describe, rename, default_permissions, checks, guild_only
 
 import logging
 from common.io import load_bot_version, load_cog_toml
@@ -33,6 +33,15 @@ class AdminTools(Cog):
     @checks.has_permissions(administrator=True)
     @guild_only
     async def get_bot_version(self, interaction: Interaction):
+        pass
+
+    @command(name=COG_STRINGS["admin_clear_name"], description=COG_STRINGS["admin_clear_description"])
+    @describe(count=COG_STRINGS["admin_clear_param_describe"])
+    @rename(count=COG_STRINGS["admin_clear_param_rename"])
+    @default_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
+    @guild_only
+    async def clear_messages(self, interaction: Interaction, count: int = 5):
         pass
 
 
