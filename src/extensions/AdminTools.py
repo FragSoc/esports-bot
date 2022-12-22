@@ -1,4 +1,6 @@
+from discord import Interaction
 from discord.ext.commands import Bot, Cog
+from discord.app_commands import command, default_permissions, checks, guild_only
 
 import logging
 from common.io import load_bot_version, load_cog_toml
@@ -18,6 +20,13 @@ class AdminTools(Cog):
             self.version_string = COG_STRINGS["admin_version_format"].format(version=version)
 
         self.logger.info(f"{__name__} has been added as a Cog")
+
+    @command(name=COG_STRINGS["admin_members_name"], description=COG_STRINGS["admin_members_description"])
+    @default_permissions(administrator=True)
+    @checks.has_permssions(administrator=True)
+    @guild_only()
+    async def get_member_count(self, interaction: Interaction):
+        pass
 
 
 async def setup(bot: Bot):
