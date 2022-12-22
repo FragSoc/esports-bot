@@ -5,12 +5,7 @@ discord.py[voice]
 python-dotenv
 emoji
 lxml
-google-api-python-client
-yt-dlp
-youtube-search-python
 PyNaCl
 aiohttp[speedups]
-toml
-tornado
-tweepy==3.10.0
 coloredlogs
+uvloop
