@@ -52,7 +52,8 @@ class AdminTools(Cog):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
-        pass
+        await interaction.response.send_message(self.version_string)
+        return True
 
     @command(name=COG_STRINGS["admin_clear_name"], description=COG_STRINGS["admin_clear_description"])
     @describe(count=COG_STRINGS["admin_clear_param_describe"])

@@ -44,7 +44,6 @@ All commands in this cog require the user to have the administrator permission i
 #### /admin-get-version
 
 - Get the current version of the Bot.
-- _Not yet implmented!_
 
 </details>
 
