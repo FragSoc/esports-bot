@@ -39,6 +39,15 @@ class VoiceAdmin(Cog):
     async def set_parent_channel(self, interaction: Interaction, channel: VoiceChannel):
         pass
 
+    @command(name=COG_STRINGS["vc_remove_parent_name"], description=COG_STRINGS["vc_remove_parent_description"])
+    @describe(channel=COG_STRINGS["vc_remove_parent_param_describe"])
+    @rename(channel=COG_STRINGS["vc_remove_parent_param_rename"])
+    @default_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
+    @guild_only()
+    async def remove_parent_channel(self, interaction: Interaction, channel: VoiceChannel):
+        pass
+
 
 async def setup(bot: Bot):
     await bot.add_cog(VoiceAdmin(bot))
