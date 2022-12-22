@@ -28,6 +28,13 @@ class AdminTools(Cog):
     async def get_member_count(self, interaction: Interaction):
         pass
 
+    @command(name=COG_STRINGS["admin_version_name"], description=COG_STRINGS["admin_version_description"])
+    @default_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
+    @guild_only
+    async def get_bot_version(self, interaction: Interaction):
+        pass
+
 
 async def setup(bot: Bot):
     await bot.add_cog(AdminTools(bot))
