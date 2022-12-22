@@ -9,6 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 def start_bot():
+    """Performs final checks before running the bot and if successful, starts the bot.
+
+    Raises:
+        RuntimeError: If DISCORD_TOKEN environment variable is missing.
+    """
     logger.info("Loading bot...")
 
     if not os.getenv("DISCORD_TOKEN"):
