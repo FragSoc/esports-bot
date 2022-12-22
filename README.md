@@ -17,46 +17,7 @@ Dependency Versions:
 
 This Discord bot was written to merge all the functions of different bots used in the Fragsoc Discord server into one bot that is maintained by Fragsoc members.
 
-## How to set up an instance of this bot without Docker
-
-Requirements needed to run:
-
-- Python 3.8
-- Pip
-- [A postgres 11 database](https://www.postgresql.org/docs/current/admin.html)
-
-1. Clone this repository:
-
-```console
-$ git clone https://github.com/FragSoc/esports-bot.git
-```
-
-2. Change into the repo directory:
-
-```console
-$ cd esports-bot
-```
-
-3. Rename the `secrets.template` to `secrets.env` and set all the variables.
-
-```console
-$ nano secrets.env
-$ source secrets.env
-```
-
-4. Install all the requirements for python:
-
-```bash
-pip install -r requirements.txt
-```
-
-5. Run the bot:
-
-```bash
-python3 src/main.py
-```
-
-## Current Functions
+# Current Functions
 
 The list below describes the different "Cogs" of the bot, their associated commands, and any additional information required to set them up.
 
@@ -164,3 +125,50 @@ The user has control over the child Voice Channel name, and can limit how many/w
 ### _Not yet implemented!_
 
 </details>
+
+# TODO:
+
+- Implement unimplemented commands in VoiceAdmin and AdminTools cogs.
+- Implement EventTools cog.
+- Implement AutoRoles cog.
+- Add back functionality of previous bot (eg. Music, PingableRoles, etc.)
+- Add game deal tracker (DealTracker(?) cog)
+
+# Quick Setup Guide
+
+Requirements needed to run:
+
+- Python 3.8
+- Pip
+- [A postgres 11 database](https://www.postgresql.org/docs/current/admin.html)
+
+1. Clone this repository:
+
+```console
+$ git clone https://github.com/FragSoc/esports-bot.git
+```
+
+2. Change into the repo directory:
+
+```console
+$ cd esports-bot
+```
+
+3. Rename the `secrets.template` to `secrets.env` and set all the variables.
+
+```console
+$ nano secrets.env
+$ source secrets.env
+```
+
+4. Install all the requirements for python:
+
+```bash
+pip install -r requirements.txt
+```
+
+5. Run the bot:
+
+```bash
+python3 src/main.py
+```
