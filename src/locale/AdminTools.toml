@@ -1,0 +1,19 @@
+admin_members_name = "admin-member-count"
+admin_members_description = "Get the current member count of the server."
+admin_members_format = "Current member count — `{count}` ."
+
+admin_user_info_name = "admin-user-info"
+admin_user_info_title = "{user} — User Info"
+admin_user_info_description = "Showing the user info for {mention} \n"
+
+admin_clear_name = "admin-clear-messages"
+admin_clear_description = "Delete a specific number of messages in the given channel. "
+admin_clear_param_describe = "The number of messages to delete. Defaults to 5 messages."
+admin_clear_param_rename = "message-count"
+admin_clear_warn_too_many = "The maximum number of messages that can be deleted in one go is 100 ⚠️"
+admin_clear_success = "Successfully deleted `{count}` message(s) ✅"
+
+admin_version_name = "admin-get-version"
+admin_version_description = "Get the current version of the Bot."
+admin_version_format = "Current version — `{version}`"
+admin_version_missing = "No current bot version set ⚠️"
