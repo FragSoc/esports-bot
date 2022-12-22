@@ -1,3 +1,4 @@
+from discord import Member, VoiceState
 from discord.ext.commands import Bot, Cog
 
 import logging
@@ -12,6 +13,21 @@ class VoiceAdmin(Cog):
         self.bot = bot
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__} has been added as a Cog")
+
+    @Cog.listener()
+    async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
+        if not member.guild.me.guild_permissions.move_members:
+            self.logger.error(f"Missing perimssion `move_members` in guild {member.guild.name} (guildid - {member.guild.id})!")
+            return
+
+        if not before.channel and not after.channel:
+            return
+
+        if before.channel:
+            pass
+
+        if after.channel:
+            pass
 
 
 async def setup(bot: Bot):
