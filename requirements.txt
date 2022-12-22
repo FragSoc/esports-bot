@@ -9,3 +9,4 @@ PyNaCl
 aiohttp[speedups]
 coloredlogs
 uvloop
+toml
