@@ -19,6 +19,7 @@ class VoiceAdminChild(base):
     primary_key = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
     channel_id = Column(BigInteger, nullable=False)
+    owner_id = Column(BigInteger, nullable=False)
     is_locked = Column(Boolean, nullable=False)
     is_limited = Column(Boolean, nullable=False)
     has_custom_name = Column(Boolean, nullable=False)
