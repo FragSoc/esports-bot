@@ -1,5 +1,6 @@
-from discord import Member, VoiceState
+from discord import Interaction, Member, VoiceChannel, VoiceState
 from discord.ext.commands import Bot, Cog
+from discord.app_commands import command, describe, rename, default_permissions, checks, guild_only
 
 import logging
 from common.io import load_cog_toml
@@ -28,6 +29,15 @@ class VoiceAdmin(Cog):
 
         if after.channel:
             pass
+
+    @command(name=COG_STRINGS["vc_set_parent_name"], description=COG_STRINGS["vc_set_parent_description"])
+    @describe(channel=COG_STRINGS["vc_set_parent_param_describe"])
+    @rename(channel=COG_STRINGS["vc_set_parent_param_rename"])
+    @default_permissions(administrator=True)
+    @checks.has_permssions(administrator=True)
+    @guild_only()
+    async def set_parent_channel(self, interaction: Interaction, channel: VoiceChannel):
+        pass
 
 
 async def setup(bot: Bot):
