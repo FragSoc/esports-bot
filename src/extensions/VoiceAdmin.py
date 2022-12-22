@@ -53,6 +53,16 @@ class VoiceAdmin(Cog):
     async def get_parent_channels(self, interaction: Interaction):
         pass
 
+    @command(
+        name=COG_STRINGS["vc_rename_name"],
+        description=f"{COG_STRINGS['vc_rename_description']} {COG_STRINGS['vc_must_be_owner']}"
+    )
+    @describe(new_name=COG_STRINGS["vc_rename_param_describe"])
+    @rename(new_name=COG_STRINGS["vc_rename_param_rename"])
+    @guild_only()
+    async def rename_channel(self, interaction: Interaction, new_name: str = ""):
+        pass
+
 
 async def setup(bot: Bot):
     await bot.add_cog(VoiceAdmin(bot))
