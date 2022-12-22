@@ -63,6 +63,14 @@ class VoiceAdmin(Cog):
     async def rename_channel(self, interaction: Interaction, new_name: str = ""):
         pass
 
+    @command(
+        name=COG_STRINGS["vc_lock_name"],
+        description=f"{COG_STRINGS['vc_lock_description']} {COG_STRINGS['vc_must_be_owner']}"
+    )
+    @guild_only()
+    async def lock_channel(self, interaction: Interaction):
+        pass
+
 
 async def setup(bot: Bot):
     await bot.add_cog(VoiceAdmin(bot))
