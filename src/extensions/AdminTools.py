@@ -69,7 +69,13 @@ class AdminTools(Cog):
             interaction (Interaction): The interaction that triggered the command.
             count (int, optional): The number of messages to delete. Defaults to 5. Maximum 100.
         """
-        pass
+        if count > 100:
+            await interaction.response.send_message(COG_STRINGS["admin_clear_warn_too_many"])
+            return False
+
+        await interaction.response.defer()
+        await interaction.channel.purge(limit=count)
+        return True
 
 
 async def setup(bot: Bot):

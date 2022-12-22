@@ -39,7 +39,6 @@ All commands in this cog require the user to have the administrator permission i
 
 - Delete a specific number of messages in the given channel.
   Defaults to 5 messages, with a maximum of 100 messages.
-- _Not yet implmented!_
 
 #### /admin-get-version
 
