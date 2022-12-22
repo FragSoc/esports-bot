@@ -8,6 +8,18 @@ from common.io import load_cog_toml
 COG_STRINGS = load_cog_toml(__name__)
 
 
+def channel_is_child(channel: VoiceChannel):
+    return False
+
+
+def channel_is_parent(channel: VoiceChannel):
+    return False
+
+
+def member_is_owner(member: Member, channel: VoiceChannel, db_entry=None):
+    return False
+
+
 class VoiceAdmin(Cog):
 
     def __init__(self, bot: Bot):
@@ -46,10 +58,26 @@ class VoiceAdmin(Cog):
             return
 
         if before.channel:
-            pass
+            if not channel_is_child(before.channel):
+                return
+
+            if not before.channel.members:
+                await before.channel.delete()
+                if not channel_is_parent(after.channel):
+                    return
+
+            if member_is_owner(member, before.channel):
+                new_owner = before.channel.members[0]
+                await before.channel.edit(name=f"{new_owner.display_name}'s VC")
 
         if after.channel:
-            pass
+            if not channel_is_parent(after.channel):
+                return
+
+            new_child_channel: VoiceChannel = await after.channel.category.create_voice_channel(
+                name=f"{member.display_name}'s VC"
+            )
+            await member.move_to(new_child_channel)
 
     @command(name=COG_STRINGS["vc_set_parent_name"], description=COG_STRINGS["vc_set_parent_description"])
     @describe(channel=COG_STRINGS["vc_set_parent_param_describe"])
