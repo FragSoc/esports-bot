@@ -10,10 +10,17 @@ __all__ = ["EsportsBot"]
 class __EsportsBot(Bot):
 
     def __init__(self, command_prefix: str, *args, **kwargs):
+        """Creates a new instance of the the private EsportsBot class.
+
+        Args:
+            command_prefix (str): The character(s) to use as the legacy command prefix.
+        """
         super().__init__(command_prefix, *args, **kwargs)
         self.logger = logging.getLogger(__name__)
 
     async def setup_hook(self):
+        """The setup function that is called prior to the bot connecting to the Discord Gateway.
+        """
         # List of extensions to load. Initialised with default extensions.
         enabled_extensions: List[str] = ["AdminTools"]
         # Dictionary of Environment variables -> extension name
