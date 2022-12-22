@@ -30,7 +30,7 @@ class AdminTools(Cog):
 
     @command(name=COG_STRINGS["admin_members_name"], description=COG_STRINGS["admin_members_description"])
     @default_permissions(administrator=True)
-    @checks.has_permssions(administrator=True)
+    @checks.has_permissions(administrator=True)
     @guild_only()
     async def get_member_count(self, interaction: Interaction):
         """The command used to get the current member count in the current guild/server.

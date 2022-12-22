@@ -55,7 +55,7 @@ class VoiceAdmin(Cog):
     @describe(channel=COG_STRINGS["vc_set_parent_param_describe"])
     @rename(channel=COG_STRINGS["vc_set_parent_param_rename"])
     @default_permissions(administrator=True)
-    @checks.has_permssions(administrator=True)
+    @checks.has_permissions(administrator=True)
     @guild_only()
     async def set_parent_channel(self, interaction: Interaction, channel: VoiceChannel):
         """The command used to set a given Voice Channel to be a parent Voice Channel.
