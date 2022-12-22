@@ -73,6 +73,14 @@ class VoiceAdmin(Cog):
             if not channel_is_child(before.channel):
                 return
 
+            if not before.channel.category.permissions_for(before.channel.guild.me).manage_channels:
+                self.logger.error(
+                    f"Missing permission `manage_channels` for category {before.channel.category.name} "
+                    f"(channelid - {before.channel.category.id}) in guild {before.channel.guild.name} "
+                    f"(guildid - {before.channel.guild.id})"
+                )
+                return
+
             db_entry: VoiceAdminChild = DBSession.get(
                 VoiceAdminChild,
                 guild_id=before.channel.guild.id,
@@ -93,6 +101,14 @@ class VoiceAdmin(Cog):
 
         if after.channel:
             if not channel_is_parent(after.channel):
+                return
+
+            if not after.channel.category.permissions_for(after.channel.guild.me).manage_channels:
+                self.logger.error(
+                    f"Missing permission `manage_channels` for category {after.channel.category.name} "
+                    f"(channelid - {after.channel.category.id}) in guild {after.channel.guild.name} "
+                    f"(guildid - {after.channel.guild.id})"
+                )
                 return
 
             new_child_channel: VoiceChannel = await after.channel.category.create_voice_channel(
