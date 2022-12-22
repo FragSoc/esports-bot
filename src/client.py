@@ -17,7 +17,7 @@ class __EsportsBot(Bot):
         # List of extensions to load. Initialised with default extensions.
         enabled_extensions: List[str] = []
         # Dictionary of Environment variables -> extension name
-        MODULE_ENV_VARS: Dict[str, Union[str, None]] = {}
+        MODULE_ENV_VARS: Dict[str, Union[str, None]] = {"VOICEADMIN": "VoiceAdmin"}
 
         # For each of the enabled Environment variables, add it's respective extension to the list.
         for var in MODULE_ENV_VARS:
