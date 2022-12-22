@@ -34,7 +34,6 @@ All commands in this cog require the user to have the administrator permission i
 #### /admin-member-count
 
 - Get the current member count of the server.
-- _Not yet implmented!_
 
 #### /admin-clear-messages [optional: message-count]
 

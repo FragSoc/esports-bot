@@ -38,7 +38,9 @@ class AdminTools(Cog):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
-        pass
+        member_count = interaction.guild.member_count
+        await interaction.response.send_message(COG_STRINGS["admin_members_format"].format(count=member_count))
+        return True
 
     @command(name=COG_STRINGS["admin_version_name"], description=COG_STRINGS["admin_version_description"])
     @default_permissions(administrator=True)
