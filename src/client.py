@@ -13,7 +13,7 @@ class __EsportsBot(Bot):
         super().__init__(command_prefix, *args, **kwargs)
         self.logger = logging.getLogger(__name__)
 
-    async def setup_hook(self) -> None:
+    async def setup_hook(self):
         # List of extensions to load. Initialised with default extensions.
         enabled_extensions: List[str] = ["AdminTools"]
         # Dictionary of Environment variables -> extension name
