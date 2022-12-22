@@ -4,20 +4,32 @@ from discord.app_commands import command, describe, rename, default_permissions,
 
 import logging
 from common.io import load_cog_toml
+from database.models import VoiceAdminParent, VoiceAdminChild
+from database.gateway import DBSession
 
 COG_STRINGS = load_cog_toml(__name__)
 
 
 def channel_is_child(channel: VoiceChannel):
-    return False
+    db_result = DBSession.get(VoiceAdminChild, guild_id=channel.guild.id, channel_id=channel.id)
+    return not not db_result
 
 
 def channel_is_parent(channel: VoiceChannel):
-    return False
+    db_result = DBSession.get(VoiceAdminParent, guild_id=channel.guild.id, channel_id=channel.id)
+    return not not db_result
 
 
-def member_is_owner(member: Member, channel: VoiceChannel, db_entry=None):
-    return False
+def member_is_owner(member: Member, channel: VoiceChannel, db_entry: VoiceAdminChild = None):
+    if db_entry is None:
+        db_entry: VoiceAdminChild = DBSession.get(VoiceAdminChild, guild_id=channel.guild.id, channel_id=channel.id)
+        if db_entry is None:
+            return False
+    return db_entry.owner_id == member.id
+
+
+def primary_key_from_channel(channel: VoiceChannel):
+    return int(f"{channel.guild.id % 100}{channel.id % 100}")
 
 
 class VoiceAdmin(Cog):
@@ -61,13 +73,22 @@ class VoiceAdmin(Cog):
             if not channel_is_child(before.channel):
                 return
 
+            db_entry: VoiceAdminChild = DBSession.get(
+                VoiceAdminChild,
+                guild_id=before.channel.guild.id,
+                channel_id=before.channel.id
+            )
+
             if not before.channel.members:
                 await before.channel.delete()
+                DBSession.delete(db_entry)
                 if not channel_is_parent(after.channel):
                     return
 
-            if member_is_owner(member, before.channel):
+            if member_is_owner(member, before.channel, db_entry):
                 new_owner = before.channel.members[0]
+                db_entry.owner_id = new_owner.id
+                DBSession.update(db_entry)
                 await before.channel.edit(name=f"{new_owner.display_name}'s VC")
 
         if after.channel:
@@ -77,6 +98,16 @@ class VoiceAdmin(Cog):
             new_child_channel: VoiceChannel = await after.channel.category.create_voice_channel(
                 name=f"{member.display_name}'s VC"
             )
+            db_entry: VoiceAdminChild = VoiceAdminChild(
+                primary_key=primary_key_from_channel(new_child_channel),
+                guild_id=new_child_channel.guild.id,
+                channel_id=new_child_channel.id,
+                owner_id=member.id,
+                is_locked=False,
+                is_limited=False,
+                has_custom_name=False
+            )
+            DBSession.create(db_entry)
             await member.move_to(new_child_channel)
 
     @command(name=COG_STRINGS["vc_set_parent_name"], description=COG_STRINGS["vc_set_parent_description"])
