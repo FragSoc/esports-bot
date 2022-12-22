@@ -15,7 +15,7 @@ class __EsportsBot(Bot):
 
     async def setup_hook(self) -> None:
         # List of extensions to load. Initialised with default extensions.
-        enabled_extensions: List[str] = []
+        enabled_extensions: List[str] = ["AdminTools"]
         # Dictionary of Environment variables -> extension name
         MODULE_ENV_VARS: Dict[str, Union[str, None]] = {"VOICEADMIN": "VoiceAdmin"}
 
