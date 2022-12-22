@@ -14,3 +14,12 @@ def load_cog_toml(cog_path: str) -> Dict:
     except FileNotFoundError:
         logger.warning(f"Unable to load TOML file for {cog_path}")
         return {}
+
+
+def load_bot_version():
+    file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "version.txt"))
+    try:
+        with open(file_path, "rt") as file:
+            return file.readline()
+    except FileNotFoundError:
+        return None
