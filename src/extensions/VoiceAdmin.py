@@ -240,7 +240,38 @@ class VoiceAdmin(Cog):
             new_name (str, optional): The new name to set the Voice Channel to.
             Defaults to the default child Voice Channel string.
         """
-        pass
+        voice_state = interaction.user.voice
+
+        if voice_state is None:
+            await interaction.response.send_message(COG_STRINGS["vc_rename_warn_no_voice"])
+            return False
+
+        voice_channel = voice_state.channel
+        db_entry = DBSession.get(VoiceAdminChild, guild_id=voice_channel.guild.id, channel_id=voice_channel.id)
+
+        if not member_is_owner(interaction.user, voice_channel, db_entry):
+            await interaction.response.send_message(COG_STRINGS["vc_rename_warn_not_owner"])
+            return False
+
+        name_set = new_name if new_name else f"{interaction.user.display_name}'s VC"
+
+        if not new_name:
+            if db_entry.has_custom_name:
+                await voice_channel.edit(name=f"{interaction.user.display_name}'s VC")
+                db_entry.has_custom_name = False
+                DBSession.update(db_entry)
+        else:
+            await voice_channel.edit(name=new_name)
+            if not db_entry.has_custom_name:
+                db_entry.has_custom_name = True
+                DBSession.update(db_entry)
+
+        self.logger.info(
+            f"Updated child Voice Channel of {interaction.user.display_name} "
+            f"(guildid - {interaction.guild.id} | channelid - {voice_channel.id}) to {name_set}"
+        )
+        await interaction.response.send_message(COG_STRINGS["vc_rename_success"].format(name=name_set))
+        return True
 
     @command(
         name=COG_STRINGS["vc_lock_name"],
