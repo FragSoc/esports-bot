@@ -66,7 +66,6 @@ The user has control over the child Voice Channel name, and can limit how many/w
 #### /vc-remove-parent \<voice-channel\>
 
 - Remove a Voice Channel from being a parent Voice Channel.
-- _Not yet implmented!_
 
 #### /vc-get-parents
 

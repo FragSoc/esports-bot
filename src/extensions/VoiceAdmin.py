@@ -185,7 +185,14 @@ class VoiceAdmin(Cog):
             interaction (Interaction): The interaction that triggered the command.
             channel (VoiceChannel): The Voice Channel to stop behaving as a parent Voice Channel.
         """
-        pass
+        if not channel_is_parent(channel):
+            await interaction.response.send_message(COG_STRINGS["vc_remove_parent_warn_not_parent"])
+            return False
+
+        db_entry = DBSession.get(VoiceAdminParent, guild_id=channel.guild.id, channel_id=channel.id)
+        DBSession.delete(db_entry)
+        await interaction.response.send_message(COG_STRINGS["vc_remove_parent_success"].format(channel=channel.name))
+        return True
 
     @command(name=COG_STRINGS["vc_get_parents_name"], description=COG_STRINGS["vc_get_parents_description"])
     @guild_only()
