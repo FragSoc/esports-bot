@@ -11,16 +11,23 @@ COG_STRINGS = load_cog_toml(__name__)
 
 
 def channel_is_child(channel: VoiceChannel):
+    if not channel:
+        return False
     db_result = DBSession.get(VoiceAdminChild, guild_id=channel.guild.id, channel_id=channel.id)
     return not not db_result
 
 
 def channel_is_parent(channel: VoiceChannel):
+    if not channel:
+        return False
     db_result = DBSession.get(VoiceAdminParent, guild_id=channel.guild.id, channel_id=channel.id)
     return not not db_result
 
 
 def member_is_owner(member: Member, channel: VoiceChannel, db_entry: VoiceAdminChild = None):
+    if not channel:
+        return False
+
     if db_entry is None:
         db_entry: VoiceAdminChild = DBSession.get(VoiceAdminChild, guild_id=channel.guild.id, channel_id=channel.id)
         if db_entry is None:
