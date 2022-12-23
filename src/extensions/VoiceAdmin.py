@@ -209,7 +209,18 @@ class VoiceAdmin(Cog):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
-        pass
+        db_items = DBSession.list(VoiceAdminParent)
+
+        fetched_channels = [await interaction.guild.fetch_channel(x.channel_id) for x in db_items]
+
+        if len(fetched_channels) == 0:
+            await interaction.response.send_message(COG_STRINGS["vc_get_parents_empty"])
+            return False
+
+        response_string = "\n".join([f"- {x.name}" for x in fetched_channels])
+
+        await interaction.response.send_message(COG_STRINGS["vc_get_parents_format"].format(channels=response_string))
+        return True
 
     @command(
         name=COG_STRINGS["vc_rename_name"],

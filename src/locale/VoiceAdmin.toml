@@ -21,6 +21,7 @@ vc_remove_parent_warn_already_child = "The Voice Channel selected cannot be a ch
 
 vc_get_parents_name = "vc-get-parents"
 vc_get_parents_description = "Get the list of current parent Voice Channels."
+vc_get_parents_empty = "There are currently no parent Voice channels in this server ⚠️"
 vc_get_parents_format = "Current parent Voice Channels in this server: \n {channels}"
 
 vc_rename_name = "vc-rename"
