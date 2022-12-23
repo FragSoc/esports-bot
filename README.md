@@ -62,7 +62,6 @@ The user has control over the child Voice Channel name, and can limit how many/w
 #### /vc-set-parent \<voice-channel\>
 
 - Set a Voice Channel to be a parent Voice Channel.
-- _Not yet implmented!_
 
 #### /vc-remove-parent \<voice-channel\>
 

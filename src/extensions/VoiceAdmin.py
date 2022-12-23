@@ -141,7 +141,26 @@ class VoiceAdmin(Cog):
             interaction (Interaction): The interaction that triggered the command.
             channel (VoiceChannel): The Voice Channel to set as a parent Voice Channel.
         """
-        pass
+        if channel_is_parent(channel):
+            await interaction.response.send_message(COG_STRINGS["vc_set_parent_warn_already_parent"])
+            return False
+
+        if channel_is_child(channel):
+            await interaction.response.send_message(COG_STRINGS["vc_set_parent_warn_already_child"])
+            return False
+
+        db_entry: VoiceAdminParent = VoiceAdminParent(
+            primary_key=primary_key_from_channel(channel),
+            guild_id=interaction.guild.id,
+            channel_id=channel.id
+        )
+        DBSession.create(db_entry)
+        self.logger.info(
+            f"Successfully added {channel.name} (guildid - {channel.guild.id} | channelid - {channel.id}) "
+            f"to Parent Voice Channel DB Table!"
+        )
+        await interaction.response.send_message(COG_STRINGS["vc_set_parent_success"].format(channel=channel))
+        return True
 
     @command(name=COG_STRINGS["vc_remove_parent_name"], description=COG_STRINGS["vc_remove_parent_description"])
     @describe(channel=COG_STRINGS["vc_remove_parent_param_describe"])
