@@ -97,6 +97,10 @@ class VoiceAdmin(Cog):
                 new_owner = before.channel.members[0]
                 db_entry.owner_id = new_owner.id
                 DBSession.update(db_entry)
+                self.logger.info(
+                    f"Deleted child Voice Channel - "
+                    f"{before.channel.name} (guildid - {before.channel.guild.id} | channelid - {before.channel.id}"
+                )
                 await before.channel.edit(name=f"{new_owner.display_name}'s VC")
 
         if after.channel:
@@ -124,6 +128,10 @@ class VoiceAdmin(Cog):
                 has_custom_name=False
             )
             DBSession.create(db_entry)
+            self.logger.info(
+                f"Created new child Voice Channel - "
+                f"{new_child_channel.name} (guildid - {new_child_channel.guild.id} | channelid - {new_child_channel.id})"
+            )
             await member.move_to(new_child_channel)
 
     @command(name=COG_STRINGS["vc_set_parent_name"], description=COG_STRINGS["vc_set_parent_description"])
