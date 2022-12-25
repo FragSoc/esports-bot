@@ -17,14 +17,15 @@ class AutoRoles(Cog):
 
     @Cog.listener
     async def on_member_join(self, member: Member):
-        pass
-
-    @Cog.listener
-    async def on_member_remove(self, member: Member):
-        pass
+        if not member.pending:
+            self.assign_roles(member)
 
     @Cog.listener
     async def on_member_update(self, before: Member, after: Member):
+        if before.pending and not after.pending:
+            self.assign_roles(after)
+
+    async def assign_roles(self, member: Member):
         pass
 
 
