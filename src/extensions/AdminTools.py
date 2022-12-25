@@ -80,7 +80,11 @@ class AdminTools(Cog):
             return False
 
         await interaction.response.defer()
-        await interaction.channel.purge(limit=count)
+        messages = await interaction.channel.purge(limit=count, before=interaction.created_at)
+        await interaction.followup.send(
+            COG_STRINGS["admin_clear_success"].format(count=len(messages)),
+            ephemeral=self.bot.only_ephemeral
+        )
         return True
 
 
