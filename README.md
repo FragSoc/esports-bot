@@ -130,6 +130,7 @@ Requirements needed to run:
 - Python 3.8
 - Pip
 - [A postgres 11 database](https://www.postgresql.org/docs/current/admin.html)
+  - If using the `DB_OVERRIDE` environment variable, any valid DB schema for SQLAlchemy can be used by providing the correct schema URI. These can be [found here](https://docs.sqlalchemy.org/en/14/dialects/).
 
 1. Clone this repository:
 
