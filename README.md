@@ -117,7 +117,7 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 # TODO:
 
-- Implement unimplemented commands in VoiceAdmin and AdminTools cogs.
+- ~~Implement unimplemented commands in VoiceAdmin and AdminTools cogs.~~
 - Implement EventTools cog.
 - Implement AutoRoles cog.
 - Add back functionality of previous bot (eg. Music, PingableRoles, etc.)
