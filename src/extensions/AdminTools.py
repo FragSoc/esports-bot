@@ -39,8 +39,10 @@ class AdminTools(Cog):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
+        await interaction.response.defer()
+
         member_count = interaction.guild.member_count
-        await interaction.response.send_message(
+        await interaction.followup.send(
             COG_STRINGS["admin_members_format"].format(count=member_count),
             ephemeral=self.bot.only_ephemeral
         )
