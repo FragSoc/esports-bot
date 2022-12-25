@@ -78,12 +78,10 @@ The user has control over the child Voice Channel name, and can limit how many/w
 #### /vc-lock
 
 - Only allow current members to (re)join your Voice Channel.
-- _Not yet implmented!_
 
 #### /vc-unlock
 
 - Allow anyone to join your Voice Channel again.
-- _Not yet implmented!_
 
 #### /vc-limit
 

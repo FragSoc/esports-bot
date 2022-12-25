@@ -1,3 +1,4 @@
+from discord.errors import Forbidden
 from discord import Interaction, Member, VoiceChannel, VoiceState
 from discord.ext.commands import Bot, Cog
 from discord.app_commands import command, describe, rename, default_permissions, checks, guild_only
@@ -288,7 +289,64 @@ class VoiceAdmin(Cog):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
-        pass
+        voice_state = interaction.user.voice
+
+        if voice_state is None:
+            await interaction.response.send_message(COG_STRINGS["vc_lock_warn_no_voice"])
+            return False
+
+        voice_channel = voice_state.channel
+        db_entry = DBSession.get(VoiceAdminChild, guild_id=voice_channel.guild.id, channel_id=voice_channel.id)
+
+        if not member_is_owner(interaction.user, voice_channel, db_entry):
+            await interaction.response.send_message(COG_STRINGS["vc_lock_warn_not_owner"])
+            return False
+
+        current_perms = voice_channel.overwrites
+
+        try:
+            await voice_channel.set_permissions(
+                voice_channel.guild.me.top_role,
+                connect=True,
+                view_channel=True,
+                manage_channels=True,
+                manage_permissions=True
+            )
+        except Forbidden:
+            self.logger.error(
+                f"Unable to change permissions for {voice_channel.guild.me.top_role.name} Role for child Voice channel "
+                f"(guildid - {voice_channel.guild.id} | channelid - {voice_channel.id}, "
+                f"as it is the bot's top role and it is not an admin in {voice_channel.guild.name} guild"
+            )
+
+        for group, permission in current_perms.items():
+            permission.connect = False
+            permission.speak = False
+            try:
+                await voice_channel.set_permissions(group, overwrite=permission)
+            except Forbidden:
+                self.logger.error(
+                    f"Unable to change permissions for {voice_channel.guild.me.top_role.name} Role for child Voice channel "
+                    f"(guildid - {voice_channel.guild.id} | channelid - {voice_channel.id}"
+                )
+
+        members = voice_channel.members
+        for member in members:
+            try:
+                await voice_channel.set_permissions(member, connect=True, speak=True, view_channel=True)
+            except Forbidden:
+                self.logger.error(
+                    f"Unable to change permissions for {member.display_name} member for child Voice channel "
+                    f"(guildid - {voice_channel.guild.id} | channelid - {voice_channel.id}"
+                )
+
+        if not db_entry.is_locked:
+            db_entry.is_locked = True
+            DBSession.update(db_entry)
+
+        await interaction.response.send_message(COG_STRINGS["vc_lock_success"])
+
+        return True
 
     @command(
         name=COG_STRINGS["vc_unlock_name"],
@@ -303,7 +361,31 @@ class VoiceAdmin(Cog):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
-        pass
+        voice_state = interaction.user.voice
+
+        if voice_state is None:
+            await interaction.response.send_message(COG_STRINGS["vc_unlock_warn_no_voice"])
+            return False
+
+        voice_channel = voice_state.channel
+        db_entry = DBSession.get(VoiceAdminChild, guild_id=voice_channel.guild.id, channel_id=voice_channel.id)
+
+        if not member_is_owner(interaction.user, voice_channel, db_entry):
+            await interaction.response.send_message(COG_STRINGS["vc_unlock_warn_not_owner"])
+            return False
+
+        if not db_entry.is_locked:
+            if not voice_channel.permissions_synced:
+                await voice_channel.edit(sync_permissions=True)
+            await interaction.response.send_message(COG_STRINGS["vc_unlock_warn_not_locked"])
+            return False
+
+        db_entry.is_locked = False
+        DBSession.update(db_entry)
+        await voice_channel.edit(sync_permissions=True)
+
+        await interaction.response.send_message(COG_STRINGS["vc_unlock_success"])
+        return True
 
     @command(
         name=COG_STRINGS["vc_limit_name"],
