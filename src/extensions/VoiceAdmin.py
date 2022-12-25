@@ -7,6 +7,7 @@ import logging
 from common.io import load_cog_toml
 from database.models import VoiceAdminParent, VoiceAdminChild
 from database.gateway import DBSession
+from client import EsportsBot
 
 COG_STRINGS = load_cog_toml(__name__)
 
@@ -42,7 +43,7 @@ def primary_key_from_channel(channel: VoiceChannel):
 
 class VoiceAdmin(Cog):
 
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: EsportsBot):
         """VoiceAdmin cog is used to dynamically create and manage Voice Channels,
         by assigning specific channels to act as parent channels.
 
@@ -175,7 +176,10 @@ class VoiceAdmin(Cog):
             f"Successfully added {channel.name} (guildid - {channel.guild.id} | channelid - {channel.id}) "
             f"to Parent Voice Channel DB Table!"
         )
-        await interaction.response.send_message(COG_STRINGS["vc_set_parent_success"].format(channel=channel))
+        await interaction.response.send_message(
+            COG_STRINGS["vc_set_parent_success"].format(channel=channel),
+            ephemeral=self.bot.only_ephemeral
+        )
         return True
 
     @command(name=COG_STRINGS["vc_remove_parent_name"], description=COG_STRINGS["vc_remove_parent_description"])
@@ -199,7 +203,10 @@ class VoiceAdmin(Cog):
 
         db_entry = DBSession.get(VoiceAdminParent, guild_id=channel.guild.id, channel_id=channel.id)
         DBSession.delete(db_entry)
-        await interaction.response.send_message(COG_STRINGS["vc_remove_parent_success"].format(channel=channel.name))
+        await interaction.response.send_message(
+            COG_STRINGS["vc_remove_parent_success"].format(channel=channel.name),
+            ephemeral=self.bot.only_ephemeral
+        )
         return True
 
     @command(name=COG_STRINGS["vc_get_parents_name"], description=COG_STRINGS["vc_get_parents_description"])
@@ -215,12 +222,15 @@ class VoiceAdmin(Cog):
         fetched_channels = [await interaction.guild.fetch_channel(x.channel_id) for x in db_items]
 
         if len(fetched_channels) == 0:
-            await interaction.response.send_message(COG_STRINGS["vc_get_parents_empty"])
+            await interaction.response.send_message(COG_STRINGS["vc_get_parents_empty"], ephemeral=self.bot.only_ephemeral)
             return False
 
         response_string = "\n".join([f"- {x.name}" for x in fetched_channels])
 
-        await interaction.response.send_message(COG_STRINGS["vc_get_parents_format"].format(channels=response_string))
+        await interaction.response.send_message(
+            COG_STRINGS["vc_get_parents_format"].format(channels=response_string),
+            ephemeral=self.bot.only_ephemeral
+        )
         return True
 
     @command(
@@ -271,7 +281,10 @@ class VoiceAdmin(Cog):
             f"Updated child Voice Channel of {interaction.user.display_name} "
             f"(guildid - {interaction.guild.id} | channelid - {voice_channel.id}) to {name_set}"
         )
-        await interaction.response.send_message(COG_STRINGS["vc_rename_success"].format(name=name_set))
+        await interaction.response.send_message(
+            COG_STRINGS["vc_rename_success"].format(name=name_set),
+            ephemeral=self.bot.only_ephemeral
+        )
         return True
 
     @command(
@@ -344,7 +357,7 @@ class VoiceAdmin(Cog):
             db_entry.is_locked = True
             DBSession.update(db_entry)
 
-        await interaction.response.send_message(COG_STRINGS["vc_lock_success"])
+        await interaction.response.send_message(COG_STRINGS["vc_lock_success"], ephemeral=self.bot.only_ephemeral)
 
         return True
 
@@ -384,7 +397,7 @@ class VoiceAdmin(Cog):
         DBSession.update(db_entry)
         await voice_channel.edit(sync_permissions=True)
 
-        await interaction.response.send_message(COG_STRINGS["vc_unlock_success"])
+        await interaction.response.send_message(COG_STRINGS["vc_unlock_success"], ephemeral=self.bot.only_ephemeral)
         return True
 
     @command(
@@ -429,7 +442,10 @@ class VoiceAdmin(Cog):
             db_entry.is_limited = True
             DBSession.update(db_entry)
 
-        await interaction.response.send_message(COG_STRINGS["vc_limit_success"].format(count=user_limit))
+        await interaction.response.send_message(
+            COG_STRINGS["vc_limit_success"].format(count=user_limit),
+            ephemeral=self.bot.only_ephemeral
+        )
         return True
 
     @command(
@@ -466,7 +482,7 @@ class VoiceAdmin(Cog):
         DBSession.update(db_entry)
         await voice_channel.edit(user_limit=None)
 
-        await interaction.response.send_message(COG_STRINGS["vc_unlimit_success"])
+        await interaction.response.send_message(COG_STRINGS["vc_unlimit_success"], ephemeral=self.bot.only_ephemeral)
         return True
 
 

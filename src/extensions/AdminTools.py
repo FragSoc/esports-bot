@@ -4,13 +4,14 @@ from discord.app_commands import command, describe, rename, default_permissions,
 
 import logging
 from common.io import load_bot_version, load_cog_toml
+from client import EsportsBot
 
 COG_STRINGS = load_cog_toml(__name__)
 
 
 class AdminTools(Cog):
 
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: EsportsBot):
         """AdminTools cog is used to manage basic Administrator/Moderation tools.
         All commands in this cog require the user to have the administrator permission
         in a given guild/server.
@@ -39,7 +40,10 @@ class AdminTools(Cog):
             interaction (Interaction): The interaction that triggered the command.
         """
         member_count = interaction.guild.member_count
-        await interaction.response.send_message(COG_STRINGS["admin_members_format"].format(count=member_count))
+        await interaction.response.send_message(
+            COG_STRINGS["admin_members_format"].format(count=member_count),
+            ephemeral=self.bot.only_ephemeral
+        )
         return True
 
     @command(name=COG_STRINGS["admin_version_name"], description=COG_STRINGS["admin_version_description"])
@@ -52,7 +56,7 @@ class AdminTools(Cog):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
-        await interaction.response.send_message(self.version_string)
+        await interaction.response.send_message(self.version_string, ephemeral=self.bot.only_ephemeral)
         return True
 
     @command(name=COG_STRINGS["admin_clear_name"], description=COG_STRINGS["admin_clear_description"])
