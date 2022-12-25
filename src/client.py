@@ -22,6 +22,9 @@ class __EsportsBot(Bot):
     async def setup_hook(self):
         """The setup function that is called prior to the bot connecting to the Discord Gateway.
         """
+        if not self.only_ephemeral:
+            self.only_ephemeral = os.getenv("ALL_MESSAGES_EPHEMERAL", "FALSE").upper() == "TRUE"
+
         # List of extensions to load. Initialised with default extensions.
         enabled_extensions: List[str] = ["AdminTools"]
         # Dictionary of Environment variables -> extension name
@@ -50,8 +53,4 @@ class __EsportsBot(Bot):
             await self.tree.sync(guild=DEV_GUILD)
 
 
-EsportsBot = __EsportsBot(
-    command_prefix=os.getenv("COMMAND_PREFIX"),
-    all_messages_ephemeral=os.getenv("ALL_MESSAGES_EPHEMERAL").upper() == "TRUE",
-    intents=Intents.all()
-)
+EsportsBot = __EsportsBot(command_prefix=os.getenv("COMMAND_PREFIX"), all_messages_ephemeral=False, intents=Intents.all())
