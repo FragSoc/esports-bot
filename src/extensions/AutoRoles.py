@@ -4,6 +4,8 @@ from discord import Member
 import logging
 from common.io import load_cog_toml
 from client import EsportsBot
+from database.gateway import DBSession
+from database.models import AutoRolesConfig
 
 COG_STRINGS = load_cog_toml(__name__)
 
@@ -26,7 +28,11 @@ class AutoRoles(Cog):
             self.assign_roles(after)
 
     async def assign_roles(self, member: Member):
-        pass
+        guild_roles = DBSession.list(AutoRolesConfig, guild_id=member.guild.id)
+
+        if guild_roles:
+            roles = [member.guild.get_role(x.role_id) for x in guild_roles]
+            await member.add_roles(roles)
 
 
 async def setup(bot: Bot):
