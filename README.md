@@ -70,12 +70,10 @@ The user has control over the child Voice Channel name, and can limit how many/w
 #### /vc-get-parents
 
 - Get the list of current parent Voice Channels.
-- _Not yet implmented!_
 
 #### /vc-rename \<new-name\>
 
-- Rename your current Voice Channel.
-- _Not yet implmented!_
+- Rename your current Voice Channel
 
 #### /vc-lock
 
