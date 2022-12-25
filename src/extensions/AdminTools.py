@@ -70,7 +70,7 @@ class AdminTools(Cog):
             count (int, optional): The number of messages to delete. Defaults to 5. Maximum 100.
         """
         if count > 100:
-            await interaction.response.send_message(COG_STRINGS["admin_clear_warn_too_many"])
+            await interaction.response.send_message(COG_STRINGS["admin_clear_warn_too_many"], ephemeral=True)
             return False
 
         await interaction.response.defer()

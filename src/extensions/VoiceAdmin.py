@@ -158,11 +158,11 @@ class VoiceAdmin(Cog):
             channel (VoiceChannel): The Voice Channel to set as a parent Voice Channel.
         """
         if channel_is_parent(channel):
-            await interaction.response.send_message(COG_STRINGS["vc_set_parent_warn_already_parent"])
+            await interaction.response.send_message(COG_STRINGS["vc_set_parent_warn_already_parent"], ephemeral=True)
             return False
 
         if channel_is_child(channel):
-            await interaction.response.send_message(COG_STRINGS["vc_set_parent_warn_already_child"])
+            await interaction.response.send_message(COG_STRINGS["vc_set_parent_warn_already_child"], ephemeral=True)
             return False
 
         db_entry: VoiceAdminParent = VoiceAdminParent(
@@ -194,7 +194,7 @@ class VoiceAdmin(Cog):
             channel (VoiceChannel): The Voice Channel to stop behaving as a parent Voice Channel.
         """
         if not channel_is_parent(channel):
-            await interaction.response.send_message(COG_STRINGS["vc_remove_parent_warn_not_parent"])
+            await interaction.response.send_message(COG_STRINGS["vc_remove_parent_warn_not_parent"], ephemeral=True)
             return False
 
         db_entry = DBSession.get(VoiceAdminParent, guild_id=channel.guild.id, channel_id=channel.id)
@@ -244,14 +244,14 @@ class VoiceAdmin(Cog):
         voice_state = interaction.user.voice
 
         if voice_state is None:
-            await interaction.response.send_message(COG_STRINGS["vc_rename_warn_no_voice"])
+            await interaction.response.send_message(COG_STRINGS["vc_rename_warn_no_voice"], ephemeral=True)
             return False
 
         voice_channel = voice_state.channel
         db_entry = DBSession.get(VoiceAdminChild, guild_id=voice_channel.guild.id, channel_id=voice_channel.id)
 
         if not member_is_owner(interaction.user, voice_channel, db_entry):
-            await interaction.response.send_message(COG_STRINGS["vc_rename_warn_not_owner"])
+            await interaction.response.send_message(COG_STRINGS["vc_rename_warn_not_owner"], ephemeral=True)
             return False
 
         name_set = new_name if new_name else f"{interaction.user.display_name}'s VC"
@@ -292,14 +292,14 @@ class VoiceAdmin(Cog):
         voice_state = interaction.user.voice
 
         if voice_state is None:
-            await interaction.response.send_message(COG_STRINGS["vc_lock_warn_no_voice"])
+            await interaction.response.send_message(COG_STRINGS["vc_lock_warn_no_voice"], ephemeral=True)
             return False
 
         voice_channel = voice_state.channel
         db_entry = DBSession.get(VoiceAdminChild, guild_id=voice_channel.guild.id, channel_id=voice_channel.id)
 
         if not member_is_owner(interaction.user, voice_channel, db_entry):
-            await interaction.response.send_message(COG_STRINGS["vc_lock_warn_not_owner"])
+            await interaction.response.send_message(COG_STRINGS["vc_lock_warn_not_owner"], ephemeral=True)
             return False
 
         current_perms = voice_channel.overwrites
@@ -364,20 +364,20 @@ class VoiceAdmin(Cog):
         voice_state = interaction.user.voice
 
         if voice_state is None:
-            await interaction.response.send_message(COG_STRINGS["vc_unlock_warn_no_voice"])
+            await interaction.response.send_message(COG_STRINGS["vc_unlock_warn_no_voice"], ephemeral=True)
             return False
 
         voice_channel = voice_state.channel
         db_entry = DBSession.get(VoiceAdminChild, guild_id=voice_channel.guild.id, channel_id=voice_channel.id)
 
         if not member_is_owner(interaction.user, voice_channel, db_entry):
-            await interaction.response.send_message(COG_STRINGS["vc_unlock_warn_not_owner"])
+            await interaction.response.send_message(COG_STRINGS["vc_unlock_warn_not_owner"], ephemeral=True)
             return False
 
         if not db_entry.is_locked:
             if not voice_channel.permissions_synced:
                 await voice_channel.edit(sync_permissions=True)
-            await interaction.response.send_message(COG_STRINGS["vc_unlock_warn_not_locked"])
+            await interaction.response.send_message(COG_STRINGS["vc_unlock_warn_not_locked"], ephemeral=True)
             return False
 
         db_entry.is_locked = False
@@ -408,20 +408,20 @@ class VoiceAdmin(Cog):
         voice_state = interaction.user.voice
 
         if not voice_state:
-            await interaction.response.send_message(COG_STRINGS["vc_limit_warn_no_voice"])
+            await interaction.response.send_message(COG_STRINGS["vc_limit_warn_no_voice"], ephemeral=True)
             return False
 
         voice_channel = voice_state.channel
         db_entry = DBSession.get(VoiceAdminChild, guild_id=voice_channel.guild.id, channel_id=voice_channel.id)
 
         if not member_is_owner(interaction.user, voice_channel, db_entry):
-            await interaction.response.send_message(COG_STRINGS["vc_limit_warn_not_owner"])
+            await interaction.response.send_message(COG_STRINGS["vc_limit_warn_not_owner"], ephemeral=True)
             return False
 
         if user_limit <= 0:
             user_limit = len(voice_channel.members)
         elif user_limit > 99:
-            await interaction.response.send_message(COG_STRINGS["vc_limit_warn_too_many"])
+            await interaction.response.send_message(COG_STRINGS["vc_limit_warn_too_many"], ephemeral=True)
             return False
 
         await voice_channel.edit(user_limit=user_limit)
@@ -448,18 +448,18 @@ class VoiceAdmin(Cog):
         voice_state = interaction.user.voice
 
         if not voice_state:
-            await interaction.response.send_message(COG_STRINGS["vc_unlimit_warn_no_voice"])
+            await interaction.response.send_message(COG_STRINGS["vc_unlimit_warn_no_voice"], ephemeral=True)
             return False
 
         voice_channel = voice_state.channel
         db_entry = DBSession.get(VoiceAdminChild, guild_id=voice_channel.guild.id, channel_id=voice_channel.id)
 
         if not member_is_owner(interaction.user, voice_channel, db_entry):
-            await interaction.response.send_message(COG_STRINGS["vc_unlimit_warn_not_owner"])
+            await interaction.response.send_message(COG_STRINGS["vc_unlimit_warn_not_owner"], ephemeral=True)
             return False
 
         if not db_entry.is_limited:
-            await interaction.response.send_message(COG_STRINGS["vc_unlimit_warn_not_limited"])
+            await interaction.response.send_message(COG_STRINGS["vc_unlimit_warn_not_limited"], ephemeral=True)
             return False
 
         db_entry.is_limited = False
