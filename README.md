@@ -86,12 +86,10 @@ The user has control over the child Voice Channel name, and can limit how many/w
 #### /vc-limit
 
 - Set the member count limit of your Voice Channel.
-- _Not yet implmented!_
 
 #### /vc-unlimit
 
 - Remove the member count limit of your Voice Channel.
-- _Not yet implmented!_
 
 </details>
 

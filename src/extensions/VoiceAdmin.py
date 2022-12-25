@@ -405,7 +405,32 @@ class VoiceAdmin(Cog):
             user_limit (int, optional): The number of members to limit the child Voice Channel to.
             Defaults to the number of members in the child Voice Channel.
         """
-        pass
+        voice_state = interaction.user.voice
+
+        if not voice_state:
+            await interaction.response.send_message(COG_STRINGS["vc_limit_warn_no_voice"])
+            return False
+
+        voice_channel = voice_state.channel
+        db_entry = DBSession.get(VoiceAdminChild, guild_id=voice_channel.guild.id, channel_id=voice_channel.id)
+
+        if not member_is_owner(interaction.user, voice_channel, db_entry):
+            await interaction.response.send_message(COG_STRINGS["vc_limit_warn_not_owner"])
+            return False
+
+        if user_limit <= 0:
+            user_limit = len(voice_channel.members)
+        elif user_limit > 99:
+            await interaction.response.send_message(COG_STRINGS["vc_limit_warn_too_many"])
+            return False
+
+        await voice_channel.edit(user_limit=user_limit)
+        if not db_entry.is_limited:
+            db_entry.is_limited = True
+            DBSession.update(db_entry)
+
+        await interaction.response.send_message(COG_STRINGS["vc_limit_success"].format(count=user_limit))
+        return True
 
     @command(
         name=COG_STRINGS["vc_unlimit_name"],
@@ -420,7 +445,29 @@ class VoiceAdmin(Cog):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
-        pass
+        voice_state = interaction.user.voice
+
+        if not voice_state:
+            await interaction.response.send_message(COG_STRINGS["vc_unlimit_warn_no_voice"])
+            return False
+
+        voice_channel = voice_state.channel
+        db_entry = DBSession.get(VoiceAdminChild, guild_id=voice_channel.guild.id, channel_id=voice_channel.id)
+
+        if not member_is_owner(interaction.user, voice_channel, db_entry):
+            await interaction.response.send_message(COG_STRINGS["vc_unlimit_warn_not_owner"])
+            return False
+
+        if not db_entry.is_limited:
+            await interaction.response.send_message(COG_STRINGS["vc_unlimit_warn_not_limited"])
+            return False
+
+        db_entry.is_limited = False
+        DBSession.update(db_entry)
+        await voice_channel.edit(user_limit=None)
+
+        await interaction.response.send_message(COG_STRINGS["vc_unlimit_success"])
+        return True
 
 
 async def setup(bot: Bot):
