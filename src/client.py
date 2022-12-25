@@ -9,7 +9,7 @@ __all__ = ["EsportsBot"]
 
 class __EsportsBot(Bot):
 
-    def __init__(self, command_prefix: str, *args, **kwargs):
+    def __init__(self, command_prefix: str, all_messages_ephemeral: bool, *args, **kwargs):
         """Creates a new instance of the the private EsportsBot class.
 
         Args:
@@ -17,6 +17,7 @@ class __EsportsBot(Bot):
         """
         super().__init__(command_prefix, *args, **kwargs)
         self.logger = logging.getLogger(__name__)
+        self.only_ephemeral = all_messages_ephemeral
 
     async def setup_hook(self):
         """The setup function that is called prior to the bot connecting to the Discord Gateway.
@@ -49,4 +50,8 @@ class __EsportsBot(Bot):
             await self.tree.sync(guild=DEV_GUILD)
 
 
-EsportsBot = __EsportsBot(command_prefix=os.getenv("COMMAND_PREFIX"), intents=Intents.all())
+EsportsBot = __EsportsBot(
+    command_prefix=os.getenv("COMMAND_PREFIX"),
+    all_messages_ephemeral=os.getenv("ALL_MESSAGES_EPHEMERAL").upper() == "TRUE",
+    intents=Intents.all()
+)
