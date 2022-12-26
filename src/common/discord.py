@@ -34,7 +34,10 @@ class RoleListTransformer(Transformer):
         parsed_roles = []
         for _, role_match in enumerate(roles_found):
             role_id = role_match.group()
-            role = await get_role(interaction.guild, role_id)
+            try:
+                role = await get_role(interaction.guild, int(role_id))
             parsed_roles.append(role)
+            except ValueError:
+                continue
 
         return parsed_roles
