@@ -1,6 +1,7 @@
 from discord.app_commands import Transformer
 from discord import Role, Interaction, Guild
-from typing import List
+from discord.abc import GuildChannel
+from typing import List, Union
 import re
 
 ROLE_REGEX = re.compile(r"(?<=\<\@\&)(\d)+(?=\>)")
@@ -24,6 +25,10 @@ async def get_role(guild: Guild, role_id: int):
         return list(filter(lambda x: x.id == role_id, roles))[0]
 
     return role
+
+
+def primary_key_from_object(object: Union[Role, GuildChannel]):
+    return int(f"{object.guild.id % 1000}{object.id % 1000}")
 
 
 class RoleListTransformer(Transformer):
