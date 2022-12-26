@@ -17,12 +17,12 @@ class AutoRoles(Cog):
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__} has been added as a Cog")
 
-    @Cog.listener
+    @Cog.listener()
     async def on_member_join(self, member: Member):
         if not member.pending:
             self.assign_roles(member)
 
-    @Cog.listener
+    @Cog.listener()
     async def on_member_update(self, before: Member, after: Member):
         if before.pending and not after.pending:
             self.assign_roles(after)
