@@ -4,6 +4,7 @@ from discord.ext.commands import Bot, Cog
 from discord.app_commands import command, describe, rename, default_permissions, checks, guild_only
 
 import logging
+from common.discord import primary_key_from_object
 from common.io import load_cog_toml
 from database.models import VoiceAdminParent, VoiceAdminChild
 from database.gateway import DBSession
@@ -35,10 +36,6 @@ def member_is_owner(member: Member, channel: VoiceChannel, db_entry: VoiceAdminC
         if db_entry is None:
             return False
     return db_entry.owner_id == member.id
-
-
-def primary_key_from_channel(channel: VoiceChannel):
-    return int(f"{channel.guild.id % 100}{channel.id % 100}")
 
 
 class VoiceAdmin(Cog):
@@ -128,7 +125,7 @@ class VoiceAdmin(Cog):
                 name=f"{member.display_name}'s VC"
             )
             db_entry: VoiceAdminChild = VoiceAdminChild(
-                primary_key=primary_key_from_channel(new_child_channel),
+                primary_key=primary_key_from_object(new_child_channel),
                 guild_id=new_child_channel.guild.id,
                 channel_id=new_child_channel.id,
                 owner_id=member.id,
@@ -169,7 +166,7 @@ class VoiceAdmin(Cog):
             return False
 
         db_entry: VoiceAdminParent = VoiceAdminParent(
-            primary_key=primary_key_from_channel(channel),
+            primary_key=primary_key_from_object(channel),
             guild_id=interaction.guild.id,
             channel_id=channel.id
         )
