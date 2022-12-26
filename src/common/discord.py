@@ -1,6 +1,9 @@
 from discord.app_commands import Transformer
 from discord import Role, Interaction, Guild
 from typing import List
+import re
+
+ROLE_REGEX = re.compile(r"(?<=\<\@\&)(\d)+(?=\>)")
 
 
 def raw_role_string_to_id(role_str: str):
@@ -27,9 +30,11 @@ async def get_role(guild: Guild, role_id: int):
 class RoleListTransformer(Transformer):
 
     async def transform(self, interaction: Interaction, roles: str) -> List[Role]:
-        raw_roles = roles.split(" ")
-        parsed_roles = [raw_role_string_to_id(x.strip()) for x in raw_roles]
+        roles_found = re.finditer(ROLE_REGEX, roles)
+        parsed_roles = []
+        for _, role_match in enumerate(roles_found):
+            role_id = role_match.group()
+            role = await get_role(interaction.guild, role_id)
+            parsed_roles.append(role)
 
-        fetched_roles = [await get_role(interaction.guild, x) for x in parsed_roles]
-
-        return fetched_roles
+        return parsed_roles
