@@ -7,15 +7,14 @@ ROLE_REGEX = re.compile(r"(?<=\<\@\&)(\d)+(?=\>)")
 
 
 def raw_role_string_to_id(role_str: str):
-    if not role_str.startswith("<@&") or not role_str.endswith(">"):
-        raise ValueError(f"The given string of `{role_str}` is not a valid raw role string!")
+    role_found = re.search(ROLE_REGEX, role_str)
+    if not role_found:
+        return 0
 
-    role_id: str = role_str[role_str.index("<@&") + 3:role_str.index(">")]
-
-    if not role_id.isdigit():
-        raise ValueError(f"Unable to find a valid Role ID in raw role string `{role_str}`")
-
-    return int(role_id)
+    try:
+        return int(role_found.group())
+    except ValueError:
+        return 0
 
 
 async def get_role(guild: Guild, role_id: int):
@@ -36,7 +35,7 @@ class RoleListTransformer(Transformer):
             role_id = role_match.group()
             try:
                 role = await get_role(interaction.guild, int(role_id))
-            parsed_roles.append(role)
+                parsed_roles.append(role)
             except ValueError:
                 continue
 
