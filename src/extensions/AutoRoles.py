@@ -73,7 +73,7 @@ class AutoRoles(Cog):
                 successful_roles.append(role)
 
         if len(successful_roles) == 0:
-            await interaction.followup.send(COG_STRINGS["roles_set_warn_empty"], ephemeral=self.bot.only_ephemeral)
+            await interaction.followup.send(COG_STRINGS["roles_set_warn_empty"], ephemeral=True)
             return False
         else:
             for entry in initial_entries:
@@ -108,10 +108,7 @@ class AutoRoles(Cog):
         db_entry = DBSession.get(AutoRolesConfig, guild_id=role.guild.id, role_id=role.id)
 
         if db_entry:
-            await interaction.followup.send(
-                COG_STRINGS["roles_add_role_warn_already_added"],
-                ephemeral=self.bot.only_ephemeral
-            )
+            await interaction.followup.send(COG_STRINGS["roles_add_role_warn_already_added"], ephemeral=True)
             return False
 
         db_entry = AutoRolesConfig(primary_key=primary_key_from_object(role), guild_id=role.guild.id, role_id=role.id)
