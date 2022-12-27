@@ -141,7 +141,10 @@ class AutoRoles(Cog):
             return False
 
         DBSession.delete(db_entry)
-        await interaction.followup.send(COG_STRINGS["roles_remove_role_success"].format(role=role.mention))
+        await interaction.followup.send(
+            COG_STRINGS["roles_remove_role_success"].format(role=role.mention),
+            ephemeral=self.bot.only_ephemeral
+        )
         return True
 
     @command(name=COG_STRINGS["roles_get_list_name"], description=COG_STRINGS["roles_get_list_description"])
@@ -159,7 +162,7 @@ class AutoRoles(Cog):
         db_items = DBSession.list(AutoRolesConfig, guild_id=interaction.guild.id)
 
         if not db_items:
-            await interaction.followup.send(COG_STRINGS["roles_get_list_warn_no_roles"])
+            await interaction.followup.send(COG_STRINGS["roles_get_list_warn_no_roles"], ephemeral=True)
             return False
 
         fetched_roles = [await get_role(interaction.guild, x.role_id) for x in db_items]
@@ -170,7 +173,7 @@ class AutoRoles(Cog):
             description=COG_STRINGS["roles_get_list_success_description"].format(roles=formatted_string),
             color=Color.random()
         )
-        await interaction.followup.send(embed=response_embed)
+        await interaction.followup.send(embed=response_embed, ephemeral=self.bot.only_ephemeral)
         return True
 
 
