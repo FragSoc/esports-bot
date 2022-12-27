@@ -159,7 +159,7 @@ class AutoRoles(Cog):
         db_items = DBSession.list(AutoRolesConfig, guild_id=interaction.guild.id)
 
         if not db_items:
-            await interaction.followup.send()
+            await interaction.followup.send(COG_STRINGS["roles_get_list_warn_no_roles"])
             return False
 
         fetched_roles = [await get_role(interaction.guild, x.role_id) for x in db_items]
