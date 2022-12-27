@@ -2,13 +2,14 @@ from discord.ext.commands import Bot, Cog
 
 import logging
 from common.io import load_cog_toml
+from client import EsportsBot
 
 COG_STRINGS = load_cog_toml(__name__)
 
 
 class EventTools(Cog):
 
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: EsportsBot):
         self.bot = bot
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__} has been added as a Cog")
