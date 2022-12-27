@@ -126,6 +126,12 @@ class AutoRoles(Cog):
     @checks.has_permissions(administrator=True)
     @guild_only()
     async def remove_guild_role(self, interaction: Interaction, role: Role):
+        """The command used to remove a role from the list of currently configured roles in a given guild/server.
+
+        Args:
+            interaction (Interaction): The interaction that triggered the command.
+            role (Role): The role to remove.
+        """
         await interaction.response.defer()
 
         db_entry = DBSession.get(AutoRolesConfig, guild_id=role.guild.id, role_id=role.id)
