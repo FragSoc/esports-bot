@@ -100,8 +100,6 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 ### Environment Variable: `ENABLE_AUTOROLES`
 
-### _Only partial implementation_
-
 #### /roles-set-list \<One or many roles mentioned\>
 
 - Sets the roles to be given to new users when they join the guild/server.
@@ -140,10 +138,11 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 - ~~Implement unimplemented commands in VoiceAdmin and AdminTools cogs.~~
 - Implement EventTools cog
-- Implement AutoRoles cog
+- ~~Implement AutoRoles cog~~
 - Add back functionality of previous bot (eg. Music, PingableRoles, etc.)
 - Add game deal tracker (DealTracker(?) cog)
 - Add proper support for SQLite auto increment primary keys
+- Add proper use of command groups
 
 # Quick Setup Guide
 
