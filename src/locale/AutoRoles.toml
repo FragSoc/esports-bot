@@ -1,0 +1,7 @@
+roles_set_list_name = "roles-set-list"
+roles_set_list_description = "Set the list of automatically applied roles when a user joins."
+roles_set_list_param_describe = "The list of roles to give."
+roles_set_list_param_rename = "roles"
+roles_set_warn_empty = "No roles were configured to be applied when members join. Any roles previously configured are still present ⚠️"
+roles_set_success_title = "Finished Configuring AutoRoles!"
+roles_set_success_description = "Below is the list of roles that will be automatically applied to new members when they join the server: \n\n {roles}"
