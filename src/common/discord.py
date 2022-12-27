@@ -51,12 +51,10 @@ class RoleListTransformer(Transformer):
 class TimezoneTransformer(Transformer):
     # TODO: Update regex to accept shorter Timezone strings
     DATE_REGEX = re.compile(r"(?P<Day>\d{2})\/(?P<Month>\d{2})\/(?P<Year>\d{4}|\d{2})")
-    TIME_REGEX = re.compile(
-        r"(?P<Hour>\d{2}):"
-        r"(?P<Minute>\d{2})"
-        r"(:(?P<Second>\d{2}))?"
-        r"((\s(?P<Zone0>\w{3}))|((?P<AMPMGap>\s)?(?P<AMPM>\w{2})\s(?P<Zone1>\w{3})))?"
-    )
+    TIME_REGEX = re.compile(r"(?P<Hour>\d{2}):"
+                            r"(?P<Minute>\d{2})"
+                            r"(:(?P<Second>\d{2}))?"
+                            r"(?P<AMPM>\w{2})?")
 
     async def transform(self, interaction: Interaction, date_string: str) -> datetime:
         date_matches = re.search(self.DATE_REGEX, date_string)
@@ -82,10 +80,8 @@ class TimezoneTransformer(Transformer):
 
         if is_24_hr:
             hour_format = "%-H" if len(time_values.get("Hour")) == 1 else "%H"
-            zone_format = " %Z"
         else:
             hour_format = "%-I" if len(time_values.get("Hour")) == 1 else "%I"
-            zone_format = f"{' ' if time_values.get('AMPMGap') else ''}%p %Z"
 
         minute_format = "%-M" if len(time_values.get("Minute")) == 1 else "%M"
         if time_values.get("Second"):
@@ -93,8 +89,8 @@ class TimezoneTransformer(Transformer):
         else:
             second_format = ""
 
-        time_format = f"{hour_format}:{minute_format}{':'+second_format if second_format else ''}{zone_format}"
+        time_format = f"{hour_format}:{minute_format}{':'+second_format if second_format else ''} {'' if is_24_hr else '%p'}"
 
         full_format = f"{date_format} {time_format}"
 
-        return datetime.strptime(date_string, full_format).astimezone()
+        return datetime.strptime(date_string, full_format)
