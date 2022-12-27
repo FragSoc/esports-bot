@@ -69,7 +69,7 @@ class AutoRoles(Cog):
                 if db_entry in initial_entries:
                     initial_entries.remove(db_entry)
                 else:
-                DBSession.create(db_entry)
+                    DBSession.create(db_entry)
                 successful_roles.append(role)
 
         if len(successful_roles) == 0:
