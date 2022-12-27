@@ -100,7 +100,12 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 ### Environment Variable: `ENABLE_AUTOROLES`
 
-### _Not yet implemented!_
+### _Only partial implementation_
+
+#### /roles-set-list \<One or many roles mentioned\>
+
+- Sets the roles to be given to new users when they join the guild/server.
+  - If one or more the of the roles are valid, any roles previously configured will be removed.
 
 </details>
 
