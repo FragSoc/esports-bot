@@ -87,6 +87,38 @@ class AutoRoles(Cog):
         await interaction.followup.send(embed=response_embed, ephemeral=self.bot.only_ephemeral)
         return True
 
+    @command(name=COG_STRINGS["roles_add_role_name"], description=COG_STRINGS["roles_add_role_description"])
+    @describe(role=COG_STRINGS["roles_add_role_param_describe"])
+    @rename(role=COG_STRINGS["roles_add_role_param_rename"])
+    @default_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
+    @guild_only()
+    async def add_guild_role(self, interaction: Interaction, role: Role):
+        """The command that adds a role to the list of roles, without overriding the currently configured roles.
+
+        Args:
+            interaction (Interaction): The interaction that triggered the command.
+            role (Role): The role to add.
+        """
+        await interaction.response.defer()
+
+        db_entry = DBSession.get(AutoRolesConfig, guild_id=role.guild.id, role_id=role.id)
+
+        if db_entry:
+            await interaction.followup.send(
+                COG_STRINGS["roles_add_role_warn_already_added"],
+                ephemeral=self.bot.only_ephemeral
+            )
+            return False
+
+        db_entry = AutoRolesConfig(primary_key=primary_key_from_object(role), guild_id=role.guild.id, role_id=role.id)
+        DBSession.create(db_entry)
+        await interaction.followup.send(
+            COG_STRINGS["roles_add_role_success"].format(role=role.mention),
+            ephemeral=self.bot.only_ephemeral
+        )
+        return True
+
 
 async def setup(bot: Bot):
     await bot.add_cog(AutoRoles(bot))
