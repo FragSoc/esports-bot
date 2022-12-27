@@ -1,8 +1,11 @@
 from discord.ext.commands import Bot, Cog
-from discord import Member
+from discord.app_commands import command, describe, rename, default_permissions, checks, guild_only, Transform
+from discord import Member, Interaction, Role, Embed, Color
 
 import logging
+from typing import List
 from common.io import load_cog_toml
+from common.discord import RoleListTransformer, primary_key_from_object
 from client import EsportsBot
 from database.gateway import DBSession
 from database.models import AutoRolesConfig
@@ -33,6 +36,56 @@ class AutoRoles(Cog):
         if guild_roles:
             roles = [member.guild.get_role(x.role_id) for x in guild_roles]
             await member.add_roles(roles)
+
+    @command(name=COG_STRINGS["roles_set_list_name"], description=COG_STRINGS["roles_set_list_description"])
+    @describe(roles=COG_STRINGS["roles_set_list_param_describe"])
+    @rename(roles=COG_STRINGS["roles_set_list_param_rename"])
+    @default_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
+    @guild_only()
+    async def set_guild_roles(self, interaction: Interaction, roles: Transform[List[Role], RoleListTransformer]):
+        """The command used to set the list of roles to give to members when the join the guild/server.
+
+        If there are one or more valid roles given in the `roles` parameter,
+        any previously configured roles to be applied will be overridden.
+
+        Args:
+            interaction (Interaction): The interaction that triggered the command.
+            roles (Transform[List[Role], RoleListTransformer]): One or many roles mentioned.
+            Do not need to be separated with a delimiter.
+        """
+        await interaction.response.defer()
+
+        initial_entries = DBSession.list(AutoRolesConfig, guild_id=interaction.guild.id)
+
+        successful_roles = []
+        for role in roles:
+            if role.is_assignable:
+                db_entry = AutoRolesConfig(
+                    primary_key=primary_key_from_object(role),
+                    guild_id=interaction.guild.id,
+                    role_id=role.id
+                )
+                DBSession.create(db_entry)
+                successful_roles.append(role)
+
+        if len(successful_roles) == 0:
+            await interaction.followup.send(COG_STRINGS["roles_set_warn_empty"], ephemeral=self.bot.only_ephemeral)
+            return False
+        else:
+            for entry in initial_entries:
+                DBSession.delete(entry)
+
+        formatted_string = "\n".join([f"• {x.mention}" for x in successful_roles])
+
+        response_embed = Embed(
+            title=COG_STRINGS["roles_set_success_title"],
+            description=COG_STRINGS["roles_set_success_description"].format(roles=formatted_string),
+            color=Color.random()
+        )
+
+        await interaction.followup.send(embed=response_embed, ephemeral=self.bot.only_ephemeral)
+        return True
 
 
 async def setup(bot: Bot):
