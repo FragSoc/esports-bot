@@ -5,7 +5,7 @@ from discord import Member, Interaction, Role, Embed, Color
 import logging
 from typing import List
 from common.io import load_cog_toml
-from common.discord import RoleListTransformer, primary_key_from_object
+from common.discord import RoleListTransformer, get_role, primary_key_from_object
 from client import EsportsBot
 from database.gateway import DBSession
 from database.models import AutoRolesConfig
@@ -142,6 +142,35 @@ class AutoRoles(Cog):
 
         DBSession.delete(db_entry)
         await interaction.followup.send(COG_STRINGS["roles_remove_role_success"].format(role=role.mention))
+        return True
+
+    @command(name=COG_STRINGS["roles_get_list_name"], description=COG_STRINGS["roles_get_list_description"])
+    @default_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
+    @guild_only()
+    async def list_guild_roles(self, interaction: Interaction):
+        """The command to get the current list of roles that are configured for a given guild/server.
+
+        Args:
+            interaction (Interaction): The interaction that triggered the command.
+        """
+        await interaction.response.defer()
+
+        db_items = DBSession.list(AutoRolesConfig, guild_id=interaction.guild.id)
+
+        if not db_items:
+            await interaction.followup.send()
+            return False
+
+        fetched_roles = [await get_role(interaction.guild, x.role_id) for x in db_items]
+
+        formatted_string = "\n".join([f"• {x.mention}" for x in fetched_roles])
+        response_embed = Embed(
+            title=COG_STRINGS["roles_get_list_success_title"],
+            description=COG_STRINGS["roles_get_list_success_description"].format(roles=formatted_string),
+            color=Color.random()
+        )
+        await interaction.followup.send(embed=response_embed)
         return True
 
 
