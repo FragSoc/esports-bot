@@ -66,6 +66,9 @@ class AutoRoles(Cog):
                     guild_id=interaction.guild.id,
                     role_id=role.id
                 )
+                if db_entry in initial_entries:
+                    initial_entries.remove(db_entry)
+                else:
                 DBSession.create(db_entry)
                 successful_roles.append(role)
 
