@@ -49,6 +49,7 @@ class RoleListTransformer(Transformer):
 
 
 class TimezoneTransformer(Transformer):
+    # TODO: Update regex to accept shorter Timezone strings
     DATE_REGEX = re.compile(r"(?P<Day>\d{2})\/(?P<Month>\d{2})\/(?P<Year>\d{4}|\d{2})")
     TIME_REGEX = re.compile(
         r"(?P<Hour>\d{2}):"
@@ -96,4 +97,4 @@ class TimezoneTransformer(Transformer):
 
         full_format = f"{date_format} {time_format}"
 
-        return datetime.strptime(date_string, full_format)
+        return datetime.strptime(date_string, full_format).astimezone()
