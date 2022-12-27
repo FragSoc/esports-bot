@@ -3,6 +3,7 @@ from discord import Role, Interaction, Guild
 from discord.abc import GuildChannel
 from typing import List, Union
 import re
+from datetime import datetime
 
 ROLE_REGEX = re.compile(r"(?<=\<\@\&)(\d)+(?=\>)")
 
@@ -45,3 +46,54 @@ class RoleListTransformer(Transformer):
                 continue
 
         return parsed_roles
+
+
+class TimezoneTransformer(Transformer):
+    DATE_REGEX = re.compile(r"(?P<Day>\d{2})\/(?P<Month>\d{2})\/(?P<Year>\d{4}|\d{2})")
+    TIME_REGEX = re.compile(
+        r"(?P<Hour>\d{2}):"
+        r"(?P<Minute>\d{2})"
+        r"(:(?P<Second>\d{2}))?"
+        r"((\s(?P<Zone0>\w{3}))|((?P<AMPMGap>\s)?(?P<AMPM>\w{2})\s(?P<Zone1>\w{3})))?"
+    )
+
+    async def transform(self, interaction: Interaction, date_string: str) -> datetime:
+        date_matches = re.search(self.DATE_REGEX, date_string)
+
+        if date_matches is None or not all(date_matches.groupdict().values()):
+            raise ValueError("The given string did not contain a valid date component.")
+
+        date_values = date_matches.groupdict()
+        day_format = "%-d" if len(date_values.get("Day")) == 1 else "%d"
+        month_format = "%-m" if len(date_values.get("Month")) == 1 else "%m"
+        year_format = "%y" if len(date_values.get("Year")) == 2 else "%Y"
+
+        date_format = f"{day_format}/{month_format}/{year_format}"
+
+        time_matches = re.search(self.TIME_REGEX, date_string)
+
+        if time_matches is None or not any(date_matches.groupdict().values()):
+            raise ValueError("The given string did not contain a valid time component.")
+
+        time_values = time_matches.groupdict()
+
+        is_24_hr = time_values.get("AMPM") is None
+
+        if is_24_hr:
+            hour_format = "%-H" if len(time_values.get("Hour")) == 1 else "%H"
+            zone_format = " %Z"
+        else:
+            hour_format = "%-I" if len(time_values.get("Hour")) == 1 else "%I"
+            zone_format = f"{' ' if time_values.get('AMPMGap') else ''}%p %Z"
+
+        minute_format = "%-M" if len(time_values.get("Minute")) == 1 else "%M"
+        if time_values.get("Second"):
+            second_format = "%-S" if len(time_values.get("Second")) == 1 else "%S"
+        else:
+            second_format = ""
+
+        time_format = f"{hour_format}:{minute_format}{':'+second_format if second_format else ''}{zone_format}"
+
+        full_format = f"{date_format} {time_format}"
+
+        return datetime.strptime(date_string, full_format)
