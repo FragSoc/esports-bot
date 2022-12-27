@@ -23,7 +23,7 @@ class AutoRoles(Cog):
     @Cog.listener()
     async def on_member_join(self, member: Member):
         if not member.pending:
-            self.assign_roles(member)
+            await self.assign_roles(member)
 
     @Cog.listener()
     async def on_member_update(self, before: Member, after: Member):
@@ -35,7 +35,7 @@ class AutoRoles(Cog):
 
         if guild_roles:
             roles = [member.guild.get_role(x.role_id) for x in guild_roles]
-            await member.add_roles(roles)
+            await member.add_roles(*roles)
 
     @command(name=COG_STRINGS["roles_set_list_name"], description=COG_STRINGS["roles_set_list_description"])
     @describe(roles=COG_STRINGS["roles_set_list_param_describe"])
