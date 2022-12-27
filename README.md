@@ -111,6 +111,10 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 - Adds a role to the list of roles without overriding the currently configured roles.
 
+#### /roles-remove-role \<role\>
+
+- Removes a role from the list of currently configured roles.
+
 </details>
 
 <details>
