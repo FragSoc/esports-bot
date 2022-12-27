@@ -115,6 +115,10 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 - Removes a role from the list of currently configured roles.
 
+#### /roles-get-list
+
+- Gets the list of currently configured AutoRoles.
+
 </details>
 
 <details>
