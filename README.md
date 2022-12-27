@@ -107,6 +107,10 @@ The user has control over the child Voice Channel name, and can limit how many/w
 - Sets the roles to be given to new users when they join the guild/server.
   - If one or more the of the roles are valid, any roles previously configured will be removed.
 
+#### /roles-add-role \<role\>
+
+- Adds a role to the list of roles without overriding the currently configured roles.
+
 </details>
 
 <details>
