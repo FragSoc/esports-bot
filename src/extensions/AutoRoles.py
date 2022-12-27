@@ -119,6 +119,25 @@ class AutoRoles(Cog):
         )
         return True
 
+    @command(name=COG_STRINGS["roles_remove_role_name"], description=COG_STRINGS["roles_remove_role_description"])
+    @describe(role=COG_STRINGS["roles_remove_role_param_describe"])
+    @rename(role=COG_STRINGS["roles_remove_role_param_rename"])
+    @default_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
+    @guild_only()
+    async def remove_guild_role(self, interaction: Interaction, role: Role):
+        await interaction.response.defer()
+
+        db_entry = DBSession.get(AutoRolesConfig, guild_id=role.guild.id, role_id=role.id)
+
+        if not db_entry:
+            await interaction.followup.send(COG_STRINGS["roles_remove_role_warn_not_added"], ephemeral=True)
+            return False
+
+        DBSession.delete(db_entry)
+        await interaction.followup.send(COG_STRINGS["roles_remove_role_success"].format(role=role.mention))
+        return True
+
 
 async def setup(bot: Bot):
     await bot.add_cog(AutoRoles(bot))
