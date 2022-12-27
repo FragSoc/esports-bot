@@ -25,3 +25,7 @@ roles_get_list_description = "Get the list of currently configured AutoRoles."
 roles_get_list_warn_no_roles = "No roles are currently configured to be applied when a member joins ⚠️"
 roles_get_list_success_title = "Current AutoRoles Config"
 roles_get_list_success_description = "Below is the list of roles that will be automatically applied to new members when they join the server: \n\n {roles}"
+
+roles_clear_list_name = "roles-clear-list"
+roles_clear_list_name = "Clears the list of roles to apply."
+roles_clear_list_success = "The list of roles has been cleared ✅"

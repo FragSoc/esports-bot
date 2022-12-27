@@ -176,6 +176,24 @@ class AutoRoles(Cog):
         await interaction.followup.send(embed=response_embed, ephemeral=self.bot.only_ephemeral)
         return True
 
+    @command(name=COG_STRINGS["roles_clear_list_name"], description=COG_STRINGS["roles_clear_list_description"])
+    @default_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
+    @guild_only()
+    async def clear_guild_roles(self, interaction: Interaction):
+        """The command used to entirely clear the list of Roles for a given guild/server.
+
+        Args:
+            interaction (Interaction): The interaction that triggered the command.
+        """
+        db_items = DBSession.list(AutoRolesConfig, interaction.guild.id)
+
+        for item in db_items:
+            DBSession.delete(item)
+
+        await interaction.followup.send(COG_STRINGS["roles_clear_list_success"], ephemeral=self.bot.only_ephemeral)
+        return True
+
 
 async def setup(bot: Bot):
     await bot.add_cog(AutoRoles(bot))
