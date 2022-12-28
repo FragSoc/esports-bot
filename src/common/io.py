@@ -1,6 +1,7 @@
 import os
 import toml
 import logging
+import json
 from typing import Dict
 
 logger = logging.getLogger(__name__)
@@ -23,3 +24,14 @@ def load_bot_version():
             return file.readline()
     except FileNotFoundError:
         return None
+
+
+def load_timezones():
+    file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "timezone.json"))
+    try:
+        with open(file_path, "r") as file:
+            data = json.load(file)
+            zones = data.get("timezones")
+            return zones
+    except FileNotFoundError:
+        return {}
