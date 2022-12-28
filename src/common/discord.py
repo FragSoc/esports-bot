@@ -49,12 +49,13 @@ class RoleListTransformer(Transformer):
 
 
 class TimezoneTransformer(Transformer):
-    # TODO: Update regex to accept shorter Timezone strings
     DATE_REGEX = re.compile(r"(?P<Day>\d{2})\/(?P<Month>\d{2})\/(?P<Year>\d{4}|\d{2})")
-    TIME_REGEX = re.compile(r"(?P<Hour>\d{2}):"
-                            r"(?P<Minute>\d{2})"
-                            r"(:(?P<Second>\d{2}))?"
-                            r"(?P<AMPM>\w{2})?")
+    TIME_REGEX = re.compile(
+        r"(?P<Hour>\d{2}):"
+        r"(?P<Minute>\d{2})"
+        r"(:(?P<Second>\d{2}))?"
+        r"(?P<AMPMGap>\s)?(?P<AMPM>\w{2})?"
+    )
 
     async def transform(self, interaction: Interaction, date_string: str) -> datetime:
         date_matches = re.search(self.DATE_REGEX, date_string)
@@ -89,7 +90,14 @@ class TimezoneTransformer(Transformer):
         else:
             second_format = ""
 
-        time_format = f"{hour_format}:{minute_format}{':'+second_format if second_format else ''} {'' if is_24_hr else '%p'}"
+        gap = " " if time_values.get("AMPMGap") else ""
+
+        time_format = (
+            f"{hour_format}:"  # Hours
+            f"{minute_format}"  # Minutes
+            f"{':'+second_format if second_format else ''}"  # Seconds
+            f"{gap}{''if is_24_hr else '%p'}"  # 12/24hr clock
+        )
 
         full_format = f"{date_format} {time_format}"
 
