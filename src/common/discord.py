@@ -48,7 +48,7 @@ class RoleListTransformer(Transformer):
         return parsed_roles
 
 
-class TimezoneTransformer(Transformer):
+class DatetimeTransformer(Transformer):
     DATE_REGEX = re.compile(r"(?P<Day>\d{2})\/(?P<Month>\d{2})\/(?P<Year>\d{4}|\d{2})")
     TIME_REGEX = re.compile(
         r"(?P<Hour>\d{2}):"
