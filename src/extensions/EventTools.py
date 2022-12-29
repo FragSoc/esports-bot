@@ -5,6 +5,7 @@ from enum import IntEnum
 from zoneinfo import ZoneInfo
 
 from discord import (
+    Colour,
     EntityType,
     EventStatus,
     Interaction,
@@ -17,6 +18,7 @@ from discord import (
 from discord.app_commands import (
     Choice,
     Transform,
+    autocomplete,
     checks,
     choices,
     command,
@@ -29,7 +31,7 @@ from discord.ext.commands import Bot, Cog
 from discord.ui import Select, View
 
 from client import EsportsBot
-from common.discord import DatetimeTransformer
+from common.discord import ColourTransformer, DatetimeTransformer
 from common.io import load_cog_toml, load_timezones
 
 COG_STRINGS = load_cog_toml(__name__)
@@ -127,7 +129,8 @@ class EventTools(Cog):
         event_start=COG_STRINGS["events_create_event_start_desribe"],
         event_end=COG_STRINGS["events_create_event_end_describe"],
         timezone=COG_STRINGS["events_create_event_timezone_describe"],
-        role=COG_STRINGS["events_create_event_role_describe"]
+        role=COG_STRINGS["events_create_event_role_describe"],
+        event_colour=COG_STRINGS["events_create_event_colour_describe"]
     )
     @rename(
         event_name=COG_STRINGS["events_create_event_title_rename"],
@@ -135,12 +138,14 @@ class EventTools(Cog):
         event_start=COG_STRINGS["events_create_event_start_rename"],
         event_end=COG_STRINGS["events_create_event_end_rename"],
         timezone=COG_STRINGS["events_create_event_timezone_rename"],
-        role=COG_STRINGS["events_create_event_role_rename"]
+        role=COG_STRINGS["events_create_event_role_rename"],
+        event_colour=COG_STRINGS["events_create_event_colour_rename"]
     )
     @choices(
         timezone=[Choice(name=TIMEZONES.get(x).get("_description"),
                          value=TIMEZONES.get(x).get("_alias")) for x in TIMEZONES]
     )
+    @autocomplete(event_colour=ColourTransformer.autocomplete)
     @default_permissions(administrator=True)
     @checks.has_permissions(administrator=True)
     @guild_only()
@@ -154,14 +159,15 @@ class EventTools(Cog):
         event_end: Transform[datetime,
                              DatetimeTransformer],
         timezone: Choice[str],
-        role: Role
+        role: Role,
+        event_colour: Transform[Colour,
+                                ColourTransformer]
     ):
         await interaction.response.defer()
-
         event_start_aware = event_start.replace(tzinfo=ZoneInfo(timezone.value))
         event_end_aware = event_end.replace(tzinfo=ZoneInfo(timezone.value))
 
-        event_role = await interaction.guild.create_role(name=f"{event_name} (Event)")
+        event_role = await interaction.guild.create_role(name=f"{event_name} (Event)", color=event_colour)
 
         category_permissions = {
             interaction.guild.me: get_category_permissions(RoleTypeEnum.BOTTOP),
