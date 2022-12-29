@@ -37,6 +37,6 @@ class EventToolsEvents(base):
     primary_key = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
     channel_id = Column(BigInteger, nullable=False)
-    role_id = Column(BigInteger, nullable=False)
+    event_role_id = Column(BigInteger, nullable=False)
     event_id = Column(BigInteger, nullable=False)
     event_name = Column(String, nullable=False)
