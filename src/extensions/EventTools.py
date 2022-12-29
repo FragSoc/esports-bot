@@ -69,8 +69,8 @@ class Event:
         return self.event_id
 
 
-def get_event_custom_id(guild_id: int, channel_id: int, suffix: str):
-    return f"{EVENT_INTERACTION_PREFIX}-{guild_id}-{channel_id}-{suffix}"
+def get_event_custom_id(event_id: int, suffix: str):
+    return f"{EVENT_INTERACTION_PREFIX}-{event_id}-{suffix}"
 
 
 def get_category_permissions(role_type: RoleTypeEnum, is_signin: bool = False, is_open: bool = False):
@@ -101,7 +101,7 @@ def get_category_permissions(role_type: RoleTypeEnum, is_signin: bool = False, i
 def get_event_permissions(guild: Guild, event_role: Role, common_role: Role, is_open: bool):
     category_permissions = {
         guild.me: get_category_permissions(RoleTypeEnum.BOTTOP,
-                                              is_open=is_open),
+                                           is_open=is_open),
         event_role: get_category_permissions(RoleTypeEnum.EVENT,
                                              is_open=is_open),
         common_role: get_category_permissions(RoleTypeEnum.COMMON,
@@ -269,8 +269,7 @@ class EventTools(Cog):
             min_values=1,
             max_values=1,
             options=[SelectOption(**x) for x in options],
-            custom_id=get_event_custom_id(interaction.guild.id,
-                                          signin_channel.id,
+            custom_id=get_event_custom_id(event.id,
                                           "sign_in_status")
         )
 
