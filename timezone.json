@@ -18,35 +18,35 @@
         },
         "gblon": {
           "_description": "London, United Kingdom",
-          "_alias": "Europe/London Europe/Belfast GB GB-Eire"
+          "_alias": "Europe/London"
         },
         "hkhkg": {
           "_description": "Hong Kong SAR China",
-          "_alias": "Asia/Hong_Kong Hongkong"
+          "_alias": "Asia/Hong_Kong"
         },
         "jptyo": {
           "_description": "Tokyo, Japan",
-          "_alias": "Asia/Tokyo Japan"
+          "_alias": "Asia/Tokyo"
         },
         "krsel": {
           "_description": "Seoul, South Korea",
-          "_alias": "Asia/Seoul ROK"
+          "_alias": "Asia/Seoul"
         },
         "sgsin": {
           "_description": "Singapore",
-          "_alias": "Asia/Singapore Singapore"
+          "_alias": "Asia/Singapore"
         },
         "uslax": {
           "_description": "Los Angeles, United States",
-          "_alias": "America/Los_Angeles US/Pacific US/Pacific-New"
+          "_alias": "US/Pacific"
         },
         "usnyc": {
           "_description": "New York, United States",
-          "_alias": "America/New_York US/Eastern"
+          "_alias": "US/Eastern"
         },
         "usden": {
           "_description": "Denver, United States",
-          "_alias": "America/Denver America/Shiprock Navajo US/Mountain"
+          "_alias": "US/Mountain"
         }
     }
 }
