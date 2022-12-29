@@ -158,19 +158,42 @@ class EventTools(Cog):
             all_events[entry.event_id] = event
         return all_events
 
+    async def update_event_channel_permissions(self, event_id: int, guild: Guild, is_open: bool):
+        event = self.events.get(event_id)
+        event_role = guild.get_role(event.event_role_id)
+        common_role = guild.get_role(event.common_role_id)
+        category_permissions, signin_permissions = get_event_permissions(guild, event_role, common_role, is_open)
+        signin_channel = guild.get_channel(event.channel_id)
+        category = signin_channel.category
+        await category.edit(overwrites=category_permissions)
+        await signin_channel.edit(overwrites=signin_permissions)
+
     @Cog.listener()
     async def on_scheduled_event_update(self, before: ScheduledEvent, after: ScheduledEvent):
+        # Not an EventTool event
         if not self.events.get(before.id) or not self.events.get(after.id):
             return False
 
-        if after.status == EventStatus.scheduled:
-            pass
+        # Open the sign-in channel when the event starts
+        if before.status == EventStatus.scheduled and after.status == EventStatus.active:
+            await self.update_event_channel_permissions(after.id, after.guild, is_open=True)
 
-        if after.status == EventStatus.active:
-            pass
-
+        # Delete the channels and role upon cancellation
         if after.status == EventStatus.cancelled:
-            pass
+            event = self.events.pop(after.id)
+            event_role = after.guild.get_role(event.event_role_id)
+            signin_channel = after.guild.get_channel(event.channel_id)
+            category = signin_channel.category
+            for channel in category.channels:
+                await channel.delete()
+            await category.delete()
+            await event_role.delete()
+            db_entry = DBSession.get(EventToolsEvents, guild_id=event.guild_id, event_id=event.event_id)
+            DBSession.delete(db_entry)
+
+        # Hide the channels again when the event ends
+        if after.status == EventStatus.ended:
+            await self.update_event_channel_permissions(after.id, after.guild, is_open=False)
 
     @Cog.listener()
     async def on_interaction(self, interaction: Interaction):
