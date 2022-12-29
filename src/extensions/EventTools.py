@@ -134,6 +134,7 @@ class EventTools(Cog):
         self.bot = bot
         self.events = self.load_events()
         self.logger = logging.getLogger(__name__)
+        self.logger.info(f"Loaded {len(self.events)} event(s) from DB")
         self.logger.info(f"{__name__} has been added as a Cog")
 
     def load_events(self):
