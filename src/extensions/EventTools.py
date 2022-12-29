@@ -59,8 +59,6 @@ class RoleTypeEnum(IntEnum):
 @dataclass(slots=True)
 class Event:
     name: str
-    start_time: datetime
-    end_time: datetime
     guild_id: int = field(compare=True)
     channel_id: int = field(compare=True)
     event_id: int
@@ -276,8 +274,6 @@ class EventTools(Cog):
 
         event_store = Event(
             name=event_name,
-            start_time=event_start_aware,
-            end_time=event_end_aware,
             guild_id=interaction.guild.id,
             channel_id=signin_channel.id,
             event_role_id=event_role.id,
