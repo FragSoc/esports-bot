@@ -2,11 +2,43 @@ import re
 from datetime import datetime
 from typing import List, Union
 
-from discord import Guild, Interaction, Role
+from discord import Colour, Guild, Interaction, Role
 from discord.abc import GuildChannel
-from discord.app_commands import Transformer
+from discord.app_commands import Choice, Transformer
 
 ROLE_REGEX = re.compile(r"(?<=\<\@\&)(\d)+(?=\>)")
+
+
+def make_colour_list():
+    all_vars = dir(Colour)
+    colour_vars = dir(Colour)
+
+    def valid_key(string: str):
+        starts_with = ["_", "from_", "to_"]
+        ends_with = ["_gray"]
+        start_end_with = [{"start": "__", "end": "__"}]
+
+        for req in start_end_with:
+            if string.startswith(req["start"]) and string.endswith(req["end"]):
+                return False
+
+        for req in starts_with:
+            if string.startswith(req):
+                return False
+
+        for req in ends_with:
+            if string.endswith(req):
+                return False
+
+        return True
+
+    for key in all_vars:
+        if not valid_key(key) or key in ["value", "r", "g", "b"]:
+            colour_vars.remove(key)
+    return colour_vars
+
+
+VALID_COLOUR_NAMES = make_colour_list()
 
 
 def raw_role_string_to_id(role_str: str):
@@ -103,3 +135,29 @@ class DatetimeTransformer(Transformer):
         full_format = f"{date_format} {time_format}"
 
         return datetime.strptime(date_string, full_format)
+
+
+class ColourTransformer(Transformer):
+
+    async def autocomplete(self, interaction: Interaction, current_str: str) -> List[Choice[str]]:
+        return [
+            Choice(name=colour.replace("_",
+                                       " ").capitalize(),
+                   value=colour) for colour in VALID_COLOUR_NAMES if current_str.lower() in colour.lower()
+        ][:25]
+
+    async def transform(self, interaction: Interaction, input_string: str) -> Colour:
+        if input_string.startswith("#"):
+            try:
+                return Colour.from_str(input_string)
+            except ValueError:
+                return Colour.default()
+        elif input_string in VALID_COLOUR_NAMES:
+            return getattr(Colour, input_string)()
+        else:
+            try:
+                manual_name = input_string.replace(" ", "_").strip().lower()
+                colour = getattr(Colour, manual_name)
+                return colour()
+            except AttributeError:
+                return Colour.default()
