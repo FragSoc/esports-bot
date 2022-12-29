@@ -33,8 +33,10 @@ from discord.ext.commands import Bot, Cog
 from discord.ui import Select, View
 
 from client import EsportsBot
-from common.discord import ColourTransformer, DatetimeTransformer
+from common.discord import (ColourTransformer, DatetimeTransformer, primary_key_from_object)
 from common.io import load_cog_toml, load_timezones
+from database.gateway import DBSession
+from database.models import EventToolsEvents
 
 COG_STRINGS = load_cog_toml(__name__)
 EVENT_INTERACTION_PREFIX = f"{__name__}.interaction"
@@ -283,6 +285,16 @@ class EventTools(Cog):
             event_id=event.id
         )
 
+        db_entry = EventToolsEvents(
+            primary_key=primary_key_from_object(event),
+            guild_id=interaction.guild.id,
+            channel_id=signin_channel.id,
+            event_role_id=event_role.id,
+            common_role_id=common_role.id,
+            event_id=event.id,
+            event_name=event_name
+        )
+        DBSession.create(db_entry)
         self.events[event_store] = event_store
 
         await interaction.followup.send("Created event!", ephemeral=True)
