@@ -54,15 +54,19 @@ class RoleTypeEnum(IntEnum):
     BOTTOP = 3  # The Bot's top role
 
 
-@dataclass(slots=True, unsafe_hash=True)
+@dataclass(slots=True)
 class Event:
     name: str
     start_time: datetime
     end_time: datetime
     guild_id: int = field(compare=True)
     channel_id: int = field(compare=True)
-    event_id: int = field(hash=True)
-    role_id: int = None
+    event_id: int
+    event_role_id: int = None
+    common_role_id: int = None
+
+    def __hash__(self) -> int:
+        return self.event_id
 
 
 def get_event_custom_id(guild_id: int, channel_id: int, suffix: str):
@@ -274,7 +278,8 @@ class EventTools(Cog):
             end_time=event_end_aware,
             guild_id=interaction.guild.id,
             channel_id=signin_channel.id,
-            role_id=event_role.id,
+            event_role_id=event_role.id,
+            common_role_id=common_role.id,
             event_id=event.id
         )
 
