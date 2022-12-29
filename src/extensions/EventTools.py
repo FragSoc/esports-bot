@@ -132,9 +132,30 @@ class EventTools(Cog):
 
     def __init__(self, bot: EsportsBot):
         self.bot = bot
-        self.events = {}
+        self.events = self.load_events()
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__} has been added as a Cog")
+
+    def load_events(self):
+        db_entries = DBSession.list(EventToolsEvents)
+        all_events = {}
+        for entry in db_entries:
+            event = Event(
+                name=entry.event_name,
+                guild_id=entry.guild_id,
+                channel_id=entry.channel_id,
+                event_id=entry.event_id,
+                event_role_id=entry.event_role_id,
+                common_role_id=entry.common_role_id
+            )
+            if all_events.get(event):
+                self.logger.warning(
+                    f"Duplicate event found - {entry.event_name} "
+                    f"(guildid - {entry.guild_id} | eventid - {entry.event_id}). Skipping adding this event..."
+                )
+                continue
+            all_events[event] = event
+        return all_events
 
     @Cog.listener()
     async def on_scheduled_event_update(self, before: ScheduledEvent, after: ScheduledEvent):
