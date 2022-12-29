@@ -9,6 +9,7 @@ from discord import (
     Embed,
     EntityType,
     EventStatus,
+    Guild,
     Interaction,
     PermissionOverwrite,
     PrivacyLevel,
@@ -93,6 +94,36 @@ def get_category_permissions(role_type: RoleTypeEnum, is_signin: bool = False, i
             return denied_perms
 
 
+def get_event_permissions(guild: Guild, event_role: Role, common_role: Role, is_open: bool):
+    category_permissions = {
+        guild.me: get_category_permissions(RoleTypeEnum.BOTTOP,
+                                              is_open=is_open),
+        event_role: get_category_permissions(RoleTypeEnum.EVENT,
+                                             is_open=is_open),
+        common_role: get_category_permissions(RoleTypeEnum.COMMON,
+                                              is_open=is_open),
+        guild.default_role: get_category_permissions(RoleTypeEnum.DEFAULT,
+                                                     is_open=is_open)
+    }
+
+    signin_permissions = {
+        guild.me: get_category_permissions(RoleTypeEnum.BOTTOP,
+                                           is_signin=True,
+                                           is_open=is_open),
+        event_role: get_category_permissions(RoleTypeEnum.EVENT,
+                                             is_signin=True,
+                                             is_open=is_open),
+        common_role: get_category_permissions(RoleTypeEnum.COMMON,
+                                              is_signin=True,
+                                              is_open=is_open),
+        guild.default_role: get_category_permissions(RoleTypeEnum.DEFAULT,
+                                                     is_signin=True,
+                                                     is_open=is_open)
+    }
+
+    return (category_permissions, signin_permissions)
+
+
 class EventTools(Cog):
 
     def __init__(self, bot: EsportsBot):
@@ -130,7 +161,7 @@ class EventTools(Cog):
         event_start=COG_STRINGS["events_create_event_start_desribe"],
         event_end=COG_STRINGS["events_create_event_end_describe"],
         timezone=COG_STRINGS["events_create_event_timezone_describe"],
-        role=COG_STRINGS["events_create_event_role_describe"],
+        common_role=COG_STRINGS["events_create_event_role_describe"],
         event_colour=COG_STRINGS["events_create_event_colour_describe"]
     )
     @rename(
@@ -139,7 +170,7 @@ class EventTools(Cog):
         event_start=COG_STRINGS["events_create_event_start_rename"],
         event_end=COG_STRINGS["events_create_event_end_rename"],
         timezone=COG_STRINGS["events_create_event_timezone_rename"],
-        role=COG_STRINGS["events_create_event_role_rename"],
+        common_role=COG_STRINGS["events_create_event_role_rename"],
         event_colour=COG_STRINGS["events_create_event_colour_rename"]
     )
     @choices(
@@ -160,7 +191,7 @@ class EventTools(Cog):
         event_end: Transform[datetime,
                              DatetimeTransformer],
         timezone: Choice[str],
-        role: Role,
+        common_role: Role,
         event_colour: Transform[Colour,
                                 ColourTransformer]
     ):
@@ -170,23 +201,7 @@ class EventTools(Cog):
 
         event_role = await interaction.guild.create_role(name=f"{event_name} (Event)", color=event_colour)
 
-        category_permissions = {
-            interaction.guild.me: get_category_permissions(RoleTypeEnum.BOTTOP),
-            event_role: get_category_permissions(RoleTypeEnum.EVENT),
-            role: get_category_permissions(RoleTypeEnum.COMMON),
-            interaction.guild.default_role: get_category_permissions(RoleTypeEnum.DEFAULT)
-        }
-
-        signin_permissions = {
-            interaction.guild.me: get_category_permissions(RoleTypeEnum.BOTTOP,
-                                                           is_signin=True),
-            event_role: get_category_permissions(RoleTypeEnum.EVENT,
-                                                 is_signin=True),
-            role: get_category_permissions(RoleTypeEnum.COMMON,
-                                           is_signin=True),
-            interaction.guild.default_role: get_category_permissions(RoleTypeEnum.DEFAULT,
-                                                                     is_signin=True)
-        }
+        category_permissions, signin_permissions = get_event_permissions(interaction.guild, event_role, common_role, False)
 
         category = await interaction.guild.create_category(name=event_name, overwrites=category_permissions)
         signin_channel = await interaction.guild.create_text_channel(
