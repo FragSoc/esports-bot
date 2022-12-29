@@ -154,7 +154,7 @@ class EventTools(Cog):
                     f"(guildid - {entry.guild_id} | eventid - {entry.event_id}). Skipping adding this event..."
                 )
                 continue
-            all_events[event] = event
+            all_events[entry.event_id] = event
         return all_events
 
     @Cog.listener()
@@ -312,7 +312,7 @@ class EventTools(Cog):
             event_name=event_name
         )
         DBSession.create(db_entry)
-        self.events[event_store] = event_store
+        self.events[event.id] = event_store
 
         await interaction.followup.send("Created event!", ephemeral=True)
 
