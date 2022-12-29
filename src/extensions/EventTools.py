@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 from discord import (
     Colour,
+    Embed,
     EntityType,
     EventStatus,
     Interaction,
@@ -208,15 +209,15 @@ class EventTools(Cog):
 
         options = [
             {
-                "label": "Not Signed In",
+                "label": COG_STRINGS["events_create_event_sign_out"],
                 "description": f"Select this option to sign out of {event_name}",
                 "value": 0,
                 "emoji": "❎",
                 "default": True
             },
             {
-                "label": "Signed In",
-                "description": f"Select this option to sign in to {event_name}",
+                "label": COG_STRINGS["events_create_event_sign_in"],
+                "description": f"Select this option to sign into {event_name}",
                 "value": 1,
                 "emoji": "✅",
                 "default": False
@@ -235,7 +236,22 @@ class EventTools(Cog):
 
         signin_menu.add_item(sign_in_status)
 
-        await signin_channel.send(content=f"Use the menu below to sign in or out of {event_name}!", view=signin_menu)
+        signin_embed = Embed(
+            title=COG_STRINGS["events_create_event_embed_title"].format(name=event_name),
+            description=COG_STRINGS["events_create_event_embed_description"].format(
+                name=event_name,
+                location=event_location,
+                role=event_role.mention,
+                start=int(event.start_time.timestamp()),
+                end=int(event.end_time.timestamp()),
+                sign_in=COG_STRINGS["events_create_event_sign_in"],
+                sign_out=COG_STRINGS["events_create_event_sign_out"]
+            ),
+            color=event_colour,
+            url=event.url
+        )
+
+        await signin_channel.send(embed=signin_embed, view=signin_menu)
 
         event_store = Event(
             name=event_name,
