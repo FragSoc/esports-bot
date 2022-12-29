@@ -1,8 +1,8 @@
-import os
 import logging
+import os
 from typing import Any
 
-from sqlalchemy import create_engine, Table
+from sqlalchemy import Table, create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import create_database, database_exists
 

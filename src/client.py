@@ -1,8 +1,9 @@
-import os
 import logging
-from typing import List, Dict, Union
-from discord.ext.commands import Bot
+import os
+from typing import Dict, List, Union
+
 from discord import Intents, Object
+from discord.ext.commands import Bot
 
 __all__ = ["EsportsBot"]
 

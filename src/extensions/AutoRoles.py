@@ -1,12 +1,13 @@
-from discord.ext.commands import Bot, Cog
-from discord.app_commands import command, describe, rename, default_permissions, checks, guild_only, Transform
-from discord import Member, Interaction, Role, Embed, Color
-
 import logging
 from typing import List
-from common.io import load_cog_toml
-from common.discord import RoleListTransformer, get_role, primary_key_from_object
+
+from discord import Color, Embed, Interaction, Member, Role
+from discord.app_commands import (Transform, checks, command, default_permissions, describe, guild_only, rename)
+from discord.ext.commands import Bot, Cog
+
 from client import EsportsBot
+from common.discord import (RoleListTransformer, get_role, primary_key_from_object)
+from common.io import load_cog_toml
 from database.gateway import DBSession
 from database.models import AutoRolesConfig
 

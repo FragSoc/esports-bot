@@ -1,7 +1,9 @@
-import coloredlogs
 import logging
 import os
 import sys
+
+import coloredlogs
+
 from bot import start_bot
 
 if __name__ == "__main__":
