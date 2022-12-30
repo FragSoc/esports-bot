@@ -43,6 +43,7 @@ EVENT_INTERACTION_PREFIX = f"{__name__}.interaction"
 TIMEZONES = load_timezones()
 
 SIGN_IN_CHANNEL_SUFFIX = "sign-in"
+SIGN_IN_INTERACTION_SUFFIX = "sign_in_status"
 
 denied_perms = PermissionOverwrite(read_messages=False, send_messages=False, connect=False, view_channel=False)
 read_only_perms = PermissionOverwrite(read_messages=True, send_messages=False, connect=False, view_channel=True)
@@ -71,6 +72,11 @@ class Event:
 
 def get_event_custom_id(event_id: int, suffix: str):
     return f"{EVENT_INTERACTION_PREFIX}-{event_id}-{suffix}"
+
+
+def parse_custom_id(custom_id: str):
+    parts = custom_id.split("-")
+    return {"event_id": parts[1], "suffix": parts[2]}
 
 
 def get_category_permissions(role_type: RoleTypeEnum, is_signin: bool = False, is_open: bool = False):
@@ -126,6 +132,21 @@ def get_event_permissions(guild: Guild, event_role: Role, common_role: Role, is_
     }
 
     return (category_permissions, signin_permissions)
+
+
+async def handle_sign_in_menu(interaction: Interaction, event: Event):
+    is_signed_in = int(interaction.data.get("values")[0])
+
+    event_role = interaction.guild.get_role(event.event_role_id)
+    if not event_role:
+        return False, is_signed_in
+
+    if is_signed_in:
+        await interaction.user.add_roles(event_role)
+        return True, is_signed_in
+    else:
+        await interaction.user.remove_roles(event_role)
+        return True, is_signed_in
 
 
 class EventTools(Cog):
@@ -203,7 +224,27 @@ class EventTools(Cog):
         if not interaction.data.get("custom_id").startswith(EVENT_INTERACTION_PREFIX):
             return False
 
-        await interaction.response.send_message(interaction.data.get("custom_id"), ephemeral=True)
+        id_data = parse_custom_id(interaction.data.get("custom_id"))
+
+        if not id_data.get("event_id").isdigit():
+            self.logger.warning(f"Received malformed custom-id: {interaction.data.get('custom_id')}")
+            return False
+
+        event = self.events.get(int(id_data.get("event_id")))
+        if not event:
+            return False
+
+        success, status = await handle_sign_in_menu(interaction, event)
+
+        current_status = "Signed In" if status else "Not Signed In"
+
+        if success:
+            await interaction.response.send_message(
+                COG_STRINGS["events_signin_status_success"].format(status=current_status, name=event.name),
+                ephemeral=True
+            )
+        else:
+            await interaction.response.send_message(COG_STRINGS["events_signin_status_failed"], ephemeral=True)
 
     @command(name=COG_STRINGS["events_create_event_name"], description=COG_STRINGS["events_create_event_description"])
     @describe(
@@ -296,7 +337,7 @@ class EventTools(Cog):
             max_values=1,
             options=[SelectOption(**x) for x in options],
             custom_id=get_event_custom_id(event.id,
-                                          "sign_in_status")
+                                          SIGN_IN_INTERACTION_SUFFIX)
         )
 
         signin_menu.add_item(sign_in_status)
