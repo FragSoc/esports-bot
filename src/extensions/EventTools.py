@@ -200,8 +200,10 @@ class EventTools(Cog):
         if not interaction.data or not interaction.data.get("custom_id"):
             return False
 
-        if interaction.data.get("custom_id").startswith(EVENT_INTERACTION_PREFIX):
-            await interaction.response.send_message(interaction.data.get("custom_id"), ephemeral=True)
+        if not interaction.data.get("custom_id").startswith(EVENT_INTERACTION_PREFIX):
+            return False
+
+        await interaction.response.send_message(interaction.data.get("custom_id"), ephemeral=True)
 
     @command(name=COG_STRINGS["events_create_event_name"], description=COG_STRINGS["events_create_event_description"])
     @describe(
