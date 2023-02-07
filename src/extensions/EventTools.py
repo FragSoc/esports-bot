@@ -572,6 +572,41 @@ class EventTools(Cog):
         )
         return True
 
+    @command(name=COG_STRINGS["events_reschedule_event_name"], description=COG_STRINGS["events_reschedule_event_description"])
+    @describe(
+        event_id=COG_STRINGS["events_reschedule_event_event_id_describe"],
+        event_location=COG_STRINGS["events_reschedule_event_event_location_describe"],
+        event_start=COG_STRINGS["events_reschedule_event_event_start_describe"],
+        event_end=COG_STRINGS["events_reschedule_event_event_end_describe"],
+        timezone=COG_STRINGS["events_reschedule_event_timezone_describe"],
+    )
+    @rename(
+        event_id=COG_STRINGS["events_reschedule_event_event_id_rename"],
+        event_location=COG_STRINGS["events_reschedule_event_event_location_rename"],
+        event_start=COG_STRINGS["events_reschedule_event_event_start_rename"],
+        event_end=COG_STRINGS["events_reschedule_event_event_end_rename"],
+        timezone=COG_STRINGS["events_reschedule_event_timezone_rename"],
+    )
+    @choices(
+        timezone=[Choice(name=TIMEZONES.get(x).get("_description"),
+                         value=TIMEZONES.get(x).get("_alias")) for x in TIMEZONES]
+    )
+    @default_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
+    @guild_only()
+    async def reschedule_event(
+        self,
+        interaction: Interaction,
+        event_id: str,
+        event_location: str,
+        event_start: Transform[datetime,
+                               DatetimeTransformer],
+        event_end: Transform[datetime,
+                             DatetimeTransformer],
+        timezone: Choice[str]
+    ):
+        pass
+
 
 async def setup(bot: Bot):
     await bot.add_cog(EventTools(bot))
