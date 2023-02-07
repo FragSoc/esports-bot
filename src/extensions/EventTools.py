@@ -33,7 +33,7 @@ from discord.ext.commands import Bot, Cog
 from discord.ui import Select, View
 
 from client import EsportsBot
-from common.discord import (ColourTransformer, DatetimeTransformer, primary_key_from_object)
+from common.discord import (ColourTransformer, DatetimeTransformer, primary_key_from_object, EventTransformer)
 from common.io import load_cog_toml, load_timezones
 from database.gateway import DBSession
 from database.models import EventToolsEvents
@@ -272,7 +272,8 @@ class EventTools(Cog):
 
         if success:
             await interaction.response.send_message(
-                COG_STRINGS["events_signin_status_success"].format(status=current_status, name=event.name),
+                COG_STRINGS["events_signin_status_success"].format(status=current_status,
+                                                                   name=event.name),
                 ephemeral=True
             )
         else:
@@ -433,6 +434,137 @@ class EventTools(Cog):
         self.events[event.id] = event_store
 
         await interaction.followup.send("Created event!", ephemeral=True)
+
+    @command(name=COG_STRINGS["events_open_event_name"], description=COG_STRINGS["events_open_event_description"])
+    @describe(
+        event_id=COG_STRINGS["events_open_event_event_id_describe"],
+    )
+    @rename(
+        event_id=COG_STRINGS["events_open_event_event_id_rename"],
+    )
+    @autocomplete(event_id=EventTransformer.autocomplete)
+    @default_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
+    @guild_only()
+    async def open_event(self, interaction: Interaction, event_id: str):
+        await interaction.response.defer()
+        if not event_id.isdigit():
+            await interaction.followup.send(
+                content=COG_STRINGS["events_open_event_warn_invalid_id"].format(event=event_id),
+                ephemeral=True
+            )
+            return False
+
+        event_id_int = int(event_id)
+        event = self.events.get(event_id_int)
+        if event is None:
+            await interaction.followup.send(
+                content=COG_STRINGS["events_open_event_warn_invalid_id"].format(event=event_id),
+                ephemeral=True
+            )
+            return False
+
+        guild_events = interaction.guild.scheduled_events
+        discord_event = None
+        for guild_event in guild_events:
+            if guild_event.id == event.event_id:
+                discord_event = guild_event
+                break
+
+        if not discord_event:
+            await interaction.followup.send(content=COG_STRINGS["events_open_event_error_missing_event"], ephemeral=True)
+            return False
+
+        await discord_event.start()
+        await interaction.followup.send(
+            content=COG_STRINGS["events_open_event_success"].format(event_name=event.name),
+            ephemeral=self.bot.only_ephemeral
+        )
+        return True
+
+    @command(name=COG_STRINGS["events_close_event_name"], description=COG_STRINGS["events_close_event_description"])
+    @describe(
+        event_id=COG_STRINGS["events_close_event_event_id_describe"],
+        archive=COG_STRINGS["events_close_event_archive_describe"],
+        clear_messages=COG_STRINGS["events_close_events_clear_messages_describe"],
+    )
+    @rename(
+        event_id=COG_STRINGS["events_close_event_event_id_rename"],
+        archive=COG_STRINGS["events_close_event_archive_rename"],
+        clear_messages=COG_STRINGS["events_close_events_clear_messages_rename"],
+    )
+    @autocomplete(event_id=EventTransformer.autocomplete)
+    @default_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
+    @guild_only()
+    async def close_event(self, interaction: Interaction, event_id: str, archive: bool = True, clear_messages: bool = False):
+        await interaction.response.defer()
+        if not event_id.isdigit():
+            await interaction.followup.send(
+                content=COG_STRINGS["events_close_event_warn_invalid_id"].format(event=event_id),
+                ephemeral=True
+            )
+            return False
+
+        event_id_int = int(event_id)
+        event = self.events.pop(event_id_int, None)
+        if event is None:
+            await interaction.followup.send(
+                content=COG_STRINGS["events_close_event_warn_invalid_id"].format(event=event_id),
+                ephemeral=True
+            )
+            return False
+
+        event_store = DBSession.get(EventToolsEvents, guild_id=interaction.guild.id, event_id=event.event_id)
+        sign_in_channel_id = event.channel_id
+        sign_in_channel = interaction.guild.get_channel(sign_in_channel_id)
+        if not sign_in_channel:
+            sign_in_channel = await interaction.guild.fetch_channel(sign_in_channel_id)
+
+        category_channel = sign_in_channel.category
+        event_role = interaction.guild.get_role(event.event_role_id)
+
+        guild_events = interaction.guild.scheduled_events
+        discord_event = None
+        for guild_event in guild_events:
+            if guild_event.id == event.event_id:
+                discord_event = guild_event
+                break
+
+        if not discord_event:
+            await interaction.followup.send(content=COG_STRINGS["events_close_event_warn_missing_event"], ephemeral=True)
+            return False
+
+        await discord_event.end()
+
+        if not archive:
+            DBSession.delete(event_store)
+            category_channels = category_channel.channels
+            for channel in category_channels:
+                await channel.delete()
+            await category_channel.delete()
+            await event_role.delete()
+            await interaction.followup.send(
+                content=COG_STRINGS["events_close_event_success_no_archive"].format(event_name=event.name),
+                ephemeral=self.bot.only_ephemeral
+            )
+            return True
+        elif clear_messages:
+            category_channels = category_channel.text_channels
+            for channel in category_channels:
+                if channel.id != sign_in_channel_id:
+                    await channel.purge()
+
+        await self.update_event_channel_permissions(event.event_id, interaction.guild, is_open=False)
+
+        await interaction.followup.send(
+            content=COG_STRINGS["events_close_event_success"].format(
+                event_name=event.name,
+                result="cleared" if clear_messages else "not changed"
+            ),
+            ephemeral=self.bot.only_ephemeral
+        )
+        return True
 
 
 async def setup(bot: Bot):
