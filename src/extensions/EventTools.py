@@ -335,6 +335,14 @@ class EventTools(Cog):
         event_start_aware = event_start.replace(tzinfo=ZoneInfo(timezone.value))
         event_end_aware = event_end.replace(tzinfo=ZoneInfo(timezone.value))
 
+        if event_end_aware <= event_start_aware:
+            await interaction.followup.send(content=COG_STRINGS["events_create_event_warn_invalid_dates"], ephemeral=True)
+            return False
+
+        if event_start_aware <= datetime.now(tz=ZoneInfo(timezone.value)):
+            await interaction.followup.send(content=COG_STRINGS["events_create_event_warn_invalid_start"], ephemeral=True)
+            return False
+
         event_role = await interaction.guild.create_role(name=f"{event_name} (Event)", color=event_colour)
 
         category_permissions, signin_permissions = get_event_permissions(interaction.guild, event_role, common_role, False)
