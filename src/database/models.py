@@ -41,3 +41,4 @@ class EventToolsEvents(base):
     common_role_id = Column(BigInteger, nullable=False)
     event_id = Column(BigInteger, nullable=False)
     event_name = Column(String, nullable=False)
+    is_archived = Column(Boolean, nullable=True, default=False)

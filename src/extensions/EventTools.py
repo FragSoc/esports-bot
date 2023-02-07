@@ -65,6 +65,7 @@ class Event:
     event_id: int
     event_role_id: int = None
     common_role_id: int = None
+    is_archived: bool = False
 
     def __hash__(self) -> int:
         return self.event_id
