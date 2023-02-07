@@ -159,6 +159,11 @@ class EventTools(Cog):
         self.logger.info(f"{__name__} has been added as a Cog")
 
     def load_events(self):
+        """Load saved events from DB to be tracked by the bot.
+
+        Returns:
+            dict: A dictionary mapping event ID to an Event object containing the event data.
+        """
         db_entries = DBSession.list(EventToolsEvents)
         all_events = {}
         for entry in db_entries:
@@ -180,6 +185,14 @@ class EventTools(Cog):
         return all_events
 
     async def update_event_channel_permissions(self, event_id: int, guild: Guild, is_open: bool):
+        """Used to update the eventcategory and sign-in channel permissions,
+        based on if the event is currently open or not.
+
+        Args:
+            event_id (int): The ID of the event to update.
+            guild (Guild): The guild in which the event exists.
+            is_open (bool): Whether or not the event is currently open or not.
+        """
         event = self.events.get(event_id)
         event_role = guild.get_role(event.event_role_id)
         common_role = guild.get_role(event.common_role_id)
@@ -191,6 +204,15 @@ class EventTools(Cog):
 
     @Cog.listener()
     async def on_scheduled_event_update(self, before: ScheduledEvent, after: ScheduledEvent):
+        """The event listener for when a Discord Event has an update.
+
+        Args:
+            before (ScheduledEvent): The state of the event before the change.
+            after (ScheduledEvent): The state of the event after the change.
+
+        Returns:
+            bool: If the change was meaningfully handled.
+        """
         # Not an EventTool event
         if not self.events.get(before.id) or not self.events.get(after.id):
             return False
@@ -218,6 +240,16 @@ class EventTools(Cog):
 
     @Cog.listener()
     async def on_interaction(self, interaction: Interaction):
+        f"""The event listener for when a user performs an interaction.
+
+        This event listener only listens for events that have a custom ID with the prefix of {EVENT_INTERACTION_PREFIX}
+
+        Args:
+            interaction (Interaction): The interaction object holding the interaction data.
+
+        Returns:
+            bool: If the interaction was meaningfully handled.
+        """
         if not interaction.data or not interaction.data.get("custom_id"):
             return False
 
@@ -287,6 +319,18 @@ class EventTools(Cog):
         event_colour: Transform[Colour,
                                 ColourTransformer]
     ):
+        """The command used to create a new event.
+
+        Args:
+            interaction (Interaction): The interaction that triggered the command.
+            event_name (str): The name of the new event.
+            event_location (str): The physical location of the event in the real world.
+            event_start (Transform[datetime, DatetimeTransformer]): The start date and time of the event.
+            event_end (Transform[datetime, DatetimeTransformer]): The end date and time of the event.
+            timezone (Choice[str]): The timezone in which the event is happening.
+            common_role (Role): The role that all users have. Used to restrict the channel to actual guild members.
+            event_colour (Transform[Colour, ColourTransformer]): The colour to use for the event role.
+        """
         await interaction.response.defer()
         event_start_aware = event_start.replace(tzinfo=ZoneInfo(timezone.value))
         event_end_aware = event_end.replace(tzinfo=ZoneInfo(timezone.value))
