@@ -65,7 +65,6 @@ class Event:
     event_id: int
     event_role_id: int = None
     common_role_id: int = None
-    is_archived: bool = False
 
     def __hash__(self) -> int:
         return self.event_id
@@ -154,19 +153,20 @@ class EventTools(Cog):
 
     def __init__(self, bot: EsportsBot):
         self.bot = bot
-        self.events = self.load_events()
+        self.events, self.archived_events = self.load_events()
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"Loaded {len(self.events)} event(s) from DB")
         self.logger.info(f"{__name__} has been added as a Cog")
 
     def load_events(self):
-        """Load saved events from DB to be tracked by the bot.
+        """Load saved events from DB to be tracked by the bot, but split into active events and archived events.
 
         Returns:
-            dict: A dictionary mapping event ID to an Event object containing the event data.
+            tuple[dict, dict]: Each dictionary in the tuples mapps event ID to an Event object containing the event data.
         """
         db_entries = DBSession.list(EventToolsEvents)
-        all_events = {}
+        active_events = {}
+        archived_events = {}
         for entry in db_entries:
             event = Event(
                 name=entry.event_name,
@@ -176,14 +176,17 @@ class EventTools(Cog):
                 event_role_id=entry.event_role_id,
                 common_role_id=entry.common_role_id
             )
-            if all_events.get(event):
+            if active_events.get(event):
                 self.logger.warning(
                     f"Duplicate event found - {entry.event_name} "
                     f"(guildid - {entry.guild_id} | eventid - {entry.event_id}). Skipping adding this event..."
                 )
                 continue
-            all_events[entry.event_id] = event
-        return all_events
+            if entry.is_archived:
+                archived_events[entry.event_id] = event
+            else:
+                active_events[entry.event_id] = event
+        return active_events, archived_events
 
     async def update_event_channel_permissions(self, event_id: int, guild: Guild, is_open: bool):
         """Used to update the eventcategory and sign-in channel permissions,
@@ -557,7 +560,9 @@ class EventTools(Cog):
                     await channel.purge()
 
         await self.update_event_channel_permissions(event.event_id, interaction.guild, is_open=False)
-
+        self.archived_events[event.event_id] = event
+        event_store.is_archived = True
+        DBSession.update(event_store)
         await interaction.followup.send(
             content=COG_STRINGS["events_close_event_success"].format(
                 event_name=event.name,
