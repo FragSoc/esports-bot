@@ -38,6 +38,7 @@ from common.discord import (
     ColourTransformer,
     DatetimeTransformer,
     primary_key_from_object,
+    EventTransformer,
     ActiveEventTransformer,
     ArchivedEventTransformer
 )
@@ -699,6 +700,50 @@ class EventTools(Cog):
             ephemeral=self.bot.only_ephemeral
         )
         return True
+
+    @command(name=COG_STRINGS["events_remove_event_name"], description=COG_STRINGS["events_remove_event_description"])
+    @describe(event_id=COG_STRINGS["events_remove_event_event_id_describe"])
+    @rename(
+        event_id=COG_STRINGS["events_remove_event_event_id_rename"],
+    )
+    @autocomplete(event_id=EventTransformer.autocomplete)
+    @default_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
+    @guild_only()
+    async def remove_event(self, interaction: Interaction, event_id: str):
+        await interaction.response.defer()
+
+        if not event_id.isdigit():
+            await interaction.followup.send(
+                content=COG_STRINGS["events_remove_event_warn_invalid_id"].format(event=event_id),
+                ephemeral=True
+            )
+            return False
+
+        event_id_int = int(event_id)
+        event = self.events.pop(event_id_int, None)
+        if event is None:
+            event = self.archived_events.pop(event_id_int, None)
+
+        if event is None:
+            await interaction.followup.send(
+                content=COG_STRINGS["events_remove_event_warn_invalid_id"].format(event=event_id),
+                ephemeral=True
+            )
+            return False
+
+        event_store = DBSession.get(
+            EventToolsEvents,
+            guild_id=interaction.guild.id,
+            event_id=event_id_int,
+        )
+
+        await self.delete_event(interaction.guild, event=event)
+
+        if event_store is not None:
+            DBSession.delete(event_store)
+
+        await interaction.followup.send(content=COG_STRINGS[""].format(name=event.name))
 
 
 async def setup(bot: Bot):

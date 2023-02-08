@@ -60,3 +60,10 @@ events_reschedule_event_success = "The event `{name} (ID: {event_id})` has succc
 events_reschedule_event_warn_invalid_id = "The given ID of `{event}` is not valid. Please select the event from the list or give the ID of the event ⚠️"
 events_reschedule_event_warn_invalid_dates = "The end time cannot be less-than or equal to the start time ⚠️"
 events_reschedule_event_warn_invalid_start "The start date of the event cannot be in the past ⚠️"
+
+events_remove_event_name = "events-remove-event"
+events_remove_event_description = "Entirely deletes either an active or archived event."
+events_remove_event_event_id_describe = "The name or ID of the event to delete."
+events_remove_event_event_id_rename = "event"
+events_remove_event_success = "Successfully deleted the `{name}` event ✅"
+events_remove_event_warn_invalid_id = "The given ID of `{event}` is not valid. Please select the event from the list or give the ID of the event ⚠️"
