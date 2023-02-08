@@ -25,7 +25,7 @@ events_signin_status_failed = "There was an issue while trying to update your si
 
 events_open_event_name = "events-open-event"
 events_open_event_description = "Opens a given event."
-events_open_event_event_id_describe = "The name or ID of the vent to open."
+events_open_event_event_id_describe = "The name or ID of the event to open."
 events_open_event_event_id_rename = "event"
 events_open_event_success = "Successfully opened `{event_name}` ✅"
 events_open_event_warn_invalid_id = "The given ID of `{event}` is not valid. Please select the event from the list or give the ID of the event ⚠️"
@@ -46,7 +46,7 @@ events_close_event_warn_missing_event = "There was an error finding the discord 
 
 events_reschedule_event_name = "events-reschedule-event"
 events_reschedule_event_description = "Reuse an archived channel and schedule it again."
-events_reschedule_event_event_id_describe = "The name or ID of the vent to open."
+events_reschedule_event_event_id_describe = "The name or ID of the event to reschedule."
 events_reschedule_event_event_location_describe = "The physical location of the event."
 events_reschedule_event_event_start_describe = "Event start in format: dd/mm/yy(yy?) hh:mm(:ss?) (AM/PM?)"
 events_reschedule_event_event_end_describe = "Event end in format: dd/mm/yy(yy?) hh:mm(:ss?) (AM/PM?)"
