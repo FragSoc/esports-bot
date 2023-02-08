@@ -743,7 +743,10 @@ class EventTools(Cog):
         if event_store is not None:
             DBSession.delete(event_store)
 
-        await interaction.followup.send(content=COG_STRINGS["events_remove_event_success"].format(name=event.name), ephemeral=self.bot.only_ephemeral)
+        await interaction.followup.send(
+            content=COG_STRINGS["events_remove_event_success"].format(name=event.name),
+            ephemeral=self.bot.only_ephemeral
+        )
 
 
 async def setup(bot: Bot):
