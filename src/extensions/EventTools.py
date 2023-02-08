@@ -237,7 +237,7 @@ class EventTools(Cog):
 
     async def delete_event(self, guild: Guild, event_id: int = None, event: Event = None):
         if event is None:
-            event = self.events.pop(event_id, None)
+            event = self.events.get(event_id, None)
 
         if event is None:
             return False
@@ -250,6 +250,11 @@ class EventTools(Cog):
 
         category_channel = sign_in_channel.category
         event_role = guild.get_role(event.event_role_id)
+        if event_store.is_archived:
+            self.archived_events.pop(event_id, None)
+        else:
+            self.events.pop(event_id, None)
+
         DBSession.delete(event_store)
         category_channels = category_channel.channels
         for channel in category_channels:
@@ -260,7 +265,7 @@ class EventTools(Cog):
 
     async def archive_event(self, guild: Guild, event_id: int = None, event: Event = None, clear_messages: bool = False):
         if event is None:
-            event = self.events.pop(event_id, None)
+            event = self.events.get(event_id, None)
 
         if event is None:
             return False
@@ -276,6 +281,7 @@ class EventTools(Cog):
                     await channel.purge()
 
         await self.update_event_channel_permissions(event.event_id, guild, is_open=False)
+        self.events.pop(event.event_id)
         self.archived_events[event.event_id] = event
         event_store.is_archived = True
         DBSession.update(event_store)
@@ -576,7 +582,7 @@ class EventTools(Cog):
             return False
 
         event_id_int = int(event_id)
-        event = self.events.pop(event_id_int, None)
+        event = self.events.get(event_id_int, None)
         if event is None:
             await interaction.followup.send(
                 content=COG_STRINGS["events_close_event_warn_invalid_id"].format(event=event_id),
@@ -721,9 +727,9 @@ class EventTools(Cog):
             return False
 
         event_id_int = int(event_id)
-        event = self.events.pop(event_id_int, None)
+        event = self.events.get(event_id_int, None)
         if event is None:
-            event = self.archived_events.pop(event_id_int, None)
+            event = self.archived_events.get(event_id_int, None)
 
         if event is None:
             await interaction.followup.send(
