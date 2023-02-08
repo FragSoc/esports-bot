@@ -622,7 +622,7 @@ class EventTools(Cog):
                 await interaction.followup.send(content=COG_STRINGS[""], ephemeral=True)
                 return False
         else:
-            if await self.archive_event(interaction.guild, event_id=event_id_int, event=event):
+            if await self.archive_event(interaction.guild, event_id=event_id_int, event=event, clear_messages=clear_messages):
                 await interaction.followup.send(
                     content=COG_STRINGS["events_close_event_success"].format(
                         event_name=event.name,
