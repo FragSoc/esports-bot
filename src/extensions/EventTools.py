@@ -52,6 +52,7 @@ TIMEZONES = load_timezones()
 
 SIGN_IN_CHANNEL_SUFFIX = "sign-in"
 SIGN_IN_INTERACTION_SUFFIX = "sign_in_status"
+CATEGORY_ARCHIVED_SUFFIX = "(closed)"
 
 denied_perms = PermissionOverwrite(read_messages=False, send_messages=False, connect=False, view_channel=False)
 read_only_perms = PermissionOverwrite(read_messages=True, send_messages=False, connect=False, view_channel=True)
@@ -230,9 +231,18 @@ class EventTools(Cog):
         event_role = guild.get_role(event.event_role_id)
         common_role = guild.get_role(event.common_role_id)
         category_permissions, signin_permissions = get_event_permissions(guild, event_role, common_role, is_open)
+        synced_channels = []
         signin_channel = guild.get_channel(event.channel_id)
         category = signin_channel.category
-        await category.edit(overwrites=category_permissions)
+        for channel in category.channels:
+            if channel.permissions_synced:
+                synced_channels.append(channel)
+        await category.edit(
+            name=f"{event.name}{' ' + CATEGORY_ARCHIVED_SUFFIX if not is_open else ''}",
+            overwrites=category_permissions
+        )
+        for channel in synced_channels:
+            await channel.edit(sync_permissions=True)
         await signin_channel.edit(overwrites=signin_permissions)
 
     async def delete_event(self, guild: Guild, event_id: int = None, event: Event = None):
