@@ -265,6 +265,13 @@ class EventTools(Cog):
         else:
             self.events.pop(event_id, None)
 
+        discord_event = guild.get_scheduled_event(event_id)
+        if discord_event is not None:
+            if discord_event.status.active:
+                await discord_event.stop()
+            else:
+                await discord_event.cancel()
+
         DBSession.delete(event_store)
         category_channels = category_channel.channels
         for channel in category_channels:
@@ -626,7 +633,10 @@ class EventTools(Cog):
 
         discord_event = interaction.guild.get_scheduled_event(event.event_id)
         if discord_event is not None:
-            await discord_event.end()
+            if discord_event.status.active:
+                await discord_event.end()
+            else:
+                await discord_event.cancel()
 
         return True
 
