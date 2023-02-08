@@ -9,7 +9,7 @@
 Dependency Versions:
 
 <div align=left>
-    <img src="https://img.shields.io/badge/min%20python%20version-3.8.0-green?style=flat-square" />
+    <img src="https://img.shields.io/badge/min%20python%20version-3.9.0-green?style=flat-square" />
     <img src="https://img.shields.io/badge/min%20postgres%20version-11-lightgrey?style=flat-square" />
     <img src="https://img.shields.io/badge/min%20docker%20version-20.0.0-blue?style=flat-square" />
     <img src="https://img.shields.io/badge/min%20docker--compose%20version-1.25.0-blue?style=flat-square" />
