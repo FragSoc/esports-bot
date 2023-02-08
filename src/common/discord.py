@@ -163,16 +163,25 @@ class ColourTransformer(Transformer):
                 return Colour.default()
 
 
-class EventTransformer(Transformer):
+def get_events(guild: Guild, event_dict: dict, value: str) -> List[Choice[str]]:
+    filtered_events = []
+    guild_events = [event_dict.get(x) for x in event_dict if event_dict.get(x).guild_id == guild.id]
+    if value.isdigit():
+        filtered_events = [x for x in guild_events if value in str(x.event_id)]
+    else:
+        filtered_events = [x for x in guild_events if value.lower() in x.name.lower()]
+
+    choices = [Choice(name=f"{x.name} ({x.event_id})", value=str(x.event_id)) for x in filtered_events][:25]
+    return choices
+
+
+class ActiveEventTransformer(Transformer):
 
     async def autocomplete(self, interaction: Interaction, value: str) -> List[Choice[str]]:
-        filtered_events = []
-        all_events = self.events
-        guild_events = [all_events.get(x) for x in all_events if all_events.get(x).guild_id == interaction.guild_id]
-        if value.isdigit():
-            filtered_events = [x for x in guild_events if value in str(x.event_id)]
-        else:
-            filtered_events = [x for x in guild_events if value.lower() in x.name.lower()]
+        return get_events(interaction.guild, self.events, value)
 
-        choices = [Choice(name=f"{x.name} ({x.event_id})", value=str(x.event_id)) for x in filtered_events][:25]
-        return choices
+
+class ArchivedEventTransformer(Transformer):
+
+    async def autocomplete(self, interaction: Interaction, value: str) -> List[Choice[str]]:
+        return get_events(interaction.guild, self.archived_events, value)
