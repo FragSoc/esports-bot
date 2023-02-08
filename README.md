@@ -130,14 +130,33 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 ### Environment Variable: `ENABLE_EVENTTOOLS`
 
-### _Not yet implemented!_
+#### /events-create-event \<name\> \<physical location\> \<start time\> \<end time\> \<timezone\> \<common member role\> \<role color\>
 
+- Creates a new event.
+
+#### /events-open-event \<event name or ID\>
+
+- Opens the given event. This will show the sign-in menu to members.
+
+#### /events-close-event \<event name or ID\> [optional: keep-event?] [optional: clear-messages?]
+
+- Ends the given event. This will hide all the channels from members.
+- If keep-event is set to True, the event will be archived, otherwise it's channels and roles will be deleted.
+- If clear-messages is set to True, when the event is archived, messages in all channels will be deleted.
+
+#### /events-reschedule-event \<physical location\> \<start time\> \<end time\> \<timezone\>
+
+- If an event has been archived, it can be reused and rescheduled for a new date using this command.
+
+#### /events-remove-event \<event name or ID\>
+
+- Entirely deletes either an active or archived event.
 </details>
 
 # TODO:
 
 - ~~Implement unimplemented commands in VoiceAdmin and AdminTools cogs.~~
-- Implement EventTools cog
+- ~~Implement EventTools cog~~
 - ~~Implement AutoRoles cog~~
 - Add back functionality of previous bot (eg. Music, PingableRoles, etc.)
 - Add game deal tracker (DealTracker(?) cog)
