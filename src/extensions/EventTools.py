@@ -748,16 +748,7 @@ class EventTools(Cog):
             )
             return False
 
-        event_store = DBSession.get(
-            EventToolsEvents,
-            guild_id=interaction.guild.id,
-            event_id=event_id_int,
-        )
-
         await self.delete_event(interaction.guild, event=event)
-
-        if event_store is not None:
-            DBSession.delete(event_store)
 
         await interaction.followup.send(
             content=COG_STRINGS["events_remove_event_success"].format(name=event.name),
