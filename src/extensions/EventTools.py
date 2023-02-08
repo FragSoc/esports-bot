@@ -297,6 +297,54 @@ class EventTools(Cog):
         DBSession.update(event_store)
         return True
 
+    async def create_signin(self, event: Event, location: str, discord_event: ScheduledEvent, event_role: Role):
+        signin_menu = View(timeout=None)
+
+        options = [
+            {
+                "label": COG_STRINGS["events_create_event_sign_out"],
+                "description": f"Select this option to sign out of {event.name}",
+                "value": 0,
+                "emoji": "❎",
+                "default": True
+            },
+            {
+                "label": COG_STRINGS["events_create_event_sign_in"],
+                "description": f"Select this option to sign into {event.name}",
+                "value": 1,
+                "emoji": "✅",
+                "default": False
+            }
+        ]
+
+        sign_in_status = Select(
+            placeholder="Your Sign-in Status",
+            min_values=1,
+            max_values=1,
+            options=[SelectOption(**x) for x in options],
+            custom_id=get_event_custom_id(discord_event.id,
+                                          SIGN_IN_INTERACTION_SUFFIX)
+        )
+
+        signin_menu.add_item(sign_in_status)
+
+        signin_embed = Embed(
+            title=COG_STRINGS["events_create_event_embed_title"].format(name=event.name),
+            description=COG_STRINGS["events_create_event_embed_description"].format(
+                name=event.name,
+                location=location,
+                role=event_role.mention,
+                start=int(discord_event.start_time.timestamp()),
+                end=int(discord_event.start_time.timestamp()),
+                sign_in=COG_STRINGS["events_create_event_sign_in"],
+                sign_out=COG_STRINGS["events_create_event_sign_out"]
+            ),
+            color=event_role.color,
+            url=discord_event.url
+        )
+
+        return signin_embed, signin_menu
+
     @Cog.listener()
     async def on_scheduled_event_update(self, before: ScheduledEvent, after: ScheduledEvent):
         """The event listener for when a Discord Event has an update.
@@ -450,53 +498,6 @@ class EventTools(Cog):
             signin_channel
         )
 
-        signin_menu = View(timeout=None)
-
-        options = [
-            {
-                "label": COG_STRINGS["events_create_event_sign_out"],
-                "description": f"Select this option to sign out of {event_name}",
-                "value": 0,
-                "emoji": "❎",
-                "default": True
-            },
-            {
-                "label": COG_STRINGS["events_create_event_sign_in"],
-                "description": f"Select this option to sign into {event_name}",
-                "value": 1,
-                "emoji": "✅",
-                "default": False
-            }
-        ]
-
-        sign_in_status = Select(
-            placeholder="Your Sign-in Status",
-            min_values=1,
-            max_values=1,
-            options=[SelectOption(**x) for x in options],
-            custom_id=get_event_custom_id(event.id,
-                                          SIGN_IN_INTERACTION_SUFFIX)
-        )
-
-        signin_menu.add_item(sign_in_status)
-
-        signin_embed = Embed(
-            title=COG_STRINGS["events_create_event_embed_title"].format(name=event_name),
-            description=COG_STRINGS["events_create_event_embed_description"].format(
-                name=event_name,
-                location=event_location,
-                role=event_role.mention,
-                start=int(event.start_time.timestamp()),
-                end=int(event.end_time.timestamp()),
-                sign_in=COG_STRINGS["events_create_event_sign_in"],
-                sign_out=COG_STRINGS["events_create_event_sign_out"]
-            ),
-            color=event_colour,
-            url=event.url
-        )
-
-        await signin_channel.send(embed=signin_embed, view=signin_menu)
-
         event_store = Event(
             name=event_name,
             guild_id=interaction.guild.id,
@@ -505,6 +506,10 @@ class EventTools(Cog):
             common_role_id=common_role.id,
             event_id=event.id
         )
+
+        signin_embed, signin_menu = await self.create_signin(event_store, event_location, event, event_role)
+
+        await signin_channel.send(embed=signin_embed, view=signin_menu)
 
         db_entry = EventToolsEvents(
             primary_key=primary_key_from_object(event),
@@ -705,10 +710,22 @@ class EventTools(Cog):
             event_location,
             signin_channel
         )
+
+        event_role = interaction.guild.get_role(event.event_role_id)
+        if not event_role:
+            await interaction.followup.send(content=COG_STRINGS["events_reschedule_event_error_missing_role"], ephemeral=True)
+            return False
+
         event.event_id = discord_event.id
         event_store.event_id = discord_event.id
         DBSession.update(event_store)
         self.events[event.event_id] = event
+
+        signin_embed, signin_menu = await self.create_signin(event, event_location, discord_event, event_role)
+
+        await signin_channel.purge()
+        await signin_channel.send(embed=signin_embed, view=signin_menu)
+        await signin_channel.category.edit(name=event.name)
 
         await interaction.followup.send(
             content=COG_STRINGS["events_reschedule_event_success"].format(name=event.name,
