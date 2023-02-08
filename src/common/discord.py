@@ -175,6 +175,12 @@ def get_events(guild: Guild, event_dict: dict, value: str) -> List[Choice[str]]:
     return choices
 
 
+class EventTransformer(Transformer):
+
+    async def autocomplete(self, interaction: Interaction, value: str) -> List[Choice[str]]:
+        return get_events(interaction.guild, self.events | self.archived_events, value)
+
+
 class ActiveEventTransformer(Transformer):
 
     async def autocomplete(self, interaction: Interaction, value: str) -> List[Choice[str]]:
