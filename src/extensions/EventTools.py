@@ -15,7 +15,8 @@ from discord import (
     PrivacyLevel,
     Role,
     ScheduledEvent,
-    SelectOption
+    SelectOption,
+    TextChannel
 )
 from discord.app_commands import (
     Choice,
@@ -33,7 +34,13 @@ from discord.ext.commands import Bot, Cog
 from discord.ui import Select, View
 
 from client import EsportsBot
-from common.discord import (ColourTransformer, DatetimeTransformer, primary_key_from_object, EventTransformer)
+from common.discord import (
+    ColourTransformer,
+    DatetimeTransformer,
+    primary_key_from_object,
+    ActiveEventTransformer,
+    ArchivedEventTransformer
+)
 from common.io import load_cog_toml, load_timezones
 from database.gateway import DBSession
 from database.models import EventToolsEvents
@@ -149,6 +156,27 @@ async def handle_sign_in_menu(interaction: Interaction, event: Event):
         return True, is_signed_in
 
 
+async def schedule_event(
+    guild: Guild,
+    name: str,
+    start_time: datetime,
+    end_time: datetime,
+    location: str,
+    signin_channel: TextChannel
+):
+    discord_event = await guild.create_scheduled_event(
+        name=name,
+        start_time=start_time.astimezone(),
+        end_time=end_time.astimezone(),
+        description=f"Once the event has started, use {signin_channel.mention} to sign in!",
+        location=f"Channel: {signin_channel.mention} | Building {location}",
+        entity_type=EntityType.external,
+        privacy_level=PrivacyLevel.guild_only
+    )
+
+    return discord_event
+
+
 class EventTools(Cog):
 
     def __init__(self, bot: EsportsBot):
@@ -206,6 +234,52 @@ class EventTools(Cog):
         await category.edit(overwrites=category_permissions)
         await signin_channel.edit(overwrites=signin_permissions)
 
+    async def delete_event(self, guild: Guild, event_id: int = None, event: Event = None):
+        if event is None:
+            event = self.events.pop(event_id, None)
+
+        if event is None:
+            return False
+
+        event_store = DBSession.get(EventToolsEvents, guild_id=guild.id, event_id=event.event_id)
+        sign_in_channel_id = event.channel_id
+        sign_in_channel = guild.get_channel(sign_in_channel_id)
+        if not sign_in_channel:
+            sign_in_channel = await guild.fetch_channel(sign_in_channel_id)
+
+        category_channel = sign_in_channel.category
+        event_role = guild.get_role(event.event_role_id)
+        DBSession.delete(event_store)
+        category_channels = category_channel.channels
+        for channel in category_channels:
+            await channel.delete()
+        await category_channel.delete()
+        await event_role.delete()
+        return True
+
+    async def archive_event(self, guild: Guild, event_id: int = None, event: Event = None, clear_messages: bool = False):
+        if event is None:
+            event = self.events.pop(event_id, None)
+
+        if event is None:
+            return False
+
+        event_store = DBSession.get(EventToolsEvents, guild_id=guild.id, event_id=event.event_id)
+
+        signin_channel = guild.get_channel(event.channel_id)
+        category = signin_channel.category
+
+        if clear_messages:
+            for channel in category.text_channels:
+                if channel.id != signin_channel.id:
+                    await channel.purge()
+
+        await self.update_event_channel_permissions(event.event_id, guild, is_open=False)
+        self.archived_events[event.event_id] = event
+        event_store.is_archived = True
+        DBSession.update(event_store)
+        return True
+
     @Cog.listener()
     async def on_scheduled_event_update(self, before: ScheduledEvent, after: ScheduledEvent):
         """The event listener for when a Discord Event has an update.
@@ -227,20 +301,11 @@ class EventTools(Cog):
 
         # Delete the channels and role upon cancellation
         if after.status == EventStatus.cancelled:
-            event = self.events.pop(after.id)
-            event_role = after.guild.get_role(event.event_role_id)
-            signin_channel = after.guild.get_channel(event.channel_id)
-            category = signin_channel.category
-            for channel in category.channels:
-                await channel.delete()
-            await category.delete()
-            await event_role.delete()
-            db_entry = DBSession.get(EventToolsEvents, guild_id=event.guild_id, event_id=event.event_id)
-            DBSession.delete(db_entry)
+            await self.delete_event(after.guild, event_id=after.id)
 
         # Hide the channels again when the event ends
         if after.status == EventStatus.ended:
-            await self.update_event_channel_permissions(after.id, after.guild, is_open=False)
+            await self.archive_event(after.guild, event_id=after.id)
 
     @Cog.listener()
     async def on_interaction(self, interaction: Interaction):
@@ -359,14 +424,13 @@ class EventTools(Cog):
             overwrites=signin_permissions
         )
 
-        event = await interaction.guild.create_scheduled_event(
-            name=event_name,
-            start_time=event_start_aware.astimezone(),
-            end_time=event_end_aware.astimezone(),
-            description=f"Once the event has started, use {signin_channel.mention} to sign in!",
-            location=f"Channel: {signin_channel.mention} | Building: {event_location}",
-            entity_type=EntityType.external,
-            privacy_level=PrivacyLevel.guild_only
+        event = await schedule_event(
+            interaction.guild,
+            event_name,
+            event_start_aware,
+            event_end_aware,
+            event_location,
+            signin_channel
         )
 
         signin_menu = View(timeout=None)
@@ -446,7 +510,7 @@ class EventTools(Cog):
     @rename(
         event_id=COG_STRINGS["events_open_event_event_id_rename"],
     )
-    @autocomplete(event_id=EventTransformer.autocomplete)
+    @autocomplete(event_id=ActiveEventTransformer.autocomplete)
     @default_permissions(administrator=True)
     @checks.has_permissions(administrator=True)
     @guild_only()
@@ -497,7 +561,7 @@ class EventTools(Cog):
         archive=COG_STRINGS["events_close_event_archive_rename"],
         clear_messages=COG_STRINGS["events_close_events_clear_messages_rename"],
     )
-    @autocomplete(event_id=EventTransformer.autocomplete)
+    @autocomplete(event_id=ActiveEventTransformer.autocomplete)
     @default_permissions(administrator=True)
     @checks.has_permissions(administrator=True)
     @guild_only()
@@ -519,57 +583,29 @@ class EventTools(Cog):
             )
             return False
 
-        event_store = DBSession.get(EventToolsEvents, guild_id=interaction.guild.id, event_id=event.event_id)
-        sign_in_channel_id = event.channel_id
-        sign_in_channel = interaction.guild.get_channel(sign_in_channel_id)
-        if not sign_in_channel:
-            sign_in_channel = await interaction.guild.fetch_channel(sign_in_channel_id)
-
-        category_channel = sign_in_channel.category
-        event_role = interaction.guild.get_role(event.event_role_id)
-
-        guild_events = interaction.guild.scheduled_events
-        discord_event = None
-        for guild_event in guild_events:
-            if guild_event.id == event.event_id:
-                discord_event = guild_event
-                break
-
-        if not discord_event:
-            await interaction.followup.send(content=COG_STRINGS["events_close_event_warn_missing_event"], ephemeral=True)
-            return False
-
-        await discord_event.end()
-
         if not archive:
-            DBSession.delete(event_store)
-            category_channels = category_channel.channels
-            for channel in category_channels:
-                await channel.delete()
-            await category_channel.delete()
-            await event_role.delete()
-            await interaction.followup.send(
-                content=COG_STRINGS["events_close_event_success_no_archive"].format(event_name=event.name),
-                ephemeral=self.bot.only_ephemeral
-            )
-            return True
-        elif clear_messages:
-            category_channels = category_channel.text_channels
-            for channel in category_channels:
-                if channel.id != sign_in_channel_id:
-                    await channel.purge()
+            if await self.delete_event(interaction.guild, event=event):
+                await interaction.followup.send(
+                    content=COG_STRINGS["events_close_event_success_no_archive"].format(event_name=event.name),
+                    ephemeral=self.bot.only_ephemeral
+                )
+            else:
+                await interaction.followup.send(content=COG_STRINGS[""], ephemeral=True)
+                return False
+        else:
+            if await self.archive_event(interaction.guild, event_id=event_id_int, event=event):
+                await interaction.followup.send(
+                    content=COG_STRINGS["events_close_event_success"].format(
+                        event_name=event.name,
+                        result="cleared" if clear_messages else "not changed"
+                    ),
+                    ephemeral=self.bot.only_ephemeral
+                )
 
-        await self.update_event_channel_permissions(event.event_id, interaction.guild, is_open=False)
-        self.archived_events[event.event_id] = event
-        event_store.is_archived = True
-        DBSession.update(event_store)
-        await interaction.followup.send(
-            content=COG_STRINGS["events_close_event_success"].format(
-                event_name=event.name,
-                result="cleared" if clear_messages else "not changed"
-            ),
-            ephemeral=self.bot.only_ephemeral
-        )
+        discord_event = interaction.guild.get_scheduled_event(event.event_id)
+        if discord_event is not None:
+            await discord_event.end()
+
         return True
 
     @command(name=COG_STRINGS["events_reschedule_event_name"], description=COG_STRINGS["events_reschedule_event_description"])
@@ -591,6 +627,7 @@ class EventTools(Cog):
         timezone=[Choice(name=TIMEZONES.get(x).get("_description"),
                          value=TIMEZONES.get(x).get("_alias")) for x in TIMEZONES]
     )
+    @autocomplete(event_id=ArchivedEventTransformer.autocomplete)
     @default_permissions(administrator=True)
     @checks.has_permissions(administrator=True)
     @guild_only()
@@ -605,7 +642,63 @@ class EventTools(Cog):
                              DatetimeTransformer],
         timezone: Choice[str]
     ):
-        pass
+        await interaction.response.defer()
+
+        if not event_id.isdigit():
+            await interaction.followup.send(
+                content=COG_STRINGS["events_reschedule_event_warn_invalid_id"].format(event=event_id),
+                ephemeral=True
+            )
+            return False
+
+        event_id_int = int(event_id)
+        event = self.archived_events.pop(event_id_int, None)
+        if event is None:
+            await interaction.followup.send(
+                content=COG_STRINGS["events_reschedule_event_warn_invalid_id"].format(event=event_id),
+                ephemeral=True
+            )
+            return False
+
+        event_store = DBSession.get(
+            EventToolsEvents,
+            guild_id=interaction.guild.id,
+            event_id=event.event_id,
+        )
+        if event_store.is_archived:
+            event_store.is_archived = False
+
+        event_start_aware = event_start.replace(tzinfo=ZoneInfo(timezone.value))
+        event_end_aware = event_end.replace(tzinfo=ZoneInfo(timezone.value))
+
+        if event_end_aware <= event_start_aware:
+            await interaction.followup.send(content=COG_STRINGS["events_reschedule_event_warn_invalid_dates"], ephemeral=True)
+            return False
+
+        if event_start_aware <= datetime.now(tz=ZoneInfo(timezone.value)):
+            await interaction.followup.send(content=COG_STRINGS["events_reschedule_event_warn_invalid_start"], ephemeral=True)
+            return False
+
+        signin_channel = interaction.guild.get_channel(event.channel_id)
+        discord_event = await schedule_event(
+            interaction.guild,
+            event.name,
+            event_start_aware,
+            event_end_aware,
+            event_location,
+            signin_channel
+        )
+        event.event_id = discord_event.id
+        event_store.event_id = discord_event.id
+        DBSession.update(event_store)
+        self.events[event.event_id] = event
+
+        await interaction.followup.send(
+            content=COG_STRINGS["events_reschedule_event_success"].format(name=event.name,
+                                                                          event_id=event.event_id),
+            ephemeral=self.bot.only_ephemeral
+        )
+        return True
 
 
 async def setup(bot: Bot):
