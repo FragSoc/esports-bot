@@ -4,8 +4,6 @@ import sys
 
 import coloredlogs
 
-from bot import start_bot
-
 if __name__ == "__main__":
     coloredlogs.install(level=logging.INFO)
     logger = logging.getLogger(__name__)
@@ -19,4 +17,5 @@ if __name__ == "__main__":
         logger.info("Deteced UNIX platform, using uvloop for asyncio operations!")
         import uvloop
         uvloop.install()
+    from bot import start_bot
     start_bot()
