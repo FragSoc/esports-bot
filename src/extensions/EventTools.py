@@ -402,7 +402,7 @@ class EventTools(Cog):
             common_role (Role): The role that all users have. Used to restrict the channel to actual guild members.
             event_colour (Transform[Colour, ColourTransformer]): The colour to use for the event role.
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         event_start_aware = event_start.replace(tzinfo=ZoneInfo(timezone.value))
         event_end_aware = event_end.replace(tzinfo=ZoneInfo(timezone.value))
 
@@ -516,7 +516,7 @@ class EventTools(Cog):
     @checks.has_permissions(administrator=True)
     @guild_only()
     async def open_event(self, interaction: Interaction, event_id: str):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         if not event_id.isdigit():
             await interaction.followup.send(
                 content=COG_STRINGS["events_open_event_warn_invalid_id"].format(event=event_id),
@@ -567,7 +567,7 @@ class EventTools(Cog):
     @checks.has_permissions(administrator=True)
     @guild_only()
     async def close_event(self, interaction: Interaction, event_id: str, archive: bool = True, clear_messages: bool = False):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         if not event_id.isdigit():
             await interaction.followup.send(
                 content=COG_STRINGS["events_close_event_warn_invalid_id"].format(event=event_id),
@@ -643,7 +643,7 @@ class EventTools(Cog):
                              DatetimeTransformer],
         timezone: Choice[str]
     ):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         if not event_id.isdigit():
             await interaction.followup.send(
@@ -711,7 +711,7 @@ class EventTools(Cog):
     @checks.has_permissions(administrator=True)
     @guild_only()
     async def remove_event(self, interaction: Interaction, event_id: str):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         if not event_id.isdigit():
             await interaction.followup.send(
