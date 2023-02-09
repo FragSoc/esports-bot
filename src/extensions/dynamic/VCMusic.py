@@ -9,11 +9,22 @@ from client import EsportsBot
 from common.discord import ColourTransformer
 from common.io import load_cog_toml
 
+from enum import Enum
+
 COG_STRINGS = load_cog_toml(__name__)
 # AUTHOR_ID = 244050529271939073  # it me :)
 AUTHOR_ID = 202978567741505536  # alt account :)
 MUSIC_INTERACTION_PREFIX = f"{__name__}.interaction"
 EMBED_IMAGE_URL = "https://static.wixstatic.com/media/d8a4c5_b42c82e4532c4f8e9f9b2f2d9bb5a53e~mv2.png/v1/fill/w_287,h_287,al_c,q_85,usm_0.66_1.00_0.01/esportslogo.webp"
+
+
+class MusicButtons(Enum):
+    PLAY = "play"
+    PAUSE = "pause"
+    ADD = "add"
+    VIEW = "view"
+    EDIT = "edit"
+    STOP = "stop"
 
 
 def make_empty_embed(color: Colour, author: str):
@@ -26,12 +37,40 @@ def make_empty_embed(color: Colour, author: str):
 def make_default_action_row():
     view = View(timeout=None)
 
-    play_button = Button(style=ButtonStyle.secondary, emoji="▶️")
-    pause_button = Button(style=ButtonStyle.secondary, emoji="⏸️")
-    add_button = Button(style=ButtonStyle.primary, label=COG_STRINGS["music_button_add_song"], emoji="➕")
-    view_button = Button(style=ButtonStyle.primary, label=COG_STRINGS["music_button_view_queue"], emoji="📋")
-    edit_button = Button(style=ButtonStyle.primary, label=COG_STRINGS["music_button_edit_queue"], emoji="✏️")
-    stop_button = Button(style=ButtonStyle.danger, label=COG_STRINGS["music_button_stop_queue"], emoji="⏹️")
+    play_button = Button(
+        style=ButtonStyle.secondary,
+        emoji="▶️",
+        custom_id=f"{MUSIC_INTERACTION_PREFIX}-{MusicButtons.PLAY.value}"
+    )
+    pause_button = Button(
+        style=ButtonStyle.secondary,
+        emoji="⏸️",
+        custom_id=f"{MUSIC_INTERACTION_PREFIX}-{MusicButtons.PAUSE.value}"
+    )
+    add_button = Button(
+        style=ButtonStyle.primary,
+        label=COG_STRINGS["music_button_add_song"],
+        emoji="➕",
+        custom_id=f"{MUSIC_INTERACTION_PREFIX}-{MusicButtons.ADD.value}"
+    )
+    view_button = Button(
+        style=ButtonStyle.primary,
+        label=COG_STRINGS["music_button_view_queue"],
+        emoji="📋",
+        custom_id=f"{MUSIC_INTERACTION_PREFIX}-{MusicButtons.VIEW.value}"
+    )
+    edit_button = Button(
+        style=ButtonStyle.primary,
+        label=COG_STRINGS["music_button_edit_queue"],
+        emoji="✏️",
+        custom_id=f"{MUSIC_INTERACTION_PREFIX}-{MusicButtons.EDIT.value}"
+    )
+    stop_button = Button(
+        style=ButtonStyle.danger,
+        label=COG_STRINGS["music_button_stop_queue"],
+        emoji="⏹️",
+        custom_id=f"{MUSIC_INTERACTION_PREFIX}-{MusicButtons.STOP.value}"
+    )
 
     view.add_item(play_button)
     view.add_item(pause_button)
@@ -58,6 +97,10 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
         if not interaction.data.get("custom_id").startswith(MUSIC_INTERACTION_PREFIX):
             return False
+
+        action = interaction.data.get("custom_id")
+
+        await interaction.response.send_message(f"Recieved action: {action}", ephemeral=True)
 
     @GroupCog.listener()
     async def on_ready(self):
