@@ -66,6 +66,11 @@ def primary_key_from_object(object: Union[Role, GuildChannel, ScheduledEvent]):
 
 
 class RoleListTransformer(Transformer):
+    """The transformer class to transform a list of Roles given in a ccommand string to a list of discord.Role objects.
+
+    Returns:
+        List[Role]: A list of Role objects that were contained in the string that were also valid roles.
+    """
 
     async def transform(self, interaction: Interaction, roles: str) -> List[Role]:
         roles_found = re.finditer(ROLE_REGEX, roles)
@@ -82,6 +87,14 @@ class RoleListTransformer(Transformer):
 
 
 class DatetimeTransformer(Transformer):
+    """The transformer class to convert a datetime string into a datetime object.
+
+    Raises:
+        ValueError: When the given string does not fit a datetime format.
+
+    Returns:
+        datetime: The given string as a datetime object.
+    """
     DATE_REGEX = re.compile(r"(?P<Day>\d{2})\/(?P<Month>\d{2})\/(?P<Year>\d{4}|\d{2})")
     TIME_REGEX = re.compile(
         r"(?P<Hour>\d{2}):"
@@ -138,6 +151,12 @@ class DatetimeTransformer(Transformer):
 
 
 class ColourTransformer(Transformer):
+    """The transformer that provides named colour autocompletion and converts the corresponding Color object.
+    Also provides the ability to convert a hex colour string to a Color object from the given string.
+
+    Returns:
+        Color: The Color object of the colour string or hex string given.
+    """
 
     async def autocomplete(self, interaction: Interaction, current_str: str) -> List[Choice[str]]:
         return [
@@ -176,18 +195,34 @@ def get_events(guild: Guild, event_dict: dict, value: str) -> List[Choice[str]]:
 
 
 class EventTransformer(Transformer):
+    """The transformer that provides autocompletion for exisiting events. Either using a partial name or a partial ID value.
+
+    Returns:
+        List[Choice[str]]: The list of choices that map a user readable string of available events to their ID as the value.
+    """
 
     async def autocomplete(self, interaction: Interaction, value: str) -> List[Choice[str]]:
         return get_events(interaction.guild, self.events | self.archived_events, value)
 
 
 class ActiveEventTransformer(Transformer):
+    """The event trasnformer that only provides autocompletion for events that are not archived
+    (ie. scheduled or active events).
+
+    Returns:
+        List[Choice[str]]: The list of choices that map a user readable string of non-archived events to their ID as the value.
+    """
 
     async def autocomplete(self, interaction: Interaction, value: str) -> List[Choice[str]]:
         return get_events(interaction.guild, self.events, value)
 
 
 class ArchivedEventTransformer(Transformer):
+    """The event trasnformer that only provides autocompletion for events that are archived.
+
+    Returns:
+        List[Choice[str]]: The list of choices that map a user readable string of archived events to their ID as the value.
+    """
 
     async def autocomplete(self, interaction: Interaction, value: str) -> List[Choice[str]]:
         return get_events(interaction.guild, self.archived_events, value)
