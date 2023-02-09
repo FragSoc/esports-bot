@@ -224,3 +224,15 @@ pip install -r requirements.txt
 ```bash
 python3 src/main.py
 ```
+
+# Contributing Guide
+
+If you wish to contribute to this bot please use the following paradigms:
+
+- Ensure that yapf is configured with the configuration defined in `setup.cfg`
+  - Optionally also configure flake8 to help with linting
+- When adding a new extension consider the following:
+  - Create user-facing strings inside of `src/locale/` using the same name as the extension of the filename (eg. for VoiceAdmin.py extension, there exists VoiceAdmin.toml). The strings can then be loaded with `load_cog_strings(__name__)` from `common.io`
+  - Each extension should have an associated environment variable to enable/disable it.
+  - Extensions should be modular, meaning that they should be able to be enabled/disabled with hindering the function of other extensions
+- Any file loading or IO operations should be defined in `src/common/io.py`
