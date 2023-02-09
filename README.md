@@ -153,7 +153,7 @@ The user has control over the child Voice Channel name, and can limit how many/w
 - Entirely deletes either an active or archived event.
 </details>
 
-# TODO:
+# TODO
 
 - ~~Implement unimplemented commands in VoiceAdmin and AdminTools cogs.~~
 - ~~Implement EventTools cog~~
@@ -162,6 +162,28 @@ The user has control over the child Voice Channel name, and can limit how many/w
 - Add game deal tracker (DealTracker(?) cog)
 - Add proper support for SQLite auto increment primary keys
 - Add proper use of command groups
+
+## Previous extensions to implement
+
+<pre>
+✅ Extension implemented either partially or fully.
+
+❌ High priority extension not yet implemented.
+
+⚠️ Low priority extension not yet implemented.
+</pre>
+
+- [x] AdminCog ✅ Implemented as AdminTools
+- [x] DefaultRoleCog ✅ Implemented as AutoRoles
+- [x] EventCategoriesCog ✅ Implemented as EventTools
+- [ ] LogChannelCog ⚠️
+- [ ] MusicCog ⚠️
+- [ ] PingableRolesCog ❌
+- [ ] RoleReactCog ❌
+- [ ] TwitchCog ⚠️
+- [ ] TwitterCog ❌
+- [x] VoicemasterCog ✅ Implemented as VocieAdmin
+- [ ] VotingCog ⚠️
 
 # Quick Setup Guide
 
