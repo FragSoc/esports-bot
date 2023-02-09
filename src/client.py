@@ -1,9 +1,10 @@
 import logging
 import os
-from typing import Dict, List, Union
 
 from discord import Intents, Object
 from discord.ext.commands import Bot
+
+import glob
 
 __all__ = ["EsportsBot"]
 
@@ -20,31 +21,43 @@ class __EsportsBot(Bot):
         self.logger = logging.getLogger(__name__)
         self.only_ephemeral = all_messages_ephemeral
 
+    def find_extensions(self):
+        defaults = []
+        dynamic = []
+
+        def get_files(path):
+            files = []
+            for file_path in glob.glob(path):
+                file = os.path.basename(file_path).split(".")[0]
+                if file != "__init__":
+                    files.append(file)
+            return files
+
+        defaults = get_files(os.path.join(os.path.dirname(__file__), "extensions", "default", "*.py"))
+        dynamic = get_files(os.path.join(os.path.dirname(__file__), "extensions", "dynamic", "*.py"))
+
+        return defaults, dynamic
+
     async def setup_hook(self):
         """The setup function that is called prior to the bot connecting to the Discord Gateway.
         """
         if not self.only_ephemeral:
             self.only_ephemeral = os.getenv("ALL_MESSAGES_EPHEMERAL", "FALSE").upper() == "TRUE"
 
-        # List of extensions to load. Initialised with default extensions.
-        enabled_extensions: List[str] = ["AdminTools"]
-        # Dictionary of Environment variables -> extension name
-        MODULE_ENV_VARS: Dict[str,
-                              Union[str,
-                                    None]] = {
-                                        "VOICEADMIN": "VoiceAdmin",
-                                        "EVENTTOOLS": "EventTools",
-                                        "AUTOROLES": "AutoRoles"
-                                    }
+        default_extensions, dynamic_extensions = self.find_extensions()
+        enabled_extensions = []
 
         # For each of the enabled Environment variables, add it's respective extension to the list.
-        for var in MODULE_ENV_VARS:
-            if MODULE_ENV_VARS.get(var) and os.getenv(f"ENABLE_{var.upper()}", "FALSE").upper() == "TRUE":
-                enabled_extensions.append(MODULE_ENV_VARS.get(var))
+        for extension in dynamic_extensions:
+            if os.getenv(f"ENABLE_{extension.upper()}", "FALSE").upper() == "TRUE":
+                enabled_extensions.append(extension)
 
         # Load the extensions from the generated list of enabled extensions.
+        for extension in default_extensions:
+            await self.load_extension(f"extensions.default.{extension}")
+
         for extension in enabled_extensions:
-            await self.load_extension(f"extensions.{extension}")
+            await self.load_extension(f"extensions.dynamic.{extension}")
 
         # If in a dev environment, sync the commands to the dev guild.
         if os.getenv("DEV_GUILD_ID"):
