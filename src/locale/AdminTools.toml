@@ -1,6 +1,6 @@
 admin_members_name = "admin-member-count"
 admin_members_description = "Get the current member count of the server."
-admin_members_format = "Current member count — `{count}` ."
+admin_members_format = "Current member count — `{count} members` ."
 
 admin_user_info_name = "admin-user-info"
 admin_user_info_title = "{user} — User Info"
