@@ -19,8 +19,6 @@ EMBED_IMAGE_URL = "https://static.wixstatic.com/media/d8a4c5_b42c82e4532c4f8e9f9
 def make_empty_embed(color: Colour, author: str):
     embed = Embed(title=COG_STRINGS["music_embed_title_idle"], color=color)
     embed.set_image(url=EMBED_IMAGE_URL)
-    if author is None:
-        author = "fuxticks"
     embed.set_footer(text=f"Made by {author} 💖")
     return embed
 
@@ -49,7 +47,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     def __init__(self, bot: EsportsBot):
         self.bot = bot
-        self.author = "fuxticks#1809"
+        self.author = "fuxticks"
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__} has been added as a Cog")
 
@@ -64,14 +62,13 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     @GroupCog.listener()
     async def on_ready(self):
         for guild in self.bot.guilds:
-            try:
-                for member in guild.members:
-                    if member.id == AUTHOR_ID:
-                        self.logger.info(f"Found {member} as author !")
-                        self.author = f"{member}"
-                        raise StopIteration
-            except StopIteration:
-                break
+            for member in guild.members:
+                if member.id == AUTHOR_ID:
+                    self.logger.info(f"Found {member} as VCMusic author !")
+                    self.author = f"{member}"
+                    return True
+        self.logger.info(f"Unable to find VCMusic author with id {AUTHOR_ID}, defaulting to {self.author}")
+        return False
 
     @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
     @describe(
