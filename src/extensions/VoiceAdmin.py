@@ -156,7 +156,7 @@ class VoiceAdmin(Cog):
             interaction (Interaction): The interaction that triggered the command.
             channel (VoiceChannel): The Voice Channel to set as a parent Voice Channel.
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         if channel_is_parent(channel):
             await interaction.followup.send(COG_STRINGS["vc_set_parent_warn_already_parent"], ephemeral=True)
@@ -197,7 +197,7 @@ class VoiceAdmin(Cog):
             interaction (Interaction): The interaction that triggered the command.
             channel (VoiceChannel): The Voice Channel to stop behaving as a parent Voice Channel.
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         if not channel_is_parent(channel):
             await interaction.followup.send(COG_STRINGS["vc_remove_parent_warn_not_parent"], ephemeral=True)
@@ -219,7 +219,7 @@ class VoiceAdmin(Cog):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         db_items = DBSession.list(VoiceAdminParent)
 
@@ -255,7 +255,7 @@ class VoiceAdmin(Cog):
             new_name (str, optional): The new name to set the Voice Channel to.
             Defaults to the default child Voice Channel string.
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         voice_state = interaction.user.voice
 
@@ -308,7 +308,7 @@ class VoiceAdmin(Cog):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         voice_state = interaction.user.voice
 
@@ -382,7 +382,7 @@ class VoiceAdmin(Cog):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         voice_state = interaction.user.voice
 
@@ -428,7 +428,7 @@ class VoiceAdmin(Cog):
             user_limit (int, optional): The number of members to limit the child Voice Channel to.
             Defaults to the number of members in the child Voice Channel.
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         voice_state = interaction.user.voice
 
@@ -473,7 +473,7 @@ class VoiceAdmin(Cog):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         voice_state = interaction.user.voice
 

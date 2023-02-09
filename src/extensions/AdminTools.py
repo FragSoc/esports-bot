@@ -40,7 +40,7 @@ class AdminTools(Cog):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         member_count = interaction.guild.member_count
         await interaction.followup.send(
@@ -80,7 +80,7 @@ class AdminTools(Cog):
             await interaction.response.send_message(COG_STRINGS["admin_clear_warn_too_many"], ephemeral=True)
             return False
 
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         messages = await interaction.channel.purge(limit=count, before=interaction.created_at)
         await interaction.followup.send(
             COG_STRINGS["admin_clear_success"].format(count=len(messages)),

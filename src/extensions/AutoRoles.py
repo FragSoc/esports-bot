@@ -55,7 +55,7 @@ class AutoRoles(Cog):
             roles (Transform[List[Role], RoleListTransformer]): One or many roles mentioned.
             Do not need to be separated with a delimiter.
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         initial_entries = DBSession.list(AutoRolesConfig, guild_id=interaction.guild.id)
 
@@ -104,7 +104,7 @@ class AutoRoles(Cog):
             interaction (Interaction): The interaction that triggered the command.
             role (Role): The role to add.
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         db_entry = DBSession.get(AutoRolesConfig, guild_id=role.guild.id, role_id=role.id)
 
@@ -133,7 +133,7 @@ class AutoRoles(Cog):
             interaction (Interaction): The interaction that triggered the command.
             role (Role): The role to remove.
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         db_entry = DBSession.get(AutoRolesConfig, guild_id=role.guild.id, role_id=role.id)
 
@@ -158,7 +158,7 @@ class AutoRoles(Cog):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         db_items = DBSession.list(AutoRolesConfig, guild_id=interaction.guild.id)
 
