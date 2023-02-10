@@ -6,6 +6,8 @@ music_button_view_queue = "View Queue"
 music_button_edit_queue = "Edit Queue"
 music_button_stop_queue = "Stop"
 
+music_add_song_modal_title = "Add song(s) to queue"
+
 music_set_channel_name = "set-channel"
 music_set_channel_description = "Sets the music channel to the given Text Channel."
 music_set_channel_channel_describe = "The channel to set."

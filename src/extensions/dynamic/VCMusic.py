@@ -1,15 +1,14 @@
 import logging
+from enum import Enum
 
-from discord import ButtonStyle, Colour, Embed, Interaction, TextChannel
+from discord import (ButtonStyle, Colour, Embed, Interaction, TextChannel, TextStyle)
 from discord.app_commands import (Transform, autocomplete, command, describe, guild_only, rename)
 from discord.ext.commands import Bot, GroupCog
-from discord.ui import Button, View
+from discord.ui import Button, Modal, TextInput, View
 
 from client import EsportsBot
 from common.discord import ColourTransformer
 from common.io import load_cog_toml
-
-from enum import Enum
 
 COG_STRINGS = load_cog_toml(__name__)
 # AUTHOR_ID = 244050529271939073  # it me :)
@@ -25,6 +24,12 @@ class MusicButtons(Enum):
     VIEW = "view"
     EDIT = "edit"
     STOP = "stop"
+
+
+class MusicModalActions(Enum):
+    ADD_MODAL = "modal.add"
+    ADD_MODAL_SINGLE = "modal.add.single"
+    ADD_MODAL_MULTI = "modal.add.multi"
 
 
 def make_custom_id(action: Enum):
@@ -94,9 +99,28 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         if not interaction.data.get("custom_id").startswith(MUSIC_INTERACTION_PREFIX):
             return False
 
-        action = interaction.data.get("custom_id")
+        action = interaction.data.get("custom_id").split("-")[-1]
 
-        await interaction.response.send_message(f"Recieved action: {action}", ephemeral=True)
+        match action:
+            case MusicButtons.PLAY.value:
+                await interaction.response.send_message("Playing music now!", ephemeral=True)
+            case MusicButtons.PAUSE.value:
+                await interaction.response.send_message("Pausing music!", ephemeral=True)
+            case MusicButtons.ADD.value:
+                await self.add_song_request(interaction)
+            case MusicButtons.VIEW.value:
+                await interaction.response.send_message("View queue..", ephemeral=True)
+            case MusicButtons.EDIT.value:
+                await interaction.response.send_message("Edit queue..", ephemeral=True)
+            case MusicButtons.STOP.value:
+                await interaction.response.send_message("Stopping queue!", ephemeral=True)
+            case MusicModalActions.ADD_MODAL.value:
+                await self.add_song_response(interaction)
+            case _:
+                await interaction.response.send_message(
+                    f"Recieved action: {interaction.data.get('custom_id')}",
+                    ephemeral=True
+                )
 
     @GroupCog.listener()
     async def on_ready(self):
@@ -108,6 +132,30 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                     return True
         self.logger.info(f"Unable to find VCMusic author with id {AUTHOR_ID}, defaulting to {self.author}")
         return False
+
+    async def add_song_request(self, interaction: Interaction):
+        modal = Modal(
+            title=COG_STRINGS["music_add_song_modal_title"],
+            timeout=None,
+            custom_id=make_custom_id(MusicModalActions.ADD_MODAL)
+        )
+        single = TextInput(
+            label="Add one song to queue",
+            custom_id=make_custom_id(MusicModalActions.ADD_MODAL_SINGLE),
+            required=False
+        )
+        multi = TextInput(
+            label="Add multiple songs to queue",
+            custom_id=make_custom_id(MusicModalActions.ADD_MODAL_MULTI),
+            required=False,
+            style=TextStyle.paragraph
+        )
+        modal.add_item(single)
+        modal.add_item(multi)
+        await interaction.response.send_modal(modal)
+
+    async def add_song_response(self, interaction: Interaction):
+        await interaction.response.send_message("Thank you for adding some songs!", ephemeral=True)
 
     @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
     @describe(
