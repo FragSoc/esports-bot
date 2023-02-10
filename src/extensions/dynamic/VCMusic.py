@@ -27,6 +27,10 @@ class MusicButtons(Enum):
     STOP = "stop"
 
 
+def make_custom_id(action: Enum):
+    return f"{MUSIC_INTERACTION_PREFIX}-{action.value}"
+
+
 def make_empty_embed(color: Colour, author: str):
     embed = Embed(title=COG_STRINGS["music_embed_title_idle"], color=color)
     embed.set_image(url=EMBED_IMAGE_URL)
@@ -37,39 +41,31 @@ def make_empty_embed(color: Colour, author: str):
 def make_default_action_row():
     view = View(timeout=None)
 
-    play_button = Button(
-        style=ButtonStyle.secondary,
-        emoji="▶️",
-        custom_id=f"{MUSIC_INTERACTION_PREFIX}-{MusicButtons.PLAY.value}"
-    )
-    pause_button = Button(
-        style=ButtonStyle.secondary,
-        emoji="⏸️",
-        custom_id=f"{MUSIC_INTERACTION_PREFIX}-{MusicButtons.PAUSE.value}"
-    )
+    play_button = Button(style=ButtonStyle.secondary, emoji="▶️", custom_id=make_custom_id(MusicButtons.PLAY))
+    pause_button = Button(style=ButtonStyle.secondary, emoji="⏸️", custom_id=make_custom_id(MusicButtons.PAUSE))
     add_button = Button(
         style=ButtonStyle.primary,
         label=COG_STRINGS["music_button_add_song"],
         emoji="➕",
-        custom_id=f"{MUSIC_INTERACTION_PREFIX}-{MusicButtons.ADD.value}"
+        custom_id=make_custom_id(MusicButtons.ADD)
     )
     view_button = Button(
         style=ButtonStyle.primary,
         label=COG_STRINGS["music_button_view_queue"],
         emoji="📋",
-        custom_id=f"{MUSIC_INTERACTION_PREFIX}-{MusicButtons.VIEW.value}"
+        custom_id=make_custom_id(MusicButtons.VIEW)
     )
     edit_button = Button(
         style=ButtonStyle.primary,
         label=COG_STRINGS["music_button_edit_queue"],
         emoji="✏️",
-        custom_id=f"{MUSIC_INTERACTION_PREFIX}-{MusicButtons.EDIT.value}"
+        custom_id=make_custom_id(MusicButtons.EDIT)
     )
     stop_button = Button(
         style=ButtonStyle.danger,
         label=COG_STRINGS["music_button_stop_queue"],
         emoji="⏹️",
-        custom_id=f"{MUSIC_INTERACTION_PREFIX}-{MusicButtons.STOP.value}"
+        custom_id=make_custom_id(MusicButtons.STOP)
     )
 
     view.add_item(play_button)
