@@ -1,4 +1,5 @@
 import logging
+import re
 from enum import Enum, IntEnum
 
 from discord import (ButtonStyle, Colour, Embed, Interaction, Member, TextChannel, TextStyle)
@@ -91,6 +92,35 @@ def make_default_action_row():
     return view
 
 
+def parse_request_type(request: str) -> SongRequestType:
+    website_regex = r"^((http[s]?://)?(www)?)"
+    if re.search(website_regex, request):
+        return parse_url_type(request)
+    else:
+        return SongRequestType.STRING
+
+
+def parse_url_type(request: str) -> SongRequestType:
+    yt_desktop_regex = r"youtube.com/watch\?v="
+    yt_playlist_regex = r"youtube.com/playlist\?list="
+    yt_mobile_regex = r"youtu.be/([a-zA-Z]|[0-9])+"
+    yt_thumbnail_regex = r"i.ytimg.com/vi/([a-zA-Z]|[0-9])+"
+
+    if re.search(yt_desktop_regex, request):
+        return SongRequestType.YT_VIDEO
+
+    if re.search(yt_playlist_regex, request):
+        return SongRequestType.YT_PLAYLIST
+
+    if re.search(yt_mobile_regex, request):
+        return SongRequestType.YT_VIDEO
+
+    if re.search(yt_thumbnail_regex, request):
+        return SongRequestType.YT_PLAYLIST
+
+    return SongRequestType.INVALID
+
+
 class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     def __init__(self, bot: EsportsBot):
@@ -163,7 +193,44 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         await interaction.response.send_modal(modal)
 
     async def add_song_response(self, interaction: Interaction):
-        await interaction.response.send_message("Thank you for adding some songs!", ephemeral=True)
+        interaction_data = interaction.data.get("components")
+
+        single_id = make_custom_id(MusicModalActions.ADD_MODAL_SINGLE)
+        multi_id = make_custom_id(MusicModalActions.ADD_MODAL_MULTI)
+
+        single_request_data = [x for x in interaction_data if x.get("components")[0].get("custom_id") == single_id][0]
+        multi_request_data = [x for x in interaction_data if x.get("components")[0].get("custom_id") == multi_id][0]
+
+        single_request = single_request_data.get("components")[0].get("value")
+        multi_request = multi_request_data.get("components")[0].get("value")
+
+        request_list = [x.trim() for x in multi_request.split("\n") if x.trim() not in ('', ' ')]
+        if single_request.trim() not in ('', ' '):
+            request_list = [single_request.trim()] + request_list
+
+        failed_requests = []
+        for request in request_list:
+            if not await self.process_song_request(request, interaction):
+                failed_requests.append(request)
+
+        await interaction.response.send_message(f"Thank you for adding some songs!\n\n{interaction.data}", ephemeral=True)
+
+    async def process_song_request(self, request: str, interaction: Interaction) -> bool:
+        if not self.check_valid_user(interaction.user):
+            await interaction.response.send_message(COG_STRINGS["music_add_song_warn_invalid_voice"], ephemeral=True)
+            return False
+
+        request_type = parse_request_type(request)
+
+        if request_type == SongRequestType.YT_VIDEO or request_type == SongRequestType.YT_PLAYLIST:
+            pass
+        elif request_type == SongRequestType.STRING:
+            pass
+        else:
+            return False
+
+        return True
+
     async def check_valid_user(self, user: Member):
         bot_in_channel = user.guild.me.voice is not None
         user_in_channel = user.voice is not None
