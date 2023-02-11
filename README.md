@@ -231,6 +231,7 @@ If you wish to contribute to this bot please use the following paradigms:
 
 - Ensure that yapf is configured with the configuration defined in `setup.cfg`
   - Optionally also configure flake8 to help with linting
+  - This project uses match/case statements, consider using [char101's fork](https://github.com/char101/yapf/releases/tag/v0.31.0) of YAPF until the official fork addresses [the issue](https://github.com/google/yapf/issues/983)
 - When adding a new extension consider the following:
   - Create user-facing strings inside of `src/locale/` using the same name as the extension of the filename (eg. for VoiceAdmin.py extension, there exists VoiceAdmin.toml). The strings can then be loaded with `load_cog_strings(__name__)` from `common.io`
   - If your extension should always be enabled, it should be in `extensions/default/`, otherwise it should have an environment variable to toggle it and it should be in `extensions/dynamic/`.
