@@ -1,5 +1,5 @@
 import logging
-from enum import Enum
+from enum import Enum, IntEnum
 
 from discord import (ButtonStyle, Colour, Embed, Interaction, TextChannel, TextStyle)
 from discord.app_commands import (Transform, autocomplete, command, describe, guild_only, rename)
@@ -30,6 +30,14 @@ class MusicModalActions(Enum):
     ADD_MODAL = "modal.add"
     ADD_MODAL_SINGLE = "modal.add.single"
     ADD_MODAL_MULTI = "modal.add.multi"
+
+
+class SongRequestType(IntEnum):
+    STRING = 0
+    YT_VIDEO = 1
+    YT_PLAYLIST = 2
+    YT_THUMBNAIL = 3
+    INVALID = 4
 
 
 def make_custom_id(action: Enum):
