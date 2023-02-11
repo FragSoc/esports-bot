@@ -1,7 +1,7 @@
 import logging
 from enum import Enum, IntEnum
 
-from discord import (ButtonStyle, Colour, Embed, Interaction, TextChannel, TextStyle)
+from discord import (ButtonStyle, Colour, Embed, Interaction, Member, TextChannel, TextStyle)
 from discord.app_commands import (Transform, autocomplete, command, describe, guild_only, rename)
 from discord.ext.commands import Bot, GroupCog
 from discord.ui import Button, Modal, TextInput, View
@@ -164,6 +164,14 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     async def add_song_response(self, interaction: Interaction):
         await interaction.response.send_message("Thank you for adding some songs!", ephemeral=True)
+    async def check_valid_user(self, user: Member):
+        bot_in_channel = user.guild.me.voice is not None
+        user_in_channel = user.voice is not None
+
+        if not bot_in_channel and user_in_channel:
+            return True
+
+        return user.guild.me.voice.channel == user.voice.channel
 
     @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
     @describe(
