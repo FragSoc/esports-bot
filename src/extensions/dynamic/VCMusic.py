@@ -150,22 +150,31 @@ def perform_string_query(query: str) -> dict:
     if filtered:
         return filtered[0]
 
-    keywords = ("lyric", "official", "music", "audio")
+    preferred_keywords = ["official", "music"]
+    alternate_keywords = ["lyric", "audio"]
 
     best_result = None
     best_views = 0.0
 
+    is_preferred = False
+    keyword_found = ""
+
     for result in results:
         video_title = result.get("title").lower()
         try:
-            for keyword in keywords:
+            for keyword in (preferred_keywords + alternate_keywords):
                 if keyword in video_title:
+                    keyword_found = keyword
                     raise StopIteration
         except StopIteration:
-            view_count = convert_viewcount_to_float(result.get("viewCount").get("short"))
-            if view_count > best_views:
-                best_result = result
-                best_views = view_count
+            if not is_preferred or keyword_found in preferred_keywords:
+                view_count = convert_viewcount_to_float(result.get("viewCount").get("short"))
+                if view_count > best_views:
+                    best_result = result
+                    best_views = view_count
+
+            if keyword_found in preferred_keywords:
+                is_preferred = True
 
     return best_result
 
