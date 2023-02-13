@@ -11,11 +11,14 @@ from client import EsportsBot
 from common.discord import ColourTransformer
 from common.io import load_cog_toml
 
+from youtubesearchpython import VideosSearch
+
 COG_STRINGS = load_cog_toml(__name__)
 # AUTHOR_ID = 244050529271939073  # it me :)
 AUTHOR_ID = 202978567741505536  # alt account :)
 MUSIC_INTERACTION_PREFIX = f"{__name__}.interaction"
 EMBED_IMAGE_URL = "https://static.wixstatic.com/media/d8a4c5_b42c82e4532c4f8e9f9b2f2d9bb5a53e~mv2.png/v1/fill/w_287,h_287,al_c,q_85,usm_0.66_1.00_0.01/esportslogo.webp"
+QUERY_RESULT_LIMIT = 15
 
 
 class MusicButtons(Enum):
@@ -139,6 +142,32 @@ def convert_viewcount_to_float(short_views: str) -> float:
                 return 0
 
     return float(raw[:-1]) * (10**power)
+
+
+def perform_string_query(query: str) -> dict:
+    results = VideosSearch(f"'{query}'", limit=QUERY_RESULT_LIMIT).resultComponents
+    filtered = list(filter(lambda x: x.get("publishedTime") is None, results))
+    if filtered:
+        return filtered
+
+    keywords = ("lyric", "official", "music", "audio")
+
+    best_result = None
+    best_views = 0.0
+
+    for result in results:
+        video_title = result.get("title").lower()
+        try:
+            for keyword in keywords:
+                if keyword in video_title:
+                    raise StopIteration
+        except StopIteration:
+            view_count = convert_viewcount_to_float(result.get("viewCount").get("short"))
+            if view_count > best_views:
+                best_result = result
+                best_views = view_count
+
+    return best_result
 
 
 class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
