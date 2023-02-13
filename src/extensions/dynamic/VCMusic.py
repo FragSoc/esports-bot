@@ -179,6 +179,34 @@ def perform_string_query(query: str) -> dict:
     return best_result
 
 
+def parse_string_query_result(result: dict) -> dict:
+
+    def get_video_title():
+        views_long = result.get("viewCount").get("text")
+        duration_long = result.get("accessibility").get("duration")
+        title_long = result.get("accessibility").get("title")
+        title = title_long.replace(views_long, "").replace(duration_long, "")
+        return title
+
+    video_title = get_video_title()
+    video_url = None
+    video_thumbnail = None
+
+    video_url = result.get("link")
+    if parse_url_type(video_url) != SongRequestType.YT_VIDEO:
+        raise ValueError(f"Unable to find correct video URL type for {video_title}")
+
+    video_thumbnail = result.get("richThumbnail", {}).get("url")
+    if not video_thumbnail:
+        thumbnails = sorted(result.get("thumbnails"), key=lambda x: x.get("width"), reverse=True)
+        video_thumbnail = thumbnails[0].get("url")
+
+    if parse_url_type(video_thumbnail) != SongRequestType.YT_THUMBNAIL:
+        video_thumbnail = EMBED_IMAGE_URL
+
+    return {"title": video_title, "url": video_url, "thumbnail": video_thumbnail}
+
+
 class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     def __init__(self, bot: EsportsBot):
@@ -281,9 +309,10 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         request_type = parse_request_type(request)
 
         if request_type == SongRequestType.YT_VIDEO or request_type == SongRequestType.YT_PLAYLIST:
-            pass
+            return False
         elif request_type == SongRequestType.STRING:
-            pass
+            query = perform_string_query(request)
+            parsed_result = parse_string_query_result(query)
         else:
             return False
 
