@@ -148,7 +148,7 @@ def perform_string_query(query: str) -> dict:
     results = VideosSearch(f"'{query}'", limit=QUERY_RESULT_LIMIT).resultComponents
     filtered = list(filter(lambda x: x.get("publishedTime") is None, results))
     if filtered:
-        return filtered
+        return filtered[0]
 
     keywords = ("lyric", "official", "music", "audio")
 
