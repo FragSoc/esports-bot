@@ -288,9 +288,9 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         single_request = single_request_data.get("components")[0].get("value")
         multi_request = multi_request_data.get("components")[0].get("value")
 
-        request_list = [x.trim() for x in multi_request.split("\n") if x.trim() not in ('', ' ')]
-        if single_request.trim() not in ('', ' '):
-            request_list = [single_request.trim()] + request_list
+        request_list = [x.strip() for x in multi_request.split("\n") if x.strip() not in ('', ' ')]
+        if single_request.strip() not in ('', ' '):
+            request_list = [single_request.strip()] + request_list
 
         failed_requests = []
         for request in request_list:
