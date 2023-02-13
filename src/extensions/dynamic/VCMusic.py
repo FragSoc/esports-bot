@@ -121,6 +121,26 @@ def parse_url_type(request: str) -> SongRequestType:
     return SongRequestType.INVALID
 
 
+def convert_viewcount_to_float(short_views: str) -> float:
+    raw = short_views.lower().split(" views")[0]
+    scale = raw[-1]
+    power = 1
+    match scale:
+        case 'k':
+            power = 3
+        case 'm':
+            power = 6
+        case 'b':
+            power = 9
+        case _:
+            if scale.isdigit():
+                return float(raw)
+            else:
+                return 0
+
+    return float(raw[:-1]) * (10**power)
+
+
 class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     def __init__(self, bot: EsportsBot):
