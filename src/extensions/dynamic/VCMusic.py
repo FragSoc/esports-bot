@@ -41,18 +41,18 @@ class SongRequestType(IntEnum):
     INVALID = 4
 
 
-def make_custom_id(action: Enum):
+def make_custom_id(action: Enum) -> str:
     return f"{MUSIC_INTERACTION_PREFIX}-{action.value}"
 
 
-def make_empty_embed(color: Colour, author: str):
+def make_empty_embed(color: Colour, author: str) -> Embed:
     embed = Embed(title=COG_STRINGS["music_embed_title_idle"], color=color)
     embed.set_image(url=EMBED_IMAGE_URL)
     embed.set_footer(text=f"Made by {author} 💖")
     return embed
 
 
-def make_default_action_row():
+def make_default_action_row() -> View:
     view = View(timeout=None)
 
     play_button = Button(style=ButtonStyle.secondary, emoji="▶️", custom_id=make_custom_id(MusicButtons.PLAY))
