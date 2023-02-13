@@ -166,7 +166,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             for member in guild.members:
                 if member.id == AUTHOR_ID:
                     self.logger.info(f"Found {member} as VCMusic author !")
-                    self.author = f"{member}"
+                    self.author = member
                     return True
         self.logger.info(f"Unable to find VCMusic author with id {AUTHOR_ID}, defaulting to {self.author}")
         return False
