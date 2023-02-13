@@ -196,10 +196,8 @@ def parse_string_query_result(result: dict) -> dict:
     if parse_url_type(video_url) != SongRequestType.YT_VIDEO:
         raise ValueError(f"Unable to find correct video URL type for {video_title}")
 
-    video_thumbnail = result.get("richThumbnail", {}).get("url")
-    if not video_thumbnail:
-        thumbnails = sorted(result.get("thumbnails"), key=lambda x: x.get("width"), reverse=True)
-        video_thumbnail = thumbnails[0].get("url")
+    thumbnails = sorted(result.get("thumbnails"), key=lambda x: x.get("width"), reverse=True)
+    video_thumbnail = thumbnails[0].get("url")
 
     if parse_url_type(video_thumbnail) != SongRequestType.YT_THUMBNAIL:
         video_thumbnail = EMBED_IMAGE_URL
