@@ -323,6 +323,9 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         if not bot_in_channel and user_in_channel:
             return True
 
+        if not user_in_channel:
+            return False
+
         return user.guild.me.voice.channel == user.voice.channel
 
     @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
