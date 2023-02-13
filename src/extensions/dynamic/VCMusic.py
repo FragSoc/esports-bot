@@ -301,7 +301,11 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             if not await self.process_song_request(request, interaction):
                 failed_requests.append(request)
 
-        await interaction.response.send_message(f"Thank you for adding some songs!\n\n{interaction.data}", ephemeral=True)
+
+        await interaction.response.send_message(
+            f"Succesfully added `{len(request_list) - len(failed_requests)}` song(s)!",
+            ephemeral=True
+        )
 
     async def process_song_request(self, request: str, interaction: Interaction) -> bool:
 
