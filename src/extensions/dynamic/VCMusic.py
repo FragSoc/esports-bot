@@ -277,6 +277,10 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         await interaction.response.send_modal(modal)
 
     async def add_song_response(self, interaction: Interaction):
+        if not await self.check_valid_user(interaction.user):
+            await interaction.response.send_message(COG_STRINGS["music_add_song_warn_invalid_voice"], ephemeral=True)
+            return False
+
         interaction_data = interaction.data.get("components")
 
         single_id = make_custom_id(MusicModalActions.ADD_MODAL_SINGLE)
@@ -300,9 +304,6 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         await interaction.response.send_message(f"Thank you for adding some songs!\n\n{interaction.data}", ephemeral=True)
 
     async def process_song_request(self, request: str, interaction: Interaction) -> bool:
-        if not await self.check_valid_user(interaction.user):
-            await interaction.response.send_message(COG_STRINGS["music_add_song_warn_invalid_voice"], ephemeral=True)
-            return False
 
         request_type = parse_request_type(request)
 
