@@ -1,6 +1,8 @@
 music_group_name = "music"
 
 music_embed_title_idle = "No song currently playing...."
+music_embed_title_playing = "Now playing — {song}"
+music_embed_footer = "Made by {author} 💖"
 music_button_add_song = "Add Song"
 music_button_view_queue = "View Queue"
 music_button_edit_queue = "Edit Queue"

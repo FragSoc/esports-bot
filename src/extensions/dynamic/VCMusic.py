@@ -51,7 +51,7 @@ def make_custom_id(action: Enum) -> str:
 def make_empty_embed(color: Colour, author: str) -> Embed:
     embed = Embed(title=COG_STRINGS["music_embed_title_idle"], color=color)
     embed.set_image(url=EMBED_IMAGE_URL)
-    embed.set_footer(text=f"Made by {author} 💖")
+    embed.set_footer(text=COG_STRINGS["music_embed_footer"].format(author=author))
     return embed
 
 
@@ -210,6 +210,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     def __init__(self, bot: EsportsBot):
         self.bot = bot
         self.author = "fuxticks"
+        self.active_players = {}
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__} has been added as a Cog")
 
@@ -319,7 +320,40 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         else:
             return False
 
+        await self.add_song_to_queue(parsed_result, interaction)
+
         return True
+
+    async def add_song_to_queue(self, request: dict, interaction: Interaction) -> bool:
+        is_active = self.active_players.get(interaction.guild.id) is not None
+        if is_active:
+            # add the song but don't play it yet
+            current_queue = self.active_players.get(interaction.guild.id).get("queue")
+            current_queue.append(request)
+            self.active_players[interaction.guild.id]["queue"] = current_queue
+        else:
+            new_active = {"queue": [request]}
+            self.active_players[interaction.guild.id] = new_active
+            # TODO: Start playing music.
+            # await self.play_queue(interaction)
+            await self.update_embed(interaction)
+
+    async def update_embed(self, interaction: Interaction):
+        current_song = self.active_players.get(interaction.guild.id).get("queue")[0]
+
+        current_embed: Embed = interaction.message.embeds[0]
+        new_embed = Embed(
+            title=COG_STRINGS["music_embed_title_playing"].format(song=current_song.get("title")),
+            color=current_embed.color,
+            url=current_song.get("url")
+        )
+        new_embed.set_image(url=current_song.get("thumbnail"))
+        new_embed.set_footer(text=COG_STRINGS["music_embed_footer"].format(author=self.author))
+
+        await interaction.message.edit(embed=new_embed)
+
+    async def play_queue(self, interaction: Interaction):
+        pass
 
     async def check_valid_user(self, user: Member):
         bot_in_channel = user.guild.me.voice is not None
