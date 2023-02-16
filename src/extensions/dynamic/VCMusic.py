@@ -96,18 +96,18 @@ def make_default_action_row() -> View:
 
 
 def parse_request_type(request: str) -> SongRequestType:
-    website_regex = r"^((http[s]?://)?(www)?)"
-    if re.search(website_regex, request):
+    website_regex = r"^(https:\/\/)?(www.)?"
+    if re.search(website_regex, request).group():
         return parse_url_type(request)
     else:
         return SongRequestType.STRING
 
 
 def parse_url_type(request: str) -> SongRequestType:
-    yt_desktop_regex = r"youtube.com/watch\?v="
-    yt_playlist_regex = r"youtube.com/playlist\?list="
-    yt_mobile_regex = r"youtu.be/([a-zA-Z]|[0-9])+"
-    yt_thumbnail_regex = r"i.ytimg.com/vi/([a-zA-Z]|[0-9])+"
+    yt_desktop_regex = r"youtube\.com\/watch\?v="
+    yt_playlist_regex = r"youtube\.com\/playlist\?list="
+    yt_mobile_regex = r"youtu\.be\/"
+    yt_thumbnail_regex = r"i\.ytimg\.com\/vi\/"
 
     if re.search(yt_desktop_regex, request):
         return SongRequestType.YT_VIDEO
