@@ -297,11 +297,14 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         if single_request.strip() not in ('', ' '):
             request_list = [single_request.strip()] + request_list
 
+        self.logger.info(f"Song requests: {request_list}")
+
         failed_requests = []
         for request in request_list:
             if not await self.process_song_request(request, interaction):
                 failed_requests.append(request)
 
+        self.logger.info(f"Failed requests: {failed_requests}")
 
         await interaction.response.send_message(
             f"Succesfully added `{len(request_list) - len(failed_requests)}` song(s)!",
