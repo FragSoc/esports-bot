@@ -23,6 +23,8 @@ MUSIC_INTERACTION_PREFIX = f"{__name__}.interaction"
 INTERACTION_SPLIT_CHARACTER = "."
 EMBED_IMAGE_URL = "https://static.wixstatic.com/media/d8a4c5_b42c82e4532c4f8e9f9b2f2d9bb5a53e~mv2.png/v1/fill/w_287,h_287,al_c,q_85,usm_0.66_1.00_0.01/esportslogo.webp"
 QUERY_RESULT_LIMIT = 15
+# AUTHOR_ID = 244050529271939073 # main account
+AUTHOR_ID = 202978567741505536  # alt account
 
 
 class UserActionType(IntEnum):
@@ -337,8 +339,20 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     def __init__(self, bot: Bot):
         self.bot = bot
+        self.author = "fuxticks"
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__} has been added as a Cog")
+
+    @GroupCog.listener()
+    async def on_ready(self):
+        for guild in self.bot.guilds:
+            for member in guild.members:
+                if member.id == AUTHOR_ID:
+                    self.logger.info(f"Found current discord tag of VCAuthor: {member}")
+                    self.author = member
+                    return True
+        self.logger.info(f"Unable to find VCMusic author with id {AUTHOR_ID}, defaulting to {self.author}")
+        return False
 
     @GroupCog.listener()
     async def on_interaction(self, interaction: Interaction):
