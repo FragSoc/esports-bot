@@ -4,6 +4,7 @@ from enum import IntEnum
 from typing import Union
 
 from youtubesearchpython import VideosSearch
+from yt_dlp import YoutubeDL
 
 MUSIC_INTERACTION_PREFIX = f"{__name__}.interaction"
 INTERACTION_SPLIT_CHARACTER = "."
@@ -120,6 +121,33 @@ class SongRequest:
         self.title = parsed_result.get("title")
         self.thumbnail = parsed_result.get("thumbnail")
         return self
+
+    def get_stream_data(self):
+        ydl_opts = {
+            "quiet": "true",
+            "nowarning": "true",
+            "format": "bestaudio/best",
+            "outtmpl": "%(title)s-%(id)s.mp3",
+            "postprocessors": [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
+            }],
+        }
+
+        with YoutubeDL(ydl_opts) as ydl:
+            if self.url is None and self.request_type != SongRequestType.STRING:
+                self.url = self.raw_request
+            info = ydl.extract_info(self.url, download=False)
+            self.stream_data = info
+
+        if self.title is None:
+            self.title = self.stream_data.get("title")
+
+        if self.thumbnail is None:
+            self.thumbnail = self.stream_data.get("thumbnail")
+
+        return info
 
 
 def parse_request_type(request: str) -> SongRequestType:
