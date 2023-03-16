@@ -1,4 +1,5 @@
 music_group_name = "music"
+music_thinking = "Music bot is thinking..."
 
 music_embed_title_idle = "No song currently playing...."
 music_embed_title_playing = "Now playing — {song}"
@@ -9,7 +10,11 @@ music_button_edit_queue = "Edit Queue"
 music_button_stop_queue = "Stop"
 
 music_add_song_modal_title = "Add song(s) to queue"
+music_add_song_modal_single = "Add single song"
+music_add_song_modal_multiple = "Add multiple songs"
 music_invalid_voice = "You must be in the same voice channel as the bot to perform this action ⚠️"
+
+music_added_song_count = "Successfully added `{count}` song(s) to the queue ✅"
 
 music_set_channel_name = "set-channel"
 music_set_channel_description = "Sets the music channel to the given Text Channel."

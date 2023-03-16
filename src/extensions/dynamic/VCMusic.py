@@ -1,13 +1,24 @@
 import logging
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from enum import IntEnum
 from typing import Union
 
-from discord import (ButtonStyle, Color, Embed, Guild, Interaction, Member,
-                     TextChannel, TextStyle)
-from discord.app_commands import (Transform, autocomplete, command, describe,
-                                  guild_only, rename)
+from discord import (
+    ButtonStyle,
+    Color,
+    Embed,
+    FFmpegPCMAudio,
+    Guild,
+    Interaction,
+    Member,
+    PCMVolumeTransformer,
+    TextChannel,
+    TextStyle
+)
+from discord.app_commands import (Transform, autocomplete, command, describe, guild_only, rename)
+from discord.ext import tasks
 from discord.ext.commands import Bot, GroupCog
 from discord.ui import Button, Modal, TextInput, View
 from youtubesearchpython import VideosSearch
@@ -23,8 +34,10 @@ MUSIC_INTERACTION_PREFIX = f"{__name__}.interaction"
 INTERACTION_SPLIT_CHARACTER = "."
 EMBED_IMAGE_URL = "https://static.wixstatic.com/media/d8a4c5_b42c82e4532c4f8e9f9b2f2d9bb5a53e~mv2.png/v1/fill/w_287,h_287,al_c,q_85,usm_0.66_1.00_0.01/esportslogo.webp"
 QUERY_RESULT_LIMIT = 15
+INACTIVE_TIMEOUT = 60
 # AUTHOR_ID = 244050529271939073 # main account
 AUTHOR_ID = 202978567741505536  # alt account
+FFMPEG_PLAYER_OPTIONS = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
 
 
 class UserActionType(IntEnum):
@@ -340,6 +353,9 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     def __init__(self, bot: Bot):
         self.bot = bot
         self.author = "fuxticks"
+        self.active_players = {}
+        self.playing = []
+        self.inactive = {}
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__} has been added as a Cog")
 
@@ -381,11 +397,60 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             case UserActionType.STOP:
                 pass
             case UserActionType.ADD_SONG_MODAL_SUBMIT:
-                pass
+                return await self.add_modal_interaction_handler(interaction)
             case UserActionType.EDIT_QUEUE_MODAL_SUBMIT:
                 pass
             case _:
                 return False
+
+    def run_tasks(self):
+        if self.playing:
+            self.check_playing.start()
+
+        if self.inactive:
+            self.check_inactive.start()
+
+    @tasks.loop(seconds=5)
+    async def check_playing(self):
+        if not self.playing:
+            self.check_playing.cancel()
+            self.check_playing.stop()
+            return
+
+        no_longer_active = []
+        now = datetime.now()
+
+        for guild_id in self.playing:
+            voice_client = self.active_players.get(guild_id).get("voice_client")
+            if not voice_client.is_playing() and not voice_client.is_paused():
+                if not self.play_next_song(guild_id):
+
+                    no_longer_active.append(guild_id)
+                    self.inactive[guild_id] = now
+                await self.update_embed(guild_id)
+
+        for guild in no_longer_active:
+            self.playing.remove(guild)
+
+    @tasks.loop(seconds=10)
+    async def check_inactive(self):
+        if not self.inactive:
+            self.check_inactive.cancel()
+            self.check_inactive.stop()
+            return
+
+        now = datetime.now()
+        guilds_to_disconnect = []
+
+        for guild_id in self.inactive:
+            if (now - self.inactive.get(guild_id)).seconds > INACTIVE_TIMEOUT:
+                guilds_to_disconnect.append(guild_id)
+
+        for guild in guilds_to_disconnect:
+            self.inactive.pop(guild)
+            await self.active_players.get(guild).get("voice_client").disconnect()
+            self.active_players.pop(guild)
+            await self.update_embed(guild)
 
     def check_valid_user(self, guild: Guild, user: Member) -> bool:
         if not user.voice:
@@ -427,6 +492,130 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         modal.add_item(multiple_request)
         await interaction.response.send_modal(modal)
         return True
+
+    async def add_modal_interaction_handler(self, interaction: Interaction):
+        await interaction.response.defer(ephemeral=True)
+        if not self.check_valid_user(interaction.guild, interaction.user):
+            await interaction.followup.send(content=COG_STRINGS["music_invalid_voice"])
+            return False
+
+        await interaction.followup.send(content=COG_STRINGS["music_thinking"], ephemeral=True)
+
+        raw_modal_data = interaction.data.get("components")
+
+        single_request = ""
+        multiple_request = ""
+
+        for item in raw_modal_data:
+            if item.get("components")[0].get("custom_id") == UserActionType.ADD_SONG_MODAL_SINGLE.id:
+                single_request = item.get("components")[0].get("value")
+            elif item.get("components")[0].get("custom_id") == UserActionType.ADD_SONG_MODAL_MULTIPLE.id:
+                multiple_request = item.get("components")[0].get("value")
+
+        request_list = [
+            SongRequest(x.strip(),
+                        parse_request_type(x.strip())) for x in multiple_request.split("\n") if x.strip() not in ('',
+                                                                                                                  ' ')
+        ]
+        if single_request.strip() not in ('', ' '):
+            request_list = [SongRequest(single_request.strip(), parse_request_type(single_request.strip()))] + request_list
+
+        failed_requests = []
+        requests_to_queue = []
+        for request in request_list:
+            result = await request.get_song()
+            if result is None:
+                failed_requests.append(request)
+            elif isinstance(result, list):
+                requests_to_queue += result
+            else:
+                requests_to_queue.append(result)
+
+        await interaction.followup.send(
+            COG_STRINGS["music_added_song_count"].format(count=len(request_list) - len(failed_requests)),
+            ephemeral=True
+        )
+
+        await self.try_play_queue(interaction, add_to_queue=requests_to_queue)
+
+        return True
+
+    async def try_play_queue(self, interaction: Interaction, add_to_queue: list = []):
+        if not self.check_valid_user(interaction.guild, interaction.user):
+            message = COG_STRINGS["music_invalid_voice"]
+            if interaction.response.is_done():
+                await interaction.followup.send(content=message, ephemeral=True)
+            else:
+                await interaction.response.send_message(message, ephemeral=True)
+            return False
+
+        if interaction.guild.id not in self.active_players:
+            voice_client = await interaction.user.voice.channel.connect()
+            active_player = {"voice_client": voice_client, "current_song": None, "queue": [], "volume": 100}
+            self.active_players[interaction.guild.id] = active_player
+        elif not interaction.guild.me.voice or not interaction.guild.me.voice.channel:
+            voice_client = await interaction.user.voice.channel.connect()
+            self.active_players[interaction.guild.id]["voice_client"] = voice_client
+
+        self.active_players[interaction.guild.id]["queue"] += add_to_queue
+
+        is_playing = self.active_players[interaction.guild.id]["voice_client"].is_playing()
+        is_paused = self.active_players[interaction.guild.id]["voice_client"].is_paused()
+        has_current_song = self.active_players[interaction.guild.id]["current_song"] is not None
+
+        if is_playing or (is_paused and has_current_song):
+            return False
+
+        if self.play_next_song(interaction.guild.id):
+            self.run_tasks()
+            await self.update_embed(interaction.guild.id)
+            return True
+        return False
+
+    def play_next_song(self, guild_id: int):
+        try:
+            next_song = self.active_players[guild_id]["queue"].pop()
+        except IndexError:
+            self.active_players[guild_id]["current_song"] = None
+            return False
+
+        if self.active_players[guild_id]["voice_client"].is_playing():
+            self.active_players[guild_id]["voice_client"].stop()
+
+        if next_song.stream_data is None:
+            stream_data = next_song.get_stream_data()
+        else:
+            stream_data = next_song.stream_data
+
+        self.active_players[guild_id]["current_song"] = next_song
+
+        voice_source = PCMVolumeTransformer(
+            FFmpegPCMAudio(stream_data.get("url"),
+                           before_options=FFMPEG_PLAYER_OPTIONS,
+                           options="-vn"),
+            volume=self.active_players.get(guild_id).get("volume")
+        )
+
+        self.active_players[guild_id]["voice_client"].play(voice_source)
+        self.playing.append(guild_id)
+
+        return True
+
+    async def update_embed(self, guild_id: int):
+        current_song = self.active_players.get(guild_id).get("current_song")
+        db_entry = DBSession.get(MusicChannels, guild_id=guild_id)
+        embed_message = await self.bot.get_guild(guild_id).get_channel(db_entry.channel_id).fetch_message(db_entry.message_id)
+
+        current_embed: Embed = embed_message.embeds[0]
+        new_embed = Embed(
+            title=COG_STRINGS["music_embed_title_playing"].format(song=current_song.title),
+            color=current_embed.color,
+            url=current_song.url
+        )
+        new_embed.set_image(url=current_song.thumbnail)
+        new_embed.set_footer(text=COG_STRINGS["music_embed_footer"].format(author=self.author))
+
+        await embed_message.edit(embed=new_embed)
 
     @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
     @describe(
