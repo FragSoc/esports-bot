@@ -4,10 +4,12 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Union
 
-from discord import Button, ButtonStyle, Color, Embed, Interaction, TextChannel
-from discord.app_commands import (Transform, autocomplete, command, describe, guild_only, rename)
+from discord import (ButtonStyle, Color, Embed, Guild, Interaction, Member,
+                     TextChannel, TextStyle)
+from discord.app_commands import (Transform, autocomplete, command, describe,
+                                  guild_only, rename)
 from discord.ext.commands import Bot, GroupCog
-from discord.ui import View
+from discord.ui import Button, Modal, TextInput, View
 from youtubesearchpython import VideosSearch
 from yt_dlp import YoutubeDL
 
@@ -355,7 +357,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             case UserActionType.PLAY:
                 pass
             case UserActionType.PAUSE:
-                pass
+                return await self.add_interaction_hanlder(interaction)
             case UserActionType.ADD_SONG:
                 pass
             case UserActionType.VIEW_QUEUE:
@@ -370,6 +372,47 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 pass
             case _:
                 return False
+
+    def check_valid_user(self, guild: Guild, user: Member) -> bool:
+        if not user.voice:
+            return False
+
+        if not user.voice.channel:
+            return False
+
+        if not guild.id in self.active_players:
+            return True
+
+        return self.bot.user in user.voice.channel.members
+
+    async def add_interaction_hanlder(self, interaction: Interaction) -> bool:
+        if not self.check_valid_user(interaction.guild, interaction.user):
+            await interaction.response.send_message(COG_STRINGS["music_invalid_voice"], ephemeral=True)
+            return False
+
+        modal = Modal(
+            title=COG_STRINGS["music_add_song_modal_title"],
+            timeout=None,
+            custom_id=UserActionType.ADD_SONG_MODAL_SUBMIT.id
+        )
+
+        single_request = TextInput(
+            label=COG_STRINGS["music_add_song_modal_single"],
+            custom_id=UserActionType.ADD_SONG_MODAL_SINGLE.id,
+            required=False,
+        )
+
+        multiple_request = TextInput(
+            label=COG_STRINGS["music_add_song_modal_multiple"],
+            custom_id=UserActionType.ADD_SONG_MODAL_MULTIPLE.id,
+            required=False,
+            style=TextStyle.paragraph
+        )
+
+        modal.add_item(single_request)
+        modal.add_item(multiple_request)
+        await interaction.response.send_modal(modal)
+        return True
 
     @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
     @describe(
