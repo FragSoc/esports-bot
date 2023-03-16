@@ -1,11 +1,16 @@
+import logging
 import re
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import Union
 
+from discord.ext.commands import Bot, GroupCog
 from youtubesearchpython import VideosSearch
 from yt_dlp import YoutubeDL
 
+from common.io import load_cog_toml
+
+COG_STRINGS = load_cog_toml(__name__)
 MUSIC_INTERACTION_PREFIX = f"{__name__}.interaction"
 INTERACTION_SPLIT_CHARACTER = "."
 EMBED_IMAGE_URL = "https://static.wixstatic.com/media/d8a4c5_b42c82e4532c4f8e9f9b2f2d9bb5a53e~mv2.png/v1/fill/w_287,h_287,al_c,q_85,usm_0.66_1.00_0.01/esportslogo.webp"
@@ -266,3 +271,14 @@ def parse_string_query_result(result: dict) -> dict:
         video_thumbnail = EMBED_IMAGE_URL
 
     return {"title": video_title, "url": video_url, "thumbnail": video_thumbnail}
+
+
+class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
+
+    def __init__(self, bot: Bot):
+        self.bot = bot
+        self.logger = logging.getLogger(__name__)
+
+
+async def setup(bot: Bot):
+    await bot.add_cog(VCMusic(bot))
