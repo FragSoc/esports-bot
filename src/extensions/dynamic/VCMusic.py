@@ -1,9 +1,14 @@
 import re
 from dataclasses import dataclass
 from enum import IntEnum
+from typing import Union
+
+from youtubesearchpython import VideosSearch
 
 MUSIC_INTERACTION_PREFIX = f"{__name__}.interaction"
 INTERACTION_SPLIT_CHARACTER = "."
+EMBED_IMAGE_URL = "https://static.wixstatic.com/media/d8a4c5_b42c82e4532c4f8e9f9b2f2d9bb5a53e~mv2.png/v1/fill/w_287,h_287,al_c,q_85,usm_0.66_1.00_0.01/esportslogo.webp"
+QUERY_RESULT_LIMIT = 15
 
 
 class UserActionType(IntEnum):
@@ -96,6 +101,26 @@ class SongRequest:
     thumbnail: str = None
     stream_data: dict = None
 
+    async def get_song(self) -> Union[list["SongRequest"], "SongRequest", None]:
+        match self.request_type:
+            case SongRequestType.STRING:
+                result = string_request_query(self)
+            case SongRequestType.YOUTUBE_VIDEO:
+                result = string_request_query(self)
+            case SongRequestType.YOUTUBE_PLAYLIST:
+                return None
+            case _:
+                raise ValueError("Invalid SongRequestType given!")
+
+        if result == None or result == {}:
+            return self
+
+        parsed_result = parse_string_query_result(result)
+        self.url = parsed_result.get("url")
+        self.title = parsed_result.get("title")
+        self.thumbnail = parsed_result.get("thumbnail")
+        return self
+
 
 def parse_request_type(request: str) -> SongRequestType:
     website_regex = r"^(https:\/\/)?(www.)?"
@@ -124,3 +149,92 @@ def parse_url_type(request: str) -> SongRequestType:
         return SongRequestType.YOUTUBE_THUMBNAIL
 
     return SongRequestType.INVALID
+
+
+def convert_viewcount_to_float(short_views: str) -> float:
+    raw = short_views.lower().split(" views")[0]
+    scale = raw[-1]
+    power = 1
+    match scale:
+        case 'k':
+            power = 3
+        case 'm':
+            power = 6
+        case 'b':
+            power = 9
+        case _:
+            if scale.isdigit():
+                return float(raw)
+            else:
+                return 0
+
+    return float(raw[:-1]) * (10**power)
+
+
+def string_request_query(request: SongRequest) -> dict:
+    if request.request_type == SongRequestType.STRING:
+        query = f"'{request.raw_request}'"
+    else:
+        query = request.raw_request
+
+    video_results = VideosSearch(query, limit=QUERY_RESULT_LIMIT).resultComponents
+    if request.request_type != SongRequestType.STRING and video_results:
+        return video_results[0]
+
+    filtered_results = list(filter(lambda x: x.get("publishedTime") is None, video_results))
+    if filtered_results:
+        return filtered_results[0]
+
+    preferred_keywords = ["official", "music"]
+    alternate_keywords = ["lyric", "audio"]
+
+    best_result = None
+    best_views = 0.0
+
+    is_preferred = False
+    keyword_found = ""
+
+    for result in video_results:
+        video_title = result.get("title").lower()
+        try:
+            for keyword in (preferred_keywords + alternate_keywords):
+                if keyword in video_title:
+                    keyword_found = keyword
+                    raise StopIteration
+        except StopIteration:
+            if not is_preferred or keyword_found in preferred_keywords:
+                view_count = convert_viewcount_to_float(result.get("viewCount").get("short"))
+                if view_count > best_views:
+                    best_result = result
+                    best_views = view_count
+
+            if keyword_found in preferred_keywords:
+                is_preferred = True
+
+    return best_result
+
+
+def parse_string_query_result(result: dict) -> dict:
+
+    def get_video_title():
+        views_long = result.get("viewCount").get("text")
+        duration_long = result.get("accessibility").get("duration")
+        title_long = result.get("accessibility").get("title")
+        title = title_long.replace(views_long, "").replace(duration_long, "")
+        return title
+
+    video_title = get_video_title()
+    video_url = None
+    video_thumbnail = None
+
+    video_url = result.get("link")
+    if parse_url_type(video_url) != SongRequestType.YOUTUBE_VIDEO:
+        raise ValueError(f"Unable to find correct video URL type for {video_title}")
+
+    thumbnails = sorted(result.get("thumbnails"), key=lambda x: x.get("width"), reverse=True)
+    video_thumbnail = thumbnails[0].get("url")
+
+    if parse_url_type(video_thumbnail) != SongRequestType.YOUTUBE_THUMBNAIL:
+        video_thumbnail = EMBED_IMAGE_URL
+
+    return {"title": video_title, "url": video_url, "thumbnail": video_thumbnail}
