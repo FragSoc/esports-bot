@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from enum import IntEnum
 
@@ -94,3 +95,32 @@ class SongRequest:
     title: str = None
     thumbnail: str = None
     stream_data: dict = None
+
+
+def parse_request_type(request: str) -> SongRequestType:
+    website_regex = r"^(https:\/\/)?(www.)?"
+    if re.search(website_regex, request).group():
+        return parse_url_type(request)
+    else:
+        return SongRequestType.STRING
+
+
+def parse_url_type(request: str) -> SongRequestType:
+    yt_desktop_regex = r"youtube\.com\/watch\?v="
+    yt_playlist_regex = r"youtube\.com\/playlist\?list="
+    yt_mobile_regex = r"youtu\.be\/"
+    yt_thumbnail_regex = r"i\.ytimg\.com\/vi\/"
+
+    if re.search(yt_desktop_regex, request):
+        return SongRequestType.YOUTUBE_VIDEO
+
+    if re.search(yt_playlist_regex, request):
+        return SongRequestType.YOUTUBE_PLAYLIST
+
+    if re.search(yt_mobile_regex, request):
+        return SongRequestType.YOUTUBE_VIDEO
+
+    if re.search(yt_thumbnail_regex, request):
+        return SongRequestType.YOUTUBE_THUMBNAIL
+
+    return SongRequestType.INVALID
