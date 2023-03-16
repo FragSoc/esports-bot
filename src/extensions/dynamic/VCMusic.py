@@ -336,6 +336,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     def __init__(self, bot: Bot):
         self.bot = bot
         self.logger = logging.getLogger(__name__)
+        self.logger.info(f"{__name__} has been added as a Cog")
 
     @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
     @describe(
