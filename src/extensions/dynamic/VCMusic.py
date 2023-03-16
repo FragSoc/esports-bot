@@ -338,6 +338,39 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__} has been added as a Cog")
 
+    @GroupCog.listener()
+    async def on_interaction(self, interaction: Interaction):
+        if not interaction.data or not interaction.data.get("custom_id"):
+            return False
+
+        if not interaction.data.get("custom_id").startswith(MUSIC_INTERACTION_PREFIX):
+            return False
+
+        try:
+            user_action = UserActionType.from_string(interaction.data.get("custom_id"))
+        except ValueError:
+            return False
+
+        match user_action:
+            case UserActionType.PLAY:
+                pass
+            case UserActionType.PAUSE:
+                pass
+            case UserActionType.ADD_SONG:
+                pass
+            case UserActionType.VIEW_QUEUE:
+                pass
+            case UserActionType.EDIT_QUEUE:
+                pass
+            case UserActionType.STOP:
+                pass
+            case UserActionType.ADD_SONG_MODAL_SUBMIT:
+                pass
+            case UserActionType.EDIT_QUEUE_MODAL_SUBMIT:
+                pass
+            case _:
+                return False
+
     @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
     @describe(
         channel=COG_STRINGS["music_set_channel_channel_describe"],
