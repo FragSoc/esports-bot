@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import IntEnum
 
 MUSIC_INTERACTION_PREFIX = f"{__name__}.interaction"
@@ -75,3 +76,21 @@ class UserActionType(IntEnum):
 
     def __str__(self):
         return self.id
+
+
+class SongRequestType(IntEnum):
+    INVALID = 0
+    STRING = 1
+    YOUTUBE_VIDEO = 2
+    YOUTUBE_PLAYLIST = 3
+    YOUTUBE_THUMBNAIL = 4
+
+
+@dataclass(slots=True)
+class SongRequest:
+    raw_request: str
+    request_type: SongRequestType
+    url: str = None
+    title: str = None
+    thumbnail: str = None
+    stream_data: dict = None
