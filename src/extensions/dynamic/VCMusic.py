@@ -4,11 +4,17 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Union
 
+from discord import Button, ButtonStyle, Color, Embed, Interaction, TextChannel
+from discord.app_commands import (Transform, autocomplete, command, describe, guild_only, rename)
 from discord.ext.commands import Bot, GroupCog
+from discord.ui import View
 from youtubesearchpython import VideosSearch
 from yt_dlp import YoutubeDL
 
+from common.discord import ColourTransformer
 from common.io import load_cog_toml
+from database.gateway import DBSession
+from database.models import MusicChannels
 
 COG_STRINGS = load_cog_toml(__name__)
 MUSIC_INTERACTION_PREFIX = f"{__name__}.interaction"
@@ -273,11 +279,108 @@ def parse_string_query_result(result: dict) -> dict:
     return {"title": video_title, "url": video_url, "thumbnail": video_thumbnail}
 
 
+def create_music_embed(
+    color: Color,
+    author: str,
+    title: str = COG_STRINGS["music_embed_title_idle"],
+    image: str = EMBED_IMAGE_URL
+) -> Embed:
+    embed = Embed(title=title, color=color)
+    embed.set_image(url=image)
+    embed.set_footer(text=COG_STRINGS["music_embed_footer"].format(author=author))
+    return embed
+
+
+def create_music_actionbar() -> View:
+    view = View(timeout=None)
+
+    play_button = Button(style=ButtonStyle.secondary, emoji="▶️", custom_id=UserActionType.PLAY.id)
+    pause_button = Button(style=ButtonStyle.secondary, emoji="⏸️", custom_id=UserActionType.PAUSE.id)
+    add_button = Button(
+        style=ButtonStyle.primary,
+        label=COG_STRINGS["music_button_add_song"],
+        emoji="➕",
+        custom_id=UserActionType.ADD_SONG.id
+    )
+    view_button = Button(
+        style=ButtonStyle.primary,
+        label=COG_STRINGS["music_button_view_queue"],
+        emoji="📋",
+        custom_id=UserActionType.VIEW_QUEUE.id
+    )
+    edit_button = Button(
+        style=ButtonStyle.primary,
+        label=COG_STRINGS["music_button_edit_queue"],
+        emoji="✏️",
+        custom_id=UserActionType.EDIT_QUEUE.id
+    )
+    stop_button = Button(
+        style=ButtonStyle.danger,
+        label=COG_STRINGS["music_button_stop_queue"],
+        emoji="⏹️",
+        custom_id=UserActionType.STOP.id
+    )
+
+    view.add_item(play_button)
+    view.add_item(pause_button)
+    view.add_item(add_button)
+    view.add_item(view_button)
+    view.add_item(edit_button)
+    view.add_item(stop_button)
+
+    return view
+
+
 class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     def __init__(self, bot: Bot):
         self.bot = bot
         self.logger = logging.getLogger(__name__)
+
+    @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
+    @describe(
+        channel=COG_STRINGS["music_set_channel_channel_describe"],
+        clear_messages=COG_STRINGS["music_set_channel_clear_messages_describe"],
+        embed_color=COG_STRINGS["music_set_channel_embed_color_describe"]
+    )
+    @rename(
+        channel=COG_STRINGS["music_set_channel_channel_rename"],
+        clear_messages=COG_STRINGS["music_set_channel_clear_messages_rename"],
+        embed_color=COG_STRINGS["music_set_channel_embed_color_rename"]
+    )
+    @autocomplete(embed_color=ColourTransformer.autocomplete)
+    @guild_only()
+    async def set_channel(
+        self,
+        interaction: Interaction,
+        channel: TextChannel,
+        clear_messages: bool = False,
+        embed_color: Transform[Color,
+                               ColourTransformer] = Color(0xd462fd)
+    ):
+        await interaction.response.defer()
+
+        if clear_messages:
+            await channel.purge(before=interaction.created_at)
+
+        embed = create_music_embed(embed_color, self.author)
+        view = create_music_actionbar()
+
+        message = await channel.send(embed=embed, view=view)
+
+        existing = DBSession.get(MusicChannels, guild_id=interaction.guild.id)
+        if existing:
+            existing.channel_id = channel.id
+            existing.message_id = message.id
+            DBSession.update(existing)
+        else:
+            new_entry = MusicChannels(guild_id=interaction.guild.id, channel_id=channel.id, message_id=message.id)
+            DBSession.create(new_entry)
+
+        await interaction.followup.send(
+            content=COG_STRINGS["music_set_channel_success"].format(channel=channel.mention),
+            ephemeral=True
+        )
 
 
 async def setup(bot: Bot):
