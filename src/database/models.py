@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 base = declarative_base()
 
-__all__ = ["base", "VoiceAdminParent", "VoiceAdminChild", "AutoRolesConfig", "EventToolsEvents"]
+__all__ = ["base", "VoiceAdminParent", "VoiceAdminChild", "AutoRolesConfig", "EventToolsEvents", "MusicChannels"]
 
 
 class VoiceAdminParent(base):
