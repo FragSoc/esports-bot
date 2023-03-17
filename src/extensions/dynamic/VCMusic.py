@@ -387,9 +387,9 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             case UserActionType.PLAY:
                 pass
             case UserActionType.PAUSE:
-                return await self.add_interaction_hanlder(interaction)
-            case UserActionType.ADD_SONG:
                 pass
+            case UserActionType.ADD_SONG:
+                return await self.add_interaction_hanlder(interaction)
             case UserActionType.VIEW_QUEUE:
                 pass
             case UserActionType.EDIT_QUEUE:
