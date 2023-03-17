@@ -51,6 +51,7 @@ class UserActionType(IntEnum):
     EDIT_QUEUE_MODAL_SUBMIT = 7
     ADD_SONG_MODAL_SINGLE = 8
     ADD_SONG_MODAL_MULTIPLE = 9
+    SKIP = 10
 
     @property
     def id(self) -> str:
@@ -75,6 +76,8 @@ class UserActionType(IntEnum):
                 return f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}addmodalsingle"
             case UserActionType.ADD_SONG_MODAL_MULTIPLE:
                 return f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}addmodalmultiple"
+            case UserActionType.SKIP:
+                return f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}skipsong"
             case _:
                 raise ValueError("Invalid enum type given!")
 
@@ -106,6 +109,8 @@ class UserActionType(IntEnum):
                 return UserActionType.ADD_SONG_MODAL_SINGLE
             case "addmodalmultiple":
                 return UserActionType.ADD_SONG_MODAL_MULTIPLE
+            case "skipsong":
+                return UserActionType.SKIP
             case _:
                 raise ValueError(f"Invalid string given for {__class__.__name__}")
 
@@ -396,6 +401,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 pass
             case UserActionType.PAUSE:
                 return await self.pause_playback(interaction)
+            case UserActionType.SKIP:
+                pass
             case UserActionType.ADD_SONG:
                 return await self.add_interaction_hanlder(interaction)
             case UserActionType.VIEW_QUEUE:
