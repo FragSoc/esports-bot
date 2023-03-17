@@ -313,15 +313,15 @@ def create_music_embed(
     return embed
 
 
-def create_music_actionbar(is_paused: bool = False) -> View:
+def create_music_actionbar(is_paused: bool = True) -> View:
     view = View(timeout=None)
 
     play_button = Button(style=ButtonStyle.secondary, emoji="▶️", custom_id=UserActionType.PLAY.id)
     pause_button = Button(style=ButtonStyle.secondary, emoji="⏸️", custom_id=UserActionType.PAUSE.id)
-    playback_button = pause_button if is_paused else play_button
+    playback_button = play_button if is_paused else pause_button
 
     skip_button = Button(
-        style=ButtonStyle.primary,
+        style=ButtonStyle.secondary,
         label=COG_STRINGS["music_button_skip_song"],
         emoji="⏩",
         custom_id=UserActionType.SKIP.id
@@ -627,6 +627,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             return False
 
         voice_client.pause()
+        await self.update_embed(interaction.guild.id)
         await respond_or_followup(COG_STRINGS["music_paused_success"], interaction, ephemeral=True)
         return True
 
@@ -644,7 +645,12 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         new_embed.set_image(url=current_song.thumbnail)
         new_embed.set_footer(text=COG_STRINGS["music_embed_footer"].format(author=self.author))
 
-        await embed_message.edit(embed=new_embed)
+        voice_client_state = self.active_players.get(guild_id).get("voice_client").is_paused()
+
+        await embed_message.edit(
+            embed=new_embed,
+            view=create_music_actionbar(False if voice_client_state is None else voice_client_state)
+        )
 
     @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
     @describe(
