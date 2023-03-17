@@ -655,7 +655,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
         await interaction.followup.send(
             content=COG_STRINGS["music_set_channel_success"].format(channel=channel.mention),
-            ephemeral=True
+            ephemeral=self.bot.only_ephemeral
         )
 
 
