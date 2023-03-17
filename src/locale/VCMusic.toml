@@ -8,6 +8,7 @@ music_button_add_song = "Add Song"
 music_button_view_queue = "View Queue"
 music_button_edit_queue = "Edit Queue"
 music_button_stop_queue = "Stop"
+music_button_skip_song = "Skip"
 
 music_add_song_modal_title = "Add song(s) to queue"
 music_add_song_modal_single = "Add single song"

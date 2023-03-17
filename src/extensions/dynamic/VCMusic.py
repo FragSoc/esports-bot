@@ -308,11 +308,19 @@ def create_music_embed(
     return embed
 
 
-def create_music_actionbar() -> View:
+def create_music_actionbar(is_paused: bool = False) -> View:
     view = View(timeout=None)
 
     play_button = Button(style=ButtonStyle.secondary, emoji="▶️", custom_id=UserActionType.PLAY.id)
     pause_button = Button(style=ButtonStyle.secondary, emoji="⏸️", custom_id=UserActionType.PAUSE.id)
+    playback_button = pause_button if is_paused else play_button
+
+    skip_button = Button(
+        style=ButtonStyle.primary,
+        label=COG_STRINGS["music_button_skip_song"],
+        emoji="⏩",
+        custom_id=UserActionType.SKIP.id
+    )
     add_button = Button(
         style=ButtonStyle.primary,
         label=COG_STRINGS["music_button_add_song"],
@@ -338,8 +346,8 @@ def create_music_actionbar() -> View:
         custom_id=UserActionType.STOP.id
     )
 
-    view.add_item(play_button)
-    view.add_item(pause_button)
+    view.add_item(playback_button)
+    view.add_item(skip_button)
     view.add_item(add_button)
     view.add_item(view_button)
     view.add_item(edit_button)
