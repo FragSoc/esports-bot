@@ -24,7 +24,7 @@ from discord.ui import Button, Modal, TextInput, View
 from youtubesearchpython import VideosSearch
 from yt_dlp import YoutubeDL
 
-from common.discord import ColourTransformer
+from common.discord import ColourTransformer, respond_or_followup
 from common.io import load_cog_toml
 from database.gateway import DBSession
 from database.models import MusicChannels
@@ -466,7 +466,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     async def add_interaction_hanlder(self, interaction: Interaction) -> bool:
         if not self.check_valid_user(interaction.guild, interaction.user):
-            await interaction.response.send_message(COG_STRINGS["music_invalid_voice"], ephemeral=True)
+            await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
 
         modal = Modal(
@@ -542,11 +542,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     async def try_play_queue(self, interaction: Interaction, add_to_queue: list = []):
         if not self.check_valid_user(interaction.guild, interaction.user):
-            message = COG_STRINGS["music_invalid_voice"]
-            if interaction.response.is_done():
-                await interaction.followup.send(content=message, ephemeral=True)
-            else:
-                await interaction.response.send_message(message, ephemeral=True)
+            await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
 
         if interaction.guild.id not in self.active_players:
