@@ -387,7 +387,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             case UserActionType.PLAY:
                 pass
             case UserActionType.PAUSE:
-                pass
+                return await self.pause_playback(interaction)
             case UserActionType.ADD_SONG:
                 return await self.add_interaction_hanlder(interaction)
             case UserActionType.VIEW_QUEUE:
@@ -595,6 +595,24 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         self.active_players[guild_id]["voice_client"].play(voice_source)
         self.playing.append(guild_id)
 
+        return True
+
+    async def pause_playback(self, interaction: Interaction):
+        if not self.check_valid_user(interaction.guild, interaction.user):
+            await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
+            return False
+
+        if not interaction.guild.id in self.active_players:
+            await respond_or_followup(COG_STRINGS["music_warn_not_playing"], interaction, ephemeral=True)
+            return False
+
+        voice_client = self.active_players[interaction.guild.id]["voice_client"]
+        if voice_client.is_paused():
+            await respond_or_followup(COG_STRINGS["music_warn_already_paused"], interaction, ephemeral=True)
+            return False
+
+        voice_client.pause()
+        await respond_or_followup(COG_STRINGS["music_paused_success"], interaction, ephemeral=True)
         return True
 
     async def update_embed(self, guild_id: int):

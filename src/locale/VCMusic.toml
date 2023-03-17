@@ -25,3 +25,7 @@ music_set_channel_clear_messages_rename = "clear-channel"
 music_set_channel_embed_color_describe = "The colour to use for the embed. Defaults to #d462fd."
 music_set_channel_embed_color_rename = "color"
 music_set_channel_success = "Successfully set {channel} as the music channel ✅"
+
+music_warn_not_playing = "There is no music currently playing ⚠️"
+music_warn_already_paused = "Playback is already paused ⚠️"
+music_paused_success = "Playback paused ✅"
