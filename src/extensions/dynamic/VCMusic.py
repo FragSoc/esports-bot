@@ -602,7 +602,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     def play_next_song(self, guild_id: int):
         try:
-            next_song = self.active_players[guild_id].queue.pop()
+            next_song = self.active_players[guild_id].queue.pop(0)
         except IndexError:
             self.active_players[guild_id].current_song = None
             return False
