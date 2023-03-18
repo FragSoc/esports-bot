@@ -37,3 +37,6 @@ music_resume_success = "Playback resumed ✅"
 
 music_warn_no_next_song = "Song skipped (no more songs in queue) ⚠️"
 music_skip_success = "Song skipped ✅"
+
+music_warn_view_queue_empty = "There are no songs currently queued ⚠️"
+music_empty_queue_text = "_No songs currently queued_"

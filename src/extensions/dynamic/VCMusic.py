@@ -424,7 +424,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             case UserActionType.ADD_SONG:
                 return await self.add_interaction_hanlder(interaction)
             case UserActionType.VIEW_QUEUE:
-                pass
+                return await self.get_current_queue(interaction)
             case UserActionType.EDIT_QUEUE:
                 pass
             case UserActionType.STOP:
@@ -690,6 +690,24 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         await self.update_embed(interaction.guild.id)
         await respond_or_followup(COG_STRINGS["music_warn_no_next_song"], interaction, ephemeral=True)
         return False
+
+    async def get_current_queue(self, interaction: Interaction):
+        await interaction.response.defer()
+        if interaction.guild.id not in self.active_players:
+            await respond_or_followup(COG_STRINGS["music_warn_view_queue_empty"], interaction, ephemeral=True)
+            return True
+
+        current_queue = self.active_players.get(interaction.guild.id).queue
+        current_song = self.active_players.get(interaction.guild.id).current_song
+
+        current_song_text = f"__Current Song__\n{COG_STRINGS['music_embed_title_idle'] if not current_song else current_song.title}"
+        formatted_queue = "\n".join([f"{idx+1}. {song.title}" for idx, song in enumerate(current_queue)])
+        current_queue_text = f"__Up Next__\n{COG_STRINGS['music_empty_queue_text'] if not current_queue else formatted_queue}"
+
+        queue_text = f"{current_song_text}\n\n{current_queue_text}"
+
+        await respond_or_followup(queue_text, interaction, ephemeral=True)
+        return True
 
     async def update_embed(self, guild_id: int):
         current_song = self.active_players.get(guild_id).current_song
