@@ -140,8 +140,14 @@ class SongRequest:
         match self.request_type:
             case SongRequestType.STRING:
                 result = string_request_query(self)
+                parsed_result = parse_string_query_result(result)
+                self.url = parsed_result.get("url")
+                self.title = parsed_result.get("title")
+                self.thumbnail = parsed_result.get("thumbnail")
+                return self
             case SongRequestType.YOUTUBE_VIDEO:
-                result = string_request_query(self)
+                result = self.get_stream_data()
+                return self
             case SongRequestType.YOUTUBE_PLAYLIST:
                 return None
             case _:
@@ -150,13 +156,10 @@ class SongRequest:
         if result == None or result == {}:
             return self
 
-        parsed_result = parse_string_query_result(result)
-        self.url = parsed_result.get("url")
-        self.title = parsed_result.get("title")
-        self.thumbnail = parsed_result.get("thumbnail")
-        return self
-
     def get_stream_data(self):
+        if self.stream_data is not None:
+            return self.stream_data
+
         ydl_opts = {
             "quiet": "true",
             "nowarning": "true",
