@@ -398,7 +398,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
         match user_action:
             case UserActionType.PLAY:
-                pass
+                return await self.resume_or_start_playback(interaction)
             case UserActionType.PAUSE:
                 return await self.pause_playback(interaction)
             case UserActionType.SKIP:
@@ -612,6 +612,28 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
         return True
 
+    async def resume_or_start_playback(self, interaction: Interaction):
+        if not self.check_valid_user(interaction.guild, interaction.user):
+            await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
+            return False
+
+        if not interaction.guild.id in self.active_players:
+            return await self.add_interaction_hanlder(interaction)
+
+        if self.active_players.get(interaction.guild.id).get("voice_client").is_playing():
+            await respond_or_followup(COG_STRINGS["music_warn_already_playing"], interaction, ephemeral=True)
+            return False
+
+        if self.active_players.get(interaction.guild.id).get("voice_client").is_paused():
+            voice_client = self.active_players.get(interaction.guild.id).get("voice_client")
+            voice_client.resume()
+            await self.update_embed(interaction.guild.id)
+            await respond_or_followup(COG_STRINGS["music_resume_success"], interaction, ephemeral=True)
+            return True
+
+        await respond_or_followup(COG_STRINGS["music_generic_error"].format(author=self.author), interaction, ephemeral=True)
+        return False
+
     async def pause_playback(self, interaction: Interaction):
         if not self.check_valid_user(interaction.guild, interaction.user):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
@@ -637,20 +659,20 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         embed_message = await self.bot.get_guild(guild_id).get_channel(db_entry.channel_id).fetch_message(db_entry.message_id)
 
         current_embed: Embed = embed_message.embeds[0]
-        new_embed = Embed(
-            title=COG_STRINGS["music_embed_title_playing"].format(song=current_song.title),
-            color=current_embed.color,
-            url=current_song.url
-        )
-        new_embed.set_image(url=current_song.thumbnail)
-        new_embed.set_footer(text=COG_STRINGS["music_embed_footer"].format(author=self.author))
+        if current_song:
+            new_embed = create_music_embed(
+                color=current_embed.color,
+                author=self.author,
+                title=COG_STRINGS["music_embed_title_playing"].format(song=current_song.title),
+                image=current_song.thumbnail
+            )
+        else:
+            new_embed = create_music_embed(color=current_embed.color, author=self.author)
 
-        voice_client_state = self.active_players.get(guild_id).get("voice_client").is_paused()
+        voice_client = self.active_players.get(guild_id).get("voice_client")
+        is_paused = True if voice_client is None else not voice_client.is_playing()
 
-        await embed_message.edit(
-            embed=new_embed,
-            view=create_music_actionbar(False if voice_client_state is None else voice_client_state)
-        )
+        await embed_message.edit(embed=new_embed, view=create_music_actionbar(is_paused))
 
     @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
     @describe(

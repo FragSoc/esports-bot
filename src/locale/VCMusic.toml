@@ -1,5 +1,6 @@
 music_group_name = "music"
 music_thinking = "Music bot is thinking..."
+music_generic_error = "An error occured! If this issue persists please contact an admin or {author} ❌"
 
 music_embed_title_idle = "No song currently playing...."
 music_embed_title_playing = "Now playing — {song}"
@@ -30,3 +31,6 @@ music_set_channel_success = "Successfully set {channel} as the music channel ✅
 music_warn_not_playing = "There is no music currently playing ⚠️"
 music_warn_already_paused = "Playback is already paused ⚠️"
 music_paused_success = "Playback paused ✅"
+
+music_warn_already_playing = "The bot is already playing something ⚠️"
+music_resume_success = "Playback resumed ✅"
