@@ -579,7 +579,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
         if interaction.guild.id not in self.active_players:
             voice_client = await interaction.user.voice.channel.connect()
-            active_player = GuildMusicPlayer(guild=interaction.guild)
+            active_player = GuildMusicPlayer(guild=interaction.guild, voice_client=voice_client)
             self.active_players[interaction.guild.id] = active_player
         elif not interaction.guild.me.voice or not interaction.guild.me.voice.channel:
             voice_client = await interaction.user.voice.channel.connect()
