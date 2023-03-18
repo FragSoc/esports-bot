@@ -254,7 +254,7 @@ def convert_viewcount_to_float(short_views: str) -> float:
 
 def string_request_query(request: SongRequest) -> dict:
     if request.request_type == SongRequestType.STRING:
-        query = f"'{request.raw_request}'"
+        query = f"\"{request.raw_request}\" #music"
     else:
         query = request.raw_request
 
@@ -262,49 +262,32 @@ def string_request_query(request: SongRequest) -> dict:
     if request.request_type != SongRequestType.STRING and video_results:
         return video_results[0]
 
-    filtered_results = list(filter(lambda x: x.get("publishedTime") is None, video_results))
-    if filtered_results:
-        return filtered_results[0]
-
     preferred_keywords = ["official", "music"]
     alternate_keywords = ["lyric", "audio"]
 
-    best_result = None
-    best_views = 0.0
-
-    is_preferred = False
-    keyword_found = ""
-
     for result in video_results:
         video_title = result.get("title").lower()
-        try:
-            for keyword in (preferred_keywords + alternate_keywords):
-                if keyword in video_title:
-                    keyword_found = keyword
-                    raise StopIteration
-        except StopIteration:
-            if not is_preferred or keyword_found in preferred_keywords:
-                view_count = convert_viewcount_to_float(result.get("viewCount").get("short"))
-                if view_count > best_views:
-                    best_result = result
-                    best_views = view_count
+        for keyword in preferred_keywords:
+            if keyword in video_title:
+                return result
 
-            if keyword_found in preferred_keywords:
-                is_preferred = True
+        for keyword in alternate_keywords:
+            if keyword in video_title:
+                return result
 
-    return best_result
+    return video_results[0]
 
 
 def parse_string_query_result(result: dict) -> dict:
 
-    def get_video_title():
-        views_long = result.get("viewCount").get("text")
-        duration_long = result.get("accessibility").get("duration")
-        title_long = result.get("accessibility").get("title")
-        title = title_long.replace(views_long, "").replace(duration_long, "")
-        return title
+    # def get_video_title():
+    #     views_long = result.get("viewCount").get("text")
+    #     duration_long = result.get("accessibility").get("duration")
+    #     title_long = result.get("accessibility").get("title")
+    #     title = title_long.replace(views_long, "").replace(duration_long, "")
+    #     return title
 
-    video_title = get_video_title()
+    video_title = result.get("title")
     video_url = None
     video_thumbnail = None
 
