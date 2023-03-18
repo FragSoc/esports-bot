@@ -1,6 +1,6 @@
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import IntEnum
 from typing import Union
@@ -15,7 +15,8 @@ from discord import (
     Member,
     PCMVolumeTransformer,
     TextChannel,
-    TextStyle
+    TextStyle,
+    VoiceClient
 )
 from discord.app_commands import (Transform, autocomplete, command, describe, guild_only, rename)
 from discord.ext import tasks
@@ -181,6 +182,22 @@ class SongRequest:
             self.thumbnail = self.stream_data.get("thumbnail")
 
         return info
+
+
+@dataclass(slots=True)
+class GuildMusicPlayer:
+    guild: Union[Guild, int]
+    current_song: Union[None, SongRequest] = None
+    queue: list = field(default_factory=list)
+    voice_client: Union[None, VoiceClient] = None
+    volume: int = 100
+
+    def __eq__(self, other: "GuildMusicPlayer") -> bool:
+        if not isinstance(other, GuildMusicPlayer):
+            return False
+        value1 = self.guild if isinstance(self.guild, int) else self.guild.id
+        value2 = other.guild if isinstance(self.guild, int) else other.guild.id
+        return value1 == value2
 
 
 def parse_request_type(request: str) -> SongRequestType:
@@ -366,9 +383,9 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     def __init__(self, bot: Bot):
         self.bot = bot
         self.author = "fuxticks"
-        self.active_players = {}
-        self.playing = []
-        self.inactive = {}
+        self.active_players: dict[int, GuildMusicPlayer] = {}
+        self.playing: list[int] = []
+        self.inactive: dict[int, datetime] = {}
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__} has been added as a Cog")
 
@@ -436,7 +453,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         now = datetime.now()
 
         for guild_id in self.playing:
-            voice_client = self.active_players.get(guild_id).get("voice_client")
+            voice_client = self.active_players.get(guild_id).voice_client
             if not voice_client.is_playing() and not voice_client.is_paused():
                 if not self.play_next_song(guild_id):
 
@@ -463,7 +480,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
         for guild in guilds_to_disconnect:
             self.inactive.pop(guild)
-            await self.active_players.get(guild).get("voice_client").disconnect()
+            await self.active_players.get(guild).voice_client.disconnect()
             self.active_players.pop(guild)
             await self.update_embed(guild)
 
@@ -562,17 +579,17 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
         if interaction.guild.id not in self.active_players:
             voice_client = await interaction.user.voice.channel.connect()
-            active_player = {"voice_client": voice_client, "current_song": None, "queue": [], "volume": 100}
+            active_player = GuildMusicPlayer(guild=interaction.guild)
             self.active_players[interaction.guild.id] = active_player
         elif not interaction.guild.me.voice or not interaction.guild.me.voice.channel:
             voice_client = await interaction.user.voice.channel.connect()
-            self.active_players[interaction.guild.id]["voice_client"] = voice_client
+            self.active_players[interaction.guild.id].voice_client = voice_client
 
-        self.active_players[interaction.guild.id]["queue"] += add_to_queue
+        self.active_players[interaction.guild.id].queue += add_to_queue
 
-        is_playing = self.active_players[interaction.guild.id]["voice_client"].is_playing()
-        is_paused = self.active_players[interaction.guild.id]["voice_client"].is_paused()
-        has_current_song = self.active_players[interaction.guild.id]["current_song"] is not None
+        is_playing = self.active_players[interaction.guild.id].voice_client.is_playing()
+        is_paused = self.active_players[interaction.guild.id].voice_client.is_paused()
+        has_current_song = self.active_players[interaction.guild.id].current_song is not None
 
         if is_playing or (is_paused and has_current_song):
             return False
@@ -585,29 +602,29 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     def play_next_song(self, guild_id: int):
         try:
-            next_song = self.active_players[guild_id]["queue"].pop()
+            next_song = self.active_players[guild_id].queue.pop()
         except IndexError:
-            self.active_players[guild_id]["current_song"] = None
+            self.active_players[guild_id].current_song = None
             return False
 
-        if self.active_players[guild_id]["voice_client"].is_playing():
-            self.active_players[guild_id]["voice_client"].stop()
+        if self.active_players[guild_id].voice_client.is_playing():
+            self.active_players[guild_id].voice_client.stop()
 
         if next_song.stream_data is None:
             stream_data = next_song.get_stream_data()
         else:
             stream_data = next_song.stream_data
 
-        self.active_players[guild_id]["current_song"] = next_song
+        self.active_players[guild_id].current_song = next_song
 
         voice_source = PCMVolumeTransformer(
             FFmpegPCMAudio(stream_data.get("url"),
                            before_options=FFMPEG_PLAYER_OPTIONS,
                            options="-vn"),
-            volume=self.active_players.get(guild_id).get("volume")
+            volume=self.active_players.get(guild_id).volume
         )
 
-        self.active_players[guild_id]["voice_client"].play(voice_source)
+        self.active_players[guild_id].voice_client.play(voice_source)
         self.playing.append(guild_id)
 
         return True
@@ -620,12 +637,12 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         if not interaction.guild.id in self.active_players:
             return await self.add_interaction_hanlder(interaction)
 
-        if self.active_players.get(interaction.guild.id).get("voice_client").is_playing():
+        if self.active_players.get(interaction.guild.id).voice_client.is_playing():
             await respond_or_followup(COG_STRINGS["music_warn_already_playing"], interaction, ephemeral=True)
             return False
 
-        if self.active_players.get(interaction.guild.id).get("voice_client").is_paused():
-            voice_client = self.active_players.get(interaction.guild.id).get("voice_client")
+        if self.active_players.get(interaction.guild.id).voice_client.is_paused():
+            voice_client = self.active_players.get(interaction.guild.id).voice_client
             voice_client.resume()
             await self.update_embed(interaction.guild.id)
             await respond_or_followup(COG_STRINGS["music_resume_success"], interaction, ephemeral=True)
@@ -643,7 +660,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             await respond_or_followup(COG_STRINGS["music_warn_not_playing"], interaction, ephemeral=True)
             return False
 
-        voice_client = self.active_players[interaction.guild.id]["voice_client"]
+        voice_client = self.active_players[interaction.guild.id].voice_client
         if voice_client.is_paused():
             await respond_or_followup(COG_STRINGS["music_warn_already_paused"], interaction, ephemeral=True)
             return False
@@ -654,7 +671,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         return True
 
     async def update_embed(self, guild_id: int):
-        current_song = self.active_players.get(guild_id).get("current_song")
+        current_song = self.active_players.get(guild_id).current_song
         db_entry = DBSession.get(MusicChannels, guild_id=guild_id)
         embed_message = await self.bot.get_guild(guild_id).get_channel(db_entry.channel_id).fetch_message(db_entry.message_id)
 
@@ -669,7 +686,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         else:
             new_embed = create_music_embed(color=current_embed.color, author=self.author)
 
-        voice_client = self.active_players.get(guild_id).get("voice_client")
+        voice_client = self.active_players.get(guild_id).voice_client
         is_paused = True if voice_client is None else not voice_client.is_playing()
 
         await embed_message.edit(embed=new_embed, view=create_music_actionbar(is_paused))
