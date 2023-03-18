@@ -34,3 +34,6 @@ music_paused_success = "Playback paused ✅"
 
 music_warn_already_playing = "The bot is already playing something ⚠️"
 music_resume_success = "Playback resumed ✅"
+
+music_warn_no_next_song = "Song skipped (no more songs in queue) ⚠️"
+music_skip_success = "Song skipped ✅"

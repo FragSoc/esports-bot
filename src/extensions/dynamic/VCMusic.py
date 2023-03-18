@@ -322,9 +322,10 @@ def create_music_embed(
     color: Color,
     author: str,
     title: str = COG_STRINGS["music_embed_title_idle"],
-    image: str = EMBED_IMAGE_URL
+    image: str = EMBED_IMAGE_URL,
+    url: str = None
 ) -> Embed:
-    embed = Embed(title=title, color=color)
+    embed = Embed(title=title, color=color, url=url)
     embed.set_image(url=image)
     embed.set_footer(text=COG_STRINGS["music_embed_footer"].format(author=author))
     return embed
@@ -419,7 +420,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             case UserActionType.PAUSE:
                 return await self.pause_playback(interaction)
             case UserActionType.SKIP:
-                pass
+                return await self.skip_song_handler(interaction)
             case UserActionType.ADD_SONG:
                 return await self.add_interaction_hanlder(interaction)
             case UserActionType.VIEW_QUEUE:
@@ -670,6 +671,26 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         await respond_or_followup(COG_STRINGS["music_paused_success"], interaction, ephemeral=True)
         return True
 
+    async def skip_song_handler(self, interaction: Interaction):
+        if not self.check_valid_user(interaction.guild, interaction.user):
+            await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
+            return False
+
+        if not interaction.guild.id in self.active_players:
+            await respond_or_followup(COG_STRINGS["music_warn_not_playing"], interaction, ephemeral=True)
+            return False
+
+        if self.play_next_song(interaction.guild.id):
+            await self.update_embed(interaction.guild.id)
+            await respond_or_followup(COG_STRINGS["music_skip_success"], interaction, ephemeral=True)
+            return True
+
+        if self.active_players.get(interaction.guild.id).voice_client.is_playing():
+            self.active_players.get(interaction.guild.id).voice_client.stop()
+        await self.update_embed(interaction.guild.id)
+        await respond_or_followup(COG_STRINGS["music_warn_no_next_song"], interaction, ephemeral=True)
+        return False
+
     async def update_embed(self, guild_id: int):
         current_song = self.active_players.get(guild_id).current_song
         db_entry = DBSession.get(MusicChannels, guild_id=guild_id)
@@ -681,7 +702,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 color=current_embed.color,
                 author=self.author,
                 title=COG_STRINGS["music_embed_title_playing"].format(song=current_song.title),
-                image=current_song.thumbnail
+                image=current_song.thumbnail,
+                url=current_song.url
             )
         else:
             new_embed = create_music_embed(color=current_embed.color, author=self.author)
