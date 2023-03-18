@@ -153,9 +153,6 @@ class SongRequest:
             case _:
                 raise ValueError("Invalid SongRequestType given!")
 
-        if result == None or result == {}:
-            return self
-
     def get_stream_data(self):
         if self.stream_data is not None:
             return self.stream_data
