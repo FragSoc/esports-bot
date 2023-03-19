@@ -18,7 +18,7 @@ from discord import (
     TextStyle,
     VoiceClient
 )
-from discord.app_commands import (Transform, autocomplete, command, describe, guild_only, rename)
+from discord.app_commands import (Transform, autocomplete, command, describe, guild_only, rename, default_permissions, checks)
 from discord.ext import tasks
 from discord.ext.commands import Bot, GroupCog
 from discord.ui import Button, Modal, TextInput, View
@@ -746,6 +746,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         embed_color=COG_STRINGS["music_set_channel_embed_color_rename"]
     )
     @autocomplete(embed_color=ColourTransformer.autocomplete)
+    @default_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
     @guild_only()
     async def set_channel(
         self,
