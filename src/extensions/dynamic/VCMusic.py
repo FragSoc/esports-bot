@@ -356,7 +356,8 @@ def create_music_actionbar(is_paused: bool = True) -> View:
     view.add_item(skip_button)
     view.add_item(add_button)
     view.add_item(view_button)
-    view.add_item(edit_button)
+    # TOOD: Implement queue editing
+    # view.add_item(edit_button)
     view.add_item(stop_button)
 
     return view
