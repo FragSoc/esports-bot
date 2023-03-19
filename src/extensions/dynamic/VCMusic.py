@@ -725,6 +725,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
 
+        if self.active_players.get(interaction.guild.id).voice_client.is_playing():
+            self.active_players.get(interaction.guild.id).voice_client.stop()
         self.active_players.get(interaction.guild.id).queue = []
         self.play_next_song(interaction.guild.id)
         await self.update_embed(interaction.guild.id)
