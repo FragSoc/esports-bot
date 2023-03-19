@@ -411,7 +411,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             case UserActionType.EDIT_QUEUE:
                 pass
             case UserActionType.STOP:
-                pass
+                return await self.stop_playback(interaction)
             case UserActionType.ADD_SONG_MODAL_SUBMIT:
                 return await self.add_modal_interaction_handler(interaction)
             case UserActionType.EDIT_QUEUE_MODAL_SUBMIT:
@@ -713,6 +713,23 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         is_paused = True if voice_client is None else not voice_client.is_playing()
 
         await embed_message.edit(embed=new_embed, view=create_music_actionbar(is_paused))
+
+    async def stop_playback(self, interaction: Interaction):
+        if interaction.guild.id not in self.active_players:
+            if interaction.guild.voice_client:
+                await interaction.guild.voice_client.disconnect()
+            await self.update_embed(interaction.guild.id)
+            return True
+
+        if not self.check_valid_user(interaction.guild, interaction.user):
+            await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
+            return False
+
+        self.active_players.get(interaction.guild.id).queue = []
+        self.play_next_song(interaction.guild.id)
+        await self.update_embed(interaction.guild.id)
+        await respond_or_followup(COG_STRINGS["music_stopped_success"], interaction, ephemeral=True)
+        return True
 
     @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
     @describe(

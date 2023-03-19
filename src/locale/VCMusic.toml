@@ -40,3 +40,5 @@ music_skip_success = "Song skipped ✅"
 
 music_warn_view_queue_empty = "There are no songs currently queued ⚠️"
 music_empty_queue_text = "_No songs currently queued_"
+
+music_stopped_success = "Playback stopped ✅"
