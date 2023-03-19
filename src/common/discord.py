@@ -18,7 +18,8 @@ async def respond_or_followup(
 ):
     if interaction.response.is_done():
         message = await interaction.followup.send(content=message, ephemeral=ephemeral, **kwargs)
-        await message.delete(delay=delete_after)
+        if delete_after:
+            await message.delete(delay=delete_after)
         return False
     else:
         await interaction.response.send_message(message, ephemeral=ephemeral, delete_after=delete_after, **kwargs)
