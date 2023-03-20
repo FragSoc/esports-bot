@@ -160,7 +160,7 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 ### Environment Variable: `ENABLE_VCMUSIC`
 
-#### /music set-channel \<channel\> [optional: color] [optional: clear-channel]
+#### /music set-channel \<channel\> [optional: color] [optional: clear-channel] [optional: read-only]
 
 - Sets the channel to define as the music channel.
 

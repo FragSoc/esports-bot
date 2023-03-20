@@ -14,6 +14,7 @@ from discord import (
     Interaction,
     Member,
     PCMVolumeTransformer,
+    PermissionOverwrite,
     TextChannel,
     TextStyle,
     VoiceClient
@@ -773,12 +774,14 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     @describe(
         channel=COG_STRINGS["music_set_channel_channel_describe"],
         clear_messages=COG_STRINGS["music_set_channel_clear_messages_describe"],
-        embed_color=COG_STRINGS["music_set_channel_embed_color_describe"]
+        embed_color=COG_STRINGS["music_set_channel_embed_color_describe"],
+        read_only=COG_STRINGS["music_set_channel_read_only_describe"]
     )
     @rename(
         channel=COG_STRINGS["music_set_channel_channel_rename"],
         clear_messages=COG_STRINGS["music_set_channel_clear_messages_rename"],
-        embed_color=COG_STRINGS["music_set_channel_embed_color_rename"]
+        embed_color=COG_STRINGS["music_set_channel_embed_color_rename"],
+        read_only=COG_STRINGS["music_set_channel_read_only_rename"]
     )
     @autocomplete(embed_color=ColourTransformer.autocomplete)
     @default_permissions(administrator=True)
@@ -790,7 +793,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         channel: TextChannel,
         clear_messages: bool = False,
         embed_color: Transform[Color,
-                               ColourTransformer] = Color(0xd462fd)
+                               ColourTransformer] = Color(0xd462fd),
+        read_only: bool = True
     ):
         await interaction.response.defer(ephemeral=True)
 
@@ -815,6 +819,20 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             content=COG_STRINGS["music_set_channel_success"].format(channel=channel.mention),
             ephemeral=self.bot.only_ephemeral
         )
+
+        if read_only:
+            await channel.set_permissions(
+                interaction.guild.default_role,
+                overwrite=PermissionOverwrite(read_messages=True,
+                                              send_messages=False,
+                                              view_channel=True)
+            )
+            await channel.set_permissions(
+                interaction.guild.me,
+                PermissionOverwrite(read_messages=True,
+                                    send_messages=True,
+                                    view_channel=True)
+            )
 
     @command(name=COG_STRINGS["music_play_name"], description=COG_STRINGS["music_play_description"])
     @guild_only()
