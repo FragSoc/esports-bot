@@ -849,6 +849,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         has_current_song = self.active_players[interaction.guild.id].current_song is not None
 
         if is_playing or (is_paused and has_current_song):
+            if not await self.update_embed(interaction.guild.id):
+                await respond_or_followup(COG_STRINGS["music_needs_setup"], interaction, ephemeral=True, delete_after=None)
             return True
 
         if self.play_next_song(interaction.guild.id):
@@ -1007,13 +1009,12 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             current_song = self.active_players.get(guild_id).current_song
             volume = COG_STRINGS["music_embed_current_volume"].format(value=self.active_players.get(guild_id).volume)
             user = COG_STRINGS["music_embed_request_user"].format(user=current_song.request_member.mention)
+            queue_length = COG_STRINGS["music_embed_queue_length"].format(length=len(self.active_players.get(guild_id).queue))
             new_embed = create_music_embed(
                 color=current_embed.color,
                 author=self.author,
-                title=COG_STRINGS["music_embed_title_playing"].format(
-                    song=current_song.title
-                ),
-                description=f"{user}\n{volume}",
+                title=COG_STRINGS["music_embed_title_playing"].format(song=current_song.title),
+                description=f"{user}\n{volume}\n{queue_length}",
                 image=current_song.thumbnail,
                 url=current_song.url
             )
