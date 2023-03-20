@@ -476,7 +476,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         if not user.voice.channel:
             return False
 
-        if not guild.id in self.active_players:
+        if guild.id not in self.active_players:
             return True
 
         return self.bot.user in user.voice.channel.members
@@ -619,7 +619,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
 
-        if not interaction.guild.id in self.active_players:
+        if interaction.guild.id not in self.active_players:
             return await self.add_interaction_hanlder(interaction)
 
         if self.active_players.get(interaction.guild.id).voice_client.is_playing():
@@ -641,7 +641,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
 
-        if not interaction.guild.id in self.active_players:
+        if interaction.guild.id not in self.active_players:
             await respond_or_followup(COG_STRINGS["music_warn_not_playing"], interaction, ephemeral=True)
             return False
 
@@ -660,7 +660,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
 
-        if not interaction.guild.id in self.active_players:
+        if interaction.guild.id not in self.active_players:
             await respond_or_followup(COG_STRINGS["music_warn_not_playing"], interaction, ephemeral=True)
             return False
 
