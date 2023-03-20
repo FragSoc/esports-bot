@@ -926,9 +926,23 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         current_song = self.active_players.get(interaction.guild.id).current_song
 
         current_song_text = f"__Current Song__\n{COG_STRINGS['music_embed_title_idle'] if not current_song else current_song.title}"
-        formatted_queue = "\n".join([f"{idx+1}. {song.title}" for idx, song in enumerate(current_queue)])
-        current_queue_text = f"__Up Next__\n{COG_STRINGS['music_empty_queue_text'] if not current_queue else formatted_queue}"
 
+        QUEUE_CUTOFF = 15
+        if len(current_queue) > 2 * QUEUE_CUTOFF + 5:
+            first_set = current_queue[:QUEUE_CUTOFF]
+            last_set = current_queue[-QUEUE_CUTOFF:]
+            remaining = len(current_queue) - 2 * QUEUE_CUTOFF
+            first_set_formatted = "\n".join([f"{idx+1}. {song.title}" for idx, song in enumerate(first_set)])
+            last_set_formatted = "\n".join(
+                [f"{idx+1+remaining+QUEUE_CUTOFF}. {song.title}" for idx,
+                 song in enumerate(last_set)]
+            )
+            separator = f"\n\n... and **`{remaining}`** more ... \n\n"
+            formatted_queue = f"{first_set_formatted}{separator}{last_set_formatted}"
+        else:
+            formatted_queue = "\n".join([f"{idx+1}. {song.title}" for idx, song in enumerate(current_queue)])
+
+        current_queue_text = f"__Up Next__\n{COG_STRINGS['music_empty_queue_text'] if not current_queue else formatted_queue}"
         queue_text = f"{current_song_text}\n\n{current_queue_text}"
 
         await respond_or_followup(queue_text, interaction, ephemeral=True, delete_after=None)
