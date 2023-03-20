@@ -47,15 +47,13 @@ from database.gateway import DBSession
 from database.models import MusicChannels
 
 COG_STRINGS = load_cog_toml(__name__)
-MUSIC_INTERACTION_PREFIX = f"{__name__}.interaction"
-INTERACTION_SPLIT_CHARACTER = "."
-EMBED_IMAGE_URL = "https://static.wixstatic.com/media/d8a4c5_b42c82e4532c4f8e9f9b2f2d9bb5a53e~mv2.png/v1/fill/w_287,h_287,al_c,q_85,usm_0.66_1.00_0.01/esportslogo.webp"
+AUTHOR_ID = 244050529271939073
 QUERY_RESULT_LIMIT = 15
 INACTIVE_TIMEOUT = 60
-AUTHOR_ID = 244050529271939073  # main account
-# AUTHOR_ID = 202978567741505536  # alt account
+EMBED_IMAGE_URL = os.getenv("MUSIC_DEFAULT_IMAGE")
+MUSIC_INTERACTION_PREFIX = f"{__name__}.interaction"
+INTERACTION_SPLIT_CHARACTER = "."
 FFMPEG_PLAYER_OPTIONS = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
-
 GOOGLE_API_KEY = os.getenv("GOOGLE_API")
 YOUTUBE_API = googleapiclient.discovery.build("youtube", "v3", developerKey=GOOGLE_API_KEY)
 
