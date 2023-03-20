@@ -167,6 +167,9 @@ class SongRequestType(IntEnum):
 
 @dataclass(slots=True)
 class SongRequest:
+    """Represents all the information known about a song request. This can represent a song with only it's request data,
+    with basic metadata or with data capable of having it's audio streamed.
+    """
     raw_request: str
     request_type: SongRequestType
     request_member: Member
@@ -176,6 +179,18 @@ class SongRequest:
     stream_data: dict = None
 
     async def get_song(self) -> Union[list["SongRequest"], "SongRequest", None]:
+        """For STRING requests, fetches basic metadata such as title and URL. For YOUTUBE_VIDEO requests, fetches all streaming
+        data. For YOUTUBE_PLAYLIST requests, finds all the videos in the playlist and returns basic metadata such as title and
+        URL for each video as a list.
+
+        Raises:
+        ValueError: If an unknown SongRequestType is given, the song data cannot be gathered and raises a ValueError.
+
+        Returns:
+            Union[list[SongRequest], SongRequest, None]: If the request given is a playlist, get_song will return each song in
+            the playlist as it's own SongRequest. If the GOOGLE_API environment variable is missing None is returned. For
+            STRING and YOUTUBE_VIDEO requests, and SongRequest with it's metadata filled in will be returned.
+        """
         match self.request_type:
             case SongRequestType.STRING:
                 result = string_request_query(self)
@@ -196,7 +211,12 @@ class SongRequest:
             case _:
                 raise ValueError("Invalid SongRequestType given!")
 
-    def get_stream_data(self):
+    def get_stream_data(self) -> dict:
+        """Gets the data required to stream a given SongRequest to a Discord VoiceClient.
+
+        Returns:
+            dict: A dictionary containing all the data, and more, needed to stream to a Discord VoiceClient.
+        """
         if self.stream_data is not None:
             return self.stream_data
 
@@ -235,6 +255,9 @@ class SongRequest:
 
 @dataclass(slots=True)
 class GuildMusicPlayer:
+    """Contains all the data required for music to be played in a Guild. Stores the VoiceClient for a guild along with
+    queue data, current song and the volume at which to play at.
+    """
     guild: Union[Guild, int]
     current_song: Union[None, SongRequest] = None
     queue: list = field(default_factory=list)
@@ -250,6 +273,14 @@ class GuildMusicPlayer:
 
 
 def parse_request_type(request: str) -> SongRequestType:
+    """Get the kind of request a given string is.
+
+    Args:
+        request (str): The request to parse.
+
+    Returns:
+        SongRequestType: The type of request the given string was.
+    """
     yt_desktop_regex = r"youtube\.com\/watch\?v="
     yt_playlist_regex = r"youtube\.com\/playlist\?list="
     yt_mobile_regex = r"youtu\.be\/"
@@ -271,6 +302,14 @@ def parse_request_type(request: str) -> SongRequestType:
 
 
 def convert_viewcount_to_float(short_views: str) -> float:
+    """Convert the short string for views of a YouTube video to a float value.
+
+    Args:
+        short_views (str): The view count as per the short formatting YouTube uses.
+
+    Returns:
+        float: The viewcount as a float.
+    """
     raw = short_views.lower().split(" views")[0]
     scale = raw[-1]
     power = 1
@@ -291,6 +330,15 @@ def convert_viewcount_to_float(short_views: str) -> float:
 
 
 def string_request_query(request: SongRequest) -> dict:
+    """Find YouTube videos that fit the given song request. The algorithm is weighted to try and find
+    "music" videos as the general purpose of the bot is for music.
+
+    Args:
+        request (SongRequest): The song request to query.
+
+    Returns:
+        dict: All the metadata about the found video result.
+    """
     if request.request_type == SongRequestType.STRING:
         query = f"\"{request.raw_request}\" #music"
     else:
@@ -317,13 +365,18 @@ def string_request_query(request: SongRequest) -> dict:
 
 
 def parse_string_query_result(result: dict) -> dict:
+    """Get the relevant data from a string_request_query dictionary. Most of the data returned is garbage
+    and so only the relevant data is needed.
 
-    # def get_video_title():
-    #     views_long = result.get("viewCount").get("text")
-    #     duration_long = result.get("accessibility").get("duration")
-    #     title_long = result.get("accessibility").get("title")
-    #     title = title_long.replace(views_long, "").replace(duration_long, "")
-    #     return title
+    Args:
+        result (dict): The result from a string_request_query.
+
+    Raises:
+        ValueError: If the given result has malformed or missing data.
+
+    Returns:
+        dict: A dictionary with keys 'title', 'url' and 'thumbnail'.
+    """
 
     video_title = escape_discord_characters(result.get("title"))
     video_url = None
@@ -342,7 +395,16 @@ def parse_string_query_result(result: dict) -> dict:
     return {"title": video_title, "url": video_url, "thumbnail": video_thumbnail}
 
 
-def escape_discord_characters(title: str):
+def escape_discord_characters(title: str) -> str:
+    """Some video titles use characters that are interpreted by discord as formatting characters. To avoid
+    resulting in weird formatting, escape every potential character.
+
+    Args:
+        title (str): The video title to escape the characters of.
+
+    Returns:
+        str: A title that has been escaped.
+    """
     characters_to_escape = ['`', '|', "_", "~"]
     escaped_title = title
     for character in characters_to_escape:
@@ -351,6 +413,14 @@ def escape_discord_characters(title: str):
 
 
 def get_playlist_items(playlist_url: str) -> list[dict]:
+    """For a given playlist URL, find the individual videos in the playlist.
+
+    Args:
+        playlist_url (str): The URL of the playlist.
+
+    Returns:
+        list[dict]: A list of dictionaries, where each item in the list contains data about a video in the playlist.
+    """
     api = YOUTUBE_API.playlistItems()
     query = parse_qs(urlparse(playlist_url).query, keep_blank_values=True)
     if not query:
@@ -372,6 +442,16 @@ def get_playlist_items(playlist_url: str) -> list[dict]:
 
 
 def parse_playlist_response(original_request: str, original_member: Member, playlist_items: list[dict]) -> list[SongRequest]:
+    """Parse the data obtained from get_playlist_items to individual SongRequests.
+
+    Args:
+        original_request (str): The original raw request.
+        original_member (Member): The member that requested the playlist.
+        playlist_items (list[dict]): The list of videos in the playlist.
+
+    Returns:
+        list[SongRequest]: Each item from the playlist converted into its own SongRequest object.
+    """
     formatted_requests = []
     for item in playlist_items:
         title, url, thumbnail = parse_playlist_item(item)
@@ -387,7 +467,15 @@ def parse_playlist_response(original_request: str, original_member: Member, play
     return formatted_requests
 
 
-def parse_playlist_item(item: dict):
+def parse_playlist_item(item: dict) -> tuple[str, str, str]:
+    """Parse an individual playlist item's data into a tuple of its title, url and thumbnail url.
+
+    Args:
+        item (dict): The item obtained from get_playlist_items.
+
+    Returns:
+        tuple[str, str, str]: A tuple containing the title, url and thumbnail of the video.
+    """
     snippet = item.get("snippet")
 
     chosen_thumbnail = None
@@ -418,6 +506,19 @@ def create_music_embed(
     image: str = EMBED_IMAGE_URL,
     url: str = None
 ) -> Embed:
+    """Creates an embed with the author footer.
+
+    Args:
+        color (Color): The color of the embed.
+        author (str): The author of the music bot.
+        title (str, optional): The title of the embed. Defaults to COG_STRINGS["music_embed_title_idle"].
+        description (str, optional): The description of the embed.. Defaults to None.
+        image (str, optional): The image to set in the embed.. Defaults to EMBED_IMAGE_URL.
+        url (str, optional): The URL of the embed, get's applied to the title. Defaults to None.
+
+    Returns:
+        Embed: An embed with the given attributes, and sets the author in the footer.
+    """
     embed = Embed(title=title, description=description, color=color, url=url)
     embed.set_image(url=image)
     embed.set_footer(text=COG_STRINGS["music_embed_footer"].format(author=author))
@@ -425,6 +526,14 @@ def create_music_embed(
 
 
 def create_music_actionbar(is_paused: bool = True) -> View:
+    """Creates the View containing all the music functions of the music bot.
+
+    Args:
+        is_paused (bool, optional): If the bot's playback is in the `is_paused()` state. Defaults to True.
+
+    Returns:
+        View: A view containing all the actions of the music bot.
+    """
     view = View(timeout=None)
 
     play_button = Button(style=ButtonStyle.secondary, emoji="▶️", custom_id=UserActionType.PLAY.id)
