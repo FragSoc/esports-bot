@@ -1,10 +1,13 @@
 import logging
+import os
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import IntEnum
 from typing import Union
+from urllib.parse import parse_qs, urlparse
 
+import googleapiclient.discovery
 from discord import (
     ButtonStyle,
     Color,
@@ -51,6 +54,9 @@ INACTIVE_TIMEOUT = 60
 AUTHOR_ID = 244050529271939073  # main account
 # AUTHOR_ID = 202978567741505536  # alt account
 FFMPEG_PLAYER_OPTIONS = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API")
+YOUTUBE_API = googleapiclient.discovery.build("youtube", "v3", developerKey=GOOGLE_API_KEY)
 
 
 class UserActionType(IntEnum):
@@ -177,7 +183,11 @@ class SongRequest:
                 result = self.get_stream_data()
                 return self
             case SongRequestType.YOUTUBE_PLAYLIST:
-                return None
+                if not GOOGLE_API_KEY:
+                    return None
+                playlist_items = get_playlist_items(self.raw_request)
+                song_requests = parse_playlist_response(self.raw_request, playlist_items)
+                return song_requests
             case _:
                 raise ValueError("Invalid SongRequestType given!")
 
@@ -333,6 +343,65 @@ def escape_discord_characters(title: str):
     for character in characters_to_escape:
         escaped_title = escaped_title.replace(character, f"\\{character}")
     return escaped_title
+
+
+def get_playlist_items(playlist_url: str) -> list[dict]:
+    api = YOUTUBE_API.playlistItems()
+    query = parse_qs(urlparse(playlist_url).query, keep_blank_values=True)
+    if not query:
+        youtube_id = playlist_url.split("/")[-1]
+    else:
+        youtube_id = query["list"][0]
+
+    api_args = {"part": "snippet", "maxResults": 50, "playlistId": youtube_id}
+
+    api_request = api.list(**api_args)
+
+    video_responses = []
+    while api_request:
+        response = api_request.execute()
+        video_responses += response["items"]
+        api_request = api.list_next(api_request, response)
+
+    return video_responses
+
+
+def parse_playlist_response(original_request: str, playlist_items: list[dict]) -> list[SongRequest]:
+    formatted_requests = []
+    for item in playlist_items:
+        title, url, thumbnail = parse_playlist_item(item)
+        song = SongRequest(
+            raw_request=original_request,
+            request_type=SongRequestType.YOUTUBE_VIDEO,
+            title=title,
+            url=url,
+            thumbnail=thumbnail
+        )
+        formatted_requests.append(song)
+    return formatted_requests
+
+
+def parse_playlist_item(item: dict):
+    snippet = item.get("snippet")
+
+    chosen_thumbnail = None
+    all_thumbnails = snippet.get("thumbnails")
+    if "maxres" in all_thumbnails:
+        chosen_thumbnail = all_thumbnails.get("maxres").get("url")
+    else:
+        any_thumbnail_res = list(all_thumbnails)[0]
+        chosen_thumbnail = all_thumbnails.get(any_thumbnail_res).get("url")
+
+    url = None
+    if item.get("kind") == "youtube#video":
+        video_id = item.get("id")
+    else:
+        video_id = item.get("snippet").get("resourceId").get("videoId")
+    url = "https://youtube.com/watch?v={}".format(video_id)
+
+    title = escape_discord_characters(snippet.get("title"))
+
+    return (title, url, chosen_thumbnail)
 
 
 def create_music_embed(
@@ -689,8 +758,10 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         if request_list:
             first_request = request_list.pop(0)
             song = await first_request.get_song()
-            if await self.try_play_queue(interaction, add_to_queue=[song]):
-                first_success = 1
+            if song is None or song is []:
+                first_request = 0
+            elif await self.try_play_queue(interaction, add_to_queue=song if isinstance(song, list) else [song]):
+                first_success = len(song) if isinstance(song, list) else 1
 
         failed_requests = []
         requests_to_queue = []
