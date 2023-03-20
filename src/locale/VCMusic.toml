@@ -43,3 +43,6 @@ music_warn_view_queue_empty = "There are no songs currently queued ⚠️"
 music_empty_queue_text = "_No songs currently queued_"
 
 music_stopped_success = "Playback stopped ✅"
+
+music_play_name = "play"
+music_play_description = "Resumes playback or show the add song dialog if not already playing."

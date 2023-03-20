@@ -792,6 +792,11 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             ephemeral=self.bot.only_ephemeral
         )
 
+    @command(name=COG_STRINGS["music_play_name"], description=COG_STRINGS["music_play_description"])
+    @guild_only()
+    async def play_command(self, interaction: Interaction):
+        return await self.resume_or_start_playback(interaction)
+
 
 async def setup(bot: Bot):
     await bot.add_cog(VCMusic(bot))
