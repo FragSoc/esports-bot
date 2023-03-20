@@ -688,7 +688,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         first_success = 0
         if request_list:
             first_request = request_list.pop(0)
-            song = first_request.get_song()
+            song = await first_request.get_song()
             if await self.try_play_queue(interaction, add_to_queue=[song]):
                 first_success = 1
 
