@@ -582,7 +582,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
         if self.play_next_song(interaction.guild.id):
             self.run_tasks()
-            await self.update_embed(interaction.guild.id)
+            if not await self.update_embed(interaction.guild.id):
+                await respond_or_followup(COG_STRINGS["music_needs_setup"], interaction, ephemeral=True, delete_after=None)
             return True
         return False
 
@@ -630,7 +631,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         if self.active_players.get(interaction.guild.id).voice_client.is_paused():
             voice_client = self.active_players.get(interaction.guild.id).voice_client
             voice_client.resume()
-            await self.update_embed(interaction.guild.id)
+            if not await self.update_embed(interaction.guild.id):
+                await respond_or_followup(COG_STRINGS["music_needs_setup"], interaction, ephemeral=True, delete_after=None)
             await respond_or_followup(COG_STRINGS["music_resume_success"], interaction, ephemeral=True)
             return True
 
@@ -652,7 +654,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             return False
 
         voice_client.pause()
-        await self.update_embed(interaction.guild.id)
+        if not await self.update_embed(interaction.guild.id):
+            await respond_or_followup(COG_STRINGS["music_needs_setup"], interaction, ephemeral=True, delete_after=None)
         await respond_or_followup(COG_STRINGS["music_paused_success"], interaction, ephemeral=True)
         return True
 
@@ -666,13 +669,15 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             return False
 
         if self.play_next_song(interaction.guild.id):
-            await self.update_embed(interaction.guild.id)
+            if not await self.update_embed(interaction.guild.id):
+                await respond_or_followup(COG_STRINGS["music_needs_setup"], interaction, ephemeral=True, delete_after=None)
             await respond_or_followup(COG_STRINGS["music_skip_success"], interaction, ephemeral=True)
             return True
 
         if self.active_players.get(interaction.guild.id).voice_client.is_playing():
             self.active_players.get(interaction.guild.id).voice_client.stop()
-        await self.update_embed(interaction.guild.id)
+        if not await self.update_embed(interaction.guild.id):
+            await respond_or_followup(COG_STRINGS["music_needs_setup"], interaction, ephemeral=True, delete_after=None)
         await respond_or_followup(COG_STRINGS["music_warn_no_next_song"], interaction, ephemeral=True)
         return False
 
@@ -697,6 +702,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     async def update_embed(self, guild_id: int):
         current_song = self.active_players.get(guild_id).current_song
         db_entry = DBSession.get(MusicChannels, guild_id=guild_id)
+        if not db_entry:
+            return False
         embed_message = await self.bot.get_guild(guild_id).get_channel(db_entry.channel_id).fetch_message(db_entry.message_id)
 
         current_embed: Embed = embed_message.embeds[0]
@@ -715,12 +722,14 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         is_paused = True if voice_client is None else not voice_client.is_playing()
 
         await embed_message.edit(embed=new_embed, view=create_music_actionbar(is_paused))
+        return True
 
     async def stop_playback(self, interaction: Interaction):
         if interaction.guild.id not in self.active_players:
             if interaction.guild.voice_client:
                 await interaction.guild.voice_client.disconnect()
-            await self.update_embed(interaction.guild.id)
+            if not await self.update_embed(interaction.guild.id):
+                await respond_or_followup(COG_STRINGS["music_needs_setup"], interaction, ephemeral=True, delete_after=None)
             return True
 
         if not self.check_valid_user(interaction.guild, interaction.user):
@@ -731,7 +740,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             self.active_players.get(interaction.guild.id).voice_client.stop()
         self.active_players.get(interaction.guild.id).queue = []
         self.play_next_song(interaction.guild.id)
-        await self.update_embed(interaction.guild.id)
+        if not await self.update_embed(interaction.guild.id):
+            await respond_or_followup(COG_STRINGS["music_needs_setup"], interaction, ephemeral=True, delete_after=None)
         await respond_or_followup(COG_STRINGS["music_stopped_success"], interaction, ephemeral=True)
         return True
 

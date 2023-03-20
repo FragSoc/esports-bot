@@ -1,5 +1,6 @@
 music_group_name = "music"
 music_thinking = "Music bot is thinking..."
+music_needs_setup = "The music channel has not been setup, please use the setup command to enable all features of the music bot ⚠️"
 music_generic_error = "An error occured! If this issue persists please contact an admin or {author} ❌"
 
 music_embed_title_idle = "No song currently playing...."
