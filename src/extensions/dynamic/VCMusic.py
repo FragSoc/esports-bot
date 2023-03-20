@@ -17,7 +17,8 @@ from discord import (
     PermissionOverwrite,
     TextChannel,
     TextStyle,
-    VoiceClient
+    VoiceClient,
+    VoiceState
 )
 from discord.app_commands import (
     Transform,
@@ -420,6 +421,33 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         self.update_author.start()
 
     @GroupCog.listener()
+    async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
+        guild_id = before.channel.guild.id if before.channel else after.channel.guild.id
+        if member.id != self.bot.user.id:
+            if guild_id not in self.active_players:
+                return
+
+            if before.channel:
+                if before.channel.guild.me not in before.channel.members:
+                    return
+                members_left = [x for x in before.channel.members if not x.bot]
+                if not members_left:
+                    await self.active_players.get(guild_id).voice_client.disconnect()
+                    return
+
+        if before.channel and not after.channel:
+            # Bot has disconnected from a channel, ensure that cleanup has occured
+            await self.cleanup_after_disconnect(guild_id)
+            return
+
+        if before.channel and after.channel:
+            if guild_id in self.active_players:
+                self.active_players.get(guild_id).voice_client = after.channel.guild.voice_client
+            if guild_id in self.inactive:
+                self.inactive.pop(guild_id)
+            return
+
+    @GroupCog.listener()
     async def on_interaction(self, interaction: Interaction):
         if not interaction.data or not interaction.data.get("custom_id"):
             return False
@@ -465,6 +493,20 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         if self.inactive and not self.check_inactive.is_running():
             self.check_inactive.start()
 
+    async def cleanup_after_disconnect(self, guild_id):
+        needs_update = False
+        if guild_id in self.active_players:
+            self.active_players.pop(guild_id)
+            needs_update = True
+        if guild_id in self.playing:
+            self.playing.remove(guild_id)
+            needs_update = True
+        if guild_id in self.inactive:
+            self.inactive.pop(guild_id)
+            needs_update = True
+        if needs_update:
+            await self.update_embed(guild_id)
+
     @tasks.loop(seconds=5)
     async def check_playing(self):
         if not self.playing:
@@ -500,9 +542,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 guilds_to_disconnect.append(guild_id)
 
         for guild in guilds_to_disconnect:
-            self.inactive.pop(guild)
             await self.active_players.get(guild).voice_client.disconnect()
-            self.active_players.pop(guild)
 
     @tasks.loop(hours=12)
     async def update_author(self):
