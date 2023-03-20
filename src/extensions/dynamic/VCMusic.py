@@ -707,14 +707,14 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         self.run_tasks()
 
     async def update_embed(self, guild_id: int):
-        current_song = self.active_players.get(guild_id).current_song
         db_entry = DBSession.get(MusicChannels, guild_id=guild_id)
         if not db_entry:
             return False
         embed_message = await self.bot.get_guild(guild_id).get_channel(db_entry.channel_id).fetch_message(db_entry.message_id)
 
         current_embed: Embed = embed_message.embeds[0]
-        if current_song:
+        if self.active_players.get(guild_id) and self.active_players.get(guild_id).current_song:
+            current_song = self.active_players.get(guild_id).current_song
             new_embed = create_music_embed(
                 color=current_embed.color,
                 author=self.author,
