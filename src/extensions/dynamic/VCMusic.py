@@ -591,7 +591,6 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         try:
             next_song = self.active_players[guild_id].queue.pop(0)
         except IndexError:
-            self.active_players[guild_id].current_song = None
             return False
 
         if self.active_players[guild_id].voice_client.is_playing():
@@ -674,8 +673,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             await respond_or_followup(COG_STRINGS["music_skip_success"], interaction, ephemeral=True)
             return True
 
-        if self.active_players.get(interaction.guild.id).voice_client.is_playing():
-            self.active_players.get(interaction.guild.id).voice_client.stop()
+        self.end_playback(interaction.guild.id)
         if not await self.update_embed(interaction.guild.id):
             await respond_or_followup(COG_STRINGS["music_needs_setup"], interaction, ephemeral=True, delete_after=None)
         await respond_or_followup(COG_STRINGS["music_warn_no_next_song"], interaction, ephemeral=True)
@@ -698,6 +696,16 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
         await respond_or_followup(queue_text, interaction, ephemeral=True)
         return True
+
+    def end_playback(self, guild_id: int):
+        if self.active_players.get(guild_id).voice_client.is_playing():
+            self.active_players.get(guild_id).voice_client.stop()
+
+        self.active_players.get(guild_id).queue = []
+        self.active_players.get(guild_id).current_song = None
+
+        self.inactive[guild_id] = datetime.now()
+        self.run_tasks()
 
     async def update_embed(self, guild_id: int):
         current_song = self.active_players.get(guild_id).current_song
@@ -736,10 +744,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
 
-        if self.active_players.get(interaction.guild.id).voice_client.is_playing():
-            self.active_players.get(interaction.guild.id).voice_client.stop()
-        self.active_players.get(interaction.guild.id).queue = []
-        self.play_next_song(interaction.guild.id)
+        self.end_playback(interaction.guild.id)
         if not await self.update_embed(interaction.guild.id):
             await respond_or_followup(COG_STRINGS["music_needs_setup"], interaction, ephemeral=True, delete_after=None)
         await respond_or_followup(COG_STRINGS["music_stopped_success"], interaction, ephemeral=True)
