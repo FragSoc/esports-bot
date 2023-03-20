@@ -67,29 +67,30 @@ class UserActionType(IntEnum):
 
     @property
     def id(self) -> str:
+        base = f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}"
         match self:
             case UserActionType.PLAY:
-                return f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}actionplay"
+                return f"{base}actionplay"
             case UserActionType.PAUSE:
-                return f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}actionpause"
+                return f"{base}actionpause"
             case UserActionType.STOP:
-                return f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}actionstop"
+                return f"{base}actionstop"
             case UserActionType.ADD_SONG:
-                return f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}actionadd"
+                return f"{base}actionadd"
             case UserActionType.VIEW_QUEUE:
-                return f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}actionview"
+                return f"{base}actionview"
             case UserActionType.EDIT_QUEUE:
-                return f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}actionedit"
+                return f"{base}actionedit"
             case UserActionType.ADD_SONG_MODAL_SUBMIT:
-                return f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}submitadd"
+                return f"{base}submitadd"
             case UserActionType.EDIT_QUEUE_MODAL_SUBMIT:
-                return f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}submitedit"
+                return f"{base}submitedit"
             case UserActionType.ADD_SONG_MODAL_SINGLE:
-                return f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}addmodalsingle"
+                return f"{base}addmodalsingle"
             case UserActionType.ADD_SONG_MODAL_MULTIPLE:
-                return f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}addmodalmultiple"
+                return f"{base}addmodalmultiple"
             case UserActionType.SKIP:
-                return f"{MUSIC_INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}skipsong"
+                return f"{base}skipsong"
             case _:
                 raise ValueError("Invalid enum type given!")
 
