@@ -513,10 +513,10 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     async def add_modal_interaction_handler(self, interaction: Interaction):
         await interaction.response.defer(ephemeral=True)
         if not self.check_valid_user(interaction.guild, interaction.user):
-            await interaction.followup.send(content=COG_STRINGS["music_invalid_voice"])
+            await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
 
-        await interaction.followup.send(content=COG_STRINGS["music_thinking"], ephemeral=True)
+        await respond_or_followup(COG_STRINGS["music_thinking"], interaction, ephemeral=True, delete_after=20)
 
         raw_modal_data = interaction.data.get("components")
 
@@ -548,8 +548,9 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             else:
                 requests_to_queue.append(result)
 
-        await interaction.followup.send(
+        await respond_or_followup(
             COG_STRINGS["music_added_song_count"].format(count=len(request_list) - len(failed_requests)),
+            interaction,
             ephemeral=True
         )
 
