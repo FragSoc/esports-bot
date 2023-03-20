@@ -5,7 +5,8 @@ music_generic_error = "An error occured! If this issue persists please contact a
 
 music_embed_title_idle = "No song currently playing...."
 music_embed_title_playing = "Now playing — {song}"
-music_embed_current_volume = "Current Volume: `{value}%` 🎵"
+music_embed_current_volume = "Current Volume — `{value}%` 🎵"
+music_embed_request_user = "Requested by — {user}"
 music_embed_footer = "Made by {author} 💖"
 music_button_set_volume = "Set Volume"
 music_button_add_song = "Add Song"

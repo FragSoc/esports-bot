@@ -171,6 +171,7 @@ class SongRequestType(IntEnum):
 class SongRequest:
     raw_request: str
     request_type: SongRequestType
+    request_member: Member
     url: str = None
     title: str = None
     thumbnail: str = None
@@ -192,7 +193,7 @@ class SongRequest:
                 if not GOOGLE_API_KEY:
                     return None
                 playlist_items = get_playlist_items(self.raw_request)
-                song_requests = parse_playlist_response(self.raw_request, playlist_items)
+                song_requests = parse_playlist_response(self.raw_request, self.request_member, playlist_items)
                 return song_requests
             case _:
                 raise ValueError("Invalid SongRequestType given!")
@@ -372,13 +373,14 @@ def get_playlist_items(playlist_url: str) -> list[dict]:
     return video_responses
 
 
-def parse_playlist_response(original_request: str, playlist_items: list[dict]) -> list[SongRequest]:
+def parse_playlist_response(original_request: str, original_member: Member, playlist_items: list[dict]) -> list[SongRequest]:
     formatted_requests = []
     for item in playlist_items:
         title, url, thumbnail = parse_playlist_item(item)
         song = SongRequest(
             raw_request=original_request,
             request_type=SongRequestType.YOUTUBE_VIDEO,
+            request_member=original_member,
             title=title,
             url=url,
             thumbnail=thumbnail
@@ -776,12 +778,19 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 multiple_request = item.get("components")[0].get("value")
 
         request_list = [
-            SongRequest(x.strip(),
-                        parse_request_type(x.strip())) for x in multiple_request.split("\n") if x.strip() not in ('',
-                                                                                                                  ' ')
+            SongRequest(raw_requst=x.strip(),
+                        request_type=parse_request_type(x.strip()),
+                        request_member=interaction.user) for x in multiple_request.split("\n") if x.strip() not in ('',
+                                                                                                                    ' ')
         ]
         if single_request.strip() not in ('', ' '):
-            request_list = [SongRequest(single_request.strip(), parse_request_type(single_request.strip()))] + request_list
+            request_list = [
+                SongRequest(
+                    single_request.strip(),
+                    parse_request_type(single_request.strip()),
+                    request_member=interaction.user
+                )
+            ] + request_list
 
         first_success = 0
         if request_list:
@@ -996,11 +1005,15 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         current_embed: Embed = embed_message.embeds[0]
         if self.active_players.get(guild_id) and self.active_players.get(guild_id).current_song:
             current_song = self.active_players.get(guild_id).current_song
+            volume = COG_STRINGS["music_embed_current_volume"].format(value=self.active_players.get(guild_id).volume)
+            user = COG_STRINGS["music_embed_request_user"].format(user=current_song.request_member.mention)
             new_embed = create_music_embed(
                 color=current_embed.color,
                 author=self.author,
-                title=COG_STRINGS["music_embed_title_playing"].format(song=current_song.title),
-                description=COG_STRINGS["music_embed_current_volume"].format(value=self.active_players.get(guild_id).volume),
+                title=COG_STRINGS["music_embed_title_playing"].format(
+                    song=current_song.title
+                ),
+                description=f"{user}\n{volume}",
                 image=current_song.thumbnail,
                 url=current_song.url
             )
