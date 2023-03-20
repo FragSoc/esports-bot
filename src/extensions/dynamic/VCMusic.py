@@ -805,7 +805,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
         queue_text = f"{current_song_text}\n\n{current_queue_text}"
 
-        await respond_or_followup(queue_text, interaction, ephemeral=True)
+        await respond_or_followup(queue_text, interaction, ephemeral=True, delete_after=None)
         return True
 
     def end_playback(self, guild_id: int):
