@@ -172,6 +172,8 @@ class SongRequest:
         with YoutubeDL(ydl_opts) as ydl:
             if self.url is None and self.request_type != SongRequestType.STRING:
                 self.url = self.raw_request
+            if not self.url.startswith("https://"):
+                self.url = f"https://{self.url}"
             info = ydl.extract_info(self.url, download=False)
             self.stream_data = info
 
@@ -201,14 +203,6 @@ class GuildMusicPlayer:
 
 
 def parse_request_type(request: str) -> SongRequestType:
-    website_regex = r"^(https:\/\/)?(www.)?"
-    if re.search(website_regex, request).group():
-        return parse_url_type(request)
-    else:
-        return SongRequestType.STRING
-
-
-def parse_url_type(request: str) -> SongRequestType:
     yt_desktop_regex = r"youtube\.com\/watch\?v="
     yt_playlist_regex = r"youtube\.com\/playlist\?list="
     yt_mobile_regex = r"youtu\.be\/"
@@ -226,7 +220,7 @@ def parse_url_type(request: str) -> SongRequestType:
     if re.search(yt_thumbnail_regex, request):
         return SongRequestType.YOUTUBE_THUMBNAIL
 
-    return SongRequestType.INVALID
+    return SongRequestType.STRING
 
 
 def convert_viewcount_to_float(short_views: str) -> float:
@@ -289,13 +283,13 @@ def parse_string_query_result(result: dict) -> dict:
     video_thumbnail = None
 
     video_url = result.get("link")
-    if parse_url_type(video_url) != SongRequestType.YOUTUBE_VIDEO:
+    if parse_request_type(video_url) != SongRequestType.YOUTUBE_VIDEO:
         raise ValueError(f"Unable to find correct video URL type for {video_title}")
 
     thumbnails = sorted(result.get("thumbnails"), key=lambda x: x.get("width"), reverse=True)
     video_thumbnail = thumbnails[0].get("url")
 
-    if parse_url_type(video_thumbnail) != SongRequestType.YOUTUBE_THUMBNAIL:
+    if parse_request_type(video_thumbnail) != SongRequestType.YOUTUBE_THUMBNAIL:
         video_thumbnail = EMBED_IMAGE_URL
 
     return {"title": video_title, "url": video_url, "thumbnail": video_thumbnail}
