@@ -919,9 +919,9 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             )
             await channel.set_permissions(
                 interaction.guild.me,
-                PermissionOverwrite(read_messages=True,
-                                    send_messages=True,
-                                    view_channel=True)
+                overwrite=PermissionOverwrite(read_messages=True,
+                                              send_messages=True,
+                                              view_channel=True)
             )
 
     @command(name=COG_STRINGS["music_play_name"], description=COG_STRINGS["music_play_description"])
