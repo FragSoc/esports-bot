@@ -421,10 +421,10 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 return False
 
     def run_tasks(self):
-        if self.playing:
+        if self.playing and not self.check_playing.is_running():
             self.check_playing.start()
 
-        if self.inactive:
+        if self.inactive and not self.check_inactive.is_running():
             self.check_inactive.start()
 
     @tasks.loop(seconds=5)
