@@ -566,6 +566,13 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             voice_client = await interaction.user.voice.channel.connect()
             self.active_players[interaction.guild.id].voice_client = voice_client
 
+        if not interaction.guild.me.voice.deaf:
+            await interaction.guild.change_voice_state(
+                channel=interaction.guild.me.voice.channel,
+                self_deaf=True,
+                self_mute=False
+            )
+
         self.active_players[interaction.guild.id].queue += add_to_queue
 
         is_playing = self.active_players[interaction.guild.id].voice_client.is_playing()
