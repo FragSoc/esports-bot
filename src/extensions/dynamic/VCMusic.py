@@ -209,7 +209,7 @@ class SongRequest:
             self.stream_data = info
 
         if self.title is None:
-            self.title = self.stream_data.get("title")
+            self.title = escape_discord_characters(self.stream_data.get("title"))
 
         if self.thumbnail is None:
             self.thumbnail = self.stream_data.get("thumbnail")
@@ -309,7 +309,7 @@ def parse_string_query_result(result: dict) -> dict:
     #     title = title_long.replace(views_long, "").replace(duration_long, "")
     #     return title
 
-    video_title = result.get("title")
+    video_title = escape_discord_characters(result.get("title"))
     video_url = None
     video_thumbnail = None
 
@@ -324,6 +324,14 @@ def parse_string_query_result(result: dict) -> dict:
         video_thumbnail = EMBED_IMAGE_URL
 
     return {"title": video_title, "url": video_url, "thumbnail": video_thumbnail}
+
+
+def escape_discord_characters(title: str):
+    characters_to_escape = ['`', '|', "_", "~"]
+    escaped_title = title
+    for character in characters_to_escape:
+        escaped_title = escaped_title.replace(character, f"\{character}")
+    return escaped_title
 
 
 def create_music_embed(
