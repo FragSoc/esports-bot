@@ -330,7 +330,7 @@ def escape_discord_characters(title: str):
     characters_to_escape = ['`', '|', "_", "~"]
     escaped_title = title
     for character in characters_to_escape:
-        escaped_title = escaped_title.replace(character, f"\{character}")
+        escaped_title = escaped_title.replace(character, f"\\{character}")
     return escaped_title
 
 
