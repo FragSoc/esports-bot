@@ -46,3 +46,18 @@ music_stopped_success = "Playback stopped ✅"
 
 music_play_name = "play"
 music_play_description = "Resumes playback or show the add song dialog if not already playing."
+
+music_pause_name = "pause"
+music_pause_description = "Pauses playback if currently playing."
+
+music_skip_name = "skip-song"
+music_skip_description = "Skips the current song. Ends playback if last song in queue."
+
+music_add_name = "add-music"
+music_add_description = "Add song(s) to the queue."
+
+music_view_queue_name = "view-queue"
+music_view_queue_description = "See the current queue."
+
+music_stop_name = "stop"
+music_stop_description = "Stops the current playback."

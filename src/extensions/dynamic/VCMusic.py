@@ -802,6 +802,31 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     async def play_command(self, interaction: Interaction):
         return await self.resume_or_start_playback(interaction)
 
+    @command(name=COG_STRINGS["music_pause_name"], description=COG_STRINGS["music_pause_description"])
+    @guild_only()
+    async def pause_command(self, interaction: Interaction):
+        return await self.pause_playback(interaction)
+
+    @command(name=COG_STRINGS["music_skip_name"], description=COG_STRINGS["music_skip_description"])
+    @guild_only()
+    async def skip_command(self, interaction: Interaction):
+        return await self.skip_song_handler(interaction)
+
+    @command(name=COG_STRINGS["music_add_name"], description=COG_STRINGS["music_add_description"])
+    @guild_only()
+    async def add_songs_command(self, interaction: Interaction):
+        return await self.add_interaction_hanlder(interaction)
+
+    @command(name=COG_STRINGS["music_view_queue_name"], description=COG_STRINGS["music_view_queue_description"])
+    @guild_only()
+    async def view_queue(self, interaction: Interaction):
+        return await self.view_queue(interaction)
+
+    @command(name=COG_STRINGS["music_stop_name"], description=COG_STRINGS["music_stop_description"])
+    @guild_only()
+    async def stop_command(self, interaction: Interaction):
+        return await self.stop_playback(interaction)
+
 
 async def setup(bot: Bot):
     await bot.add_cog(VCMusic(bot))
