@@ -65,6 +65,8 @@ class UserActionType(IntEnum):
     ADD_SONG_MODAL_MULTIPLE = 9
     SKIP = 10
     VOLUME = 11
+    VOLUME_MODAL_SUBMIT = 12
+    VOLUME_MODAL_VALUE = 13
 
     @property
     def id(self) -> str:
@@ -94,6 +96,10 @@ class UserActionType(IntEnum):
                 return f"{base}skipsong"
             case UserActionType.VOLUME:
                 return f"{base}volume"
+            case UserActionType.VOLUME_MODAL_SUBMIT:
+                return f"{base}submitvolume"
+            case UserActionType.VOLUME_MODAL_VALUE:
+                return f"{base}volumemodalvalue"
             case _:
                 raise ValueError("Invalid enum type given!")
 
@@ -129,6 +135,10 @@ class UserActionType(IntEnum):
                 return UserActionType.SKIP
             case "volume":
                 return UserActionType.VOLUME
+            case "submitvolume":
+                return UserActionType.VOLUME_MODAL_SUBMIT
+            case "volumemodalvalue":
+                return UserActionType.VOLUME_MODAL_VALUE
             case _:
                 raise ValueError(f"Invalid string given for {__class__.__name__}")
 
@@ -343,6 +353,12 @@ def create_music_actionbar(is_paused: bool = True) -> View:
         emoji="⏩",
         custom_id=UserActionType.SKIP.id
     )
+    volume_button = Button(
+        style=ButtonStyle.primary,
+        label=COG_STRINGS["music_button_set_volume"],
+        emoji="🔊",
+        custom_id=UserActionType.VOLUME.id
+    )
     add_button = Button(
         style=ButtonStyle.primary,
         label=COG_STRINGS["music_button_add_song"],
@@ -370,6 +386,7 @@ def create_music_actionbar(is_paused: bool = True) -> View:
 
     view.add_item(playback_button)
     view.add_item(skip_button)
+    view.add_item(volume_button)
     view.add_item(add_button)
     view.add_item(view_button)
     # TOOD: Implement queue editing
@@ -421,6 +438,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 return await self.pause_playback(interaction)
             case UserActionType.SKIP:
                 return await self.skip_song_handler(interaction)
+            case UserActionType.VOLUME:
+                return await self.set_volume_handler(interaction)
             case UserActionType.ADD_SONG:
                 return await self.add_interaction_hanlder(interaction)
             case UserActionType.VIEW_QUEUE:
@@ -429,6 +448,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 pass
             case UserActionType.STOP:
                 return await self.stop_playback(interaction)
+            case UserActionType.VOLUME_MODAL_SUBMIT:
+                return await self.set_volume_submit_handler(interaction)
             case UserActionType.ADD_SONG_MODAL_SUBMIT:
                 return await self.add_modal_interaction_handler(interaction)
             case UserActionType.EDIT_QUEUE_MODAL_SUBMIT:
@@ -493,6 +514,69 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             return True
 
         return self.bot.user in user.voice.channel.members
+
+    async def set_volume_handler(self, interaction: Interaction) -> bool:
+        if not self.check_valid_user(interaction.guild, interaction.user):
+            await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
+            return False
+
+        if interaction.guild.id not in self.active_players:
+            await respond_or_followup(COG_STRINGS["music_warn_not_playing"], interaction, ephemeral=True)
+            return False
+
+        modal = Modal(
+            title=COG_STRINGS["music_volume_modal_title"],
+            timeout=None,
+            custom_id=UserActionType.VOLUME_MODAL_SUBMIT.id
+        )
+
+        volume = TextInput(
+            label=COG_STRINGS["music_volume_modal_volume"],
+            custom_id=UserActionType.VOLUME_MODAL_VALUE.id,
+            required=True,
+        )
+
+        modal.add_item(volume)
+        await interaction.response.send_modal(modal)
+        return True
+
+    async def set_volume_submit_handler(self, interaction: Interaction) -> bool:
+        if not self.check_valid_user(interaction.guild, interaction.user):
+            await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
+            return False
+
+        if interaction.guild.id not in self.active_players:
+            await respond_or_followup(COG_STRINGS["music_warn_not_playing"], interaction, ephemeral=True)
+            return False
+
+        raw_modal_data = interaction.data.get("components")
+
+        raw_volume_value = ""
+
+        for item in raw_modal_data:
+            if item.get("components")[0].get("custom_id") == UserActionType.VOLUME_MODAL_VALUE.id:
+                raw_volume_value = item.get("components")[0].get("value")
+                break
+
+        if not raw_volume_value.isdigit():
+            await respond_or_followup(
+                COG_STRINGS["music_volume_modal_invalid"].format(supplied=raw_volume_value),
+                interaction,
+                ephemeral=True
+            )
+            return False
+
+        volume_value = int(raw_volume_value)
+        if volume_value < 0:
+            volume_value = 0
+        elif volume_value > 100:
+            volume_value = 100
+
+        self.active_players.get(interaction.guild.id).voice_client.source.volume = float(volume_value) / float(100)
+        self.active_players.get(interaction.guild.id).volume = volume_value
+        await self.update_embed(interaction.guild.id)
+        await respond_or_followup(COG_STRINGS["music_volume_set_success"].format(value=volume_value), interaction)
+        return True
 
     async def add_interaction_hanlder(self, interaction: Interaction) -> bool:
         if not self.check_valid_user(interaction.guild, interaction.user):
