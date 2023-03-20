@@ -174,6 +174,10 @@ class SongRequest:
                 self.url = self.raw_request
             if not self.url.startswith("https://"):
                 self.url = f"https://{self.url}"
+            if "music." in self.url:
+                self.url = self.url.replace("music.", "www.")
+            if self.request_type != SongRequestType.YOUTUBE_PLAYLIST and "&list" in self.url:
+                self.url = self.url.split("&list")[0]
             info = ydl.extract_info(self.url, download=False)
             self.stream_data = info
 
