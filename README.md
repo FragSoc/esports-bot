@@ -153,6 +153,42 @@ The user has control over the child Voice Channel name, and can limit how many/w
 - Entirely deletes either an active or archived event.
 </details>
 
+<details>
+<summary>VCMusic</summary>
+
+## VCMusic
+
+### Environment Variable: `ENABLE_VCMUSIC`
+
+#### /music set-channel \<channel\> [optional: color] [optional: clear-channel]
+
+- Sets the channel to define as the music channel.
+
+#### /music play
+
+- Resumes or starts playback.
+
+#### /music pause
+
+- Pauses playback.
+
+#### /music skip-song
+
+- Skips the current song. Stops playback if the last song in the queue.
+
+#### /music add-music
+
+- Opens the dialogue to add one or many songs to the queue.
+
+#### /music view-queue
+
+- Shows the current queue.
+
+#### /music stop
+
+- Stop the current playback.
+</details>
+
 # TODO
 
 - ~~Implement unimplemented commands in VoiceAdmin and AdminTools cogs.~~
@@ -177,7 +213,7 @@ The user has control over the child Voice Channel name, and can limit how many/w
 - [x] DefaultRoleCog ✅ Implemented as AutoRoles
 - [x] EventCategoriesCog ✅ Implemented as EventTools
 - [ ] LogChannelCog ⚠️
-- [ ] MusicCog ⚠️
+- [x] MusicCog ✅ Implemented as VCMusic
 - [ ] PingableRolesCog ❌
 - [ ] RoleReactCog ❌
 - [ ] TwitchCog ⚠️

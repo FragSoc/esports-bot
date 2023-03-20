@@ -1,13 +1,23 @@
 music_group_name = "music"
+music_thinking = "Music bot is thinking..."
+music_needs_setup = "The music channel has not been setup, please use the setup command to enable all features of the music bot ⚠️"
+music_generic_error = "An error occured! If this issue persists please contact an admin or {author} ❌"
 
 music_embed_title_idle = "No song currently playing...."
+music_embed_title_playing = "Now playing — {song}"
+music_embed_footer = "Made by {author} 💖"
 music_button_add_song = "Add Song"
 music_button_view_queue = "View Queue"
 music_button_edit_queue = "Edit Queue"
 music_button_stop_queue = "Stop"
+music_button_skip_song = "Skip"
 
 music_add_song_modal_title = "Add song(s) to queue"
-music_add_song_warn_invalid_voice = "The bot must be in the same voice channel as you to add a song ⚠️"
+music_add_song_modal_single = "Add single song"
+music_add_song_modal_multiple = "Add multiple songs"
+music_invalid_voice = "You must be in the same voice channel as the bot to perform this action ⚠️"
+
+music_added_song_count = "Successfully added `{count}` song(s) to the queue ✅"
 
 music_set_channel_name = "set-channel"
 music_set_channel_description = "Sets the music channel to the given Text Channel."
@@ -18,3 +28,36 @@ music_set_channel_clear_messages_rename = "clear-channel"
 music_set_channel_embed_color_describe = "The colour to use for the embed. Defaults to #d462fd."
 music_set_channel_embed_color_rename = "color"
 music_set_channel_success = "Successfully set {channel} as the music channel ✅"
+
+music_warn_not_playing = "There is no music currently playing ⚠️"
+music_warn_already_paused = "Playback is already paused ⚠️"
+music_paused_success = "Playback paused ✅"
+
+music_warn_already_playing = "The bot is already playing something ⚠️"
+music_resume_success = "Playback resumed ✅"
+
+music_warn_no_next_song = "Song skipped (no more songs in queue) ⚠️"
+music_skip_success = "Song skipped ✅"
+
+music_warn_view_queue_empty = "There are no songs currently queued ⚠️"
+music_empty_queue_text = "_No songs currently queued_"
+
+music_stopped_success = "Playback stopped ✅"
+
+music_play_name = "play"
+music_play_description = "Resumes playback or show the add song dialog if not already playing."
+
+music_pause_name = "pause"
+music_pause_description = "Pauses playback if currently playing."
+
+music_skip_name = "skip-song"
+music_skip_description = "Skips the current song. Ends playback if last song in queue."
+
+music_add_name = "add-music"
+music_add_description = "Add song(s) to the queue."
+
+music_view_queue_name = "view-queue"
+music_view_queue_description = "See the current queue."
+
+music_stop_name = "stop"
+music_stop_description = "Stops the current playback."
