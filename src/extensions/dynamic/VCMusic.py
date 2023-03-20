@@ -433,15 +433,13 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             return
 
         no_longer_active = []
-        now = datetime.now()
 
         for guild_id in self.playing:
             voice_client = self.active_players.get(guild_id).voice_client
             if not voice_client.is_playing() and not voice_client.is_paused():
                 if not self.play_next_song(guild_id):
-
                     no_longer_active.append(guild_id)
-                    self.inactive[guild_id] = now
+                    self.end_playback(guild_id)
                 await self.update_embed(guild_id)
 
         for guild in no_longer_active:
@@ -465,7 +463,6 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             self.inactive.pop(guild)
             await self.active_players.get(guild).voice_client.disconnect()
             self.active_players.pop(guild)
-            await self.update_embed(guild)
 
     def check_valid_user(self, guild: Guild, user: Member) -> bool:
         if not user.voice:
@@ -619,6 +616,10 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             return False
 
         if interaction.guild.id not in self.active_players:
+            return await self.add_interaction_hanlder(interaction)
+
+        if interaction.guild.id in self.inactive:
+            self.inactive.pop(interaction.guild.id)
             return await self.add_interaction_hanlder(interaction)
 
         if self.active_players.get(interaction.guild.id).voice_client.is_playing():
