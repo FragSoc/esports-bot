@@ -722,11 +722,11 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 image=current_song.thumbnail,
                 url=current_song.url
             )
+            voice_client = self.active_players.get(guild_id).voice_client
+            is_paused = True if voice_client is None else not voice_client.is_playing()
         else:
             new_embed = create_music_embed(color=current_embed.color, author=self.author)
-
-        voice_client = self.active_players.get(guild_id).voice_client
-        is_paused = True if voice_client is None else not voice_client.is_playing()
+            is_paused = True
 
         await embed_message.edit(embed=new_embed, view=create_music_actionbar(is_paused))
         return True
@@ -737,6 +737,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 await interaction.guild.voice_client.disconnect()
             if not await self.update_embed(interaction.guild.id):
                 await respond_or_followup(COG_STRINGS["music_needs_setup"], interaction, ephemeral=True, delete_after=None)
+            await respond_or_followup(COG_STRINGS["music_stopped_success"], interaction, ephemeral=True)
             return True
 
         if not self.check_valid_user(interaction.guild, interaction.user):
