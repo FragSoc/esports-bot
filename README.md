@@ -176,6 +176,10 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 - Skips the current song. Stops playback if the last song in the queue.
 
+#### /music shuffle-queue
+
+- Shuffles the current queue.
+
 #### /music add-music
 
 - Opens the dialogue to add one or many songs to the queue.

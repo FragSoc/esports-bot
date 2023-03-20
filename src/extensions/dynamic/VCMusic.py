@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import IntEnum
+from random import shuffle
 from typing import Union
 from urllib.parse import parse_qs, urlparse
 
@@ -74,6 +75,7 @@ class UserActionType(IntEnum):
     VOLUME = 11
     VOLUME_MODAL_SUBMIT = 12
     VOLUME_MODAL_VALUE = 13
+    SHUFFLE = 14
 
     @property
     def id(self) -> str:
@@ -107,6 +109,8 @@ class UserActionType(IntEnum):
                 return f"{base}submitvolume"
             case UserActionType.VOLUME_MODAL_VALUE:
                 return f"{base}volumemodalvalue"
+            case UserActionType.SHUFFLE:
+                return f"{base}shuffle"
             case _:
                 raise ValueError("Invalid enum type given!")
 
@@ -146,6 +150,8 @@ class UserActionType(IntEnum):
                 return UserActionType.VOLUME_MODAL_SUBMIT
             case "volumemodalvalue":
                 return UserActionType.VOLUME_MODAL_VALUE
+            case "shuffle":
+                return UserActionType.SHUFFLE
             case _:
                 raise ValueError(f"Invalid string given for {__class__.__name__}")
 
@@ -431,6 +437,12 @@ def create_music_actionbar(is_paused: bool = True) -> View:
         emoji="⏩",
         custom_id=UserActionType.SKIP.id
     )
+    shuffle_button = Button(
+        style=ButtonStyle.secondary,
+        label=COG_STRINGS["music_button_shuffle_queue"],
+        emoji="🔀",
+        custom_id=UserActionType.SHUFFLE.id
+    )
     volume_button = Button(
         style=ButtonStyle.primary,
         label=COG_STRINGS["music_button_set_volume"],
@@ -464,6 +476,7 @@ def create_music_actionbar(is_paused: bool = True) -> View:
 
     view.add_item(playback_button)
     view.add_item(skip_button)
+    view.add_item(shuffle_button)
     view.add_item(volume_button)
     view.add_item(add_button)
     view.add_item(view_button)
@@ -536,6 +549,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 return await self.pause_playback(interaction)
             case UserActionType.SKIP:
                 return await self.skip_song_handler(interaction)
+            case UserActionType.SHUFFLE:
+                return await self.shuffle_queue_handler(interaction)
             case UserActionType.VOLUME:
                 return await self.set_volume_handler(interaction)
             case UserActionType.ADD_SONG:
@@ -634,6 +649,20 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             return True
 
         return self.bot.user in user.voice.channel.members
+
+    async def shuffle_queue_handler(self, interaction: Interaction) -> bool:
+        if not self.check_valid_user(interaction.guild, interaction.user):
+            await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
+            return False
+
+        if interaction.guild.id not in self.active_players:
+            await respond_or_followup(COG_STRINGS["music_warn_not_playing"], interaction, ephemeral=True)
+            return False
+
+        current_queue = self.active_players.get(interaction.guild.id).queue
+        shuffle(current_queue)
+        self.active_players.get(interaction.guild.id).queue = current_queue
+        await respond_or_followup(COG_STRINGS["music_shuffle_queue_success"], interaction, ephemeral=True)
 
     async def set_volume_handler(self, interaction: Interaction) -> bool:
         if not self.check_valid_user(interaction.guild, interaction.user):
@@ -1115,6 +1144,11 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         await self.update_embed(interaction.guild.id)
         await respond_or_followup(COG_STRINGS["music_volume_set_success"].format(value=volume), interaction)
         return True
+
+    @command(name=COG_STRINGS["music_shuffle_name"], description=COG_STRINGS["music_shuffle_description"])
+    @guild_only()
+    async def shuffle_queue(self, interaction: Interaction):
+        return await self.shuffle_queue_handler(interaction)
 
 
 async def setup(bot: Bot):
