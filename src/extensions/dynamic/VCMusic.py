@@ -645,6 +645,13 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         if single_request.strip() not in ('', ' '):
             request_list = [SongRequest(single_request.strip(), parse_request_type(single_request.strip()))] + request_list
 
+        first_success = 0
+        if request_list:
+            first_request = request_list.pop(0)
+            song = first_request.get_song()
+            if await self.try_play_queue(interaction, add_to_queue=[song]):
+                first_success = 1
+
         failed_requests = []
         requests_to_queue = []
         for request in request_list:
@@ -657,7 +664,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 requests_to_queue.append(result)
 
         await respond_or_followup(
-            COG_STRINGS["music_added_song_count"].format(count=len(request_list) - len(failed_requests)),
+            COG_STRINGS["music_added_song_count"].format(count=len(request_list) - len(failed_requests) + first_success),
             interaction,
             ephemeral=True
         )
@@ -693,7 +700,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         has_current_song = self.active_players[interaction.guild.id].current_song is not None
 
         if is_playing or (is_paused and has_current_song):
-            return False
+            return True
 
         if self.play_next_song(interaction.guild.id):
             self.run_tasks()
