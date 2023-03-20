@@ -679,7 +679,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         return False
 
     async def get_current_queue(self, interaction: Interaction):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         if interaction.guild.id not in self.active_players:
             await respond_or_followup(COG_STRINGS["music_warn_view_queue_empty"], interaction, ephemeral=True)
             return True
@@ -773,7 +773,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         embed_color: Transform[Color,
                                ColourTransformer] = Color(0xd462fd)
     ):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         if clear_messages:
             await channel.purge(before=interaction.created_at)
@@ -820,7 +820,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     @command(name=COG_STRINGS["music_view_queue_name"], description=COG_STRINGS["music_view_queue_description"])
     @guild_only()
     async def view_queue(self, interaction: Interaction):
-        return await self.view_queue(interaction)
+        return await self.get_current_queue(interaction)
 
     @command(name=COG_STRINGS["music_stop_name"], description=COG_STRINGS["music_stop_description"])
     @guild_only()
