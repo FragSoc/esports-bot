@@ -64,6 +64,7 @@ class UserActionType(IntEnum):
     ADD_SONG_MODAL_SINGLE = 8
     ADD_SONG_MODAL_MULTIPLE = 9
     SKIP = 10
+    VOLUME = 11
 
     @property
     def id(self) -> str:
@@ -91,6 +92,8 @@ class UserActionType(IntEnum):
                 return f"{base}addmodalmultiple"
             case UserActionType.SKIP:
                 return f"{base}skipsong"
+            case UserActionType.VOLUME:
+                return f"{base}volume"
             case _:
                 raise ValueError("Invalid enum type given!")
 
@@ -124,6 +127,8 @@ class UserActionType(IntEnum):
                 return UserActionType.ADD_SONG_MODAL_MULTIPLE
             case "skipsong":
                 return UserActionType.SKIP
+            case "volume":
+                return UserActionType.VOLUME
             case _:
                 raise ValueError(f"Invalid string given for {__class__.__name__}")
 
