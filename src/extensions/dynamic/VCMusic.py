@@ -47,8 +47,8 @@ INTERACTION_SPLIT_CHARACTER = "."
 EMBED_IMAGE_URL = "https://static.wixstatic.com/media/d8a4c5_b42c82e4532c4f8e9f9b2f2d9bb5a53e~mv2.png/v1/fill/w_287,h_287,al_c,q_85,usm_0.66_1.00_0.01/esportslogo.webp"
 QUERY_RESULT_LIMIT = 15
 INACTIVE_TIMEOUT = 60
-# AUTHOR_ID = 244050529271939073 # main account
-AUTHOR_ID = 202978567741505536  # alt account
+AUTHOR_ID = 244050529271939073  # main account
+# AUTHOR_ID = 202978567741505536  # alt account
 FFMPEG_PLAYER_OPTIONS = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
 
 
@@ -409,14 +409,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     @GroupCog.listener()
     async def on_ready(self):
-        for guild in self.bot.guilds:
-            for member in guild.members:
-                if member.id == AUTHOR_ID:
-                    self.logger.info(f"Found current discord tag of VCAuthor: {member}")
-                    self.author = member
-                    return True
-        self.logger.info(f"Unable to find VCMusic author with id {AUTHOR_ID}, defaulting to {self.author}")
-        return False
+        self.update_author.start()
 
     @GroupCog.listener()
     async def on_interaction(self, interaction: Interaction):
@@ -502,6 +495,16 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             self.inactive.pop(guild)
             await self.active_players.get(guild).voice_client.disconnect()
             self.active_players.pop(guild)
+
+    @tasks.loop(hours=12)
+    async def update_author(self):
+        new_author = await self.bot.fetch_user(AUTHOR_ID)
+        if new_author:
+            self.author = new_author
+            self.logger.info(f"Found current discord tag of VCAuthor: {self.author}")
+            return True
+        self.logger.info(f"Unable to find VCMusic author with id {AUTHOR_ID}, defaulting to {self.author}")
+        return False
 
     def check_valid_user(self, guild: Guild, user: Member) -> bool:
         if not user.voice:
