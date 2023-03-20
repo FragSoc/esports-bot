@@ -5,6 +5,7 @@ music_generic_error = "An error occured! If this issue persists please contact a
 
 music_embed_title_idle = "No song currently playing...."
 music_embed_title_playing = "Now playing — {song}"
+music_embed_current_volume = "Current Volume: `{value}%` 🎵"
 music_embed_footer = "Made by {author} 💖"
 music_button_add_song = "Add Song"
 music_button_view_queue = "View Queue"
@@ -61,3 +62,9 @@ music_view_queue_description = "See the current queue."
 
 music_stop_name = "stop"
 music_stop_description = "Stops the current playback."
+
+music_volume_name = "set-volume"
+music_volume_description = "Sets the volume of playback."
+music_volume_volume_describe = "The volume between 0 and 100 to set to."
+music_volume_volume_rename = "volume"
+music_volume_set_success = "Volume has been set to `{value}%` ✅"

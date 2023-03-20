@@ -186,6 +186,10 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 #### /music stop
 
+#### /music volume \<volume\>
+
+- Sets the volume percentage between 0-100
+
 - Stop the current playback.
 </details>
 

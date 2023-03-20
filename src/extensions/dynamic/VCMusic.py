@@ -18,7 +18,17 @@ from discord import (
     TextStyle,
     VoiceClient
 )
-from discord.app_commands import (Transform, autocomplete, command, describe, guild_only, rename, default_permissions, checks)
+from discord.app_commands import (
+    Transform,
+    autocomplete,
+    command,
+    describe,
+    guild_only,
+    rename,
+    default_permissions,
+    checks,
+    Range
+)
 from discord.ext import tasks
 from discord.ext.commands import Bot, GroupCog
 from discord.ui import Button, Modal, TextInput, View
@@ -303,10 +313,11 @@ def create_music_embed(
     color: Color,
     author: str,
     title: str = COG_STRINGS["music_embed_title_idle"],
+    description: str = None,
     image: str = EMBED_IMAGE_URL,
     url: str = None
 ) -> Embed:
-    embed = Embed(title=title, color=color, url=url)
+    embed = Embed(title=title, description=description, color=color, url=url)
     embed.set_image(url=image)
     embed.set_footer(text=COG_STRINGS["music_embed_footer"].format(author=author))
     return embed
@@ -609,7 +620,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             FFmpegPCMAudio(stream_data.get("url"),
                            before_options=FFMPEG_PLAYER_OPTIONS,
                            options="-vn"),
-            volume=self.active_players.get(guild_id).volume
+            volume=float(self.active_players.get(guild_id).volume) / float(100)
         )
 
         self.active_players[guild_id].voice_client.play(voice_source)
@@ -726,6 +737,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 color=current_embed.color,
                 author=self.author,
                 title=COG_STRINGS["music_embed_title_playing"].format(song=current_song.title),
+                description=COG_STRINGS["music_embed_current_volume"].format(value=self.active_players.get(guild_id).volume),
                 image=current_song.thumbnail,
                 url=current_song.url
             )
@@ -833,6 +845,25 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     @guild_only()
     async def stop_command(self, interaction: Interaction):
         return await self.stop_playback(interaction)
+
+    @command(name=COG_STRINGS["music_volume_name"], description=COG_STRINGS["music_volume_description"])
+    @describe(volume=COG_STRINGS["music_volume_volume_describe"])
+    @rename(volume=COG_STRINGS["music_volume_volume_rename"])
+    @guild_only()
+    async def set_volume(self, interaction: Interaction, volume: Range[int, 0, 100]):
+        if not self.check_valid_user(interaction.guild, interaction.user):
+            await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
+            return False
+
+        if interaction.guild.id not in self.active_players:
+            await respond_or_followup(COG_STRINGS["music_warn_not_playing"], interaction, ephemeral=True)
+            return False
+
+        self.active_players.get(interaction.guild.id).voice_client.source.volume = float(volume) / float(100)
+        self.active_players.get(interaction.guild.id).volume = volume
+        await self.update_embed(interaction.guild.id)
+        await respond_or_followup(COG_STRINGS["music_volume_set_success"].format(value=volume), interaction)
+        return True
 
 
 async def setup(bot: Bot):
