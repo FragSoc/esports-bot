@@ -3,7 +3,7 @@ import logging
 from discord import Interaction, Member, VoiceChannel, VoiceState
 from discord.app_commands import (checks, command, default_permissions, describe, guild_only, rename)
 from discord.errors import Forbidden
-from discord.ext.commands import Bot, Cog
+from discord.ext.commands import Bot, GroupCog
 
 from client import EsportsBot
 from common.discord import primary_key_from_object
@@ -39,7 +39,7 @@ def member_is_owner(member: Member, channel: VoiceChannel, db_entry: VoiceAdminC
     return db_entry.owner_id == member.id
 
 
-class VoiceAdmin(Cog):
+class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_group_name"]):
 
     def __init__(self, bot: EsportsBot):
         """VoiceAdmin cog is used to dynamically create and manage Voice Channels,
@@ -56,7 +56,7 @@ class VoiceAdmin(Cog):
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__} has been added as a Cog")
 
-    @Cog.listener()
+    @GroupCog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
         """The listener used to track when users join/leave Voice Channels that the Bot has access to.
 

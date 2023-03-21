@@ -1,3 +1,5 @@
+vc_group_name = "voice"
+
 default_vc_name = "{name}'s VC"
 vc_limited_icon_with_delimited = "​📌​"
 vc_locked_icon_with_delimiter = "​🔒​"
