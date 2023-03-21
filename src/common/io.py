@@ -54,3 +54,21 @@ def load_timezones():
             return zones
     except FileNotFoundError:
         return {}
+
+
+def load_banned_words():
+    """Load a text file where each line contains a banned word.
+
+    Returns:
+        list: A list of banned words.
+    """
+    file_path = os.path.abspath(os.join(os.path.dirname(__file__), "..", "..", "banned_words.txt"))
+    try:
+        lines = []
+        with open(file_path, "rt") as file:
+            for line in file.readlines():
+                if not line.startswith("#"):
+                    lines.append(line.strip())
+        return lines
+    except FileNotFoundError:
+        return []
