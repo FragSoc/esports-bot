@@ -1,6 +1,6 @@
 events_group_name = "events"
 
-events_create_event_name = "events-create-event"
+events_create_event_name = "create-event"
 events_create_event_description = "Create a new event."
 events_create_event_title_describe = "The name of the event."
 events_create_event_title_rename = "event-name"
@@ -25,7 +25,7 @@ events_create_event_embed_description = "Welcome to the {name} sign-in channel!\
 events_signin_status_success = "You are now `{status}` to {name} ✅"
 events_signin_status_failed = "There was an issue while trying to update your sign-in status. Please try again later, or contact an admin ⚠️"
 
-events_open_event_name = "events-open-event"
+events_open_event_name = "open-event"
 events_open_event_description = "Opens a given event."
 events_open_event_event_id_describe = "The name or ID of the event to open."
 events_open_event_event_id_rename = "event"
@@ -33,7 +33,7 @@ events_open_event_success = "Successfully opened `{event_name}` ✅"
 events_open_event_warn_invalid_id = "The given ID of `{event}` is not valid. Please select the event from the list or give the ID of the event ⚠️"
 events_open_event_error_missing_event = "There was an error finding the discord event to start, please contact an admin! ❌"
 
-events_close_event_name = "events-close-event"
+events_close_event_name = "close-event"
 events_close_event_description = "Closes a given event."
 events_close_event_event_id_describe = "The name or ID of the event to close."
 events_close_event_archive_describe = "Set to 'True' if you want to retain the channels, otherwise 'False' will delete the channels."
@@ -46,7 +46,7 @@ events_close_event_success_no_archive = "Successfully closed `{event_name}` and 
 events_close_event_warn_invalid_id = "The given ID of `{event}` is not valid. Please select the event from the list or give the ID of the event ⚠️"
 events_close_event_warn_missing_event = "There was an error finding the discord event to end ⚠️"
 
-events_reschedule_event_name = "events-reschedule-event"
+events_reschedule_event_name = "reschedule-event"
 events_reschedule_event_description = "Reuse an archived channel and schedule it again."
 events_reschedule_event_event_id_describe = "The name or ID of the event to reschedule."
 events_reschedule_event_event_location_describe = "The physical location of the event."
@@ -64,7 +64,7 @@ events_reschedule_event_warn_invalid_dates = "The end time cannot be less-than o
 events_reschedule_event_warn_invalid_start = "The start date of the event cannot be in the past ⚠️"
 events_reschedule_event_error_missing_role = "Unable to find associated role for {name} event. Please contact an admin if this is an error ❌"
 
-events_remove_event_name = "events-remove-event"
+events_remove_event_name = "remove-event"
 events_remove_event_description = "Entirely deletes either an active or archived event."
 events_remove_event_event_id_describe = "The name or ID of the event to delete."
 events_remove_event_event_id_rename = "event"
