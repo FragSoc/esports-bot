@@ -1,4 +1,5 @@
 music_group_name = "music"
+music_admin_group_name = "music-admin"
 music_thinking = "Music bot is thinking..."
 music_needs_setup = "The music channel has not been setup, please use the setup command to enable all features of the music bot ⚠️"
 music_generic_error = "An error occured! If this issue persists please contact an admin or {author} ❌"

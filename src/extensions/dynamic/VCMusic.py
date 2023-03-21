@@ -24,17 +24,7 @@ from discord import (
     VoiceClient,
     VoiceState
 )
-from discord.app_commands import (
-    Range,
-    Transform,
-    autocomplete,
-    checks,
-    command,
-    default_permissions,
-    describe,
-    guild_only,
-    rename
-)
+from discord.app_commands import (Range, Transform, autocomplete, command, default_permissions, describe, guild_only, rename)
 from discord.ext import tasks
 from discord.ext.commands import Bot, GroupCog
 from discord.ui import Button, Modal, TextInput, View
@@ -48,6 +38,7 @@ from database.models import MusicChannels
 
 COG_STRINGS = load_cog_toml(__name__)
 AUTHOR_ID = 244050529271939073
+CURRENT_AUTHOR = "fuxticks#1809"
 QUERY_RESULT_LIMIT = 15
 INACTIVE_TIMEOUT = 60
 EMBED_IMAGE_URL = os.getenv("MUSIC_DEFAULT_IMAGE")
@@ -596,20 +587,118 @@ def create_music_actionbar(is_paused: bool = True) -> View:
     return view
 
 
-class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
+@default_permissions(administrator=True)
+@guild_only()
+class VCMusicAdmin(GroupCog, name=COG_STRINGS["music_admin_group_name"]):
 
     def __init__(self, bot: Bot):
         self.bot = bot
-        self.author = "fuxticks"
-        self.active_players: dict[int, GuildMusicPlayer] = {}
-        self.playing: list[int] = []
-        self.inactive: dict[int, datetime] = {}
         self.logger = logging.getLogger(__name__)
-        self.logger.info(f"{__name__} has been added as a Cog")
+        self.logger.info(f"{__name__}.{__class__.__name__} has been added as a Cog")
 
     @GroupCog.listener()
     async def on_ready(self):
         self.update_author.start()
+
+    @tasks.loop(hours=12)
+    async def update_author(self):
+        """Ensure that the author we acquired is still up to date
+
+        Returns:
+            bool: True if the a user with ID of AUTHOR_ID is found else False.
+        """
+        new_author = await self.bot.fetch_user(AUTHOR_ID)
+        if new_author:
+            CURRENT_AUTHOR = new_author
+            self.logger.info(f"Found current discord tag of VCMusic: {CURRENT_AUTHOR}")
+            return True
+        self.logger.info(f"Unable to find VCMusic author with id {AUTHOR_ID}, defaulting to {CURRENT_AUTHOR}")
+        return False
+
+    @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
+    @describe(
+        channel=COG_STRINGS["music_set_channel_channel_describe"],
+        clear_messages=COG_STRINGS["music_set_channel_clear_messages_describe"],
+        embed_color=COG_STRINGS["music_set_channel_embed_color_describe"],
+        read_only=COG_STRINGS["music_set_channel_read_only_describe"]
+    )
+    @rename(
+        channel=COG_STRINGS["music_set_channel_channel_rename"],
+        clear_messages=COG_STRINGS["music_set_channel_clear_messages_rename"],
+        embed_color=COG_STRINGS["music_set_channel_embed_color_rename"],
+        read_only=COG_STRINGS["music_set_channel_read_only_rename"]
+    )
+    @autocomplete(embed_color=ColourTransformer.autocomplete)
+    async def set_channel(
+        self,
+        interaction: Interaction,
+        channel: TextChannel,
+        clear_messages: bool = False,
+        embed_color: Transform[Color,
+                               ColourTransformer] = Color(0xd462fd),
+        read_only: bool = True
+    ):
+        """The command used to set a given channel as the defined Music Channel. This can be used to reset a channel
+        if something has gone wrong or to update the color of the embed.
+
+        Args:
+            interaction (Interaction): The interaction of the command
+            channel (TextChannel): The channel to set as the music channel.
+            clear_messages (bool, optional): If the messages in the channel should be cleared. Defaults to False.
+            embed_color (Transform[Color, ColourTransformer], optional): The color to use for the embed.
+                Defaults to Color(0xd462fd).
+            read_only (bool, optional): If the music channel should be read only. Users can interact with the music bot via
+                the buttons. Defaults to True.
+        """
+        await interaction.response.defer(ephemeral=True)
+
+        if clear_messages:
+            await channel.purge(before=interaction.created_at)
+
+        embed = create_music_embed(embed_color, self.author)
+        view = create_music_actionbar()
+
+        message = await channel.send(embed=embed, view=view)
+
+        existing = DBSession.get(MusicChannels, guild_id=interaction.guild.id)
+        if existing:
+            existing.channel_id = channel.id
+            existing.message_id = message.id
+            DBSession.update(existing)
+        else:
+            new_entry = MusicChannels(guild_id=interaction.guild.id, channel_id=channel.id, message_id=message.id)
+            DBSession.create(new_entry)
+
+        await interaction.followup.send(
+            content=COG_STRINGS["music_set_channel_success"].format(channel=channel.mention),
+            ephemeral=self.bot.only_ephemeral
+        )
+
+        if read_only:
+            await channel.set_permissions(
+                interaction.guild.default_role,
+                overwrite=PermissionOverwrite(read_messages=True,
+                                              send_messages=False,
+                                              view_channel=True)
+            )
+            await channel.set_permissions(
+                interaction.guild.me,
+                overwrite=PermissionOverwrite(read_messages=True,
+                                              send_messages=True,
+                                              view_channel=True)
+            )
+
+
+@guild_only()
+class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
+
+    def __init__(self, bot: Bot):
+        self.bot = bot
+        self.active_players: dict[int, GuildMusicPlayer] = {}
+        self.playing: list[int] = []
+        self.inactive: dict[int, datetime] = {}
+        self.logger = logging.getLogger(__name__)
+        self.logger.info(f"{__name__}.{__class__.__name__} has been added as a Cog")
 
     @GroupCog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
@@ -769,21 +858,6 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
         for guild in guilds_to_disconnect:
             await self.active_players.get(guild).voice_client.disconnect()
-
-    @tasks.loop(hours=12)
-    async def update_author(self):
-        """Ensure that the author we acquired is still up to date
-
-        Returns:
-            bool: True if the a user with ID of AUTHOR_ID is found else False.
-        """
-        new_author = await self.bot.fetch_user(AUTHOR_ID)
-        if new_author:
-            self.author = new_author
-            self.logger.info(f"Found current discord tag of VCAuthor: {self.author}")
-            return True
-        self.logger.info(f"Unable to find VCMusic author with id {AUTHOR_ID}, defaulting to {self.author}")
-        return False
 
     def check_valid_user(self, guild: Guild, user: Member) -> bool:
         """Checks if a given user is allowed to control the music bot at
@@ -1312,82 +1386,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         await respond_or_followup(COG_STRINGS["music_stopped_success"], interaction, ephemeral=True)
         return True
 
-    @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
-    @describe(
-        channel=COG_STRINGS["music_set_channel_channel_describe"],
-        clear_messages=COG_STRINGS["music_set_channel_clear_messages_describe"],
-        embed_color=COG_STRINGS["music_set_channel_embed_color_describe"],
-        read_only=COG_STRINGS["music_set_channel_read_only_describe"]
-    )
-    @rename(
-        channel=COG_STRINGS["music_set_channel_channel_rename"],
-        clear_messages=COG_STRINGS["music_set_channel_clear_messages_rename"],
-        embed_color=COG_STRINGS["music_set_channel_embed_color_rename"],
-        read_only=COG_STRINGS["music_set_channel_read_only_rename"]
-    )
-    @autocomplete(embed_color=ColourTransformer.autocomplete)
-    @default_permissions(administrator=True)
-    @checks.has_permissions(administrator=True)
-    @guild_only()
-    async def set_channel(
-        self,
-        interaction: Interaction,
-        channel: TextChannel,
-        clear_messages: bool = False,
-        embed_color: Transform[Color,
-                               ColourTransformer] = Color(0xd462fd),
-        read_only: bool = True
-    ):
-        """The command used to set a given channel as the defined Music Channel. This can be used to reset a channel
-        if something has gone wrong or to update the color of the embed.
-
-        Args:
-            interaction (Interaction): The interaction of the command
-            channel (TextChannel): The channel to set as the music channel.
-            clear_messages (bool, optional): If the messages in the channel should be cleared. Defaults to False.
-            embed_color (Transform[Color, ColourTransformer], optional): The color to use for the embed. Defaults to Color(0xd462fd).
-            read_only (bool, optional): If the music channel should be read only. Users can interact with the music bot via the buttons. Defaults to True.
-        """
-        await interaction.response.defer(ephemeral=True)
-
-        if clear_messages:
-            await channel.purge(before=interaction.created_at)
-
-        embed = create_music_embed(embed_color, self.author)
-        view = create_music_actionbar()
-
-        message = await channel.send(embed=embed, view=view)
-
-        existing = DBSession.get(MusicChannels, guild_id=interaction.guild.id)
-        if existing:
-            existing.channel_id = channel.id
-            existing.message_id = message.id
-            DBSession.update(existing)
-        else:
-            new_entry = MusicChannels(guild_id=interaction.guild.id, channel_id=channel.id, message_id=message.id)
-            DBSession.create(new_entry)
-
-        await interaction.followup.send(
-            content=COG_STRINGS["music_set_channel_success"].format(channel=channel.mention),
-            ephemeral=self.bot.only_ephemeral
-        )
-
-        if read_only:
-            await channel.set_permissions(
-                interaction.guild.default_role,
-                overwrite=PermissionOverwrite(read_messages=True,
-                                              send_messages=False,
-                                              view_channel=True)
-            )
-            await channel.set_permissions(
-                interaction.guild.me,
-                overwrite=PermissionOverwrite(read_messages=True,
-                                              send_messages=True,
-                                              view_channel=True)
-            )
-
     @command(name=COG_STRINGS["music_play_name"], description=COG_STRINGS["music_play_description"])
-    @guild_only()
     async def play_command(self, interaction: Interaction):
         """The command used to either resume playback or start playback. Invokes the PLAY UserActionType handler.
 
@@ -1397,7 +1396,6 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         return await self.resume_or_start_playback(interaction)
 
     @command(name=COG_STRINGS["music_pause_name"], description=COG_STRINGS["music_pause_description"])
-    @guild_only()
     async def pause_command(self, interaction: Interaction):
         """The command used to pause playback. Invokes the PAUSE UserActionType handler.
 
@@ -1407,7 +1405,6 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         return await self.pause_playback(interaction)
 
     @command(name=COG_STRINGS["music_skip_name"], description=COG_STRINGS["music_skip_description"])
-    @guild_only()
     async def skip_command(self, interaction: Interaction):
         """The command used to skip the current song. Invokes the SKIP UserActionType handler.
 
@@ -1417,7 +1414,6 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         return await self.skip_song_handler(interaction)
 
     @command(name=COG_STRINGS["music_add_name"], description=COG_STRINGS["music_add_description"])
-    @guild_only()
     async def add_songs_command(self, interaction: Interaction):
         """The command to add songs to the queue. Invokes the ADD_SONG UserActionType interaction handler.
 
@@ -1427,7 +1423,6 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         return await self.add_interaction_hanlder(interaction)
 
     @command(name=COG_STRINGS["music_view_queue_name"], description=COG_STRINGS["music_view_queue_description"])
-    @guild_only()
     async def view_queue(self, interaction: Interaction):
         """The command to view the current queue. Invokes the VIEW_QUEUE UserActionType interaction handler.
 
@@ -1437,7 +1432,6 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         return await self.get_current_queue(interaction)
 
     @command(name=COG_STRINGS["music_stop_name"], description=COG_STRINGS["music_stop_description"])
-    @guild_only()
     async def stop_command(self, interaction: Interaction):
         """THe command to stop playback. Invokes the STOP UserActionType interaction handler.
 
@@ -1449,7 +1443,6 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     @command(name=COG_STRINGS["music_volume_name"], description=COG_STRINGS["music_volume_description"])
     @describe(volume=COG_STRINGS["music_volume_volume_describe"])
     @rename(volume=COG_STRINGS["music_volume_volume_rename"])
-    @guild_only()
     async def set_volume(self, interaction: Interaction, volume: Range[int, 0, 100]):
         """The command to set the volume of the playback.
 
@@ -1472,7 +1465,6 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         return True
 
     @command(name=COG_STRINGS["music_shuffle_name"], description=COG_STRINGS["music_shuffle_description"])
-    @guild_only()
     async def shuffle_queue(self, interaction: Interaction):
         """The command to shuffle the queue. Invokes the SHUFFLE UserActionType interaction handler.
 
@@ -1483,4 +1475,5 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
 
 async def setup(bot: Bot):
+    await bot.add_cog(VCMusicAdmin(bot))
     await bot.add_cog(VCMusic(bot))
