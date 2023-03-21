@@ -22,7 +22,6 @@ from discord.app_commands import (
     Choice,
     Transform,
     autocomplete,
-    checks,
     choices,
     command,
     default_permissions,
@@ -179,6 +178,8 @@ async def schedule_event(
     return discord_event
 
 
+@default_permissions(administrator=True)
+@guild_only()
 class EventTools(GroupCog, name=COG_STRINGS["events_group_name"]):
 
     def __init__(self, bot: EsportsBot):
@@ -444,9 +445,6 @@ class EventTools(GroupCog, name=COG_STRINGS["events_group_name"]):
                          value=TIMEZONES.get(x).get("_alias")) for x in TIMEZONES]
     )
     @autocomplete(event_colour=ColourTransformer.autocomplete)
-    @default_permissions(administrator=True)
-    @checks.has_permissions(administrator=True)
-    @guild_only()
     async def create_event(
         self,
         interaction: Interaction,
@@ -536,9 +534,6 @@ class EventTools(GroupCog, name=COG_STRINGS["events_group_name"]):
     @describe(event_id=COG_STRINGS["events_open_event_event_id_describe"], )
     @rename(event_id=COG_STRINGS["events_open_event_event_id_rename"], )
     @autocomplete(event_id=ActiveEventTransformer.autocomplete)
-    @default_permissions(administrator=True)
-    @checks.has_permissions(administrator=True)
-    @guild_only()
     async def open_event(self, interaction: Interaction, event_id: str):
         await interaction.response.defer(ephemeral=True)
         if not event_id.isdigit():
@@ -587,9 +582,6 @@ class EventTools(GroupCog, name=COG_STRINGS["events_group_name"]):
         clear_messages=COG_STRINGS["events_close_events_clear_messages_rename"],
     )
     @autocomplete(event_id=ActiveEventTransformer.autocomplete)
-    @default_permissions(administrator=True)
-    @checks.has_permissions(administrator=True)
-    @guild_only()
     async def close_event(self, interaction: Interaction, event_id: str, archive: bool = True, clear_messages: bool = False):
         await interaction.response.defer(ephemeral=True)
         if not event_id.isdigit():
@@ -656,9 +648,6 @@ class EventTools(GroupCog, name=COG_STRINGS["events_group_name"]):
                          value=TIMEZONES.get(x).get("_alias")) for x in TIMEZONES]
     )
     @autocomplete(event_id=ArchivedEventTransformer.autocomplete)
-    @default_permissions(administrator=True)
-    @checks.has_permissions(administrator=True)
-    @guild_only()
     async def reschedule_event(
         self,
         interaction: Interaction,
@@ -744,9 +733,6 @@ class EventTools(GroupCog, name=COG_STRINGS["events_group_name"]):
     @describe(event_id=COG_STRINGS["events_remove_event_event_id_describe"])
     @rename(event_id=COG_STRINGS["events_remove_event_event_id_rename"], )
     @autocomplete(event_id=EventTransformer.autocomplete)
-    @default_permissions(administrator=True)
-    @checks.has_permissions(administrator=True)
-    @guild_only()
     async def remove_event(self, interaction: Interaction, event_id: str):
         await interaction.response.defer(ephemeral=True)
 

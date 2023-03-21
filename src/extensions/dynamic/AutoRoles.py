@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from discord import Color, Embed, Interaction, Member, Role
-from discord.app_commands import (Transform, checks, command, default_permissions, describe, guild_only, rename)
+from discord.app_commands import (Transform, command, default_permissions, describe, guild_only, rename)
 from discord.ext.commands import Bot, GroupCog
 
 from client import EsportsBot
@@ -14,6 +14,8 @@ from database.models import AutoRolesConfig
 COG_STRINGS = load_cog_toml(__name__)
 
 
+@default_permissions(administrator=True)
+@guild_only()
 class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
 
     def __init__(self, bot: EsportsBot):
@@ -41,9 +43,6 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
     @command(name=COG_STRINGS["roles_set_list_name"], description=COG_STRINGS["roles_set_list_description"])
     @describe(roles=COG_STRINGS["roles_set_list_param_describe"])
     @rename(roles=COG_STRINGS["roles_set_list_param_rename"])
-    @default_permissions(administrator=True)
-    @checks.has_permissions(administrator=True)
-    @guild_only()
     async def set_guild_roles(self, interaction: Interaction, roles: Transform[List[Role], RoleListTransformer]):
         """The command used to set the list of roles to give to members when the join the guild/server.
 
@@ -94,9 +93,6 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
     @command(name=COG_STRINGS["roles_add_role_name"], description=COG_STRINGS["roles_add_role_description"])
     @describe(role=COG_STRINGS["roles_add_role_param_describe"])
     @rename(role=COG_STRINGS["roles_add_role_param_rename"])
-    @default_permissions(administrator=True)
-    @checks.has_permissions(administrator=True)
-    @guild_only()
     async def add_guild_role(self, interaction: Interaction, role: Role):
         """The command that adds a role to the list of roles, without overriding the currently configured roles.
 
@@ -123,9 +119,6 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
     @command(name=COG_STRINGS["roles_remove_role_name"], description=COG_STRINGS["roles_remove_role_description"])
     @describe(role=COG_STRINGS["roles_remove_role_param_describe"])
     @rename(role=COG_STRINGS["roles_remove_role_param_rename"])
-    @default_permissions(administrator=True)
-    @checks.has_permissions(administrator=True)
-    @guild_only()
     async def remove_guild_role(self, interaction: Interaction, role: Role):
         """The command used to remove a role from the list of currently configured roles in a given guild/server.
 
@@ -149,9 +142,6 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
         return True
 
     @command(name=COG_STRINGS["roles_get_list_name"], description=COG_STRINGS["roles_get_list_description"])
-    @default_permissions(administrator=True)
-    @checks.has_permissions(administrator=True)
-    @guild_only()
     async def list_guild_roles(self, interaction: Interaction):
         """The command to get the current list of roles that are configured for a given guild/server.
 
@@ -178,9 +168,6 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
         return True
 
     @command(name=COG_STRINGS["roles_clear_list_name"], description=COG_STRINGS["roles_clear_list_description"])
-    @default_permissions(administrator=True)
-    @checks.has_permissions(administrator=True)
-    @guild_only()
     async def clear_guild_roles(self, interaction: Interaction):
         """The command used to entirely clear the list of Roles for a given guild/server.
 
