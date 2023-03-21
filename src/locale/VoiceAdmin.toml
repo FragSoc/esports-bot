@@ -1,4 +1,5 @@
 vc_group_name = "voice"
+vc_admin_group_name = "voice-admin"
 
 default_vc_name = "{name}'s VC"
 vc_limited_icon_with_delimited = "​📌​"

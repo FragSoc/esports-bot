@@ -1,7 +1,7 @@
 import logging
 
 from discord import Interaction, Member, VoiceChannel, VoiceState
-from discord.app_commands import (checks, command, default_permissions, describe, guild_only, rename)
+from discord.app_commands import (command, default_permissions, describe, guild_only, rename)
 from discord.errors import Forbidden
 from discord.ext.commands import Bot, GroupCog
 
@@ -100,7 +100,9 @@ def check_word_position(input_word: str, matched_banned_word: str) -> bool:
     return True
 
 
-class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_group_name"]):
+@default_permissions(administrator=True)
+@guild_only()
+class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_admin_group_name"]):
 
     def __init__(self, bot: EsportsBot):
         """VoiceAdmin cog is used to dynamically create and manage Voice Channels,
@@ -115,7 +117,7 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_group_name"]):
         """
         self.bot = bot
         self.logger = logging.getLogger(__name__)
-        self.logger.info(f"{__name__} has been added as a Cog")
+        self.logger.info(f"{__name__}.{__class__.__name__} has been added as a Cog")
 
     @GroupCog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
@@ -205,9 +207,6 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_group_name"]):
     @command(name=COG_STRINGS["vc_set_parent_name"], description=COG_STRINGS["vc_set_parent_description"])
     @describe(channel=COG_STRINGS["vc_set_parent_param_describe"])
     @rename(channel=COG_STRINGS["vc_set_parent_param_rename"])
-    @default_permissions(administrator=True)
-    @checks.has_permissions(administrator=True)
-    @guild_only()
     async def set_parent_channel(self, interaction: Interaction, channel: VoiceChannel):
         """The command used to set a given Voice Channel to be a parent Voice Channel.
 
@@ -246,9 +245,6 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_group_name"]):
     @command(name=COG_STRINGS["vc_remove_parent_name"], description=COG_STRINGS["vc_remove_parent_description"])
     @describe(channel=COG_STRINGS["vc_remove_parent_param_describe"])
     @rename(channel=COG_STRINGS["vc_remove_parent_param_rename"])
-    @default_permissions(administrator=True)
-    @checks.has_permissions(administrator=True)
-    @guild_only()
     async def remove_parent_channel(self, interaction: Interaction, channel: VoiceChannel):
         """The command used to stop a channel from being a parent Voice Channel.
 
@@ -272,8 +268,21 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_group_name"]):
         )
         return True
 
+
+@guild_only()
+class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
+
+    def __init__(self, bot: Bot):
+        """VoiceAdminUser cog is used to manage the user facing commands for the VoiceAdmin cog.
+
+        Args:
+            bot (Bot): The instance of the bot to attach the cog to.
+        """
+        self.bot = bot
+        self.logger = logging.getLogger(__name__)
+        self.logger.info(f"{__name__}.{__class__.__name__} has been added as a Cog")
+
     @command(name=COG_STRINGS["vc_get_parents_name"], description=COG_STRINGS["vc_get_parents_description"])
-    @guild_only()
     async def get_parent_channels(self, interaction: Interaction):
         """The command used to get a list of the currently set parent Voice Channels in the current guild/server.
 
@@ -304,7 +313,6 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_group_name"]):
     )
     @describe(new_name=COG_STRINGS["vc_rename_param_describe"])
     @rename(new_name=COG_STRINGS["vc_rename_param_rename"])
-    @guild_only()
     async def rename_channel(self, interaction: Interaction, new_name: str = ""):
         """The command users can use to rename their child Voice Channels.
 
@@ -362,7 +370,6 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_group_name"]):
         name=COG_STRINGS["vc_lock_name"],
         description=f"{COG_STRINGS['vc_lock_description']} {COG_STRINGS['vc_must_be_owner']}"
     )
-    @guild_only()
     async def lock_channel(self, interaction: Interaction):
         """The command that allows users to lock who can join their child Voice Channels.
         It will set the members who are allowed to join the child Voice Channel to those who are
@@ -438,7 +445,6 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_group_name"]):
         name=COG_STRINGS["vc_unlock_name"],
         description=f"{COG_STRINGS['vc_unlock_description']} {COG_STRINGS['vc_must_be_owner']}"
     )
-    @guild_only()
     async def unlock_channel(self, interaction: Interaction):
         """The command users can use to re-allow anyone to join their child Voice Channels.
 
@@ -481,7 +487,6 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_group_name"]):
     )
     @describe(user_limit=COG_STRINGS["vc_limit_param_describe"])
     @rename(user_limit=COG_STRINGS["vc_limit_param_rename"])
-    @guild_only()
     async def limit_channel(self, interaction: Interaction, user_limit: int = 0):
         """The command that allows users to set a member count limit on their child Voice Channels.
         If no user limit is provided, the current number of members in the channel is set as the limit.
@@ -529,7 +534,6 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_group_name"]):
         name=COG_STRINGS["vc_unlimit_name"],
         description=f"{COG_STRINGS['vc_unlimit_description']} {COG_STRINGS['vc_must_be_owner']}"
     )
-    @guild_only()
     async def unlimit_channel(self, interaction: Interaction):
         """The command that allows users to remove the member count limit on their child Voice Channels.
 
@@ -567,3 +571,4 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_group_name"]):
 
 async def setup(bot: Bot):
     await bot.add_cog(VoiceAdmin(bot))
+    await bot.add_cog(VoiceAdminUser(bot))

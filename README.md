@@ -59,11 +59,11 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 ### Current Commands:
 
-#### /voice set-parent \<voice-channel\>
+#### /voice-admin set-parent \<voice-channel\>
 
 - Set a Voice Channel to be a parent Voice Channel.
 
-#### /voice remove-parent \<voice-channel\>
+#### /voice-admin remove-parent \<voice-channel\>
 
 - Remove a Voice Channel from being a parent Voice Channel.
 
