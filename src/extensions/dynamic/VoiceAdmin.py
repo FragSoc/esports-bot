@@ -39,6 +39,11 @@ def member_is_owner(member: Member, channel: VoiceChannel, db_entry: VoiceAdminC
     return db_entry.owner_id == member.id
 
 
+def check_vc_name_allowed(new_name: str) -> bool:
+    # TOOD: Implement banned words list.
+    return True
+
+
 class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_group_name"]):
 
     def __init__(self, bot: EsportsBot):
@@ -268,6 +273,10 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_group_name"]):
 
         if not member_is_owner(interaction.user, voice_channel, db_entry):
             await interaction.followup.send(COG_STRINGS["vc_rename_warn_not_owner"], ephemeral=True)
+            return False
+
+        if not check_vc_name_allowed(new_name):
+            await interaction.followup.send(COG_STRINGS["vc_rename_warn_invalid_name"], ephemeral=True)
             return False
 
         name_set = new_name if new_name else f"{interaction.user.display_name}'s VC"
