@@ -613,6 +613,15 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     @GroupCog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
+        """Used to check when if the bot has been moved to another channel or disconnected. Also used
+        to check if the bot has been abandoned in a channel, in which case it disconnects itself and
+        performs the cleanup.
+
+        Args:
+            member (Member): The member whos VoiceState changed.
+            before (VoiceState): The VoiceState before the change.
+            after (VoiceState): The VoiceState after the change.
+        """
         guild_id = before.channel.guild.id if before.channel else after.channel.guild.id
         if member.id != self.bot.user.id:
             if guild_id not in self.active_players:
@@ -640,6 +649,16 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     @GroupCog.listener()
     async def on_interaction(self, interaction: Interaction):
+        """Used to listen for the VCMusic interactions. This function will only act upon
+        interactions whos custom IDs begin with the MUSIC_INTERACTION_PREFIX, and will then
+        attempt to parse the action to a UserActionType enum and perform the appropriate action.
+
+        Args:
+            interaction (Interaction): The interaction that has occured.
+
+        Returns:
+            bool: If the handling of the interaction was successful.
+        """
         if not interaction.data or not interaction.data.get("custom_id"):
             return False
 
@@ -680,13 +699,21 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 return False
 
     def run_tasks(self):
+        """Ensures that the check_playing and check_inactive tasks are running.
+        """
         if self.playing and not self.check_playing.is_running():
             self.check_playing.start()
 
         if self.inactive and not self.check_inactive.is_running():
             self.check_inactive.start()
 
-    async def cleanup_after_disconnect(self, guild_id):
+    async def cleanup_after_disconnect(self, guild_id: int):
+        """Ensures that a given guild is not left active, playing or inactive
+        after it disconnects, and ensures that the embed has been properly reset.
+
+        Args:
+            guild_id (int): The ID of the guild to cleanup.
+        """
         needs_update = False
         if guild_id in self.active_players:
             self.active_players.pop(guild_id)
@@ -702,6 +729,9 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     @tasks.loop(seconds=5)
     async def check_playing(self):
+        """For each guild that is currently marked as playing, check if it's playback has stopped.
+        For those that have, attempt to play the next song, but if no next song mark as inactive.
+        """
         if not self.playing:
             self.check_playing.cancel()
             self.check_playing.stop()
@@ -722,6 +752,9 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     @tasks.loop(seconds=10)
     async def check_inactive(self):
+        """For each guild marked as inactive, check if has been longer than INACTIVE_TIMEOUT since
+        it was marked as inactive, and if so disconnect it.
+        """
         if not self.inactive:
             self.check_inactive.cancel()
             self.check_inactive.stop()
@@ -739,6 +772,11 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
     @tasks.loop(hours=12)
     async def update_author(self):
+        """Ensure that the author we acquired is still up to date
+
+        Returns:
+            bool: True if the a user with ID of AUTHOR_ID is found else False.
+        """
         new_author = await self.bot.fetch_user(AUTHOR_ID)
         if new_author:
             self.author = new_author
@@ -748,6 +786,16 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         return False
 
     def check_valid_user(self, guild: Guild, user: Member) -> bool:
+        """Checks if a given user is allowed to control the music bot at
+        a given time.
+
+        Args:
+            guild (Guild): The guild in which the user is.
+            user (Member): The member attempting to perform an action.
+
+        Returns:
+            bool: True if the user is allowed to control the bot, False otherwise.
+        """
         if not user.voice:
             return False
 
@@ -760,6 +808,13 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         return self.bot.user in user.voice.channel.members
 
     async def shuffle_queue_handler(self, interaction: Interaction) -> bool:
+        """The interaction handler for when the custom ID matches the UserActionType
+        of SHUFFLE. This handler will peform the necessary checks and if successful,
+        will shuffle the queue from the guild where the interaction came from.
+
+        Args:
+            interaction (Interaction): The interaction to handle
+        """
         if not self.check_valid_user(interaction.guild, interaction.user):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
@@ -774,6 +829,13 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         await respond_or_followup(COG_STRINGS["music_shuffle_queue_success"], interaction, ephemeral=True)
 
     async def set_volume_handler(self, interaction: Interaction) -> bool:
+        """The interaction handler for when the custom ID of an interaction
+        matches the UserActionType of VOLUME. This handler will perform the
+        necessary checks, and if successful will show a modal to set the volume.
+
+        Args:
+            interaction (Interaction): The interaction to handle.
+        """
         if not self.check_valid_user(interaction.guild, interaction.user):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
@@ -799,6 +861,13 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         return True
 
     async def set_volume_submit_handler(self, interaction: Interaction) -> bool:
+        """The handler for when the custom ID of an interaction matches the UserActionType
+        of VOLUME_MODAL_SUBMIT. This handler will perform the necessary checks, and if
+        successful, will set the volume of the playback to given volume.
+
+        Args:
+            interaction (Interaction): The interaction to handle.
+        """
         if not self.check_valid_user(interaction.guild, interaction.user):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
@@ -837,6 +906,14 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         return True
 
     async def add_interaction_hanlder(self, interaction: Interaction) -> bool:
+        """The interaction handler for when the custom ID of an interaction matches
+        the UserActionType of ADD_SONG. This handler will perform the necessary checks,
+        and if successful, will show the modal to allow the user to add songs to the
+        queue.
+
+        Args:
+            interaction (Interaction): The interaction to handle.
+        """
         if not self.check_valid_user(interaction.guild, interaction.user):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
@@ -865,7 +942,15 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         await interaction.response.send_modal(modal)
         return True
 
-    async def add_modal_interaction_handler(self, interaction: Interaction):
+    async def add_modal_interaction_handler(self, interaction: Interaction) -> bool:
+        """The interaction handler for when the custom ID of an interaction matches
+        the UserActionType of ADD_MODAL_SUBMIT. This handler will perform the necessary
+        checks, and if successful will attempt to parse the values of the modal as song
+        requests. If any of the song requests are successful, playback will begin.
+
+        Args:
+            interaction (Interaction): The interaction to handle.
+        """
         await interaction.response.defer(ephemeral=True)
         if not self.check_valid_user(interaction.guild, interaction.user):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
@@ -929,7 +1014,20 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
         return True
 
-    async def try_play_queue(self, interaction: Interaction, add_to_queue: list = []):
+    async def try_play_queue(self, interaction: Interaction, add_to_queue: list = []) -> bool:
+        """Attempt to start playback in a given guild. The current queue will be appended to
+        by the add_to_queue arg, and if no song is currently playing or paused, playback will
+        start. If the guild from which the interaction came is currently marked as inactive,
+        ensure that it no longer is. If the guild is not already playing, ensure that it is
+        marked as playing.
+
+        Args:
+            interaction (Interaction): The interaction to handle
+            add_to_queue (list, optional): The songs to add to the queue, if any. Defaults to [].
+
+        Returns:
+            bool: If playback is successful.
+        """
         if not self.check_valid_user(interaction.guild, interaction.user):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
@@ -967,7 +1065,17 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             return True
         return False
 
-    def play_next_song(self, guild_id: int):
+    def play_next_song(self, guild_id: int) -> bool:
+        """Get the next song in the queue and play it. Does not check if the current song
+        has ended. If there are no songs in the queue, simply returns and does not modify
+        playback of the current song if any.
+
+        Args:
+            guild_id (int): The ID of the guild in which to play the next song.
+
+        Returns:
+            bool: If a new song was started.
+        """
         try:
             next_song = self.active_players[guild_id].queue.pop(0)
         except IndexError:
@@ -995,7 +1103,14 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
         return True
 
-    async def resume_or_start_playback(self, interaction: Interaction):
+    async def resume_or_start_playback(self, interaction: Interaction) -> bool:
+        """The interaction handler for when the custom ID matches the UserActionType
+        of PLAY. This handler performs the necessary checks and if successful, either
+        resumes the currently paused song, or starts playback of the queue.
+
+        Args:
+            interaction (Interaction): The interaction to handle.
+        """
         if not self.check_valid_user(interaction.guild, interaction.user):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
@@ -1022,7 +1137,14 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         await respond_or_followup(COG_STRINGS["music_generic_error"].format(author=self.author), interaction, ephemeral=True)
         return False
 
-    async def pause_playback(self, interaction: Interaction):
+    async def pause_playback(self, interaction: Interaction) -> bool:
+        """The interaction handler for when the custom ID of an interaction
+        matches the UserActionType of PAUSE. This handler will perform the
+        necessary checks and if successful, will pause the current playback.
+
+        Args:
+            interaction (Interaction): The interaction to handle.
+        """
         if not self.check_valid_user(interaction.guild, interaction.user):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
@@ -1042,7 +1164,14 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         await respond_or_followup(COG_STRINGS["music_paused_success"], interaction, ephemeral=True)
         return True
 
-    async def skip_song_handler(self, interaction: Interaction):
+    async def skip_song_handler(self, interaction: Interaction) -> bool:
+        """This handler is for when the custom ID of an interaction matches the
+        UserActionType of SKIP. The handler will perform the necessary checks and
+        if successful, will skip the currently playing song.
+
+        Args:
+            interaction (Interaction): The interaction to handle.
+        """
         if not self.check_valid_user(interaction.guild, interaction.user):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
@@ -1063,7 +1192,13 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         await respond_or_followup(COG_STRINGS["music_warn_no_next_song"], interaction, ephemeral=True)
         return False
 
-    async def get_current_queue(self, interaction: Interaction):
+    # TODO: Rename this.
+    async def get_current_queue(self, interaction: Interaction) -> bool:
+        """Handles sending the current queue to a user that requested it.
+
+        Args:
+            interaction (Interaction): The interaction of the requesting user.
+        """
         await interaction.response.defer(ephemeral=True)
         if interaction.guild.id not in self.active_players:
             await respond_or_followup(COG_STRINGS["music_warn_view_queue_empty"], interaction, ephemeral=True)
@@ -1096,6 +1231,12 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         return True
 
     def end_playback(self, guild_id: int):
+        """If a guild is currently playing, stop playing. Also ensures that the guild is
+        properly marked as inactive, and that it is no longer marked as playing.
+
+        Args:
+            guild_id (int): The ID of the guild to stop playback in.
+        """
         if self.active_players.get(guild_id).voice_client.is_playing():
             self.active_players.get(guild_id).voice_client.stop()
 
@@ -1103,9 +1244,20 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         self.active_players.get(guild_id).current_song = None
 
         self.inactive[guild_id] = datetime.now()
+        # TODO: Check self.playing list if present.
         self.run_tasks()
 
-    async def update_embed(self, guild_id: int):
+    async def update_embed(self, guild_id: int) -> bool:
+        """Update the embed of a given guild. If there is a song playing, ensure that
+        it's data is displayed, otherwise ensure that the embed is reset to default.
+        Also ensures the the action row has the correct buttons.
+
+        Args:
+            guild_id (int): The ID of the guild to update.
+            
+        Returns:
+            bool: If the embed was able to be updated.
+        """
         db_entry = DBSession.get(MusicChannels, guild_id=guild_id)
         if not db_entry:
             return False
@@ -1134,7 +1286,14 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         await embed_message.edit(embed=new_embed, view=create_music_actionbar(is_paused))
         return True
 
-    async def stop_playback(self, interaction: Interaction):
+    async def stop_playback(self, interaction: Interaction) -> bool:
+        """The interaction handler for when the custom ID of an interaction matches
+        the UserActionType of STOP. This handler performs the necessary checks and if
+        successful, will clear the queue and end playback of the current song.
+
+        Args:
+            interaction (Interaction): The interaction to handle.
+        """
         if interaction.guild.id not in self.active_players:
             if interaction.guild.voice_client:
                 await interaction.guild.voice_client.disconnect()
@@ -1179,6 +1338,16 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                                ColourTransformer] = Color(0xd462fd),
         read_only: bool = True
     ):
+        """The command used to set a given channel as the defined Music Channel. This can be used to reset a channel
+        if something has gone wrong or to update the color of the embed.
+
+        Args:
+            interaction (Interaction): The interaction of the command
+            channel (TextChannel): The channel to set as the music channel.
+            clear_messages (bool, optional): If the messages in the channel should be cleared. Defaults to False.
+            embed_color (Transform[Color, ColourTransformer], optional): The color to use for the embed. Defaults to Color(0xd462fd).
+            read_only (bool, optional): If the music channel should be read only. Users can interact with the music bot via the buttons. Defaults to True.
+        """
         await interaction.response.defer(ephemeral=True)
 
         if clear_messages:
@@ -1220,31 +1389,61 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     @command(name=COG_STRINGS["music_play_name"], description=COG_STRINGS["music_play_description"])
     @guild_only()
     async def play_command(self, interaction: Interaction):
+        """The command used to either resume playback or start playback. Invokes the PLAY UserActionType handler.
+
+        Args:
+            interaction (Interaction): The interaction of the command.
+        """
         return await self.resume_or_start_playback(interaction)
 
     @command(name=COG_STRINGS["music_pause_name"], description=COG_STRINGS["music_pause_description"])
     @guild_only()
     async def pause_command(self, interaction: Interaction):
+        """The command used to pause playback. Invokes the PAUSE UserActionType handler.
+
+        Args:
+            interaction (Interaction): The interaction of the command.
+        """
         return await self.pause_playback(interaction)
 
     @command(name=COG_STRINGS["music_skip_name"], description=COG_STRINGS["music_skip_description"])
     @guild_only()
     async def skip_command(self, interaction: Interaction):
+        """The command used to skip the current song. Invokes the SKIP UserActionType handler.
+
+        Args:
+            interaction (Interaction): The interaction of the command.
+        """
         return await self.skip_song_handler(interaction)
 
     @command(name=COG_STRINGS["music_add_name"], description=COG_STRINGS["music_add_description"])
     @guild_only()
     async def add_songs_command(self, interaction: Interaction):
+        """The command to add songs to the queue. Invokes the ADD_SONG UserActionType interaction handler.
+
+        Args:
+            interaction (Interaction): The interaction of the command.
+        """
         return await self.add_interaction_hanlder(interaction)
 
     @command(name=COG_STRINGS["music_view_queue_name"], description=COG_STRINGS["music_view_queue_description"])
     @guild_only()
     async def view_queue(self, interaction: Interaction):
+        """The command to view the current queue. Invokes the VIEW_QUEUE UserActionType interaction handler.
+
+        Args:
+            interaction (Interaction): The interaction of the command.
+        """
         return await self.get_current_queue(interaction)
 
     @command(name=COG_STRINGS["music_stop_name"], description=COG_STRINGS["music_stop_description"])
     @guild_only()
     async def stop_command(self, interaction: Interaction):
+        """THe command to stop playback. Invokes the STOP UserActionType interaction handler.
+
+        Args:
+            interaction (Interaction): The interaction of the command.
+        """
         return await self.stop_playback(interaction)
 
     @command(name=COG_STRINGS["music_volume_name"], description=COG_STRINGS["music_volume_description"])
@@ -1252,6 +1451,12 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     @rename(volume=COG_STRINGS["music_volume_volume_rename"])
     @guild_only()
     async def set_volume(self, interaction: Interaction, volume: Range[int, 0, 100]):
+        """The command to set the volume of the playback.
+
+        Args:
+            interaction (Interaction): The interaction of the command.
+            volume (Range[int, 0, 100]): The percentage value to set the volume to. Between 0-100 inclusive.
+        """
         if not self.check_valid_user(interaction.guild, interaction.user):
             await respond_or_followup(COG_STRINGS["music_invalid_voice"], interaction, ephemeral=True)
             return False
@@ -1269,6 +1474,11 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
     @command(name=COG_STRINGS["music_shuffle_name"], description=COG_STRINGS["music_shuffle_description"])
     @guild_only()
     async def shuffle_queue(self, interaction: Interaction):
+        """The command to shuffle the queue. Invokes the SHUFFLE UserActionType interaction handler.
+
+        Args:
+            interaction (Interaction): The interaction of the command.
+        """
         return await self.shuffle_queue_handler(interaction)
 
 
