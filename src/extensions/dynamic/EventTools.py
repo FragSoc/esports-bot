@@ -30,7 +30,7 @@ from discord.app_commands import (
     guild_only,
     rename
 )
-from discord.ext.commands import Bot, Cog
+from discord.ext.commands import Bot, GroupCog
 from discord.ui import Select, View
 
 from client import EsportsBot
@@ -179,7 +179,7 @@ async def schedule_event(
     return discord_event
 
 
-class EventTools(Cog):
+class EventTools(GroupCog, name=COG_STRINGS["events_group_name"]):
 
     def __init__(self, bot: EsportsBot):
         self.bot = bot
@@ -352,7 +352,7 @@ class EventTools(Cog):
 
         return signin_embed, signin_menu
 
-    @Cog.listener()
+    @GroupCog.listener()
     async def on_scheduled_event_update(self, before: ScheduledEvent, after: ScheduledEvent):
         """The event listener for when a Discord Event has an update.
 
@@ -379,7 +379,7 @@ class EventTools(Cog):
         if after.status == EventStatus.ended:
             await self.archive_event(after.guild, event_id=after.id)
 
-    @Cog.listener()
+    @GroupCog.listener()
     async def on_interaction(self, interaction: Interaction):
         f"""The event listener for when a user performs an interaction.
 
@@ -533,12 +533,8 @@ class EventTools(Cog):
         await interaction.followup.send("Created event!", ephemeral=True)
 
     @command(name=COG_STRINGS["events_open_event_name"], description=COG_STRINGS["events_open_event_description"])
-    @describe(
-        event_id=COG_STRINGS["events_open_event_event_id_describe"],
-    )
-    @rename(
-        event_id=COG_STRINGS["events_open_event_event_id_rename"],
-    )
+    @describe(event_id=COG_STRINGS["events_open_event_event_id_describe"], )
+    @rename(event_id=COG_STRINGS["events_open_event_event_id_rename"], )
     @autocomplete(event_id=ActiveEventTransformer.autocomplete)
     @default_permissions(administrator=True)
     @checks.has_permissions(administrator=True)
@@ -746,9 +742,7 @@ class EventTools(Cog):
 
     @command(name=COG_STRINGS["events_remove_event_name"], description=COG_STRINGS["events_remove_event_description"])
     @describe(event_id=COG_STRINGS["events_remove_event_event_id_describe"])
-    @rename(
-        event_id=COG_STRINGS["events_remove_event_event_id_rename"],
-    )
+    @rename(event_id=COG_STRINGS["events_remove_event_event_id_rename"], )
     @autocomplete(event_id=EventTransformer.autocomplete)
     @default_permissions(administrator=True)
     @checks.has_permissions(administrator=True)

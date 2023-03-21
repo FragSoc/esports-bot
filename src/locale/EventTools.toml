@@ -1,3 +1,5 @@
+events_group_name = "events"
+
 events_create_event_name = "events-create-event"
 events_create_event_description = "Create a new event."
 events_create_event_title_describe = "The name of the event."
