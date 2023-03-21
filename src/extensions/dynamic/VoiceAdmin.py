@@ -7,11 +7,12 @@ from discord.ext.commands import Bot, GroupCog
 
 from client import EsportsBot
 from common.discord import primary_key_from_object
-from common.io import load_cog_toml
+from common.io import load_cog_toml, load_banned_words
 from database.gateway import DBSession
 from database.models import VoiceAdminChild, VoiceAdminParent
 
 COG_STRINGS = load_cog_toml(__name__)
+BANNED_WORDS = load_banned_words()
 
 
 def channel_is_child(channel: VoiceChannel):
@@ -41,6 +42,53 @@ def member_is_owner(member: Member, channel: VoiceChannel, db_entry: VoiceAdminC
 
 def check_vc_name_allowed(new_name: str) -> bool:
     # TOOD: Implement banned words list.
+    return True
+
+
+def simple_leet_substitution(input_string: str) -> str:
+    leet_characters = {
+        "a": ["4",
+              "@"],
+        "b": ["8",
+              "ß",
+              "l3"],
+        "e": ["3"],
+        "g": ["6"],
+        "i": ["1",
+              "!"],
+        "r": ["2"],
+        "s": ["5"],
+        "t": ["7",
+              "+"],
+        "": ["_",
+             "-",
+             "'",
+             "|",
+             "~",
+             "\""]
+    }
+
+    output_string = input_string
+    for replace_with, to_replace in leet_characters.items():
+        for character in to_replace:
+            output_string = output_string.replace(character, replace_with)
+
+    return output_string
+
+
+def check_word_position(input_word: str, matched_banned_word: str) -> bool:
+    if input_word == matched_banned_word:
+        # The input word is the banned word
+        return False
+
+    if input_word.index(matched_banned_word) == 0:
+        # The banned word is at the start of the input word
+        return False
+
+    if input_word.index(matched_banned_word) == len(input_word) - len(matched_banned_word):
+        # The banned word is at the end of the input word
+        return False
+
     return True
 
 
