@@ -41,7 +41,15 @@ def member_is_owner(member: Member, channel: VoiceChannel, db_entry: VoiceAdminC
 
 
 def check_vc_name_allowed(new_name: str) -> bool:
-    # TOOD: Implement banned words list.
+    # TOOD: Remove hidden characters (zero width space, alternate white space characters)
+    trimmed_name = new_name.strip()
+    if trimmed_name in ('', ' '):
+        return True
+
+    leet_sub_name = simple_leet_substitution(trimmed_name)
+    for word in BANNED_WORDS:
+        if word in leet_sub_name:
+            return check_word_position(leet_sub_name, word)
     return True
 
 
