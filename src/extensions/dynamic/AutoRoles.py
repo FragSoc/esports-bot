@@ -3,7 +3,7 @@ from typing import List
 
 from discord import Color, Embed, Interaction, Member, Role
 from discord.app_commands import (Transform, checks, command, default_permissions, describe, guild_only, rename)
-from discord.ext.commands import Bot, Cog
+from discord.ext.commands import Bot, GroupCog
 
 from client import EsportsBot
 from common.discord import (RoleListTransformer, get_role, primary_key_from_object)
@@ -14,19 +14,19 @@ from database.models import AutoRolesConfig
 COG_STRINGS = load_cog_toml(__name__)
 
 
-class AutoRoles(Cog):
+class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
 
     def __init__(self, bot: EsportsBot):
         self.bot = bot
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__} has been added as a Cog")
 
-    @Cog.listener()
+    @GroupCog.listener()
     async def on_member_join(self, member: Member):
         if not member.pending:
             await self.assign_roles(member)
 
-    @Cog.listener()
+    @GroupCog.listener()
     async def on_member_update(self, before: Member, after: Member):
         if before.pending and not after.pending:
             self.assign_roles(after)

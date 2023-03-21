@@ -1,3 +1,5 @@
+roles_group_name = "roles"
+
 roles_set_list_name = "roles-set-list"
 roles_set_list_description = "Set the list of automatically applied roles when a user joins."
 roles_set_list_param_describe = "The list of roles to give."
