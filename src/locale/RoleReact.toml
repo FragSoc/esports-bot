@@ -1,1 +1,13 @@
 react_group_name = "reactmenu"
+
+react_create_menu_name = "create"
+react_create_menu_description = "Creates a new role react menu."
+
+react_add_item_name = "add-role"
+react_add_item_description = "Add a role to an existing menu."
+
+react_remove_item_name = "remove-role"
+react_remove_item_description = "Remove a role from an existing menu."
+
+react_delete_menu_name = "delete"
+react_delete_menu_description = "Deletes an existing menu."
