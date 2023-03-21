@@ -31,16 +31,16 @@ All commands in this cog require the user to have the administrator permission i
 
 ### Current Commands:
 
-#### /admin-member-count
+#### /admin member-count
 
 - Get the current member count of the server.
 
-#### /admin-clear-messages [optional: message-count]
+#### /admin clear-messages [optional: message-count]
 
 - Delete a specific number of messages in the given channel.
   Defaults to 5 messages, with a maximum of 100 messages.
 
-#### /admin-get-version
+#### /admin get-version
 
 - Get the current version of the Bot.
 
@@ -59,35 +59,35 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 ### Current Commands:
 
-#### /vc-set-parent \<voice-channel\>
+#### /voice set-parent \<voice-channel\>
 
 - Set a Voice Channel to be a parent Voice Channel.
 
-#### /vc-remove-parent \<voice-channel\>
+#### /voice remove-parent \<voice-channel\>
 
 - Remove a Voice Channel from being a parent Voice Channel.
 
-#### /vc-get-parents
+#### /voice get-parents
 
 - Get the list of current parent Voice Channels.
 
-#### /vc-rename \<new-name\>
+#### /voice rename \<new-name\>
 
 - Rename your current Voice Channel
 
-#### /vc-lock
+#### /voice lock
 
 - Only allow current members to (re)join your Voice Channel.
 
-#### /vc-unlock
+#### /voice unlock
 
 - Allow anyone to join your Voice Channel again.
 
-#### /vc-limit
+#### /voice limit
 
 - Set the member count limit of your Voice Channel.
 
-#### /vc-unlimit
+#### /voice remove-limit
 
 - Remove the member count limit of your Voice Channel.
 
@@ -100,24 +100,24 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 ### Environment Variable: `ENABLE_AUTOROLES`
 
-#### /roles-set-list \<One or many roles mentioned\>
+#### /roles set-list \<One or many roles mentioned\>
 
 - Sets the roles to be given to new users when they join the guild/server.
   - If one or more the of the roles are valid, any roles previously configured will be removed.
 
-#### /roles-add-role \<role\>
+#### /roles add-role \<role\>
 
 - Adds a role to the list of roles without overriding the currently configured roles.
 
-#### /roles-remove-role \<role\>
+#### /roles remove-role \<role\>
 
 - Removes a role from the list of currently configured roles.
 
-#### /roles-get-list
+#### /roles get-list
 
 - Gets the list of currently configured AutoRoles.
 
-#### /roles-clear-list
+#### /roles clear-list
 
 - Clears all roles from the list of configured AutoRoles.
 
@@ -130,25 +130,25 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 ### Environment Variable: `ENABLE_EVENTTOOLS`
 
-#### /events-create-event \<name\> \<physical location\> \<start time\> \<end time\> \<timezone\> \<common member role\> \<role color\>
+#### /events create-event \<name\> \<physical location\> \<start time\> \<end time\> \<timezone\> \<common member role\> \<role color\>
 
 - Creates a new event.
 
-#### /events-open-event \<event name or ID\>
+#### /events open-event \<event name or ID\>
 
 - Opens the given event. This will show the sign-in menu to members.
 
-#### /events-close-event \<event name or ID\> [optional: keep-event?] [optional: clear-messages?]
+#### /events close-event \<event name or ID\> [optional: keep-event?] [optional: clear-messages?]
 
 - Ends the given event. This will hide all the channels from members.
 - If keep-event is set to True, the event will be archived, otherwise it's channels and roles will be deleted.
 - If clear-messages is set to True, when the event is archived, messages in all channels will be deleted.
 
-#### /events-reschedule-event \<physical location\> \<start time\> \<end time\> \<timezone\>
+#### /events reschedule-event \<physical location\> \<start time\> \<end time\> \<timezone\>
 
 - If an event has been archived, it can be reused and rescheduled for a new date using this command.
 
-#### /events-remove-event \<event name or ID\>
+#### /events remove-event \<event name or ID\>
 
 - Entirely deletes either an active or archived event.
 </details>
