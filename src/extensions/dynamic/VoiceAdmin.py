@@ -1,6 +1,6 @@
 import logging
 
-from discord import Interaction, Member, VoiceChannel, VoiceState
+from discord import Interaction, Member, VoiceChannel, VoiceState, PermissionOverwrite
 from discord.app_commands import (command, default_permissions, describe, guild_only, rename)
 from discord.errors import Forbidden
 from discord.ext.commands import Bot, GroupCog
@@ -444,6 +444,18 @@ class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
                     f"(guildid - {voice_channel.guild.id} | channelid - {voice_channel.id}"
                 )
 
+        try:
+            await voice_channel.set_permissions(
+                voice_channel.guild.default_role,
+                overwrite=PermissionOverwrite(speak=False,
+                                              connect=False)
+            )
+        except Forbidden:
+            self.logger.error(
+                f"Unable to change permissions for {voice_channel.guild.me.top_role.name} Role for child Voice channel "
+                f"(guildid - {voice_channel.guild.id} | channelid - {voice_channel.id}"
+            )
+
         members = voice_channel.members
         for member in members:
             try:
@@ -492,12 +504,14 @@ class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
         if not db_entry.is_locked:
             if not voice_channel.permissions_synced:
                 await voice_channel.edit(sync_permissions=True)
+                await voice_channel.set_permissions(voice_channel.guild.default_role, overwrite=None)
             await interaction.followup.send(COG_STRINGS["vc_unlock_warn_not_locked"], ephemeral=True)
             return False
 
         db_entry.is_locked = False
         DBSession.update(db_entry)
         await voice_channel.edit(sync_permissions=True)
+        await voice_channel.set_permissions(voice_channel.guild.default_role, overwrite=None)
 
         await interaction.followup.send(COG_STRINGS["vc_unlock_success"], ephemeral=self.bot.only_ephemeral)
         return True
