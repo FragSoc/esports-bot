@@ -1,4 +1,4 @@
-react_group_name = "reactmenu"
+react_group_name = "reactroles"
 
 react_create_menu_name = "create"
 react_create_menu_description = "Creates a new role react menu."

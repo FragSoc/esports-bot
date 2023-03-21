@@ -1,4 +1,4 @@
-roles_group_name = "roles"
+roles_group_name = "autoroles"
 
 roles_set_list_name = "set-list"
 roles_set_list_description = "Set the list of automatically applied roles when a user joins."
