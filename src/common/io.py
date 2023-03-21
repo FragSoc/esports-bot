@@ -62,7 +62,7 @@ def load_banned_words():
     Returns:
         list: A list of banned words.
     """
-    file_path = os.path.abspath(os.join(os.path.dirname(__file__), "..", "..", "banned_words.txt"))
+    file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "banned_words.txt"))
     try:
         lines = []
         with open(file_path, "rt") as file:
