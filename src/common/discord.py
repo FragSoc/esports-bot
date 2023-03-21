@@ -9,6 +9,23 @@ from discord.app_commands import Choice, Transformer
 ROLE_REGEX = re.compile(r"(?<=\<\@\&)(\d)+(?=\>)")
 
 
+async def respond_or_followup(
+    message: str,
+    interaction: Interaction,
+    ephemeral: bool = False,
+    delete_after: float = 10,
+    **kwargs
+):
+    if interaction.response.is_done():
+        message = await interaction.followup.send(content=message, ephemeral=ephemeral, **kwargs)
+        if delete_after:
+            await message.delete(delay=delete_after)
+        return False
+    else:
+        await interaction.response.send_message(message, ephemeral=ephemeral, delete_after=delete_after, **kwargs)
+        return True
+
+
 def make_colour_list():
     all_vars = dir(Colour)
     colour_vars = dir(Colour)

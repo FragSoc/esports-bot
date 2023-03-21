@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 base = declarative_base()
 
-__all__ = ["base", "VoiceAdminParent", "VoiceAdminChild", "AutoRolesConfig", "EventToolsEvents"]
+__all__ = ["base", "VoiceAdminParent", "VoiceAdminChild", "AutoRolesConfig", "EventToolsEvents", "MusicChannels"]
 
 
 class VoiceAdminParent(base):
@@ -42,3 +42,10 @@ class EventToolsEvents(base):
     event_id = Column(BigInteger, nullable=False)
     event_name = Column(String, nullable=False)
     is_archived = Column(Boolean, nullable=True, default=False)
+
+
+class MusicChannels(base):
+    __tablename__ = "music_channels"
+    guild_id = Column(BigInteger, primary_key=True, nullable=False)
+    channel_id = Column(BigInteger, nullable=False)
+    message_id = Column(BigInteger, nullable=False)

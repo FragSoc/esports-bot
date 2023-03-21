@@ -1,0 +1,3 @@
+youtube-search-python
+yt-dlp
+google-api-python-client
