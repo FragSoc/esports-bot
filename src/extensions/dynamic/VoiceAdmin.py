@@ -143,7 +143,16 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_admin_group_name"]):
             if not channel_is_child(before.channel):
                 return
 
-            if not before.channel.category.permissions_for(before.channel.guild.me).manage_channels:
+            if not before.channel.category and not member.guild.me.guild_permissions.manage_channels:
+                self.logger.error(
+                    f"Missing permission `manage_channels` for category {before.channel.category.name} "
+                    f"(channelid - {before.channel.category.id}) in guild {before.channel.guild.name} "
+                    f"(guildid - {before.channel.guild.id})"
+                )
+                return
+            elif before.channel.category and not before.channel.category.permissions_for(
+                before.channel.guild.me
+            ).manage_channels:
                 self.logger.error(
                     f"Missing permission `manage_channels` for category {before.channel.category.name} "
                     f"(channelid - {before.channel.category.id}) in guild {before.channel.guild.name} "
@@ -177,7 +186,14 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_admin_group_name"]):
             if not channel_is_parent(after.channel):
                 return
 
-            if not after.channel.category.permissions_for(after.channel.guild.me).manage_channels:
+            if not after.channel.category and not member.guild.me.guild_permissions.manage_channels:
+                self.logger.error(
+                    f"Missing permission `manage_channels` for category {after.channel.category.name} "
+                    f"(channelid - {after.channel.category.id}) in guild {after.channel.guild.name} "
+                    f"(guildid - {after.channel.guild.id})"
+                )
+                return
+            elif after.channel.category and not after.channel.category.permissions_for(after.channel.guild.me).manage_channels:
                 self.logger.error(
                     f"Missing permission `manage_channels` for category {after.channel.category.name} "
                     f"(channelid - {after.channel.category.id}) in guild {after.channel.guild.name} "
@@ -185,9 +201,14 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_admin_group_name"]):
                 )
                 return
 
-            new_child_channel: VoiceChannel = await after.channel.category.create_voice_channel(
-                name=f"{member.display_name}'s VC"
-            )
+            if after.channel.category:
+                new_child_channel: VoiceChannel = await after.channel.category.create_voice_channel(
+                    name=f"{member.display_name}'s VC"
+                )
+            else:
+                new_child_channel: VoiceChannel = await after.channel.guild.create_voice_channel(
+                    name=f"{member.display_name}'s VC"
+                )
             db_entry: VoiceAdminChild = VoiceAdminChild(
                 primary_key=primary_key_from_object(new_child_channel),
                 guild_id=new_child_channel.guild.id,
