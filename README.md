@@ -223,7 +223,7 @@ The user has control over the child Voice Channel name, and can limit how many/w
 - [ ] LogChannelCog ⚠️
 - [x] MusicCog ✅ Implemented as VCMusic
 - [ ] PingableRolesCog ❌
-- [ ] RoleReactCog ❌
+- [ ] RoleReactCog ✅ WIP implementation in RoleReact
 - [ ] TwitchCog ⚠️
 - [ ] TwitterCog ❌
 - [x] VoicemasterCog ✅ Implemented as VocieAdmin
