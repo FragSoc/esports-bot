@@ -205,7 +205,7 @@ The user has control over the child Voice Channel name, and can limit how many/w
 - Add back functionality of previous bot (eg. Music, PingableRoles, etc.)
 - Add game deal tracker (DealTracker(?) cog)
 - Add proper support for SQLite auto increment primary keys
-- Add proper use of command groups
+- ~~Add proper use of command groups~~
 
 ## Previous extensions to implement
 
