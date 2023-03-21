@@ -1281,7 +1281,11 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         current_queue = self.active_players.get(interaction.guild.id).queue
         current_song = self.active_players.get(interaction.guild.id).current_song
 
-        current_song_text = f"__Current Song__\n{COG_STRINGS['music_embed_title_idle'] if not current_song else current_song.title}"
+        current_song_text = "__Current Song__\n"
+        if current_song:
+            current_song_text += current_song.title
+        else:
+            current_song_text += COG_STRINGS['music_embed_title_idle']
 
         QUEUE_CUTOFF = 15
         if len(current_queue) > 2 * QUEUE_CUTOFF + 5:
@@ -1328,7 +1332,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
 
         Args:
             guild_id (int): The ID of the guild to update.
-            
+
         Returns:
             bool: If the embed was able to be updated.
         """
