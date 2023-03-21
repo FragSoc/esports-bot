@@ -2,7 +2,7 @@ import logging
 
 from discord import Interaction
 from discord.app_commands import (checks, command, default_permissions, describe, guild_only, rename)
-from discord.ext.commands import Bot, Cog
+from discord.ext.commands import Bot, GroupCog
 
 from client import EsportsBot
 from common.io import load_bot_version, load_cog_toml
@@ -10,7 +10,7 @@ from common.io import load_bot_version, load_cog_toml
 COG_STRINGS = load_cog_toml(__name__)
 
 
-class AdminTools(Cog):
+class AdminTools(GroupCog, name=COG_STRINGS["admin_group_name"]):
 
     def __init__(self, bot: EsportsBot):
         """AdminTools cog is used to manage basic Administrator/Moderation tools.

@@ -1,3 +1,5 @@
+admin_group_name = "admin"
+
 admin_members_name = "admin-member-count"
 admin_members_description = "Get the current member count of the server."
 admin_members_format = "Current member count — `{count} members` ."
