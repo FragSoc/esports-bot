@@ -1,8 +1,9 @@
 import logging
 
-from discord import Color, Embed, Interaction, Message
+from discord import Color, Embed, Interaction, Message, Role
 from discord.app_commands import (Transform, autocomplete, command, default_permissions, describe, guild_only, rename)
 from discord.ext.commands import Bot, GroupCog
+from discord.ui import View, Select
 
 from common.discord import ColourTransformer, primary_key_from_object
 from common.io import load_cog_toml
@@ -30,7 +31,7 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
     @command(name=COG_STRINGS["react_create_menu_name"], description=COG_STRINGS["react_create_menu_description"])
     @describe(embed_color=COG_STRINGS["react_create_menu_embed_color_describe"])
     @rename(embed_color=COG_STRINGS["react_create_menu_embed_color_rename"])
-    @autocomplete(color=ColourTransformer.autocomplete)
+    @autocomplete(embed_color=ColourTransformer.autocomplete)
     async def create_menu(
         self,
         interaction: Interaction,
@@ -55,10 +56,45 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         await interaction.response.send_message("Menu created!", ephemeral=True)
 
     @command(name=COG_STRINGS["react_add_item_name"], description=COG_STRINGS["react_add_item_description"])
-    @describe()
-    @rename()
-    async def add_item(self, interaction: Interaction):
-        pass
+    @describe(
+        message_id=COG_STRINGS["react_add_item_message_id_describe"],
+        role=COG_STRINGS["react_add_item_role_describe"],
+        emoji=COG_STRINGS["react_add_item_emoji_describe"],
+        description=COG_STRINGS["react_add_item_description_describe"]
+    )
+    @rename(
+        message_id=COG_STRINGS["react_add_item_message_id_rename"],
+        role=COG_STRINGS["react_add_item_role_rename"],
+        emoji=COG_STRINGS["react_add_item_emoji_rename"],
+        description=COG_STRINGS["react_add_item_description_rename"]
+    )
+    async def add_item(
+        self,
+        interaction: Interaction,
+        message_id: str,
+        role: Role,
+        emoji: str = None,
+        description: str = None
+    ):
+        await interaction.response.defer(ephemeral=True)
+        message = await interaction.channel.fetch_message(message_id)
+        message_embed = message.embeds[0]
+        no_roles = not message.components
+
+        if no_roles:
+            message_embed.description = "**__Active Roles__**\n"
+            view = View(timeout=None)
+            menu = Select(custom_id=ROLE_REACT_INTERACTION_PREFIX, min_values=0, max_values=1)
+        else:
+            view = View.from_message(message, timeout=None)
+            menu = view.children[0]
+            view = view.clear_items()
+
+        menu.max_values = len(menu.options) + 1
+        menu.add_option(label=role.name, value=role.id, description=description, emoji=emoji)
+        view.add_item(menu)
+        message_embed.description += f"\n{emoji} {role.mention} - {description}"
+        await message.edit(embed=message_embed, view=view)
 
     @command(name=COG_STRINGS["react_remove_item_name"], description=COG_STRINGS["react_remove_item_description"])
     @describe()
