@@ -1,7 +1,10 @@
 react_group_name = "reactroles"
+react_empty_menu = "This menu currently has no roles in it. Add roles with the command by using the id of `{message_id}`"
 
 react_create_menu_name = "create"
 react_create_menu_description = "Creates a new role react menu."
+react_create_menu_embed_color_describe = "Sets the colour of the embed for the role menu."
+react_create_menu_embed_color_rename = "embed-colour"
 
 react_add_item_name = "add-role"
 react_add_item_description = "Add a role to an existing menu."

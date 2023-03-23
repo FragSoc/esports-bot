@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from typing import List, Union
 
-from discord import Colour, Guild, Interaction, Role, ScheduledEvent
+from discord import Colour, Guild, Interaction, Role, ScheduledEvent, Message
 from discord.abc import GuildChannel
 from discord.app_commands import Choice, Transformer
 
@@ -78,7 +78,7 @@ async def get_role(guild: Guild, role_id: int):
     return role
 
 
-def primary_key_from_object(object: Union[Role, GuildChannel, ScheduledEvent]):
+def primary_key_from_object(object: Union[Role, GuildChannel, ScheduledEvent, Message]):
     return int(f"{object.guild.id % 1000}{object.id % 1000}")
 
 
