@@ -2,9 +2,12 @@ import re
 from datetime import datetime
 from typing import List, Union
 
-from discord import Colour, Guild, Interaction, Role, ScheduledEvent, Message
+from discord import Colour, Guild, Interaction, Role, ScheduledEvent, Message, PartialEmoji
 from discord.abc import GuildChannel
 from discord.app_commands import Choice, Transformer
+
+from database.models import RoleReactMenus
+from database.gateway import DBSession
 
 ROLE_REGEX = re.compile(r"(?<=\<\@\&)(\d)+(?=\>)")
 
@@ -199,6 +202,12 @@ class ColourTransformer(Transformer):
                 return Colour.default()
 
 
+class EmojiTransformer(Transformer):
+
+    async def transform(self, interaction: Interaction, value: str) -> PartialEmoji:
+        return PartialEmoji.from_str(value)
+
+
 def get_events(guild: Guild, event_dict: dict, value: str) -> List[Choice[str]]:
     filtered_events = []
     guild_events = [event_dict.get(x) for x in event_dict if event_dict.get(x).guild_id == guild.id]
@@ -243,3 +252,11 @@ class ArchivedEventTransformer(Transformer):
 
     async def autocomplete(self, interaction: Interaction, value: str) -> List[Choice[str]]:
         return get_events(interaction.guild, self.archived_events, value)
+
+
+class RoleReactMenuTransformer(Transformer):
+
+    async def autocomplete(self, interaction: Interaction, value: Union[int, float, str]) -> List[Choice[str]]:
+        guild_role_menus = DBSession.list(RoleReactMenus, guild_id=interaction.guild.id)
+        choices = [Choice(name=f"Role menu ID: {x.message_id}", value=str(x.message_id)) for x in guild_role_menus]
+        return choices

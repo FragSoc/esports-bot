@@ -1,11 +1,11 @@
 import logging
 
-from discord import Color, Embed, Interaction, Message, Role
+from discord import Color, Embed, Interaction, Message, Role, PartialEmoji
 from discord.app_commands import (Transform, autocomplete, command, default_permissions, describe, guild_only, rename)
 from discord.ext.commands import Bot, GroupCog
 from discord.ui import View, Select
 
-from common.discord import ColourTransformer, primary_key_from_object
+from common.discord import ColourTransformer, primary_key_from_object, RoleReactMenuTransformer, EmojiTransformer
 from common.io import load_cog_toml
 from database.gateway import DBSession
 from database.models import RoleReactMenus
@@ -68,12 +68,14 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         emoji=COG_STRINGS["react_add_item_emoji_rename"],
         description=COG_STRINGS["react_add_item_description_rename"]
     )
+    @autocomplete(message_id=RoleReactMenuTransformer.autocomplete)
     async def add_item(
         self,
         interaction: Interaction,
         message_id: str,
         role: Role,
-        emoji: str = None,
+        emoji: Transform[PartialEmoji,
+                         EmojiTransformer] = None,
         description: str = None
     ):
         await interaction.response.defer(ephemeral=True)
@@ -95,6 +97,7 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         view.add_item(menu)
         message_embed.description += f"\n{emoji} {role.mention} - {description}"
         await message.edit(embed=message_embed, view=view)
+        await interaction.followup.send("Role added!")
 
     @command(name=COG_STRINGS["react_remove_item_name"], description=COG_STRINGS["react_remove_item_description"])
     @describe()
