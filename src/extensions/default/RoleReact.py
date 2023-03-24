@@ -125,10 +125,19 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         pass
 
     @command(name=COG_STRINGS["react_delete_menu_name"], description=COG_STRINGS["react_delete_menu_description"])
-    @describe()
-    @rename()
-    async def delete_menu(self, interaction: Interaction):
-        pass
+    @describe(message_id=COG_STRINGS["react_delete_menu_message_id_describe"])
+    @rename(message_id=COG_STRINGS["react_delete_menu_message_id_rename"])
+    @autocomplete(message_id=RoleReactMenuTransformer.autocomplete)
+    async def delete_menu(self, interaction: Interaction, message_id: str):
+        await interaction.response.defer(ephemeral=True)
+        message = await validate_message_id(interaction, message_id)
+        if not message:
+            return
+
+        db_item = DBSession.get(RoleReactMenus, guild_id=interaction.guild.id, message_id=message.id)
+        DBSession.delete(db_item)
+        await message.delete()
+        await respond_or_followup(f"Role menu with id `{message.id}` deleted!", interaction, ephemeral=True)
 
 
 async def setup(bot: Bot):

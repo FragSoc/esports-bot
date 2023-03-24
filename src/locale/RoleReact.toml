@@ -22,3 +22,5 @@ react_remove_item_description = "Remove a role from an existing menu."
 
 react_delete_menu_name = "delete"
 react_delete_menu_description = "Deletes an existing menu."
+react_delete_menu_message_id_describe = "The ID of the menu to delete."
+react_delete_menu_message_id_rename = "menu-id"
