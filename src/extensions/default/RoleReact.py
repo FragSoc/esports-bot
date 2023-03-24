@@ -1,11 +1,11 @@
 import logging
 
-from discord import Color, Embed, Interaction, Message, Role, PartialEmoji
+from discord import Color, Embed, Interaction, Message, Role, PartialEmoji, NotFound
 from discord.app_commands import (Transform, autocomplete, command, default_permissions, describe, guild_only, rename)
 from discord.ext.commands import Bot, GroupCog
 from discord.ui import View, Select
 
-from common.discord import ColourTransformer, primary_key_from_object, RoleReactMenuTransformer, EmojiTransformer
+from common.discord import ColourTransformer, primary_key_from_object, RoleReactMenuTransformer, EmojiTransformer, respond_or_followup
 from common.io import load_cog_toml
 from database.gateway import DBSession
 from database.models import RoleReactMenus
@@ -79,7 +79,17 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         description: str = None
     ):
         await interaction.response.defer(ephemeral=True)
-        message = await interaction.channel.fetch_message(message_id)
+        try:
+            message = await interaction.channel.fetch_message(message_id)
+        except NotFound:
+            await respond_or_followup(f"Unable to find message with ID `{message_id}`", interaction, ephemeral=True)
+            return
+
+        valid_message = DBSession.get(RoleReactMenus, guild_id=interaction.guild.id, message_id=message.id)
+        if not valid_message:
+            await respond_or_followup(f"The given ID of `{message_id}` is not a role react menu", interaction, ephemeral=True)
+            return
+
         message_embed = message.embeds[0]
         no_roles = not message.components
 
@@ -97,7 +107,7 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         view.add_item(menu)
         message_embed.description += f"\n{emoji} {role.mention} - {description}"
         await message.edit(embed=message_embed, view=view)
-        await interaction.followup.send("Role added!")
+        await respond_or_followup("Role added!", interaction, ephemeral=True)
 
     @command(name=COG_STRINGS["react_remove_item_name"], description=COG_STRINGS["react_remove_item_description"])
     @describe()
