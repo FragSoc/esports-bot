@@ -258,5 +258,11 @@ class RoleReactMenuTransformer(Transformer):
 
     async def autocomplete(self, interaction: Interaction, value: Union[int, float, str]) -> List[Choice[str]]:
         guild_role_menus = DBSession.list(RoleReactMenus, guild_id=interaction.guild.id)
-        choices = [Choice(name=f"Role menu ID: {x.message_id}", value=str(x.message_id)) for x in guild_role_menus]
-        return choices
+        if value:
+            choices = [
+                Choice(name=f"Role menu ID: {x.message_id}",
+                       value=str(x.message_id)) for x in guild_role_menus if value in str(x.message_id)
+            ]
+        else:
+            choices = [Choice(name=f"Role menu ID: {x.message_id}", value=str(x.message_id)) for x in guild_role_menus]
+        return choices[:25]
