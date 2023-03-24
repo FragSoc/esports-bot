@@ -1,5 +1,7 @@
 import logging
 
+from typing import Union
+
 from discord import Color, Embed, Interaction, Message, Role, PartialEmoji, NotFound
 from discord.app_commands import (Transform, autocomplete, command, default_permissions, describe, guild_only, rename)
 from discord.ext.commands import Bot, GroupCog
@@ -13,6 +15,21 @@ from database.models import RoleReactMenus
 COG_STRINGS = load_cog_toml(__name__)
 ROLE_REACT_INTERACTION_PREFIX = f"{__name__}.interaction"
 EMPTY_ROLE_MENU = COG_STRINGS["react_empty_menu"]
+
+
+async def validate_message_id(interaction: Interaction, message_id: int) -> Union[None, Message]:
+    try:
+        message = await interaction.channel.fetch_message(message_id)
+    except NotFound:
+        await respond_or_followup(f"Unable to find message with ID `{message_id}`", interaction, ephemeral=True)
+        return None
+
+    valid_message = DBSession.get(RoleReactMenus, guild_id=message.guild.id, message_id=message.id)
+    if not valid_message:
+        await respond_or_followup(f"The given ID of `{message_id}` is not a role react menu", interaction, ephemeral=True)
+        return None
+
+    return message
 
 
 @default_permissions(administrator=True)
@@ -79,17 +96,9 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         description: str = None
     ):
         await interaction.response.defer(ephemeral=True)
-        try:
-            message = await interaction.channel.fetch_message(message_id)
-        except NotFound:
-            await respond_or_followup(f"Unable to find message with ID `{message_id}`", interaction, ephemeral=True)
+        message = await validate_message_id(interaction, message_id)
+        if not message:
             return
-
-        valid_message = DBSession.get(RoleReactMenus, guild_id=interaction.guild.id, message_id=message.id)
-        if not valid_message:
-            await respond_or_followup(f"The given ID of `{message_id}` is not a role react menu", interaction, ephemeral=True)
-            return
-
         message_embed = message.embeds[0]
         no_roles = not message.components
 
