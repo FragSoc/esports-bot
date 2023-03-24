@@ -112,9 +112,9 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
             view = view.clear_items()
 
         menu.max_values = len(menu.options) + 1
-        menu.add_option(label=role.name, value=role.id, description=description, emoji=emoji)
+        menu.add_option(label=f"@{role.name}", value=role.id, description=description, emoji=emoji)
         view.add_item(menu)
-        message_embed.description += f"\n{emoji} {role.mention} - {description}"
+        message_embed.description += f"\n{emoji if emoji else ''} {role.mention} - {description if description else ''}"
         await message.edit(embed=message_embed, view=view)
         await respond_or_followup("Role added!", interaction, ephemeral=True)
 
