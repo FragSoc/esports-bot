@@ -19,6 +19,10 @@ react_add_item_description_rename = "role-description"
 
 react_remove_item_name = "remove-role"
 react_remove_item_description = "Remove a role from an existing menu."
+react_remove_item_message_id_describe = "The ID of the menu to remove the role from."
+react_remove_item_message_id_rename = "menu-id"
+react_remove_item_role_id_describe = "The role to remove from the menu."
+react_remove_item_role_id_rename = "role"
 
 react_delete_menu_name = "delete"
 react_delete_menu_description = "Deletes an existing menu."

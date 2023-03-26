@@ -7,7 +7,7 @@ from discord.app_commands import (Transform, autocomplete, command, default_perm
 from discord.ext.commands import Bot, GroupCog
 from discord.ui import View, Select
 
-from common.discord import ColourTransformer, primary_key_from_object, RoleReactMenuTransformer, EmojiTransformer, respond_or_followup
+from common.discord import ColourTransformer, get_roles_from_select, primary_key_from_object, RoleReactMenuTransformer, EmojiTransformer, respond_or_followup, RoleReactRoleTransformer
 from common.io import load_cog_toml
 from database.gateway import DBSession
 from database.models import RoleReactMenus
@@ -30,6 +30,28 @@ async def validate_message_id(interaction: Interaction, message_id: int) -> Unio
         return None
 
     return message
+
+
+def no_roles_embed(title: str = "Role Menu", embed_color: Color = Color.default(), message_id: int = None) -> Embed:
+    description = "" if not message_id else EMPTY_ROLE_MENU.format(message_id=message_id)
+    embed = Embed(title=title, description=description, color=embed_color)
+    if message_id:
+        embed.set_footer(text=f"Menu ID: {message_id}")
+    else:
+        embed.set_footer(text="Not yet configured...")
+
+    return embed
+
+
+def exclude_roles_from_select(role_exclude_list: list[str], menu: Select) -> Select:
+    exisiting_options = menu.options
+    menu.options = []
+
+    for option in exisiting_options:
+        if option.value not in role_exclude_list:
+            menu.add_option(label=option.label, value=option.value, description=option.description, emoji=option.emoji)
+
+    return menu
 
 
 @default_permissions(administrator=True)
@@ -55,20 +77,14 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         embed_color: Transform[Color,
                                ColourTransformer] = Color.random(),
     ):
-        embed = Embed(
-            title="Role Menu",
-            description="",
-        )
-        embed.set_footer(text="Not yet configured...")
+        embed = no_roles_embed(color=embed_color)
 
         message: Message = await interaction.channel.send(embed=embed)
         p_key = primary_key_from_object(message)
         db_item = RoleReactMenus(primary_key=p_key, guild_id=interaction.guild.id, message_id=message.id)
         DBSession.create(db_item)
 
-        embed.description = EMPTY_ROLE_MENU.format(message_id=message.id)
-        embed.set_footer(text=f"Role menu ID: {message.id}")
-        embed.color = embed_color
+        embed = no_roles_embed(color=embed_color)
         await message.edit(embed=embed)
         await interaction.response.send_message("Menu created!", ephemeral=True)
 
@@ -112,17 +128,46 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
             view = view.clear_items()
 
         menu.max_values = len(menu.options) + 1
-        menu.add_option(label=f"@{role.name}", value=role.id, description=description, emoji=emoji)
+        menu.add_option(label=f"@{role.name}", value=str(role.id), description=description, emoji=emoji)
         view.add_item(menu)
         message_embed.description += f"\n{emoji if emoji else ''} {role.mention} - {description if description else ''}"
         await message.edit(embed=message_embed, view=view)
         await respond_or_followup("Role added!", interaction, ephemeral=True)
 
     @command(name=COG_STRINGS["react_remove_item_name"], description=COG_STRINGS["react_remove_item_description"])
-    @describe()
-    @rename()
-    async def remove_item(self, interaction: Interaction):
-        pass
+    @describe(
+        message_id=COG_STRINGS["react_remove_item_message_id_describe"],
+        role_id=COG_STRINGS["react_remove_item_role_id_describe"]
+    )
+    @rename(
+        message_id=COG_STRINGS["react_remove_item_message_id_rename"],
+        role_id=COG_STRINGS["react_remove_item_role_id_rename"]
+    )
+    @autocomplete(message_id=RoleReactMenuTransformer.autocomplete, role_id=RoleReactRoleTransformer.autocomplete)
+    async def remove_item(self, interaction: Interaction, message_id: str, role_id: str):
+        await interaction.response.defer(ephemeral=True)
+        message = await validate_message_id(interaction, message_id)
+        if not message:
+            return
+
+        message_embed = message.embeds[0]
+        no_roles = not message.components
+        if no_roles:
+            await respond_or_followup("No roles to remove!", interaction, ephemeral=True)
+            return
+
+        view = View.from_message(message, timeout=None)
+        menu = view.children[0]
+        view = view.clear_items()
+        menu = exclude_roles_from_select(role_id, menu)
+        # TODO: Check number of options > 0
+        new_description = "**__Active Roles__**\n"
+        for option in menu.options:
+            new_description += f"\n{option.emoji if option.emoji else ''} <&@{option.value}> - {option.description if option.description else ''}"
+        view.add_item(menu)
+        message_embed.description = new_description
+        await message.edit(embed=message_embed, view=view)
+        await respond_or_followup("Successfully removed role!", interaction, ephemeral=True)
 
     @command(name=COG_STRINGS["react_delete_menu_name"], description=COG_STRINGS["react_delete_menu_description"])
     @describe(message_id=COG_STRINGS["react_delete_menu_message_id_describe"])
