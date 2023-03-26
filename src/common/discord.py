@@ -5,6 +5,7 @@ from typing import List, Union
 from discord import Colour, Guild, Interaction, Role, ScheduledEvent, Message, PartialEmoji
 from discord.abc import GuildChannel
 from discord.app_commands import Choice, Transformer
+from discord.ui import View
 
 from database.models import RoleReactMenus
 from database.gateway import DBSession
@@ -254,6 +255,38 @@ class ArchivedEventTransformer(Transformer):
         return get_events(interaction.guild, self.archived_events, value)
 
 
+async def get_roles_from_select(interaction: Interaction, message_id: int) -> list[Role]:
+    message = await interaction.channel.fetch_message(message_id)
+    if not message.components:
+        return []
+
+    guild_roles = interaction.guild.roles
+    guild_roles = {str(x.id): x for x in guild_roles}
+
+    view = View.from_message(message)
+    menu = view.children[0]
+    roles = []
+    for option in menu.options:
+        role = guild_roles.get(option.value)
+        if role:
+            roles.append(role)
+
+    return roles
+
+
+def get_menu_id_from_args(interaction: Interaction) -> int:
+    interaction_options = {"options": []}
+    for item in interaction.data.get("options"):
+        if item.get("type") == 1:
+            interaction_options = item
+            break
+
+    for argument in interaction_options.get("options"):
+        if argument.get("name") == "menu-id":
+            return argument.get("value")
+    return 0
+
+
 class RoleReactMenuTransformer(Transformer):
 
     async def autocomplete(self, interaction: Interaction, value: Union[int, float, str]) -> List[Choice[str]]:
@@ -265,4 +298,23 @@ class RoleReactMenuTransformer(Transformer):
             ]
         else:
             choices = [Choice(name=f"Role menu ID: {x.message_id}", value=str(x.message_id)) for x in guild_role_menus]
+        return choices[:25]
+
+
+class RoleReactRoleTransformer(Transformer):
+
+    async def autocomplete(self, interaction: Interaction, value: str) -> List[Choice[str]]:
+        menu_id = get_menu_id_from_args(interaction)
+        if not DBSession.get(RoleReactMenus, guild_id=interaction.guild.id, message_id=menu_id):
+            return []
+        menu_roles = await get_roles_from_select(interaction, menu_id)
+        if value:
+            choices = [
+                Choice(name=f"{'' if x.name.startswith('@') else '@'}{x.name}",
+                       value=str(x.id)) for x in menu_roles if value.replace("@",
+                                                                             "") in x.name
+            ]
+        else:
+            choices = [Choice(name=f"{'' if x.name.startswith('@') else '@'}{x.name}", value=str(x.id)) for x in menu_roles]
+
         return choices[:25]
