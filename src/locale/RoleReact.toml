@@ -33,7 +33,7 @@ react_remove_item_message_id_describe = "The ID of the menu to remove the role f
 react_remove_item_message_id_rename = "menu-id"
 react_remove_item_role_id_describe = "The role to remove from the menu."
 react_remove_item_role_id_rename = "role"
-react_remove_item_warn_no_items "There are no roles to remove from this menu ⚠️"
+react_remove_item_warn_no_items = "There are no roles to remove from this menu ⚠️"
 react_remove_item_success = "Successfully removed <&@{role_id}> from menu with ID `{menu_id} ✅"
 
 react_delete_menu_name = "delete"
