@@ -1,13 +1,19 @@
 import logging
-
 from typing import Union
 
-from discord import Color, Embed, Interaction, Message, Role, PartialEmoji, NotFound
+from discord import (Color, Embed, Interaction, Message, NotFound, PartialEmoji, Role)
 from discord.app_commands import (Transform, autocomplete, command, default_permissions, describe, guild_only, rename)
 from discord.ext.commands import Bot, GroupCog
-from discord.ui import View, Select
+from discord.ui import Select, View
 
-from common.discord import ColourTransformer, get_roles_from_select, primary_key_from_object, RoleReactMenuTransformer, EmojiTransformer, respond_or_followup, RoleReactRoleTransformer
+from common.discord import (
+    ColourTransformer,
+    EmojiTransformer,
+    RoleReactMenuTransformer,
+    RoleReactRoleTransformer,
+    primary_key_from_object,
+    respond_or_followup
+)
 from common.io import load_cog_toml
 from database.gateway import DBSession
 from database.models import RoleReactMenus
