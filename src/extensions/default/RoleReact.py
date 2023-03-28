@@ -77,14 +77,14 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         embed_color: Transform[Color,
                                ColourTransformer] = Color.random(),
     ):
-        embed = no_roles_embed(color=embed_color)
+        embed = no_roles_embed(embed_color=embed_color)
 
         message: Message = await interaction.channel.send(embed=embed)
         p_key = primary_key_from_object(message)
         db_item = RoleReactMenus(primary_key=p_key, guild_id=interaction.guild.id, message_id=message.id)
         DBSession.create(db_item)
 
-        embed = no_roles_embed(color=embed_color)
+        embed = no_roles_embed(embed_color=embed_color, message_id=message.id)
         await message.edit(embed=embed)
         await interaction.response.send_message("Menu created!", ephemeral=True)
 
