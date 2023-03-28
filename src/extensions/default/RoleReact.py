@@ -160,12 +160,15 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         menu = view.children[0]
         view = view.clear_items()
         menu = exclude_roles_from_select(role_id, menu)
-        # TODO: Check number of options > 0
-        new_description = "**__Active Roles__**\n"
-        for option in menu.options:
-            new_description += f"\n{option.emoji if option.emoji else ''} <&@{option.value}> - {option.description if option.description else ''}"
-        view.add_item(menu)
-        message_embed.description = new_description
+        if not menu.options:
+            message_embed = no_roles_embed(embed_color=message_embed.color, message_id=message_id)
+        else:
+            new_description = "**__Active Roles__**\n"
+            for option in menu.options:
+                new_description += f"\n{option.emoji if option.emoji else ''} <&@{option.value}> - {option.description if option.description else ''}"
+            view.add_item(menu)
+            message_embed.description = new_description
+
         await message.edit(embed=message_embed, view=view)
         await respond_or_followup("Successfully removed role!", interaction, ephemeral=True)
 
