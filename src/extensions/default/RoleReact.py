@@ -141,6 +141,8 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
             menu = view.children[0]
             view = view.clear_items()
 
+        # TODO: Allow for more than 25 options in a single menu
+
         menu.max_values = len(menu.options) + 1
         menu.add_option(label=f"@{role.name}", value=str(role.id), description=description, emoji=emoji)
         view.add_item(menu)
