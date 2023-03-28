@@ -46,7 +46,11 @@ async def validate_message_id(interaction: Interaction, message_id: int) -> Unio
     return message
 
 
-def no_roles_embed(title: str = "Role Menu", embed_color: Color = Color.default(), message_id: int = None) -> Embed:
+def no_roles_embed(
+    title: str = COG_STRINGS["react_embed_title"],
+    embed_color: Color = Color.default(),
+    message_id: int = None
+) -> Embed:
     description = "" if not message_id else EMPTY_ROLE_MENU.format(message_id=message_id)
     embed = Embed(title=title, description=description, color=embed_color)
     if message_id:
