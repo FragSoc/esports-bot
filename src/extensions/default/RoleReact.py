@@ -11,6 +11,7 @@ from common.discord import (
     EmojiTransformer,
     RoleReactMenuTransformer,
     RoleReactRoleTransformer,
+    get_roles_from_select,
     primary_key_from_object,
     respond_or_followup
 )
@@ -83,7 +84,28 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
 
     @GroupCog.listener()
     async def on_interaction(self, interaction: Interaction):
-        pass
+        if not interaction.data or not interaction.data.get("custom_id"):
+            return False
+
+        if not interaction.data.get("custom_id").startswith(ROLE_REACT_INTERACTION_PREFIX):
+            return False
+
+        await interaction.response.defer()
+
+        selected_role_ids = interaction.data.get("values")
+        menu_options = await get_roles_from_select(interaction, interaction.message.id)
+        unselected_roles = []
+        selected_roles = []
+
+        for role in menu_options:
+            if str(role.id) in selected_role_ids:
+                selected_roles.append(role)
+            else:
+                unselected_roles.append(role)
+
+        await interaction.user.remove_roles(*unselected_roles)
+        await interaction.user.add_roles(*selected_roles)
+        await respond_or_followup(COG_STRINGS["react_roles_updated"], interaction, ephemeral=True, delete_after=5)
 
     @command(name=COG_STRINGS["react_create_menu_name"], description=COG_STRINGS["react_create_menu_description"])
     @describe(embed_color=COG_STRINGS["react_create_menu_embed_color_describe"])
@@ -143,6 +165,7 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         else:
             view = View.from_message(message, timeout=None)
             menu = view.children[0]
+            menu.custom_id = ROLE_REACT_INTERACTION_PREFIX
             view = view.clear_items()
 
         # TODO: Allow for more than 25 options in a single menu

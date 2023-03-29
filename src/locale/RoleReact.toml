@@ -1,6 +1,7 @@
 react_group_name = "reactroles"
 react_warn_message_not_found = "Unable to find a message in this channel with ID `{message_id}` ⚠️"
 react_warn_invalid_message_found = "The message with ID `{message_id}` is not a role react menu ⚠️"
+react_roles_updated = "Roles updated successfully ✅"
 
 react_embed_title = "Role Reaction Menu"
 react_embed_description_title = "**__Menu Roles__**"
