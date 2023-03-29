@@ -242,3 +242,38 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
             interaction,
             ephemeral=True
         )
+
+    async def remove_item(self, interaction: Interaction, menu_id: str, role_id: str):
+        await interaction.response.defer()
+
+        message = await validate_message_id(interaction, menu_id)
+        if not message:
+            return
+
+        embed_color = message.embeds[0].color
+        message_view = View.from_message(message)
+        current_options = options_from_view(message_view, interaction.guild)
+
+        if not current_options:
+            await respond_or_followup(COG_STRINGS["react_remove_item_warn_no_items"], interaction, ephemeral=True)
+            return
+
+        option_to_remove = None
+        for option in current_options:
+            if str(option.role_id) == role_id:
+                option_to_remove = option
+                break
+
+        if option_to_remove:
+            current_options.remove(option_to_remove)
+
+        updated_view = view_from_options(current_options)
+        updated_embeds = embeds_from_options(current_options, menu_id, embed_color)
+
+        await message.edit(view=updated_view, embeds=updated_embeds)
+        await respond_or_followup(
+            COG_STRINGS["react_remove_item_success"].format(role_id=role_id,
+                                                            menu_id=menu_id),
+            interaction,
+            ephemeral=True
+        )
