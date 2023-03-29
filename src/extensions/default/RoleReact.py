@@ -4,11 +4,11 @@ import logging
 
 from discord import Role, Embed, Color, Guild, Interaction, NotFound, Message
 from discord.ui import View, Select
-from discord.app_commands import guild_only, default_permissions
+from discord.app_commands import guild_only, default_permissions, Transform, command, describe, rename, autocomplete
 from discord.ext.commands import GroupCog, Bot
 
 from common.io import load_cog_toml
-from common.discord import respond_or_followup
+from common.discord import primary_key_from_object, respond_or_followup, ColourTransformer
 from database.gateway import DBSession
 from database.models import RoleReactMenus
 
@@ -172,3 +172,20 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         await interaction.user.remove_roles(*unselected_roles)
         await interaction.user.add_roles(*selected_roles)
         await respond_or_followup(COG_STRINGS["react_roles_updated"], interaction, ephemeral=True, delete_after=5)
+
+    @command(name=COG_STRINGS["react_create_menu_name"], description=COG_STRINGS["react_create_menu_description"])
+    @describe(embed_color=COG_STRINGS["react_create_menu_embed_color_describe"])
+    @rename(embed_color=COG_STRINGS["react_create_menu_embed_color_rename"])
+    @autocomplete(embed_color=ColourTransformer.autocomplete)
+    async def create_menu(self, interaction: Interaction, color: Transform[Color, ColourTransformer] = Color.random()):
+        await interaction.response.defer()
+
+        message = await interaction.channel.send("​")
+        db_primary_key = primary_key_from_object(message)
+        db_item = RoleReactMenus(primary_key=db_primary_key, guild_id=interaction.guild.id, message_id=message.id)
+        DBSession.create(db_item)
+
+        message_embeds = embeds_from_options([], menu_id=message.id, color=color)
+        await message.edit(embeds=message_embeds)
+
+        await respond_or_followup(COG_STRINGS["react_create_menu_success"], ephemeral=self.bot.only_ephemeral)
