@@ -21,6 +21,7 @@ from database.models import RoleReactMenus
 
 COG_STRINGS = load_cog_toml(__name__)
 ROLE_REACT_INTERACTION_PREFIX = f"{__name__}."
+MAX_VIEW_ITEM_COUNT = 25
 
 
 @dataclass
@@ -91,11 +92,14 @@ def options_from_view(view: View, guild: Guild = None) -> list[RoleOption]:
 
 
 def view_from_options(options: list[RoleOption]) -> View:
-    if len(options) > 25 * 25:
-        raise ValueError(f"Too many options supplied to a single view. Option count exceeds 25 * 25 ({len(options)})")
+    if len(options) > MAX_VIEW_ITEM_COUNT * MAX_VIEW_ITEM_COUNT:
+        raise ValueError(
+            f"Too many options supplied to a single view. "
+            f"Option count exceeds {MAX_VIEW_ITEM_COUNT} * {MAX_VIEW_ITEM_COUNT} ({len(options)})"
+        )
 
     view = View(timeout=None)
-    child_select = Select(custom_id=ROLE_REACT_INTERACTION_PREFIX, min_values=0, max_values=0)
+    child_select = Select(custom_id=f"{ROLE_REACT_INTERACTION_PREFIX}{0}", min_values=0, max_values=0)
     for idx, option in enumerate(options):
         child_select.add_option(
             label=f"@{option.role.name}",
@@ -105,9 +109,13 @@ def view_from_options(options: list[RoleOption]) -> View:
         )
         child_select.max_values += 1
 
-        if (idx + 1) % 5 == 0:
+        if (idx + 1) % MAX_VIEW_ITEM_COUNT == 0:
             view.add_item(child_select)
-            child_select = Select(custom_id=f"{ROLE_REACT_INTERACTION_PREFIX}.{idx}", min_values=0, max_values=0)
+            child_select = Select(
+                custom_id=f"{ROLE_REACT_INTERACTION_PREFIX}{(idx+1)//MAX_VIEW_ITEM_COUNT}",
+                min_values=0,
+                max_values=0
+            )
         elif idx == len(options) - 1:
             view.add_item(child_select)
 
@@ -128,8 +136,11 @@ def no_options_embed(menu_id: int = None, color: Color = Color.random()) -> Embe
 
 
 def embeds_from_options(options: list[RoleOption], menu_id: int = None, color: Color = Color.random()) -> list[Embed]:
-    if len(options) > 25 * 25:
-        raise ValueError(f"Too many options supplied to a single message. Option count exceeds 25 * 25 ({len(options)})")
+    if len(options) > MAX_VIEW_ITEM_COUNT * MAX_VIEW_ITEM_COUNT:
+        raise ValueError(
+            f"Too many options supplied to a single message. "
+            f"Option count exceeds {MAX_VIEW_ITEM_COUNT} * {MAX_VIEW_ITEM_COUNT} ({len(options)})"
+        )
 
     if not options:
         return [no_options_embed(menu_id=menu_id, color=color)]
@@ -139,7 +150,7 @@ def embeds_from_options(options: list[RoleOption], menu_id: int = None, color: C
 
     for idx, option in enumerate(options):
         embed_item.description += f"\n{option!s}"
-        if (idx + 1) % 25 == 0:
+        if (idx + 1) % MAX_VIEW_ITEM_COUNT == 0:
             embeds.append(embed_item)
             embed_item = Embed(title="​", description="", color=color)
         elif idx == len(options) - 1:
@@ -153,6 +164,22 @@ def embeds_from_options(options: list[RoleOption], menu_id: int = None, color: C
     embeds[-1].set_footer(text=footer_text)
 
     return embeds
+
+
+def get_roles_from_select(view: View, guild: Guild, child_index: int) -> list[Role]:
+    try:
+        select_menu = view.children[child_index]
+    except IndexError:
+        return []
+
+    select_roles = []
+    guild_roles = {str(x.id): x for x in guild.roles}
+    for option in select_menu.options:
+        role = guild_roles.get(option.value)
+        if role:
+            select_roles.append(role)
+
+    return select_roles
 
 
 @default_permissions(administrator=True)
@@ -175,15 +202,16 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         await interaction.response.defer()
         selected_role_ids = interaction.data.get("values")
         message_view = View.from_message(interaction.message)
-        view_options = options_from_view(message_view, interaction.guild)
+        select_index = interaction.data.get("custom_id").split(".")[-1]
+        select_roles = get_roles_from_select(message_view, interaction.guild, int(select_index))
         unselected_roles = []
         selected_roles = []
 
-        for option in view_options:
-            if str(option.role.id) in selected_role_ids:
-                selected_roles.append(option.role)
+        for role in select_roles:
+            if str(role.id) in selected_role_ids:
+                selected_roles.append(role)
             else:
-                unselected_roles.append(option.role)
+                unselected_roles.append(role)
 
         await interaction.user.remove_roles(*unselected_roles)
         await interaction.user.add_roles(*selected_roles)
