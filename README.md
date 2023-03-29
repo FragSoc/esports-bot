@@ -250,7 +250,7 @@ The user has control over the child Voice Channel name, and can limit how many/w
 - [x] EventCategoriesCog ✅ Implemented as EventTools
 - [ ] LogChannelCog ⚠️
 - [x] MusicCog ✅ Implemented as VCMusic
-- [ ] PingableRolesCog ❌
+- [ ] PingableRolesCog ✅ WIP implementation in UserRoles
 - [x] RoleReactCog ✅ Implemented as RoleReact
 - [ ] TwitchCog ⚠️
 - [ ] TwitterCog ❌
