@@ -100,6 +100,8 @@ def view_from_options(options: list[RoleOption]) -> View:
         if idx % 25 == 0:
             view.add_item(child_select)
             child_select = Select(custom_id=ROLE_REACT_INTERACTION_PREFIX, min_values=0, max_values=0)
+        elif idx == len(options) - 1:
+            view.add_item(child_select)
 
     return view
 
@@ -132,6 +134,9 @@ def embeds_from_options(options: list[RoleOption], menu_id: int = None, color: C
         if idx % 25 == 0:
             embeds.append(embed_item)
             embed_item = Embed(title="​", description="", color=color)
+        elif idx == len(options) - 1:
+            embeds.append(embed_item)
+
     if menu_id:
         footer_text = f"Menu ID: {menu_id}"
     else:
