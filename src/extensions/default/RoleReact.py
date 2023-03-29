@@ -104,7 +104,7 @@ def view_from_options(options: list[RoleOption]) -> View:
         )
         child_select.max_values += 1
 
-        if idx % 25 == 0:
+        if idx + 1 % 25 == 0:
             view.add_item(child_select)
             child_select = Select(custom_id=ROLE_REACT_INTERACTION_PREFIX, min_values=0, max_values=0)
         elif idx == len(options) - 1:
@@ -138,7 +138,7 @@ def embeds_from_options(options: list[RoleOption], menu_id: int = None, color: C
 
     for idx, option in enumerate(options):
         embed_item.description += f"\n{option!s}"
-        if idx % 25 == 0:
+        if idx + 1 % 25 == 0:
             embeds.append(embed_item)
             embed_item = Embed(title="​", description="", color=color)
         elif idx == len(options) - 1:
