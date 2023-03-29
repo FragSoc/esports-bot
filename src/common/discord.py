@@ -255,7 +255,7 @@ class ArchivedEventTransformer(Transformer):
         return get_events(interaction.guild, self.archived_events, value)
 
 
-def get_roles_from_select(view: View, guild: Guild) -> list[Role]:
+def get_roles_from_view(view: View, guild: Guild) -> list[Role]:
     if not view:
         return []
 
@@ -303,7 +303,7 @@ class RoleReactRoleTransformer(Transformer):
 
         message = await interaction.channel.fetch_message(menu_id)
         view = View.from_message(message)
-        menu_roles = get_roles_from_select(view, interaction.guild)
+        menu_roles = get_roles_from_view(view, interaction.guild)
         if value:
             choices = [
                 Choice(name=f"{'' if x.name.startswith('@') else '@'}{x.name}",
