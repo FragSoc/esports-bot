@@ -189,9 +189,9 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         await respond_or_followup(COG_STRINGS["react_roles_updated"], interaction, ephemeral=True, delete_after=5)
 
     @command(name=COG_STRINGS["react_create_menu_name"], description=COG_STRINGS["react_create_menu_description"])
-    @describe(embed_color=COG_STRINGS["react_create_menu_embed_color_describe"])
-    @rename(embed_color=COG_STRINGS["react_create_menu_embed_color_rename"])
-    @autocomplete(embed_color=ColourTransformer.autocomplete)
+    @describe(color=COG_STRINGS["react_create_menu_embed_color_describe"])
+    @rename(color=COG_STRINGS["react_create_menu_embed_color_rename"])
+    @autocomplete(color=ColourTransformer.autocomplete)
     async def create_menu(self, interaction: Interaction, color: Transform[Color, ColourTransformer] = Color.random()):
         await interaction.response.defer()
 
