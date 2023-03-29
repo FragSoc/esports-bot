@@ -65,7 +65,7 @@ async def validate_message_id(interaction: Interaction, message_id: int) -> Unio
 def options_from_view(view: View, guild: Guild = None) -> list[RoleOption]:
     if not view:
         return []
-    
+
     options = []
     for child in view.children:
         for option in child.options:
@@ -197,6 +197,28 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         await message.edit(embeds=message_embeds)
 
         await respond_or_followup(COG_STRINGS["react_create_menu_success"], ephemeral=self.bot.only_ephemeral)
+
+    @command(name=COG_STRINGS["react_delete_menu_name"], description=COG_STRINGS["react_delete_menu_description"])
+    @describe(message_id=COG_STRINGS["react_delete_menu_message_id_describe"])
+    @rename(message_id=COG_STRINGS["react_delete_menu_message_id_rename"])
+    @autocomplete(message_id=RoleReactMenuTransformer.autocomplete)
+    async def delete_menu(self, interaction: Interaction, menu_id: str):
+        await interaction.response.defer()
+
+        message = await validate_message_id(interaction, menu_id)
+        if not message:
+            return
+
+        db_item = DBSession.get(RoleReactMenus, guild_id=interaction.guild.id, message_id=message.id)
+        if db_item:
+            DBSession.delete(db_item)
+
+        await message.delete()
+        await respond_or_followup(
+            COG_STRINGS["react_delete_menu_success"].format(menu_id=message.id),
+            interaction,
+            ephemeral=True
+        )
 
     @command(name=COG_STRINGS["react_add_item_name"], description=COG_STRINGS["react_add_item_description"])
     @describe(
