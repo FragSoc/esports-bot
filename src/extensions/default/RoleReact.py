@@ -63,6 +63,9 @@ async def validate_message_id(interaction: Interaction, message_id: int) -> Unio
 
 
 def options_from_view(view: View, guild: Guild = None) -> list[RoleOption]:
+    if not view:
+        return []
+    
     options = []
     for child in view.children:
         for option in child.options:
