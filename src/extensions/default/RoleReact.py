@@ -19,7 +19,7 @@ from database.gateway import DBSession
 from database.models import RoleReactMenus
 
 COG_STRINGS = load_cog_toml(__name__)
-ROLE_REACT_INTERACTION_PREFIX = f"{__name__}.interaction"
+ROLE_REACT_INTERACTION_PREFIX = f"{__name__}."
 
 
 @dataclass
@@ -106,7 +106,7 @@ def view_from_options(options: list[RoleOption]) -> View:
 
         if idx + 1 % 25 == 0:
             view.add_item(child_select)
-            child_select = Select(custom_id=ROLE_REACT_INTERACTION_PREFIX, min_values=0, max_values=0)
+            child_select = Select(custom_id=f"{ROLE_REACT_INTERACTION_PREFIX}.{idx}", min_values=0, max_values=0)
         elif idx == len(options) - 1:
             view.add_item(child_select)
 
