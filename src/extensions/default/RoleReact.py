@@ -48,6 +48,16 @@ class RoleOption:
 
 
 async def validate_message_id(interaction: Interaction, message_id: int) -> Union[None, Message]:
+    """Check if a given message ID is a RoleReact menu message. If it is, return the message object
+    for the given message ID.
+
+    Args:
+        interaction (Interaction): The interaction. Used to obtain the channel to then fetch the message.
+        message_id (int): The ID of the message to check.
+
+    Returns:
+        Union[None, Message]: The message of the given ID if it is a RoleReact menu message. None otherwise.
+    """
     try:
         message = await interaction.channel.fetch_message(message_id)
     except NotFound:
@@ -71,6 +81,15 @@ async def validate_message_id(interaction: Interaction, message_id: int) -> Unio
 
 
 def options_from_view(view: View, guild: Guild = None) -> list[RoleOption]:
+    """Generate a list of RoleOption from a discord View containing select menu(s).
+
+    Args:
+        view (View): The view to obtain the available options from.
+        guild (Guild, optional): The guild in which the view/message exists in. Defaults to None.
+
+    Returns:
+        list[RoleOption]: The list of RoleOption that correspond to the available options in the given View.
+    """
     if not view:
         return []
 
@@ -92,6 +111,17 @@ def options_from_view(view: View, guild: Guild = None) -> list[RoleOption]:
 
 
 def view_from_options(options: list[RoleOption]) -> View:
+    """Generate a view with one or many Select menus given a list of RoleOption.
+
+    Args:
+        options (list[RoleOption]): The list of RoleOption to turn into Select menu(s)
+
+    Raises:
+        ValueError: If the number of options exceeds the number of items allowed in a single view.
+
+    Returns:
+        View: The view containing the select menu(s) with the RoleOptions as the selectable options.
+    """
     if len(options) > MAX_VIEW_ITEM_COUNT * MAX_VIEW_ITEM_COUNT:
         raise ValueError(
             f"Too many options supplied to a single view. "
@@ -123,6 +153,15 @@ def view_from_options(options: list[RoleOption]) -> View:
 
 
 def no_options_embed(menu_id: int = None, color: Color = Color.random()) -> Embed:
+    """Create an embed for which there are no selectable roles currently available.
+
+    Args:
+        menu_id (int, optional): The ID of the menu. Defaults to None.
+        color (Color, optional): The color of the embed. Defaults to Color.random().
+
+    Returns:
+        Embed: The embed generated with placeholder text.
+    """
     description = COG_STRINGS["react_footer_no_id"] if not menu_id else COG_STRINGS["react_empty_menu"].format(
         message_id=menu_id
     )
@@ -136,6 +175,20 @@ def no_options_embed(menu_id: int = None, color: Color = Color.random()) -> Embe
 
 
 def embeds_from_options(options: list[RoleOption], menu_id: int = None, color: Color = Color.random()) -> list[Embed]:
+    """Create an embed or many given a list of RoleOption. If there are too many roles for a single embed, multiple
+    embeds will be created to contain all roles.
+
+    Args:
+        options (list[RoleOption]): The options available that are selectable in the eventual message's View.
+        menu_id (int, optional): The ID of the message in which the embed will be sent. Defaults to None.
+        color (Color, optional): The color of the embed. Defaults to Color.random().
+
+    Raises:
+        ValueError: If there are too many options for the View, the embed would be invalid and thus raises a ValueError.
+
+    Returns:
+        list[Embed]: The embeds that contain the selectable options.
+    """
     if len(options) > MAX_VIEW_ITEM_COUNT * MAX_VIEW_ITEM_COUNT:
         raise ValueError(
             f"Too many options supplied to a single message. "
@@ -167,6 +220,16 @@ def embeds_from_options(options: list[RoleOption], menu_id: int = None, color: C
 
 
 def get_roles_from_select(view: View, guild: Guild, child_index: int) -> list[Role]:
+    """Get a list of Roles from a specific Select menu in a View using the index value.
+
+    Args:
+        view (View): The view in which the Select menu exists.
+        guild (Guild): The guild in which the View/message exists.
+        child_index (int): The index of the menu in the View's children list.
+
+    Returns:
+        list[Role]: The list of roles that a Select menu has as options.
+    """
     try:
         select_menu = view.children[child_index]
     except IndexError:
@@ -193,6 +256,12 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
 
     @GroupCog.listener()
     async def on_interaction(self, interaction: Interaction):
+        """Listens for when a user has (de)selected options in a RoleReact Select menu and
+        handles the changes to the requested roles.
+
+        Args:
+            interaction (Interaction): The interaction performed.
+        """
         if not interaction.data or not interaction.data.get("custom_id"):
             return False
 
@@ -222,6 +291,13 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
     @rename(color=COG_STRINGS["react_create_menu_embed_color_rename"])
     @autocomplete(color=ColourTransformer.autocomplete)
     async def create_menu(self, interaction: Interaction, color: Transform[Color, ColourTransformer] = Color.random()):
+        """The command to create a new RoleReact menu/message. This command must be used to initalise a message as it
+        serves to ensure that not any message can be turned into a RoleReact message.
+
+        Args:
+            interaction (Interaction): The interaction of the command.
+            color (Transform[Color, ColourTransformer], optional): The color of the embed. Defaults to Color.random().
+        """
         await interaction.response.defer()
 
         message = await interaction.channel.send("​")
@@ -239,6 +315,13 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
     @rename(menu_id=COG_STRINGS["react_delete_menu_message_id_rename"])
     @autocomplete(menu_id=RoleReactMenuTransformer.autocomplete)
     async def delete_menu(self, interaction: Interaction, menu_id: str):
+        """Deletes a menu from the database as well as the actual message containing the RoleReact menu. If a message
+        is manually deleted, it will still appear in the RoleReactMenuTransformer autocomplete options.
+
+        Args:
+            interaction (Interaction): The interaction of the command.
+            menu_id (str): The ID of the menu to delete.
+        """
         await interaction.response.defer()
 
         message = await validate_message_id(interaction, menu_id)
@@ -279,6 +362,16 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
                          EmojiTransformer] = None,
         description: str = None
     ):
+        """The command to add a role to a specific RoleReact menu. The emoji or description do not need to be unique,
+        and are purely visual aids for users to better understand a role.
+
+        Args:
+            interaction (Interaction): The interaction of the command.
+            menu_id (str): The ID of the menu to add to.
+            role (Role): The role to add to the menu.
+            emoji (Transform[PartialEmoji, EmojiTransformer], optional): The emoji to associate with the role. Defaults to None.
+            description (str, optional): The description of the role. Defaults to None.
+        """
         await interaction.response.defer()
 
         message = await validate_message_id(interaction, menu_id)
@@ -312,6 +405,14 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
     )
     @autocomplete(menu_id=RoleReactMenuTransformer.autocomplete, role_id=RoleReactRoleTransformer.autocomplete)
     async def remove_item(self, interaction: Interaction, menu_id: str, role_id: str):
+        """The command to remove a role from a given menu ID. The role ID can either be given manually or selected
+        from the autocompleted list of roles in the menu selected as the first argument.
+
+        Args:
+            interaction (Interaction): The interaction of the command.
+            menu_id (str): The ID of the menu to remove the role from.
+            role_id (str): The ID of the role to remove from the menu.
+        """
         await interaction.response.defer()
 
         message = await validate_message_id(interaction, menu_id)
