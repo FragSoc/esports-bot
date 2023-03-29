@@ -72,11 +72,12 @@ def options_from_view(view: View, guild: Guild = None) -> list[RoleOption]:
     if not view:
         return []
 
+    guild_roles = {str(x.id): x for x in guild.roles}
     options = []
     for child in view.children:
         for option in child.options:
             if guild:
-                option_role = guild.get_role(int(option.value))
+                option_role = guild_roles.get(option.value)
             else:
                 option_role = None
             options.append(
