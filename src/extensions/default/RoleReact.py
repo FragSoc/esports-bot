@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 from typing import Union
+import logging
 
 from discord import Role, Embed, Color, Guild, Interaction, NotFound, Message
 from discord.ui import View, Select
+from discord.app_commands import guild_only, default_permissions
+from discord.ext.commands import GroupCog, Bot
 
 from common.io import load_cog_toml
 from common.discord import respond_or_followup
@@ -134,3 +137,38 @@ def embeds_from_options(options: list[RoleOption], menu_id: int = None, color: C
     embeds[-1].set_footer(text=footer_text)
 
     return embeds
+
+
+@default_permissions(administrator=True)
+@guild_only()
+class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
+
+    def __init__(self, bot: Bot):
+        self.bot = bot
+        self.logger = logging.getLogger(__name__)
+        self.logger.info(f"{__name__} has been added as a Cog")
+
+    @GroupCog.listener()
+    async def on_interaction(self, interaction: Interaction):
+        if not interaction.data or not interaction.data.get("custom_id"):
+            return False
+
+        if not interaction.data.get("custom_id").startswith(ROLE_REACT_INTERACTION_PREFIX):
+            return False
+
+        await interaction.response.defer()
+        selected_role_ids = interaction.data.get("values")
+        message_view = View.from_message(interaction.message)
+        view_options = options_from_view(message_view, interaction.guild)
+        unselected_roles = []
+        selected_roles = []
+
+        for option in view_options:
+            if str(option.role.id) in selected_role_ids:
+                selected_roles.append(option.role)
+            else:
+                unselected_roles.append(option.role)
+
+        await interaction.user.remove_roles(*unselected_roles)
+        await interaction.user.add_roles(*selected_roles)
+        await respond_or_followup(COG_STRINGS["react_roles_updated"], interaction, ephemeral=True, delete_after=5)
