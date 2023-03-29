@@ -240,6 +240,8 @@ The user has control over the child Voice Channel name, and can limit how many/w
 <pre>
 ✅ Extension implemented either partially or fully.
 
+⏳ Extension currently being implemented not yet ready.
+
 ❌ High priority extension not yet implemented.
 
 ⚠️ Low priority extension not yet implemented.
@@ -250,7 +252,7 @@ The user has control over the child Voice Channel name, and can limit how many/w
 - [x] EventCategoriesCog ✅ Implemented as EventTools
 - [ ] LogChannelCog ⚠️
 - [x] MusicCog ✅ Implemented as VCMusic
-- [ ] PingableRolesCog ✅ WIP implementation in UserRoles
+- [ ] PingableRolesCog ⏳ WIP implementation in UserRoles
 - [x] RoleReactCog ✅ Implemented as RoleReact
 - [ ] TwitchCog ⚠️
 - [ ] TwitterCog ❌
