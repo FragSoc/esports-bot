@@ -256,6 +256,15 @@ class ArchivedEventTransformer(Transformer):
 
 
 def get_roles_from_view(view: View, guild: Guild) -> list[Role]:
+    """Get a list of roles from a View for a RoleReact message.
+
+    Args:
+        view (View): The view containing the Select items with role options.
+        guild (Guild): The guild in which the view/message exist.
+
+    Returns:
+        list[Role]: A list of roles that are the options in the select menu(s).
+    """
     if not view:
         return []
 
@@ -268,6 +277,14 @@ def get_roles_from_view(view: View, guild: Guild) -> list[Role]:
 
 
 def get_menu_id_from_args(interaction: Interaction) -> int:
+    """Get the given menu ID from the already supplied arguments of an interaction.
+
+    Args:
+        interaction (Interaction): The interaction containing the already given menu ID
+
+    Returns:
+        int: The menu ID of the menu given.
+    """
     interaction_options = {"options": []}
     for item in interaction.data.get("options"):
         if item.get("type") == 1:
@@ -281,6 +298,11 @@ def get_menu_id_from_args(interaction: Interaction) -> int:
 
 
 class RoleReactMenuTransformer(Transformer):
+    """The autocomplete transformer to provide a list of RoleReact menu IDs for a given guild.
+
+    Returns:
+        List[Choice[str]]: A list of exisitng menu IDs in a guild.
+    """
 
     async def autocomplete(self, interaction: Interaction, value: Union[int, float, str]) -> List[Choice[str]]:
         guild_role_menus = DBSession.list(RoleReactMenus, guild_id=interaction.guild.id)
@@ -295,6 +317,11 @@ class RoleReactMenuTransformer(Transformer):
 
 
 class RoleReactRoleTransformer(Transformer):
+    """The autocomplete transformer to provide a list of Roles that are in the already provided RoleReact menu.
+
+    Returns:
+        List[Choice[str]]: A list of Roles for the RoleReact menu currently chosen.
+    """
 
     async def autocomplete(self, interaction: Interaction, value: str) -> List[Choice[str]]:
         menu_id = get_menu_id_from_args(interaction)
