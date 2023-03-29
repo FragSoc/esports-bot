@@ -47,6 +47,34 @@ All commands in this cog require the user to have the administrator permission i
 </details>
 
 <details>
+<summary>RoleReact</summary>
+
+## RoleReact
+
+RoleReact cog is used to allow users to self-assign roles from a defined list of roles set by admins.
+All commands in this cog require the user to have the administrator permissions in a given guild/server.
+
+### Current Commands:
+
+#### /reactroles create [optional: color]
+
+- Creates a new menu to add roles to.
+
+#### /reactroles delete \<menu ID\>
+
+- Deletes a given menu and it's message.
+
+#### /reactroles add-role \<menu ID\> \<role\> [optional: emoji] [optional: description]
+
+- Add a role to a given menu. Optionally give the role an emoji and/or description.
+
+#### /reactroles remove-role \<menu ID\> \<role\>
+
+- Remove a role from a given menu.
+
+</details>
+
+<details>
 <summary>VoiceAdmin</summary>
 
 ## VoiceAdmin
@@ -223,7 +251,7 @@ The user has control over the child Voice Channel name, and can limit how many/w
 - [ ] LogChannelCog ⚠️
 - [x] MusicCog ✅ Implemented as VCMusic
 - [ ] PingableRolesCog ❌
-- [ ] RoleReactCog ✅ WIP implementation in RoleReact
+- [x] RoleReactCog ✅ Implemented as RoleReact
 - [ ] TwitchCog ⚠️
 - [ ] TwitterCog ❌
 - [x] VoicemasterCog ✅ Implemented as VocieAdmin
