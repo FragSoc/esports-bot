@@ -206,9 +206,9 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         await respond_or_followup(COG_STRINGS["react_create_menu_success"], ephemeral=self.bot.only_ephemeral)
 
     @command(name=COG_STRINGS["react_delete_menu_name"], description=COG_STRINGS["react_delete_menu_description"])
-    @describe(message_id=COG_STRINGS["react_delete_menu_message_id_describe"])
-    @rename(message_id=COG_STRINGS["react_delete_menu_message_id_rename"])
-    @autocomplete(message_id=RoleReactMenuTransformer.autocomplete)
+    @describe(menu_id=COG_STRINGS["react_delete_menu_message_id_describe"])
+    @rename(menu_id=COG_STRINGS["react_delete_menu_message_id_rename"])
+    @autocomplete(menu_id=RoleReactMenuTransformer.autocomplete)
     async def delete_menu(self, interaction: Interaction, menu_id: str):
         await interaction.response.defer()
 
@@ -229,18 +229,18 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
 
     @command(name=COG_STRINGS["react_add_item_name"], description=COG_STRINGS["react_add_item_description"])
     @describe(
-        message_id=COG_STRINGS["react_add_item_message_id_describe"],
+        menu_id=COG_STRINGS["react_add_item_message_id_describe"],
         role=COG_STRINGS["react_add_item_role_describe"],
         emoji=COG_STRINGS["react_add_item_emoji_describe"],
         description=COG_STRINGS["react_add_item_description_describe"]
     )
     @rename(
-        message_id=COG_STRINGS["react_add_item_message_id_rename"],
+        menu_id=COG_STRINGS["react_add_item_message_id_rename"],
         role=COG_STRINGS["react_add_item_role_rename"],
         emoji=COG_STRINGS["react_add_item_emoji_rename"],
         description=COG_STRINGS["react_add_item_description_rename"]
     )
-    @autocomplete(message_id=RoleReactMenuTransformer.autocomplete)
+    @autocomplete(menu_id=RoleReactMenuTransformer.autocomplete)
     async def add_role(
         self,
         interaction: Interaction,
