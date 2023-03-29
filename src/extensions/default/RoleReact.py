@@ -2,13 +2,13 @@ from dataclasses import dataclass
 from typing import Union
 import logging
 
-from discord import Role, Embed, Color, Guild, Interaction, NotFound, Message
+from discord import Role, Embed, Color, Guild, Interaction, NotFound, Message, PartialEmoji
 from discord.ui import View, Select
 from discord.app_commands import guild_only, default_permissions, Transform, command, describe, rename, autocomplete
 from discord.ext.commands import GroupCog, Bot
 
 from common.io import load_cog_toml
-from common.discord import primary_key_from_object, respond_or_followup, ColourTransformer
+from common.discord import primary_key_from_object, respond_or_followup, ColourTransformer, EmojiTransformer, RoleReactMenuTransformer
 from database.gateway import DBSession
 from database.models import RoleReactMenus
 
@@ -189,3 +189,48 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         await message.edit(embeds=message_embeds)
 
         await respond_or_followup(COG_STRINGS["react_create_menu_success"], ephemeral=self.bot.only_ephemeral)
+
+    @command(name=COG_STRINGS["react_add_item_name"], description=COG_STRINGS["react_add_item_description"])
+    @describe(
+        message_id=COG_STRINGS["react_add_item_message_id_describe"],
+        role=COG_STRINGS["react_add_item_role_describe"],
+        emoji=COG_STRINGS["react_add_item_emoji_describe"],
+        description=COG_STRINGS["react_add_item_description_describe"]
+    )
+    @rename(
+        message_id=COG_STRINGS["react_add_item_message_id_rename"],
+        role=COG_STRINGS["react_add_item_role_rename"],
+        emoji=COG_STRINGS["react_add_item_emoji_rename"],
+        description=COG_STRINGS["react_add_item_description_rename"]
+    )
+    @autocomplete(message_id=RoleReactMenuTransformer.autocomplete)
+    async def add_role(
+        self,
+        interaction: Interaction,
+        menu_id: str,
+        role: Role,
+        emoji: Transform[PartialEmoji,
+                         EmojiTransformer] = None,
+        description: str = None
+    ):
+        await interaction.response.defer()
+
+        message = await validate_message_id(interaction, menu_id)
+        if not message:
+            return
+
+        embed_color = message.embeds[0].color
+        message_view = View.from_message(message)
+        current_options = options_from_view(message_view, interaction.guild)
+        current_options.append(RoleOption(role_id=role.id, role=role, emoji=emoji, description=description))
+
+        updated_view = view_from_options(current_options)
+        updated_embeds = embeds_from_options(current_options, menu_id, embed_color)
+
+        await message.edit(view=updated_view, embeds=updated_embeds)
+        await respond_or_followup(
+            COG_STRINGS["react_add_item_success"].format(role=role.name,
+                                                         menu_id=menu_id),
+            interaction,
+            ephemeral=True
+        )
