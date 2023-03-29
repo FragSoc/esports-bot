@@ -11,6 +11,7 @@ from common.discord import (
     ColourTransformer,
     EmojiTransformer,
     RoleReactMenuTransformer,
+    RoleReactRoleTransformer,
     primary_key_from_object,
     respond_or_followup
 )
@@ -272,6 +273,16 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
             ephemeral=True
         )
 
+    @command(name=COG_STRINGS["react_remove_item_name"], description=COG_STRINGS["react_remove_item_description"])
+    @describe(
+        menu_id=COG_STRINGS["react_remove_item_message_id_describe"],
+        role_id=COG_STRINGS["react_remove_item_role_id_describe"]
+    )
+    @rename(
+        menu_id=COG_STRINGS["react_remove_item_message_id_rename"],
+        role_id=COG_STRINGS["react_remove_item_role_id_rename"]
+    )
+    @autocomplete(menu_id=RoleReactMenuTransformer.autocomplete, role_id=RoleReactRoleTransformer.autocomplete)
     async def remove_item(self, interaction: Interaction, menu_id: str, role_id: str):
         await interaction.response.defer()
 
