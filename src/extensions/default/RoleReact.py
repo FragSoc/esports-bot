@@ -306,3 +306,7 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
             interaction,
             ephemeral=True
         )
+
+
+async def setup(bot: Bot):
+    await bot.add_cog(RoleReact(bot))
