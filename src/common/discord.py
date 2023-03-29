@@ -255,22 +255,15 @@ class ArchivedEventTransformer(Transformer):
         return get_events(interaction.guild, self.archived_events, value)
 
 
-async def get_roles_from_select(interaction: Interaction, message_id: int) -> list[Role]:
-    message = await interaction.channel.fetch_message(message_id)
-    if not message.components:
+def get_roles_from_select(view: View, guild: Guild) -> list[Role]:
+    if not view:
         return []
 
-    guild_roles = interaction.guild.roles
-    guild_roles = {str(x.id): x for x in guild_roles}
-
-    view = View.from_message(message)
-    menu = view.children[0]
     roles = []
-    for option in menu.options:
-        role = guild_roles.get(option.value)
-        if role:
-            roles.append(role)
-
+    guild_roles = {str(x.id): x for x in guild.roles}
+    for child in view.children:
+        for option in child.options:
+            roles.append(guild_roles.get(option.value))
     return roles
 
 
@@ -307,7 +300,10 @@ class RoleReactRoleTransformer(Transformer):
         menu_id = get_menu_id_from_args(interaction)
         if not DBSession.get(RoleReactMenus, guild_id=interaction.guild.id, message_id=menu_id):
             return []
-        menu_roles = await get_roles_from_select(interaction, menu_id)
+
+        message = await interaction.channel.fetch_message(menu_id)
+        view = View.from_message(message)
+        menu_roles = get_roles_from_select(view, interaction.guild)
         if value:
             choices = [
                 Choice(name=f"{'' if x.name.startswith('@') else '@'}{x.name}",
