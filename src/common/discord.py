@@ -341,3 +341,18 @@ class RoleReactRoleTransformer(Transformer):
             choices = [Choice(name=f"{'' if x.name.startswith('@') else '@'}{x.name}", value=str(x.id)) for x in menu_roles]
 
         return choices[:25]
+
+
+class TwitterWebhookIDTransformer(Transformer):
+
+    async def autocomplete(self, interaction: Interaction, value: Union[int, str]) -> List[Choice[str]]:
+        guild_webhooks = self.webhooks.get(interaction.guild.id)
+        if value:
+            choices = [
+                Choice(name=f"{guild_webhooks.get(x).name} ({x})",
+                       value=str(x)) for x in guild_webhooks if value.lower() in guild_webhooks.get(x).name.lower()
+            ]
+        else:
+            choices = [Choice(name=f"{guild_webhooks.get(x).name} ({x})", value=str(x)) for x in guild_webhooks]
+
+        return choices[:25]
