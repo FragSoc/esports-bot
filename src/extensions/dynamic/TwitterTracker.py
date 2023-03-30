@@ -1,10 +1,10 @@
 import logging
 
 from discord import Interaction, TextChannel
-from discord.app_commands import default_permissions, guild_only, command, describe, rename
+from discord.app_commands import (autocomplete, command, default_permissions, describe, guild_only, rename)
 from discord.ext.commands import Bot, GroupCog
 
-from common.discord import respond_or_followup
+from common.discord import TwitterWebhookIDTransformer, respond_or_followup
 from common.io import load_cog_toml
 
 COG_STRINGS = load_cog_toml(__name__)
@@ -44,6 +44,28 @@ class TwitterTracker(GroupCog, name=COG_STRINGS["twitter_group_name"]):
             self.webhooks[interaction.guild.id] = {}
         self.webhooks[interaction.guild.id][webhook.id] = webhook
         await respond_or_followup(f"Created webhook: {webhook.url}", interaction, ephemeral=True, delete_after=None)
+
+    @command(name=COG_STRINGS["twitter_delete_webhook_name"], description=COG_STRINGS["twitter_delete_webhook_description"])
+    @describe(webhook_id=COG_STRINGS["twitter_delete_webhook_webhook_id_describe"])
+    @rename(webhook_id=COG_STRINGS["twitter_delete_webhook_webhook_id_rename"])
+    @autocomplete(webhook_id=TwitterWebhookIDTransformer.autocomplete)
+    async def delete_webhook(self, interaction: Interaction, webhook_id: str):
+        await interaction.response.defer(ephemeral=True)
+
+        if not webhook_id.isdigit():
+            await respond_or_followup("Invalid webhook ID provided!", interaction, ephemeral=True)
+            return
+
+        webbhook_id_int = int(webhook_id)
+        guild_webhooks = self.webhooks.get(interaction.guild.id)
+        from discord import Webhook
+        webhook: Webhook = guild_webhooks.pop(webbhook_id_int, None)
+        if not webhook:
+            await respond_or_followup("The provided webhook ID is not a TwitterTracker webhook!", interaction, ephemeral=True)
+            return
+
+        await webhook.delete()
+        await respond_or_followup("Succesfully deleted webhook!", interaction, ephemeral=True)
 
 
 async def setup(bot: Bot):

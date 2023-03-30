@@ -6,3 +6,8 @@ twitter_create_webhook_name_rename = "webhook-name"
 twitter_create_webhook_name_describe = "The custom name of the webhook for the channel."
 twitter_create_webhook_channel_rename = "channel"
 twitter_create_webhook_channel_describe = "The text channel to forward the tweets to."
+
+twitter_delete_webhook_name = "delete-webhook"
+twitter_delete_webhook_description = "Removes a given webhook."
+twitter_delete_webhook_webhook_id_rename = "webhook"
+twitter_delete_webhook_webhook_id_describe = "The webhook to delete."
