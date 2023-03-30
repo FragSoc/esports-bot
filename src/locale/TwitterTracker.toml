@@ -1,1 +1,8 @@
 twitter_group_name = "twitter"
+
+twitter_create_webhook_name = "add-channel"
+twitter_create_webhook_description = "Adds a channel as a place to forward tweets to."
+twitter_create_webhook_name_rename = "webhook-name"
+twitter_create_webhook_name_describe = "The custom name of the webhook for the channel."
+twitter_create_webhook_channel_rename = "channel"
+twitter_create_webhook_channel_describe = "The text channel to forward the tweets to."
