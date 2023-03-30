@@ -255,7 +255,7 @@ The user has control over the child Voice Channel name, and can limit how many/w
 - [ ] PingableRolesCog ⏳ WIP implementation in UserRoles
 - [x] RoleReactCog ✅ Implemented as RoleReact
 - [ ] TwitchCog ⚠️
-- [ ] TwitterCog ❌
+- [ ] TwitterCog ⏳ WIP implementation in TwitterTracker
 - [x] VoicemasterCog ✅ Implemented as VoiceAdmin
 - [ ] VotingCog ⚠️
 
