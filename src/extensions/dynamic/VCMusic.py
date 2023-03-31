@@ -1044,7 +1044,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
                 multiple_request = item.get("components")[0].get("value")
 
         request_list = [
-            SongRequest(raw_requst=x.strip(),
+            SongRequest(raw_request=x.strip(),
                         request_type=parse_request_type(x.strip()),
                         request_member=interaction.user) for x in multiple_request.split("\n") if x.strip() not in ('',
                                                                                                                     ' ')
