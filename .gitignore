@@ -1,5 +1,5 @@
 **/__pycache__
-test-file.py
+.venv
 .vscode
 .idea
 secrets.env
