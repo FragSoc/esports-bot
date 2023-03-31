@@ -42,17 +42,22 @@ class TwitterTracker(GroupCog, name=COG_STRINGS["twitter_group_name"]):
         all_accounts = DBSession.list(TwitterTrackerAccounts)
         account_count = 0
         for entry in all_accounts:
-            if entry.guild_id not in self.accounts:
-                self.accounts[entry.guild_id] = {}
-
-            if entry.twitter_id not in self.accounts.get(entry.guild_id):
-                self.accounts[entry.guild_id][entry.twitter_id] = []
-                account_count += 1
-
-            self.accounts[entry.guild_id][entry.twitter_id].append(entry)
+            account_count += self.add_account(entry)
 
         self.logger.info(f"Found {webhook_count} webhook(s) across {len(self.webhooks)} guild(s)")
         self.logger.info(f"Found {account_count} account(s) across {len(self.webhooks)} guild(s)")
+
+    def add_account(self, db_entry: TwitterTrackerAccounts):
+        ret_val = 0
+        if db_entry.guild_id not in self.accounts:
+            self.accounts[db_entry.guild_id] = {}
+
+        if db_entry.twitter_id not in self.accounts.get(db_entry.guild_id):
+            self.accounts[db_entry.guild_id][db_entry.twitter_id] = []
+            ret_val = 1
+
+        self.accounts[db_entry.guild_id][db_entry.twitter_id].append(db_entry)
+        return ret_val
 
     @command(name=COG_STRINGS["twitter_create_webhook_name"], description=COG_STRINGS["twitter_create_webhook_description"])
     @describe(
@@ -107,6 +112,45 @@ class TwitterTracker(GroupCog, name=COG_STRINGS["twitter_group_name"]):
 
         await webhook.delete()
         await respond_or_followup("Succesfully deleted webhook!", interaction, ephemeral=True)
+
+    @command(name=COG_STRINGS["twitter_track_account_name"], description=COG_STRINGS["twitter_track_account_description"])
+    @describe(
+        twitter_id=COG_STRINGS["twitter_track_account_twitter_id_describe"],
+        webhook_id=COG_STRINGS["twitter_track_account_webhook_id_describe"]
+    )
+    @rename(
+        twitter_id=COG_STRINGS["twitter_track_account_twitter_id_rename"],
+        webhook_id=COG_STRINGS["twitter_track_account_webhook_id_rename"]
+    )
+    @autocomplete(webhook_id=TwitterWebhookIDTransformer.autocomplete)
+    async def track_account(self, interaction: Interaction, twitter_id: str, webhook_id: str):
+        await interaction.response.defer(ephemeral=True)
+
+        if not twitter_id.isdigit():
+            await respond_or_followup("The given twitter ID is not valid!", interaction, ephemeral=True)
+            return
+
+        if not webhook_id.isdigit():
+            await respond_or_followup("The given webhook ID is not valid!", interaction, ephemeral=True)
+            return
+
+        current_webhooks = self.accounts.get(interaction.guild.id, {}).get(int(twitter_id), [])
+        exists = [x for x in current_webhooks if int(webhook_id) == x.webhook_id]
+        if exists:
+            await respond_or_followup("The account given is already tracked with that webhhook!", interaction, ephemeral=True)
+            return
+
+        db_item = TwitterTrackerAccounts(
+            primary_key=entry_primary_key(int(twitter_id),
+                                          int(webhook_id)),
+            guild_id=interaction.guild.id,
+            twitter_id=int(twitter_id),
+            webhook_id=int(webhook_id),
+            twitter_name="TwitterHandle"
+        )
+        DBSession.create(db_item)
+        self.add_account(db_item)
+        await respond_or_followup(f"Now trackiing {twitter_id} in {webhook_id}", interaction, ephemeral=True)
 
 
 async def setup(bot: Bot):
