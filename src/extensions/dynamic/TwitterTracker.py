@@ -6,9 +6,15 @@ from discord.ext.commands import Bot, GroupCog
 
 from common.discord import TwitterWebhookIDTransformer, respond_or_followup
 from common.io import load_cog_toml
+from database.gateway import DBSession
+from database.models import TwitterTrackerAccounts
 
 COG_STRINGS = load_cog_toml(__name__)
 WEBHOOK_PREFIX = __name__
+
+
+def entry_primary_key(twitter_id: int, webhook_id: int) -> int:
+    return int(f"{twitter_id % 1000}{webhook_id % 1000}")
 
 
 @default_permissions(administrator=True)
@@ -20,6 +26,7 @@ class TwitterTracker(GroupCog, name=COG_STRINGS["twitter_group_name"]):
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__} has been added as a Cog")
         self.webhooks = {}
+        self.accounts = {}
 
     @GroupCog.listener()
     async def on_ready(self):
@@ -32,7 +39,20 @@ class TwitterTracker(GroupCog, name=COG_STRINGS["twitter_group_name"]):
                     self.webhooks[guild.id][webhook.id] = webhook
                     webhook_count += 1
 
+        all_accounts = DBSession.list(TwitterTrackerAccounts)
+        account_count = 0
+        for entry in all_accounts:
+            if entry.guild_id not in self.accounts:
+                self.accounts[entry.guild_id] = {}
+
+            if entry.twitter_id not in self.accounts.get(entry.guild_id):
+                self.accounts[entry.guild_id][entry.twitter_id] = []
+                account_count += 1
+
+            self.accounts[entry.guild_id][entry.twitter_id].append(entry)
+
         self.logger.info(f"Found {webhook_count} webhook(s) across {len(self.webhooks)} guild(s)")
+        self.logger.info(f"Found {account_count} account(s) across {len(self.webhooks)} guild(s)")
 
     @command(name=COG_STRINGS["twitter_create_webhook_name"], description=COG_STRINGS["twitter_create_webhook_description"])
     @describe(
