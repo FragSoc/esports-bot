@@ -152,6 +152,66 @@ class TwitterTracker(GroupCog, name=COG_STRINGS["twitter_group_name"]):
         self.add_account(db_item)
         await respond_or_followup(f"Now trackiing {twitter_id} in {webhook_id}", interaction, ephemeral=True)
 
+    @command(name=COG_STRINGS["twitter_untrack_account_name"], description=COG_STRINGS["twitter_untrack_account_description"])
+    @describe(
+        twitter_id=COG_STRINGS["twitter_untrack_account_twitter_id_describe"],
+        webhook_id=COG_STRINGS["twitter_untrack_account_webhook_id_describe"],
+        all_webhooks=COG_STRINGS["twitter_untrack_account_all_webhooks_describe"]
+    )
+    @rename(
+        twitter_id=COG_STRINGS["twitter_untrack_account_twitter_id_rename"],
+        webhook_id=COG_STRINGS["twitter_untrack_account_webhook_id_rename"],
+        all_webhooks=COG_STRINGS["twitter_untrack_account_all_webhooks_rename"]
+    )
+    @autocomplete(webhook_id=TwitterWebhookIDTransformer.autocomplete)
+    async def untrack_account(
+        self,
+        interaction: Interaction,
+        twitter_id: str,
+        all_webhooks: bool = False,
+        webhook_id: str = None
+    ):
+        if not all_webhooks and not webhook_id:
+            await respond_or_followup(
+                "You must confirm to untrack from all webhooks or provide a webhook to untrack from",
+                interaction,
+                ephemeral=True
+            )
+            
+        
+        if not twitter_id.isdigit():
+            await respond_or_followup("The given twitter ID is not valid!", interaction, ephemeral=True)
+            return
+
+        if all_webhooks:
+            entries = self.accounts.get(interaction.guild.id, {}).pop(int(twitter_id), [])
+            for entry in entries:
+                DBSession.delete(entry)
+            await respond_or_followup(f"No longer trakcing {twitter_id} in any webhook!", interaction, ephemeral=True)
+            return
+
+
+        if not webhook_id.isdigit():
+            await respond_or_followup("The given webhook ID is not valid!", interaction, ephemeral=True)
+            return
+
+        entries = self.accounts.get(interaction.guild.id, {}).get(int(twitter_id), [])
+        found = -1
+        db_item = None
+        for idx, item in enumerate(entries):
+            if item.webhook_id == int(webhook_id):
+                found = idx
+                db_item = item
+                break
+
+        if found >= 0:
+            self.accounts.get(interaction.guild.id).get(int(twitter_id)).pop(found)
+
+        if db_item:
+            DBSession.delete(db_item)
+
+        await respond_or_followup(f"No longer tracking {twitter_id} in {webhook_id}", interaction, ephemeral=True)
+
 
 async def setup(bot: Bot):
     await bot.add_cog(TwitterTracker(bot))
