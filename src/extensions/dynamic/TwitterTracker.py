@@ -21,6 +21,19 @@ class TwitterTracker(GroupCog, name=COG_STRINGS["twitter_group_name"]):
         self.logger.info(f"{__name__} has been added as a Cog")
         self.webhooks = {}
 
+    @GroupCog.listener()
+    async def on_ready(self):
+        webhook_count = 0
+        for guild in self.bot.guilds:
+            guild_webhooks = await guild.webhooks()
+            self.webhooks[guild.id] = {}
+            for webhook in guild_webhooks:
+                if webhook.name.startswith(WEBHOOK_PREFIX):
+                    self.webhooks[guild.id][webhook.id] = webhook
+                    webhook_count += 1
+
+        self.logger.info(f"Found {webhook_count} webhook(s) across {len(self.webhooks)} guild(s)")
+
     @command(name=COG_STRINGS["twitter_create_webhook_name"], description=COG_STRINGS["twitter_create_webhook_description"])
     @describe(
         name=COG_STRINGS["twitter_create_webhook_name_describe"],
@@ -37,8 +50,9 @@ class TwitterTracker(GroupCog, name=COG_STRINGS["twitter_group_name"]):
             channel = interaction.channel
 
         if not name:
-            name = f"{WEBHOOK_PREFIX}-{channel.name}"
+            name = channel.name
 
+        name = f"{WEBHOOK_PREFIX}-{name}"
         webhook = await channel.create_webhook(name=name)
         if not interaction.guild.id in self.webhooks:
             self.webhooks[interaction.guild.id] = {}
