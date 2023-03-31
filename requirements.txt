@@ -3,10 +3,6 @@ sqlalchemy
 sqlalchemy-utils
 discord.py[voice]
 python-dotenv
-emoji
-lxml
-PyNaCl
-aiohttp[speedups]
 coloredlogs
 uvloop
 toml
