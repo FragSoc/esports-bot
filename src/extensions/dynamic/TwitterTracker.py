@@ -72,10 +72,17 @@ class TwitterTracker(GroupCog, name=COG_STRINGS["twitter_group_name"]):
 
         webbhook_id_int = int(webhook_id)
         guild_webhooks = self.webhooks.get(interaction.guild.id)
-        from discord import Webhook
-        webhook: Webhook = guild_webhooks.pop(webbhook_id_int, None)
+        webhook = guild_webhooks.pop(webbhook_id_int, None)
         if not webhook:
             await respond_or_followup("The provided webhook ID is not a TwitterTracker webhook!", interaction, ephemeral=True)
+            return
+
+        if not webhook.name.startswith(WEBHOOK_PREFIX):
+            await respond_or_followup(
+                "The provided webhook ID is not for a TwitterTracker webhook!",
+                interaction,
+                ephemeral=True
+            )
             return
 
         await webhook.delete()
