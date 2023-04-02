@@ -655,7 +655,7 @@ class VCMusicAdmin(GroupCog, name=COG_STRINGS["music_admin_group_name"]):
         if clear_messages:
             await channel.purge(before=interaction.created_at)
 
-        embed = create_music_embed(embed_color, self.author)
+        embed = create_music_embed(embed_color, CURRENT_AUTHOR)
         view = create_music_actionbar()
 
         message = await channel.send(embed=embed, view=view)
@@ -1208,7 +1208,11 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             await respond_or_followup(COG_STRINGS["music_resume_success"], interaction, ephemeral=True)
             return True
 
-        await respond_or_followup(COG_STRINGS["music_generic_error"].format(author=self.author), interaction, ephemeral=True)
+        await respond_or_followup(
+            COG_STRINGS["music_generic_error"].format(author=CURRENT_AUTHOR),
+            interaction,
+            ephemeral=True
+        )
         return False
 
     async def pause_playback(self, interaction: Interaction) -> bool:
@@ -1349,7 +1353,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             queue_length = COG_STRINGS["music_embed_queue_length"].format(length=len(self.active_players.get(guild_id).queue))
             new_embed = create_music_embed(
                 color=current_embed.color,
-                author=self.author,
+                author=CURRENT_AUTHOR,
                 title=COG_STRINGS["music_embed_title_playing"].format(song=current_song.title),
                 description=f"{user}\n{volume}\n{queue_length}",
                 image=current_song.thumbnail,
@@ -1358,7 +1362,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             voice_client = self.active_players.get(guild_id).voice_client
             is_paused = True if voice_client is None else not voice_client.is_playing()
         else:
-            new_embed = create_music_embed(color=current_embed.color, author=self.author)
+            new_embed = create_music_embed(color=current_embed.color, author=CURRENT_AUTHOR)
             is_paused = True
 
         await embed_message.edit(embed=new_embed, view=create_music_actionbar(is_paused))
