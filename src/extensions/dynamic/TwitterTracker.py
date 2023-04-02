@@ -29,6 +29,12 @@ class CustomStreamListener(StreamListener):
     def __init__(self, twitter_api: API):
         super().__init__(twitter_api)
 
+    def on_data(self, raw_data: str):
+        return super().on_data(raw_data)
+
+    def on_error(self, status_code: int):
+        return super().on_error(status_code)
+
 
 @default_permissions(administrator=True)
 @guild_only()
