@@ -1,8 +1,10 @@
 import logging
+import os
 
 from discord import Interaction, TextChannel
 from discord.app_commands import (autocomplete, command, default_permissions, describe, guild_only, rename)
 from discord.ext.commands import Bot, GroupCog
+from tweepy import API, OAuthHandler, Stream, StreamListener
 
 from common.discord import TwitterWebhookIDTransformer, respond_or_followup
 from common.io import load_cog_toml
@@ -12,9 +14,20 @@ from database.models import TwitterTrackerAccounts
 COG_STRINGS = load_cog_toml(__name__)
 WEBHOOK_PREFIX = __name__
 
+CONSUMER_KEY = os.getenv("TWITTER_CONSUMER_KEY")
+CONSUMER_SECRET = os.getenv("TWITTER_CONSUMER_SECRET")
+ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
+ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
+
 
 def entry_primary_key(twitter_id: int, webhook_id: int) -> int:
     return int(f"{twitter_id % 1000}{webhook_id % 1000}")
+
+
+class CustomStreamListener(StreamListener):
+
+    def __init__(self, twitter_api: API):
+        super().__init__(twitter_api)
 
 
 @default_permissions(administrator=True)
@@ -23,10 +36,18 @@ class TwitterTracker(GroupCog, name=COG_STRINGS["twitter_group_name"]):
 
     def __init__(self, bot: Bot):
         self.bot = bot
-        self.logger = logging.getLogger(__name__)
-        self.logger.info(f"{__name__} has been added as a Cog")
         self.webhooks = {}
         self.accounts = {}
+
+        twitter_auth = OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+        twitter_auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
+        self.twitter_api = API(twitter_auth)
+        self.twitter_api.verify_credentials()
+        self.stream_listener = CustomStreamListener(self.twitter_api)
+        self.account_filter = Stream(self.twitter_api.auth, self.stream_listener)
+
+        self.logger = logging.getLogger(__name__)
+        self.logger.info(f"{__name__} has been added as a Cog")
 
     @GroupCog.listener()
     async def on_ready(self):
@@ -177,8 +198,7 @@ class TwitterTracker(GroupCog, name=COG_STRINGS["twitter_group_name"]):
                 interaction,
                 ephemeral=True
             )
-            
-        
+
         if not twitter_id.isdigit():
             await respond_or_followup("The given twitter ID is not valid!", interaction, ephemeral=True)
             return
@@ -189,7 +209,6 @@ class TwitterTracker(GroupCog, name=COG_STRINGS["twitter_group_name"]):
                 DBSession.delete(entry)
             await respond_or_followup(f"No longer trakcing {twitter_id} in any webhook!", interaction, ephemeral=True)
             return
-
 
         if not webhook_id.isdigit():
             await respond_or_followup("The given webhook ID is not valid!", interaction, ephemeral=True)
