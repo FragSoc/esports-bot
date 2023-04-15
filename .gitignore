@@ -1,5 +1,6 @@
 **/__pycache__
 test-file.py
+.DS_STORE
 .vscode
 .idea
 secrets.env
