@@ -188,6 +188,18 @@ The user has control over the child Voice Channel name, and can limit how many/w
 
 ### Environment Variable: `ENABLE_VCMUSIC`
 
+In order to function, a google API key with access to YouTube Data API v3 must be set to the `GOOGLE_API` environment variable.
+
+### To create your Google API credentials:
+
+1. Go to the [Google Cloud API]("https://console.cloud.google.com/apis/") site.
+1. Create a new project and name it whatever you want.
+1. In the [dashboard](https://console.cloud.google.com/apis/dashboard), click the `Enable APIs and Services` and search for `YouTube Data API v3`.
+1. Click `Enable` to enable the use of the YouTube API.
+1. Keep going back until at your [dashboard](https://console.cloud.google.com/apis/dashboard), and go to the [credentials](https://console.cloud.google.com/apis/credentials) section on the left.
+1. Click on `Create Credentials` and then `API key`.
+1. Copy the key given. For security, it is recommended that you "restrict key" and only enable `YouTube Data API v3`.
+
 #### /music set-channel \<channel\> [optional: color] [optional: clear-channel] [optional: read-only]
 
 - Sets the channel to define as the music channel.
