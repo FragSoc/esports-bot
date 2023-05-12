@@ -268,7 +268,7 @@ In order to function, a google API key with access to YouTube Data API v3 must b
 - [ ] PingableRolesCog ⏳ WIP implementation in UserRoles
 - [x] RoleReactCog ✅ Implemented as RoleReact
 - [ ] TwitchCog ⚠️
-- [ ] TwitterCog ⏳ WIP implementation in TwitterTracker
+- [ ] TwitterCog ❌ Needs Twitter API v2 Bearer Token
 - [x] VoicemasterCog ✅ Implemented as VoiceAdmin
 - [ ] VotingCog ⚠️
 
