@@ -6,7 +6,7 @@ from discord.app_commands import (Transform, command, default_permissions, descr
 from discord.ext.commands import Bot, GroupCog
 
 from client import EsportsBot
-from common.discord import (RoleListTransformer, get_role, primary_key_from_object)
+from common.discord import RoleListTransformer, get_role
 from common.io import load_cog_toml
 from database.gateway import DBSession
 from database.models import AutoRolesConfig
@@ -61,11 +61,7 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
         successful_roles = []
         for role in roles:
             if role.is_assignable:
-                db_entry = AutoRolesConfig(
-                    primary_key=primary_key_from_object(role),
-                    guild_id=interaction.guild.id,
-                    role_id=role.id
-                )
+                db_entry = AutoRolesConfig(guild_id=interaction.guild.id, role_id=role.id)
                 if db_entry in initial_entries:
                     initial_entries.remove(db_entry)
                 else:
@@ -108,7 +104,7 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
             await interaction.followup.send(COG_STRINGS["roles_add_role_warn_already_added"], ephemeral=True)
             return False
 
-        db_entry = AutoRolesConfig(primary_key=primary_key_from_object(role), guild_id=role.guild.id, role_id=role.id)
+        db_entry = AutoRolesConfig(guild_id=role.guild.id, role_id=role.id)
         DBSession.create(db_entry)
         await interaction.followup.send(
             COG_STRINGS["roles_add_role_success"].format(role=role.mention),

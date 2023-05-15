@@ -34,12 +34,11 @@ from discord.ui import Select, View
 
 from client import EsportsBot
 from common.discord import (
+    ActiveEventTransformer,
+    ArchivedEventTransformer,
     ColourTransformer,
     DatetimeTransformer,
-    primary_key_from_object,
-    EventTransformer,
-    ActiveEventTransformer,
-    ArchivedEventTransformer
+    EventTransformer
 )
 from common.io import load_cog_toml, load_timezones
 from database.gateway import DBSession
@@ -517,7 +516,6 @@ class EventTools(GroupCog, name=COG_STRINGS["events_group_name"]):
         await signin_channel.send(embed=signin_embed, view=signin_menu)
 
         db_entry = EventToolsEvents(
-            primary_key=primary_key_from_object(event),
             guild_id=interaction.guild.id,
             channel_id=signin_channel.id,
             event_role_id=event_role.id,

@@ -12,7 +12,6 @@ from common.discord import (
     EmojiTransformer,
     RoleReactMenuTransformer,
     RoleReactRoleTransformer,
-    primary_key_from_object,
     respond_or_followup
 )
 from common.io import load_cog_toml
@@ -301,8 +300,7 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         await interaction.response.defer()
 
         message = await interaction.channel.send("​")
-        db_primary_key = primary_key_from_object(message)
-        db_item = RoleReactMenus(primary_key=db_primary_key, guild_id=interaction.guild.id, message_id=message.id)
+        db_item = RoleReactMenus(guild_id=interaction.guild.id, message_id=message.id)
         DBSession.create(db_item)
 
         message_embeds = embeds_from_options([], menu_id=message.id, color=color)

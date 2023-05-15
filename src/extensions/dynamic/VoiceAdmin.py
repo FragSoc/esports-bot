@@ -1,13 +1,12 @@
 import logging
 
-from discord import Interaction, Member, VoiceChannel, VoiceState, PermissionOverwrite
+from discord import (Interaction, Member, PermissionOverwrite, VoiceChannel, VoiceState)
 from discord.app_commands import (command, default_permissions, describe, guild_only, rename)
 from discord.errors import Forbidden
 from discord.ext.commands import Bot, GroupCog
 
 from client import EsportsBot
-from common.discord import primary_key_from_object
-from common.io import load_cog_toml, load_banned_words
+from common.io import load_banned_words, load_cog_toml
 from database.gateway import DBSession
 from database.models import VoiceAdminChild, VoiceAdminParent
 
@@ -210,7 +209,6 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_admin_group_name"]):
                     name=f"{member.display_name}'s VC"
                 )
             db_entry: VoiceAdminChild = VoiceAdminChild(
-                primary_key=primary_key_from_object(new_child_channel),
                 guild_id=new_child_channel.guild.id,
                 channel_id=new_child_channel.id,
                 owner_id=member.id,
@@ -247,11 +245,7 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_admin_group_name"]):
             await interaction.followup.send(COG_STRINGS["vc_set_parent_warn_already_child"], ephemeral=True)
             return False
 
-        db_entry: VoiceAdminParent = VoiceAdminParent(
-            primary_key=primary_key_from_object(channel),
-            guild_id=interaction.guild.id,
-            channel_id=channel.id
-        )
+        db_entry: VoiceAdminParent = VoiceAdminParent(guild_id=interaction.guild.id, channel_id=channel.id)
         DBSession.create(db_entry)
         self.logger.info(
             f"Successfully added {channel.name} (guildid - {channel.guild.id} | channelid - {channel.id}) "
