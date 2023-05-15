@@ -245,7 +245,7 @@ In order to function, a google API key with access to YouTube Data API v3 must b
 - ~~Implement AutoRoles cog~~
 - Add back functionality of previous bot (eg. Music, PingableRoles, etc.)
 - Add game deal tracker (DealTracker(?) cog)
-- Add proper support for SQLite auto increment primary keys
+- ~~Add proper support for SQLite auto increment primary keys~~
 - ~~Add proper use of command groups~~
 
 ## Previous extensions to implement
