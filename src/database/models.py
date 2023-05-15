@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Boolean, Column, String
+from sqlalchemy import BigInteger, Boolean, Column, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -18,14 +18,14 @@ __all__ = [
 
 class VoiceAdminParent(base):
     __tablename__ = "voiceadmin_parents"
-    primary_key = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
+    primary_key = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
     channel_id = Column(BigInteger, nullable=False)
 
 
 class VoiceAdminChild(base):
     __tablename__ = "voiceadmin_children"
-    primary_key = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
+    primary_key = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
     channel_id = Column(BigInteger, nullable=False)
     owner_id = Column(BigInteger, nullable=False)
@@ -36,14 +36,14 @@ class VoiceAdminChild(base):
 
 class AutoRolesConfig(base):
     __tablename__ = "autoroles_config"
-    primary_key = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
+    primary_key = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
     role_id = Column(BigInteger, nullable=False)
 
 
 class EventToolsEvents(base):
     __tablename__ = "eventtools_events"
-    primary_key = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
+    primary_key = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
     channel_id = Column(BigInteger, nullable=False)
     event_role_id = Column(BigInteger, nullable=False)
@@ -62,14 +62,14 @@ class MusicChannels(base):
 
 class RoleReactMenus(base):
     __tablename__ = "rolereact_menus"
-    primary_key = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
+    primary_key = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
     message_id = Column(BigInteger, nullable=False)
 
 
 class TwitterTrackerAccounts(base):
     __tablename__ = "twittertracker_accounts"
-    primary_key = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
+    primary_key = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
     twitter_id = Column(BigInteger, nullable=False)
     twitter_name = Column(String, nullable=False)
