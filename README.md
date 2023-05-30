@@ -263,7 +263,7 @@ In order to function, a google API key with access to YouTube Data API v3 must b
 - [x] AdminCog ✅ Implemented as AdminTools
 - [x] DefaultRoleCog ✅ Implemented as AutoRoles
 - [x] EventCategoriesCog ✅ Implemented as EventTools
-- [ ] LogChannelCog ⚠️
+- [ ] LogChannelCog ⏳ WIP implementation in LogChannel
 - [x] MusicCog ✅ Implemented as VCMusic
 - [ ] PingableRolesCog ⏳ WIP implementation in UserRoles
 - [x] RoleReactCog ✅ Implemented as RoleReact
