@@ -69,7 +69,7 @@ class LogChannel(GroupCog, name=COG_STRINGS["log_group_name"]):
         log_level = ""
         match record.levelno:
             case logging.DEBUG:
-                log_level = "🤓"
+                log_level = "🐞"
             case logging.INFO:
                 log_level = "✅"
             case logging.WARNING:
@@ -77,9 +77,9 @@ class LogChannel(GroupCog, name=COG_STRINGS["log_group_name"]):
             case logging.WARN:
                 log_level = "⚠️"
             case logging.ERROR:
-                log_level = "❌"
+                log_level = "❗️"
             case logging.CRITICAL:
-                log_level = "🔥🔥"
+                log_level = "❌"
 
         log_message = f"[{log_level}][<t:{int(record.created)}:f>] " + contents_no_prefix.replace(f"[{guild_id}]", "").strip()
 
