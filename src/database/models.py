@@ -69,5 +69,6 @@ class RoleReactMenus(base):
 
 class LogChannelChannels(base):
     __tablename__ = "logchannel_channels"
-    guild_id = Column(BigInteger, nullable=False)
+    guild_id = Column(BigInteger, nullable=False, primary_key=True)
     channel_id = Column(BigInteger, nullable=False)
+    current_message_id = Column(BigInteger, nullable=False)
