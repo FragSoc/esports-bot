@@ -66,7 +66,22 @@ class LogChannel(GroupCog, name=COG_STRINGS["log_group_name"]):
         channel = guild.get_channel(log_channel_entry.channel_id)
         message = await channel.fetch_message(log_channel_entry.current_message_id)
 
-        log_message = f"[<t:{int(record.created)}:f>] " + contents_no_prefix.replace(f"[{guild_id}]", "").strip()
+        log_level = ""
+        match record.levelno:
+            case logging.DEBUG:
+                log_level = "🤓"
+            case logging.INFO:
+                log_level = "✅"
+            case logging.WARNING:
+                log_level = "⚠️"
+            case logging.WARN:
+                log_level = "⚠️"
+            case logging.ERROR:
+                log_level = "❌"
+            case logging.CRITICAL:
+                log_level = "🔥🔥"
+
+        log_message = f"[{log_level}][<t:{int(record.created)}:f>] " + contents_no_prefix.replace(f"[{guild_id}]", "").strip()
 
         if len(message.content) + len(log_message) > DISCORD_MESSAGE_LIMIT - 5:
             message = await channel.send(content=log_message)
