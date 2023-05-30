@@ -11,7 +11,8 @@ __all__ = [
     "AutoRolesConfig",
     "EventToolsEvents",
     "MusicChannels",
-    "RoleReactMenus"
+    "RoleReactMenus",
+    "LogChannelChannels"
 ]
 
 
@@ -64,3 +65,9 @@ class RoleReactMenus(base):
     primary_key = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
     message_id = Column(BigInteger, nullable=False)
+
+
+class LogChannelChannels(base):
+    __tablename__ = "logchannel_channels"
+    guild_id = Column(BigInteger, nullable=False)
+    channel_id = Column(BigInteger, nullable=False)
