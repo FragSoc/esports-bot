@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 import re
 from typing import Any, Coroutine
 
@@ -26,8 +25,6 @@ class LogStreamCapture(logging.StreamHandler):
     def emit(self, record):
         try:
             asyncio.create_task(self.emit_handler(record))
-            message = self.format(record)
-            self.stream.write(message)
         except:
             self.handleError(record)
 
@@ -40,13 +37,16 @@ class LogChannel(GroupCog, name=COG_STRINGS["log_group_name"]):
         self.root_logger = logging.getLogger()
         self.custom_handler = LogStreamCapture(self.log_handler)
         self.root_logger.addHandler(self.custom_handler)
-        self.prefix = os.getenv("LOGGING_PREFIX")
+        self.logger = logging.getLogger(__name__)
 
     async def log_handler(self, record: logging.LogRecord):
-        if not record.message.startswith(self.prefix):
+        if not hasattr(record, "message"):
             return
 
-        contents_no_prefix = record.message[record.message.index(self.prefix) + len(self.prefix):]
+        if not record.message.startswith(self.bot.logging_prefix):
+            return
+
+        contents_no_prefix = record.message[record.message.index(self.bot.logging_prefix) + len(self.bot.logging_prefix):]
         matches = re.search(r"^\[(?P<guild>[0-9]+)\]", contents_no_prefix)
         if not matches:
             return

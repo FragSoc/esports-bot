@@ -20,6 +20,7 @@ class __EsportsBot(Bot):
         super().__init__(command_prefix, *args, **kwargs)
         self.logger = logging.getLogger(__name__)
         self.only_ephemeral = all_messages_ephemeral
+        self.logging_prefix = os.getenv("LOGGING_PREFIX")
 
     def find_extensions(self):
         defaults = []
