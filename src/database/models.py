@@ -11,8 +11,7 @@ __all__ = [
     "AutoRolesConfig",
     "EventToolsEvents",
     "MusicChannels",
-    "RoleReactMenus",
-    "TwitterTrackerAccounts"
+    "RoleReactMenus"
 ]
 
 
@@ -65,12 +64,3 @@ class RoleReactMenus(base):
     primary_key = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
     message_id = Column(BigInteger, nullable=False)
-
-
-class TwitterTrackerAccounts(base):
-    __tablename__ = "twittertracker_accounts"
-    primary_key = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True, nullable=False)
-    guild_id = Column(BigInteger, nullable=False)
-    twitter_id = Column(BigInteger, nullable=False)
-    twitter_name = Column(String, nullable=False)
-    webhook_id = Column(BigInteger, nullable=False)
