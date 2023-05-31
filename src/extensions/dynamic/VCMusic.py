@@ -688,6 +688,10 @@ class VCMusicAdmin(GroupCog, name=COG_STRINGS["music_admin_group_name"]):
                                               view_channel=True)
             )
 
+        self.logger.info(
+            f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} set {channel.mention} as the active music channel"
+        )
+
 
 @guild_only()
 class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
