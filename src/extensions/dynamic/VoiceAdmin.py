@@ -7,6 +7,7 @@ from discord.ext.commands import Bot, GroupCog
 
 from client import EsportsBot
 from common.io import load_banned_words, load_cog_toml
+from common.util import r_replace
 from database.gateway import DBSession
 from database.models import VoiceAdminChild, VoiceAdminParent
 
@@ -365,6 +366,12 @@ class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
 
         name_set = new_name if new_name else f"{interaction.user.display_name}'s VC"
 
+        if db_entry.is_limited:
+            name_set += COG_STRINGS["vc_limited_icon_with_delimiter"]
+
+        if db_entry.is_locked:
+            name_set += COG_STRINGS["vc_locked_icon_with_delimiter"]
+
         if not new_name:
             if db_entry.has_custom_name:
                 await voice_channel.edit(name=f"{interaction.user.display_name}'s VC")
@@ -469,6 +476,7 @@ class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
             db_entry.is_locked = True
             DBSession.update(db_entry)
 
+        await voice_channel.edit(name=f"{voice_channel.name}{COG_STRINGS['vc_locked_icon_with_delimiter']}")
         await interaction.followup.send(COG_STRINGS["vc_lock_success"], ephemeral=self.bot.only_ephemeral)
 
         return True
@@ -509,7 +517,12 @@ class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
 
         db_entry.is_locked = False
         DBSession.update(db_entry)
-        await voice_channel.edit(sync_permissions=True)
+        await voice_channel.edit(
+            name=r_replace(voice_channel.name,
+                           COG_STRINGS["vc_locked_icon_with_delimiter"],
+                           ""),
+            sync_permissions=True
+        )
         await voice_channel.set_permissions(voice_channel.guild.default_role, overwrite=None)
 
         await interaction.followup.send(COG_STRINGS["vc_unlock_success"], ephemeral=self.bot.only_ephemeral)
@@ -558,6 +571,8 @@ class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
             db_entry.is_limited = True
             DBSession.update(db_entry)
 
+        await voice_channel.edit(name=f"{voice_channel.name}{COG_STRINGS['vc_limited_icon_with_delimiter']}")
+
         await interaction.followup.send(
             COG_STRINGS["vc_limit_success"].format(count=user_limit),
             ephemeral=self.bot.only_ephemeral
@@ -597,7 +612,12 @@ class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
 
         db_entry.is_limited = False
         DBSession.update(db_entry)
-        await voice_channel.edit(user_limit=None)
+        await voice_channel.edit(
+            name=r_replace(voice_channel.name,
+                           COG_STRINGS["vc_limited_icon_with_delimiter"],
+                           ""),
+            user_limit=None
+        )
 
         await interaction.followup.send(COG_STRINGS["vc_unlimit_success"], ephemeral=self.bot.only_ephemeral)
         return True
