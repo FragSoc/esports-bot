@@ -75,6 +75,25 @@ All commands in this cog require the user to have the administrator permissions 
 </details>
 
 <details>
+<summary>LogChannel</summary>
+
+LogChannel is a cog used to send log messages to a specified discord channel per-guild. A standard logging message can be forwarded by prefixing the message with the `LOGGING_PREFIX` and the guild, eg. `"LOGGING_PREFIX[guild_id] Message...".` This will send the log message to the specified log channel for the given guild if it has been configured to do so.
+
+#### /logging set-channel \<Text Channel\>
+
+- Configures the given channel to be the logging channel.
+
+#### /logging get-channel
+
+- Gets the currently assigned logging channel.
+
+#### /logging remove-channel
+
+- Removes the currently configured logging channel.
+
+</details>
+
+<details>
 <summary>VoiceAdmin</summary>
 
 ## VoiceAdmin
@@ -263,7 +282,7 @@ In order to function, a google API key with access to YouTube Data API v3 must b
 - [x] AdminCog ✅ Implemented as AdminTools
 - [x] DefaultRoleCog ✅ Implemented as AutoRoles
 - [x] EventCategoriesCog ✅ Implemented as EventTools
-- [ ] LogChannelCog ⏳ WIP implementation in LogChannel
+- [x] LogChannelCog ✅ Implementation as LogChannel
 - [x] MusicCog ✅ Implemented as VCMusic
 - [ ] PingableRolesCog ⏳ WIP implementation in UserRoles
 - [x] RoleReactCog ✅ Implemented as RoleReact
