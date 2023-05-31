@@ -65,7 +65,10 @@ class __EsportsBot(Bot):
             DEV_GUILD = Object(id=os.getenv("DEV_GUILD_ID"))
             self.logger.warning(f"Using guild with id {DEV_GUILD.id} as Development guild!")
             self.tree.copy_global_to(guild=DEV_GUILD)
-            await self.tree.sync(guild=DEV_GUILD)
+        else:
+            DEV_GUILD = None
+
+        await self.tree.sync(guild=DEV_GUILD)
 
 
 EsportsBot = __EsportsBot(command_prefix=os.getenv("COMMAND_PREFIX"), all_messages_ephemeral=False, intents=Intents.all())
