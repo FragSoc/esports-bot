@@ -284,7 +284,7 @@ In order to function, a google API key with access to YouTube Data API v3 must b
 - [x] EventCategoriesCog ✅ Implemented as EventTools
 - [x] LogChannelCog ✅ Implementation as LogChannel
 - [x] MusicCog ✅ Implemented as VCMusic
-- [ ] PingableRolesCog ⏳ WIP implementation in UserRoles
+- [ ] PingableRolesCog ⏳ Not being worked on, started in UserRoles
 - [x] RoleReactCog ✅ Implemented as RoleReact
 - [ ] TwitchCog ⚠️
 - [ ] TwitterCog ❌ Needs Twitter API v2 Bearer Token

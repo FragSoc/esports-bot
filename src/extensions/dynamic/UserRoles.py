@@ -16,7 +16,6 @@ class UserRolesAdmin(GroupCog, name=COG_STRINGS["users_admin_group_name"]):
         self.logger.info(f"{__name__}.{__class__.__name__} has been added as a Cog")
 
 
-@default_permissions(administrator=True)
 @guild_only()
 class UserRoles(GroupCog, name=COG_STRINGS["users_group_name"]):
 
