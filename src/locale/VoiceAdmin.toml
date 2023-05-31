@@ -2,8 +2,8 @@ vc_group_name = "voice"
 vc_admin_group_name = "voice-admin"
 
 default_vc_name = "{name}'s VC"
-vc_limited_icon_with_delimited = "​📌​"
-vc_locked_icon_with_delimiter = "​🔒​"
+vc_limited_icon_with_delimited = "[​📌]​"
+vc_locked_icon_with_delimiter = "​[🔒]​"
 vc_must_be_owner = "You must be the VC owner to do this."
 
 vc_set_parent_name = "set-parent"
