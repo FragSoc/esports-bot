@@ -75,6 +75,10 @@ class AdminTools(GroupCog, name=COG_STRINGS["admin_group_name"]):
 
         await interaction.response.defer(ephemeral=True)
         messages = await interaction.channel.purge(limit=count, before=interaction.created_at)
+
+        self.logger.info(
+            f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} cleared {len(messages)} from {interaction.channel.mention}"
+        )
         await interaction.followup.send(
             COG_STRINGS["admin_clear_success"].format(count=len(messages)),
             ephemeral=self.bot.only_ephemeral
