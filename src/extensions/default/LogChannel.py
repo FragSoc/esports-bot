@@ -3,7 +3,7 @@ import logging
 import re
 from typing import Any, Coroutine
 
-from discord import Interaction, TextChannel
+from discord import Interaction, TextChannel, Embed, Color, NotFound
 from discord.app_commands import command, default_permissions, describe, rename
 from discord.ext.commands import Bot, GroupCog
 
@@ -13,7 +13,6 @@ from database.gateway import DBSession
 from database.models import LogChannelChannels
 
 COG_STRINGS = load_cog_toml(__name__)
-DISCORD_MESSAGE_LIMIT = 2000
 
 
 class LogStreamCapture(logging.StreamHandler):
@@ -63,9 +62,6 @@ class LogChannel(GroupCog, name=COG_STRINGS["log_group_name"]):
         if not log_channel_entry:
             return
 
-        channel = guild.get_channel(log_channel_entry.channel_id)
-        message = await channel.fetch_message(log_channel_entry.current_message_id)
-
         log_level = ""
         match record.levelno:
             case logging.DEBUG:
@@ -81,27 +77,51 @@ class LogChannel(GroupCog, name=COG_STRINGS["log_group_name"]):
             case logging.CRITICAL:
                 log_level = "❌"
 
-        log_message = f"[{log_level}][<t:{int(record.created)}:f>] " + contents_no_prefix.replace(f"[{guild_id}]", "").strip()
+        log_info = f"[{log_level}][<t:{int(record.created)}:f>] "
+        log_message = contents_no_prefix.replace(f"[{guild_id}]", "").strip()
 
-        if len(message.content) + len(log_message) > DISCORD_MESSAGE_LIMIT - 5:
-            message = await channel.send(content=log_message)
+        channel = guild.get_channel(log_channel_entry.channel_id)
+        try:
+            message = await channel.fetch_message(log_channel_entry.current_message_id)
+            message_embed = message.embeds[-1]
+
+            if len(message_embed.fields) < 25:
+                message_embed.add_field(name=log_info, value=log_message, inline=False)
+                embeds = message.embeds
+                embeds[-1] = message_embed
+                await message.edit(embeds=embeds)
+            elif len(message.embeds < 10):
+                embed = Embed(title="​", description="", colour=Color.random())
+                embed.add_field(name=log_info, value=log_message, inline=False)
+                embeds = message.embeds
+                embeds.append(embed)
+                await message.edit(embeds=embeds)
+            else:
+                embed = Embed(title="​", description="", colour=Color.random())
+                embed.add_field(name=log_info, value=log_message, inline=False)
+                message = await channel.send(embed=embed)
+                log_channel_entry.current_message_id = message.id
+                DBSession.update(log_channel_entry)
+        except NotFound:
+            embed = Embed(title="​", description="", colour=Color.random())
+            embed.add_field(name=log_info, value=log_message, inline=False)
+            message = await channel.send(embed=embed)
             log_channel_entry.current_message_id = message.id
             DBSession.update(log_channel_entry)
-        else:
-            await message.edit(content=f"{message.content}\n{log_message}")
+            return
 
     @command(name=COG_STRINGS["log_set_channel_name"], description=COG_STRINGS["log_set_channel_description"])
     @describe(channel=COG_STRINGS["log_set_channel_channel_describe"])
     @rename(channel=COG_STRINGS["log_set_channel_channel_rename"])
     async def set_log_channel(self, interaction: Interaction, channel: TextChannel):
-        message = await channel.send("# Logging start")
+        await channel.send("# Logging Start")
         current_channel = DBSession.get(LogChannelChannels, guild_id=interaction.guild.id)
         if not current_channel:
-            db_item = LogChannelChannels(guild_id=interaction.guild.id, channel_id=channel.id, current_message_id=message.id)
+            db_item = LogChannelChannels(guild_id=interaction.guild.id, channel_id=channel.id, current_message_id=0)
             DBSession.create(db_item)
         else:
             current_channel.channel_id = channel.id
-            current_channel.current_message_id = message.id
+            current_channel.current_message_id = 0
             DBSession.update(current_channel)
 
         await respond_or_followup(
