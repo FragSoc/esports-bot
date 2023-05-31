@@ -145,18 +145,14 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_admin_group_name"]):
 
             if not before.channel.category and not member.guild.me.guild_permissions.manage_channels:
                 self.logger.error(
-                    f"Missing permission `manage_channels` for category {before.channel.category.name} "
-                    f"(channelid - {before.channel.category.id}) in guild {before.channel.guild.name} "
-                    f"(guildid - {before.channel.guild.id})"
+                    f"{self.bot.logging_prefix}[{before.channel.guild.id}] Missing permissions `Manage Channels` in this server!"
                 )
                 return
             elif before.channel.category and not before.channel.category.permissions_for(
                 before.channel.guild.me
             ).manage_channels:
                 self.logger.error(
-                    f"Missing permission `manage_channels` for category {before.channel.category.name} "
-                    f"(channelid - {before.channel.category.id}) in guild {before.channel.guild.name} "
-                    f"(guildid - {before.channel.guild.id})"
+                    f"{self.bot.logging_prefix}[{before.channel.guild.id}] Missing permissions `Manage Channels` for the category {before.channel.category.name}({before.channel.category.id})"
                 )
                 return
 
@@ -188,16 +184,12 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_admin_group_name"]):
 
             if not after.channel.category and not member.guild.me.guild_permissions.manage_channels:
                 self.logger.error(
-                    f"Missing permission `manage_channels` for category {after.channel.category.name} "
-                    f"(channelid - {after.channel.category.id}) in guild {after.channel.guild.name} "
-                    f"(guildid - {after.channel.guild.id})"
+                    f"{self.bot.logging_prefix}[{after.channel.guild.id}] Missing permissions `Manage Channels` in this server!"
                 )
                 return
             elif after.channel.category and not after.channel.category.permissions_for(after.channel.guild.me).manage_channels:
                 self.logger.error(
-                    f"Missing permission `manage_channels` for category {after.channel.category.name} "
-                    f"(channelid - {after.channel.category.id}) in guild {after.channel.guild.name} "
-                    f"(guildid - {after.channel.guild.id})"
+                    f"{self.bot.logging_prefix}[{after.channel.guild.id}] Missing permissions `Manage Channels` for the category {after.channel.category.name}({after.channel.category.id})"
                 )
                 return
 
