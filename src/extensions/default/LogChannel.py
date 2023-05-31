@@ -129,6 +129,31 @@ class LogChannel(GroupCog, name=COG_STRINGS["log_group_name"]):
             interaction=interaction
         )
 
+    @command(name=COG_STRINGS["log_get_channel_name"], description=COG_STRINGS["log_get_channel_description"])
+    async def get_log_channel(self, interaction: Interaction):
+        guild_id = interaction.guild.id
+
+        db_item = DBSession.get(LogChannelChannels, guild_id=guild_id)
+        if not db_item:
+            await respond_or_followup(COG_STRINGS["log_warn_channel_not_set"], interaction=interaction)
+            return
+
+        channel_id = db_item.channel_id
+        DBSession.delete(db_item)
+
+        channel = interaction.guild.get_channel(channel_id)
+        if not channel:
+            await respond_or_followup(
+                COG_STRINGS["log_error_channel_deleted"].format(channel_id=channel_id),
+                interaction=interaction
+            )
+            return
+
+        await respond_or_followup(
+            COG_STRINGS["log_get_channel_success"].format(channel=channel.mention),
+            interaction=interaction
+        )
+
     @command(name=COG_STRINGS["log_remove_channel_name"], description=COG_STRINGS["log_remove_channel_description"])
     async def remove_log_channel(self, interaction: Interaction):
         guild_id = interaction.guild.id
