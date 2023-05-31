@@ -248,8 +248,7 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_admin_group_name"]):
         db_entry: VoiceAdminParent = VoiceAdminParent(guild_id=interaction.guild.id, channel_id=channel.id)
         DBSession.create(db_entry)
         self.logger.info(
-            f"Successfully added {channel.name} (guildid - {channel.guild.id} | channelid - {channel.id}) "
-            f"to Parent Voice Channel DB Table!"
+            f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} made {channel.mention} into a Parent voice channel"
         )
         await interaction.followup.send(
             COG_STRINGS["vc_set_parent_success"].format(channel=channel),
@@ -277,6 +276,9 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_admin_group_name"]):
 
         db_entry = DBSession.get(VoiceAdminParent, guild_id=channel.guild.id, channel_id=channel.id)
         DBSession.delete(db_entry)
+        self.logger.info(
+            f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} removed {channel.mention} from being a Parent voice channel"
+        )
         await interaction.followup.send(
             COG_STRINGS["vc_remove_parent_success"].format(channel=channel.name),
             ephemeral=self.bot.only_ephemeral
@@ -355,6 +357,9 @@ class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
             return False
 
         if not check_vc_name_allowed(new_name):
+            self.logger.warning(
+                f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} attempted to rename a voice channel to a disallowed name: ||{new_name}||"
+            )
             await interaction.followup.send(COG_STRINGS["vc_rename_warn_invalid_name"], ephemeral=True)
             return False
 
