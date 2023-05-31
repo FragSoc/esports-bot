@@ -36,9 +36,14 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
     async def assign_roles(self, member: Member):
         guild_roles = DBSession.list(AutoRolesConfig, guild_id=member.guild.id)
 
+        parsed_roles = []
         if guild_roles:
-            roles = [member.guild.get_role(x.role_id) for x in guild_roles]
-            await member.add_roles(*roles)
+            parsed_roles = [member.guild.get_role(x.role_id) for x in guild_roles]
+            await member.add_roles(*parsed_roles)
+
+        self.logger.info(
+            f"{self.bot.logger_prefix}[{member.guild.id}] Member ({member.mention}) joined and received the following roles: [{','.join([x.mention for x in parsed_roles])}]"
+        )
 
     @command(name=COG_STRINGS["roles_set_list_name"], description=COG_STRINGS["roles_set_list_description"])
     @describe(roles=COG_STRINGS["roles_set_list_param_describe"])
@@ -83,6 +88,9 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
             color=Color.random()
         )
 
+        self.logger.info(
+            f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} updated the list of automatically applied roles: [{','.join([x.mention for x in successful_roles])}]"
+        )
         await interaction.followup.send(embed=response_embed, ephemeral=self.bot.only_ephemeral)
         return True
 
@@ -106,6 +114,9 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
 
         db_entry = AutoRolesConfig(guild_id=role.guild.id, role_id=role.id)
         DBSession.create(db_entry)
+        self.logger.info(
+            f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} added {role.mention} to the list of automatically assigned roles"
+        )
         await interaction.followup.send(
             COG_STRINGS["roles_add_role_success"].format(role=role.mention),
             ephemeral=self.bot.only_ephemeral
@@ -131,6 +142,9 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
             return False
 
         DBSession.delete(db_entry)
+        self.logger.info(
+            f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} removed {role.mention} from the list of automatically assigned roles"
+        )
         await interaction.followup.send(
             COG_STRINGS["roles_remove_role_success"].format(role=role.mention),
             ephemeral=self.bot.only_ephemeral
@@ -175,6 +189,9 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
         for item in db_items:
             DBSession.delete(item)
 
+        self.logger.info(
+            f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} cleared the list of automatically assigned roles"
+        )
         await interaction.followup.send(COG_STRINGS["roles_clear_list_success"], ephemeral=self.bot.only_ephemeral)
         return True
 
