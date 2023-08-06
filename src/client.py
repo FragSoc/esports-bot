@@ -19,7 +19,6 @@ class __EsportsBot(Bot):
         """
         super().__init__(command_prefix, *args, **kwargs)
         self.logger = logging.getLogger(__name__)
-        self.only_ephemeral = all_messages_ephemeral
         self.logging_prefix = os.getenv("LOGGING_PREFIX")
 
     def find_extensions(self):
@@ -42,8 +41,6 @@ class __EsportsBot(Bot):
     async def setup_hook(self):
         """The setup function that is called prior to the bot connecting to the Discord Gateway.
         """
-        if not self.only_ephemeral:
-            self.only_ephemeral = os.getenv("ALL_MESSAGES_EPHEMERAL", "FALSE").upper() == "TRUE"
 
         default_extensions, dynamic_extensions = self.find_extensions()
         enabled_extensions = []

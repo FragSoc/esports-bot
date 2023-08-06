@@ -42,10 +42,7 @@ class AdminTools(GroupCog, name=COG_STRINGS["admin_group_name"]):
         await interaction.response.defer(ephemeral=True)
 
         member_count = interaction.guild.member_count
-        await interaction.followup.send(
-            COG_STRINGS["admin_members_format"].format(count=member_count),
-            ephemeral=self.bot.only_ephemeral
-        )
+        await interaction.followup.send(COG_STRINGS["admin_members_format"].format(count=member_count), ephemeral=True)
         return True
 
     @command(name=COG_STRINGS["admin_version_name"], description=COG_STRINGS["admin_version_description"])
@@ -55,7 +52,7 @@ class AdminTools(GroupCog, name=COG_STRINGS["admin_group_name"]):
         Args:
             interaction (Interaction): The interaction that triggered the command.
         """
-        await interaction.response.send_message(self.version_string, ephemeral=self.bot.only_ephemeral)
+        await interaction.response.send_message(self.version_string, ephemeral=True)
         return True
 
     @command(name=COG_STRINGS["admin_clear_name"], description=COG_STRINGS["admin_clear_description"])
@@ -79,10 +76,7 @@ class AdminTools(GroupCog, name=COG_STRINGS["admin_group_name"]):
         self.logger.info(
             f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} cleared {len(messages)} from {interaction.channel.mention}"
         )
-        await interaction.followup.send(
-            COG_STRINGS["admin_clear_success"].format(count=len(messages)),
-            ephemeral=self.bot.only_ephemeral
-        )
+        await interaction.followup.send(COG_STRINGS["admin_clear_success"].format(count=len(messages)), ephemeral=False)
         return True
 
 

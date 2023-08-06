@@ -564,7 +564,7 @@ class EventTools(GroupCog, name=COG_STRINGS["events_group_name"]):
         await discord_event.start()
         await interaction.followup.send(
             content=COG_STRINGS["events_open_event_success"].format(event_name=event.name),
-            ephemeral=self.bot.only_ephemeral
+            ephemeral=True
         )
         return True
 
@@ -602,7 +602,7 @@ class EventTools(GroupCog, name=COG_STRINGS["events_group_name"]):
             if await self.delete_event(interaction.guild, event=event):
                 await interaction.followup.send(
                     content=COG_STRINGS["events_close_event_success_no_archive"].format(event_name=event.name),
-                    ephemeral=self.bot.only_ephemeral
+                    ephemeral=True
                 )
             else:
                 await interaction.followup.send(content=COG_STRINGS[""], ephemeral=True)
@@ -614,7 +614,7 @@ class EventTools(GroupCog, name=COG_STRINGS["events_group_name"]):
                         event_name=event.name,
                         result="cleared" if clear_messages else "not changed"
                     ),
-                    ephemeral=self.bot.only_ephemeral
+                    ephemeral=True
                 )
 
         discord_event = interaction.guild.get_scheduled_event(event.event_id)
@@ -723,7 +723,7 @@ class EventTools(GroupCog, name=COG_STRINGS["events_group_name"]):
         await interaction.followup.send(
             content=COG_STRINGS["events_reschedule_event_success"].format(name=event.name,
                                                                           event_id=event.event_id),
-            ephemeral=self.bot.only_ephemeral
+            ephemeral=False
         )
         return True
 
@@ -757,7 +757,7 @@ class EventTools(GroupCog, name=COG_STRINGS["events_group_name"]):
 
         await interaction.followup.send(
             content=COG_STRINGS["events_remove_event_success"].format(name=event.name),
-            ephemeral=self.bot.only_ephemeral
+            ephemeral=False
         )
 
 

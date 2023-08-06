@@ -306,7 +306,7 @@ class RoleReact(GroupCog, name=COG_STRINGS["react_group_name"]):
         message_embeds = embeds_from_options([], menu_id=message.id, color=color)
         await message.edit(embeds=message_embeds)
 
-        await respond_or_followup(COG_STRINGS["react_create_menu_success"], interaction, ephemeral=self.bot.only_ephemeral)
+        await respond_or_followup(COG_STRINGS["react_create_menu_success"], interaction, ephemeral=True)
 
     @command(name=COG_STRINGS["react_delete_menu_name"], description=COG_STRINGS["react_delete_menu_description"])
     @describe(menu_id=COG_STRINGS["react_delete_menu_message_id_describe"])

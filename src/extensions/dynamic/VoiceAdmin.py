@@ -243,10 +243,7 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_admin_group_name"]):
         self.logger.info(
             f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} made {channel.mention} into a Parent voice channel"
         )
-        await interaction.followup.send(
-            COG_STRINGS["vc_set_parent_success"].format(channel=channel),
-            ephemeral=self.bot.only_ephemeral
-        )
+        await interaction.followup.send(COG_STRINGS["vc_set_parent_success"].format(channel=channel), ephemeral=True)
         return True
 
     @command(name=COG_STRINGS["vc_remove_parent_name"], description=COG_STRINGS["vc_remove_parent_description"])
@@ -272,10 +269,7 @@ class VoiceAdmin(GroupCog, name=COG_STRINGS["vc_admin_group_name"]):
         self.logger.info(
             f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} removed {channel.mention} from being a Parent voice channel"
         )
-        await interaction.followup.send(
-            COG_STRINGS["vc_remove_parent_success"].format(channel=channel.name),
-            ephemeral=self.bot.only_ephemeral
-        )
+        await interaction.followup.send(COG_STRINGS["vc_remove_parent_success"].format(channel=channel.name), ephemeral=True)
         return True
 
 
@@ -306,15 +300,12 @@ class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
         fetched_channels = [await interaction.guild.fetch_channel(x.channel_id) for x in db_items]
 
         if len(fetched_channels) == 0:
-            await interaction.followup.send(COG_STRINGS["vc_get_parents_empty"], ephemeral=self.bot.only_ephemeral)
+            await interaction.followup.send(COG_STRINGS["vc_get_parents_empty"], ephemeral=True)
             return False
 
         response_string = "\n".join([f"- {x.name}" for x in fetched_channels])
 
-        await interaction.followup.send(
-            COG_STRINGS["vc_get_parents_format"].format(channels=response_string),
-            ephemeral=self.bot.only_ephemeral
-        )
+        await interaction.followup.send(COG_STRINGS["vc_get_parents_format"].format(channels=response_string), ephemeral=True)
         return True
 
     @command(
@@ -379,10 +370,7 @@ class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
             f"Updated child Voice Channel of {interaction.user.display_name} "
             f"(guildid - {interaction.guild.id} | channelid - {voice_channel.id}) to {name_set}"
         )
-        await interaction.followup.send(
-            COG_STRINGS["vc_rename_success"].format(name=name_set),
-            ephemeral=self.bot.only_ephemeral
-        )
+        await interaction.followup.send(COG_STRINGS["vc_rename_success"].format(name=name_set), ephemeral=True)
         return True
 
     @command(
@@ -469,7 +457,7 @@ class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
             DBSession.update(db_entry)
 
         await voice_channel.edit(name=f"{voice_channel.name}{COG_STRINGS['vc_locked_icon_with_delimiter']}")
-        await interaction.followup.send(COG_STRINGS["vc_lock_success"], ephemeral=self.bot.only_ephemeral)
+        await interaction.followup.send(COG_STRINGS["vc_lock_success"], ephemeral=True)
 
         return True
 
@@ -517,7 +505,7 @@ class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
         )
         await voice_channel.set_permissions(voice_channel.guild.default_role, overwrite=None)
 
-        await interaction.followup.send(COG_STRINGS["vc_unlock_success"], ephemeral=self.bot.only_ephemeral)
+        await interaction.followup.send(COG_STRINGS["vc_unlock_success"], ephemeral=True)
         return True
 
     @command(
@@ -565,10 +553,7 @@ class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
 
         await voice_channel.edit(name=f"{voice_channel.name}{COG_STRINGS['vc_limited_icon_with_delimiter']}")
 
-        await interaction.followup.send(
-            COG_STRINGS["vc_limit_success"].format(count=user_limit),
-            ephemeral=self.bot.only_ephemeral
-        )
+        await interaction.followup.send(COG_STRINGS["vc_limit_success"].format(count=user_limit), ephemeral=True)
         return True
 
     @command(
@@ -611,7 +596,7 @@ class VoiceAdminUser(GroupCog, name=COG_STRINGS["vc_group_name"]):
             user_limit=None
         )
 
-        await interaction.followup.send(COG_STRINGS["vc_unlimit_success"], ephemeral=self.bot.only_ephemeral)
+        await interaction.followup.send(COG_STRINGS["vc_unlimit_success"], ephemeral=True)
         return True
 
 

@@ -91,7 +91,7 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
         self.logger.info(
             f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} updated the list of automatically applied roles: [{','.join([x.mention for x in successful_roles])}]"
         )
-        await interaction.followup.send(embed=response_embed, ephemeral=self.bot.only_ephemeral)
+        await interaction.followup.send(embed=response_embed, ephemeral=False)
         return True
 
     @command(name=COG_STRINGS["roles_add_role_name"], description=COG_STRINGS["roles_add_role_description"])
@@ -117,10 +117,7 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
         self.logger.info(
             f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} added {role.mention} to the list of automatically assigned roles"
         )
-        await interaction.followup.send(
-            COG_STRINGS["roles_add_role_success"].format(role=role.mention),
-            ephemeral=self.bot.only_ephemeral
-        )
+        await interaction.followup.send(COG_STRINGS["roles_add_role_success"].format(role=role.mention), ephemeral=True)
         return True
 
     @command(name=COG_STRINGS["roles_remove_role_name"], description=COG_STRINGS["roles_remove_role_description"])
@@ -145,10 +142,7 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
         self.logger.info(
             f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} removed {role.mention} from the list of automatically assigned roles"
         )
-        await interaction.followup.send(
-            COG_STRINGS["roles_remove_role_success"].format(role=role.mention),
-            ephemeral=self.bot.only_ephemeral
-        )
+        await interaction.followup.send(COG_STRINGS["roles_remove_role_success"].format(role=role.mention), ephemeral=True)
         return True
 
     @command(name=COG_STRINGS["roles_get_list_name"], description=COG_STRINGS["roles_get_list_description"])
@@ -174,7 +168,7 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
             description=COG_STRINGS["roles_get_list_success_description"].format(roles=formatted_string),
             color=Color.random()
         )
-        await interaction.followup.send(embed=response_embed, ephemeral=self.bot.only_ephemeral)
+        await interaction.followup.send(embed=response_embed, ephemeral=True)
         return True
 
     @command(name=COG_STRINGS["roles_clear_list_name"], description=COG_STRINGS["roles_clear_list_description"])
@@ -192,7 +186,7 @@ class AutoRoles(GroupCog, name=COG_STRINGS["roles_group_name"]):
         self.logger.info(
             f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} cleared the list of automatically assigned roles"
         )
-        await interaction.followup.send(COG_STRINGS["roles_clear_list_success"], ephemeral=self.bot.only_ephemeral)
+        await interaction.followup.send(COG_STRINGS["roles_clear_list_success"], ephemeral=True)
         return True
 
 
