@@ -1,9 +1,21 @@
 from discord.app_commands import guild_only, default_permissions
 from discord.ext.commands import GroupCog, Bot
+from discord import Role
 from common.io import load_cog_toml
+from asyncio import sleep as async_sleep, create_task
 import logging
 
 COG_STRINGS = load_cog_toml(__name__)
+
+
+def timeout_role_mention(role: Role, duration: float):
+
+    async def timeout():
+        await role.edit(mentionable=False)
+        await async_sleep(duration)
+        await role.edit(mentionable=True)
+
+    create_task(timeout())
 
 
 @default_permissions(administrator=True)
