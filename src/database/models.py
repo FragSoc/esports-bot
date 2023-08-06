@@ -12,7 +12,9 @@ __all__ = [
     "EventToolsEvents",
     "MusicChannels",
     "RoleReactMenus",
-    "LogChannelChannels"
+    "LogChannelChannels",
+    "UserRolesConfig",
+    "UserRolesRoles"
 ]
 
 
@@ -72,3 +74,16 @@ class LogChannelChannels(base):
     guild_id = Column(BigInteger, nullable=False, primary_key=True)
     channel_id = Column(BigInteger, nullable=False)
     current_message_id = Column(BigInteger, nullable=False)
+
+
+class UserRolesConfig(base):
+    __tablename__ = "userroles_config"
+    guild_id = Column(BigInteger, nullable=False, primary_key=True)
+    mention_cooldown = Column(BigInteger, default=60)
+
+
+class UserRolesRoles(base):
+    __tablename__ = "userroles_roles"
+    primary_key = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True, nullable=False)
+    guild_id = Column(BigInteger, nullable=False)
+    role_id = Column(BigInteger, nullable=False)
