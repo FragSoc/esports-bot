@@ -7,6 +7,8 @@ from discord.app_commands import default_permissions, guild_only
 from discord.ext.commands import Bot, GroupCog
 
 from common.io import load_cog_toml
+from database.gateway import DBSession
+from database.models import UserRolesConfig
 
 COG_STRINGS = load_cog_toml(__name__)
 
@@ -29,6 +31,11 @@ class UserRolesAdmin(GroupCog, name=COG_STRINGS["users_admin_group_name"]):
         self.bot = bot
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__}.{__class__.__name__} has been added as a Cog")
+        self.guild_configs = {}
+
+    def load_config(self):
+        db_items = DBSession.list(UserRolesConfig)
+        self.guild_configs = {x.guild_id: x for x in db_items}
 
 
 @guild_only()
