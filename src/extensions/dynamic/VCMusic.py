@@ -38,7 +38,8 @@ from database.models import MusicChannels
 
 COG_STRINGS = load_cog_toml(__name__)
 AUTHOR_ID = 244050529271939073
-CURRENT_AUTHOR = "fuxticks#1809"
+global MUSIC_AUTHOR
+MUSIC_AUTHOR = "fluxticks"
 QUERY_RESULT_LIMIT = 15
 INACTIVE_TIMEOUT = 60
 EMBED_IMAGE_URL = os.getenv("MUSIC_DEFAULT_IMAGE")
@@ -598,9 +599,10 @@ class VCMusicAdmin(GroupCog, name=COG_STRINGS["music_admin_group_name"]):
 
     @GroupCog.listener()
     async def on_ready(self):
-        self.update_author.start()
+        if not self.update_author.is_running():
+            self.update_author.start()
 
-    @tasks.loop(hours=6)
+    @tasks.loop(hours=2)
     async def update_author(self):
         """Ensure that the author we acquired is still up to date
 
@@ -609,10 +611,11 @@ class VCMusicAdmin(GroupCog, name=COG_STRINGS["music_admin_group_name"]):
         """
         new_author = await self.bot.fetch_user(AUTHOR_ID)
         if new_author:
-            CURRENT_AUTHOR = new_author
-            self.logger.info(f"Found current discord tag of VCMusic: {CURRENT_AUTHOR}")
+            global MUSIC_AUTHOR
+            MUSIC_AUTHOR = new_author
+            self.logger.info(f"Found current discord tag of VCMusic: {MUSIC_AUTHOR}")
             return True
-        self.logger.info(f"Unable to find VCMusic author with id {AUTHOR_ID}, defaulting to {CURRENT_AUTHOR}")
+        self.logger.info(f"Unable to find VCMusic author with id {AUTHOR_ID}, defaulting to {MUSIC_AUTHOR}")
         return False
 
     @command(name=COG_STRINGS["music_set_channel_name"], description=COG_STRINGS["music_set_channel_description"])
@@ -655,7 +658,7 @@ class VCMusicAdmin(GroupCog, name=COG_STRINGS["music_admin_group_name"]):
         if clear_messages:
             await channel.purge(before=interaction.created_at)
 
-        embed = create_music_embed(embed_color, CURRENT_AUTHOR)
+        embed = create_music_embed(embed_color, MUSIC_AUTHOR)
         view = create_music_actionbar()
 
         message = await channel.send(embed=embed, view=view)
@@ -671,7 +674,7 @@ class VCMusicAdmin(GroupCog, name=COG_STRINGS["music_admin_group_name"]):
 
         await interaction.followup.send(
             content=COG_STRINGS["music_set_channel_success"].format(channel=channel.mention),
-            ephemeral=self.bot.only_ephemeral
+            ephemeral=False
         )
 
         if read_only:
@@ -687,10 +690,6 @@ class VCMusicAdmin(GroupCog, name=COG_STRINGS["music_admin_group_name"]):
                                               send_messages=True,
                                               view_channel=True)
             )
-
-        self.logger.info(
-            f"{self.bot.logging_prefix}[{interaction.guild.id}] {interaction.user.mention} set {channel.mention} as the active music channel"
-        )
 
 
 @guild_only()
@@ -1212,11 +1211,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             await respond_or_followup(COG_STRINGS["music_resume_success"], interaction, ephemeral=True)
             return True
 
-        await respond_or_followup(
-            COG_STRINGS["music_generic_error"].format(author=CURRENT_AUTHOR),
-            interaction,
-            ephemeral=True
-        )
+        await respond_or_followup(COG_STRINGS["music_generic_error"].format(author=MUSIC_AUTHOR), interaction, ephemeral=True)
         return False
 
     async def pause_playback(self, interaction: Interaction) -> bool:
@@ -1357,7 +1352,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             queue_length = COG_STRINGS["music_embed_queue_length"].format(length=len(self.active_players.get(guild_id).queue))
             new_embed = create_music_embed(
                 color=current_embed.color,
-                author=CURRENT_AUTHOR,
+                author=MUSIC_AUTHOR,
                 title=COG_STRINGS["music_embed_title_playing"].format(song=current_song.title),
                 description=f"{user}\n{volume}\n{queue_length}",
                 image=current_song.thumbnail,
@@ -1366,7 +1361,7 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
             voice_client = self.active_players.get(guild_id).voice_client
             is_paused = True if voice_client is None else not voice_client.is_playing()
         else:
-            new_embed = create_music_embed(color=current_embed.color, author=CURRENT_AUTHOR)
+            new_embed = create_music_embed(color=current_embed.color, author=MUSIC_AUTHOR)
             is_paused = True
 
         await embed_message.edit(embed=new_embed, view=create_music_actionbar(is_paused))
