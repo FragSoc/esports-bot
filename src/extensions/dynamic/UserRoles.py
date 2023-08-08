@@ -72,6 +72,8 @@ class UserRolesAdmin(GroupCog, name=COG_STRINGS["users_admin_group_name"]):
             if not DBSession.get(UserRolesConfig, guild_id=guild.id):
                 DBSession.create(UserRolesConfig(guild_id=guild.id))
 
+        self.load_config()
+
 
 @guild_only()
 class UserRoles(GroupCog, name=COG_STRINGS["users_group_name"]):
