@@ -80,6 +80,8 @@ class UserRolesConfig(base):
     __tablename__ = "userroles_config"
     guild_id = Column(BigInteger, nullable=False, primary_key=True)
     mention_cooldown = Column(BigInteger, default=60)
+    vote_length = Column(BigInteger, default=3600)
+    vote_threshold = Column(BigInteger, default=5)
 
 
 class UserRolesRoles(base):
