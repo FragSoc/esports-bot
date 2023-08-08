@@ -1,6 +1,7 @@
 import logging
 from asyncio import create_task
 from asyncio import sleep as async_sleep
+from dataclasses import dataclass
 from datetime import datetime
 
 from discord import Color, Embed, Interaction, Role
@@ -12,6 +13,15 @@ from database.gateway import DBSession
 from database.models import UserRolesConfig
 
 COG_STRINGS = load_cog_toml(__name__)
+
+
+@dataclass()
+class PollData:
+    guild_id: int
+    channel_id: int
+    message_id: int
+    user_votes: set
+    end_time: datetime
 
 
 def timeout_role_mention(role: Role, duration: float):
