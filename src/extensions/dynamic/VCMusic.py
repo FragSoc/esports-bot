@@ -31,7 +31,7 @@ from discord.ui import Button, Modal, TextInput, View
 from youtubesearchpython import VideosSearch
 from yt_dlp import YoutubeDL
 
-from common.discord import ColourTransformer, respond_or_followup
+from common.discord import check_interaction_prefix, ColourTransformer, respond_or_followup
 from common.io import load_cog_toml
 from database.gateway import DBSession
 from database.models import MusicChannels
@@ -751,11 +751,8 @@ class VCMusic(GroupCog, name=COG_STRINGS["music_group_name"]):
         Returns:
             bool: If the handling of the interaction was successful.
         """
-        if not interaction.data or not interaction.data.get("custom_id"):
-            return False
-
-        if not interaction.data.get("custom_id").startswith(MUSIC_INTERACTION_PREFIX):
-            return False
+        if not check_interaction_prefix(interaction, MUSIC_INTERACTION_PREFIX):
+            return
 
         try:
             user_action = UserActionType.from_string(interaction.data.get("custom_id"))

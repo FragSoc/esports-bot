@@ -86,6 +86,16 @@ def primary_key_from_object(object: Union[Role, GuildChannel, ScheduledEvent, Me
     return int(f"{object.guild.id % 1000}{object.id % 1000}")
 
 
+def check_interaction_prefix(interaction: Interaction, prefix: str):
+    if not interaction.data or not interaction.data.get("custom_id"):
+        return False
+
+    if not interaction.data.get("custom_id").startswith(prefix):
+        return False
+
+    return True
+
+
 class RoleListTransformer(Transformer):
     """The transformer class to transform a list of Roles given in a ccommand string to a list of discord.Role objects.
 

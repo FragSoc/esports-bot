@@ -38,7 +38,8 @@ from common.discord import (
     ArchivedEventTransformer,
     ColourTransformer,
     DatetimeTransformer,
-    EventTransformer
+    EventTransformer,
+    check_interaction_prefix
 )
 from common.io import load_cog_toml, load_timezones
 from database.gateway import DBSession
@@ -391,11 +392,8 @@ class EventTools(GroupCog, name=COG_STRINGS["events_group_name"]):
         Returns:
             bool: If the interaction was meaningfully handled.
         """
-        if not interaction.data or not interaction.data.get("custom_id"):
-            return False
-
-        if not interaction.data.get("custom_id").startswith(EVENT_INTERACTION_PREFIX):
-            return False
+        if not check_interaction_prefix(interaction, EVENT_INTERACTION_PREFIX):
+            return
 
         id_data = parse_custom_id(interaction.data.get("custom_id"))
 
