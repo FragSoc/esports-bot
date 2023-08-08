@@ -2,7 +2,7 @@ import logging
 from asyncio import create_task
 from asyncio import sleep as async_sleep
 from dataclasses import dataclass
-from datetime import datetime
+from enum import IntEnum
 
 from discord import Color, Embed, Interaction, Role
 from discord.app_commands import default_permissions, guild_only
@@ -13,6 +13,8 @@ from database.gateway import DBSession
 from database.models import UserRolesConfig
 
 COG_STRINGS = load_cog_toml(__name__)
+INTERACTION_PREFIX = f"{__name__}.interaction"
+INTERACTION_SPLIT_CHARACTER = "-"
 
 
 @dataclass()
@@ -23,6 +25,49 @@ class PollData:
     message_id: int
     user_votes: set
     end_time: datetime
+
+
+class InteractionType(IntEnum):
+    VOTE_ADD = 0
+    VOTE_REMOVE = 1
+    ROLE_ADD = 2
+    ROLE_REMOVE = 3
+
+    @property
+    def id(self) -> str:
+        base = f"{INTERACTION_PREFIX}{INTERACTION_SPLIT_CHARACTER}"
+        match self:
+            case InteractionType.VOTE_ADD:
+                return f"{base}voteadd"
+            case InteractionType.VOTE_REMOVE:
+                return f"{base}voteremove"
+            case InteractionType.ROLE_ADD:
+                return f"{base}roleadd"
+            case InteractionType.ROLE_REMOVE:
+                return f"{base}roleremove"
+            case _:
+                raise ValueError(f"Missing ID for given enum - {self:s}")
+
+    def __str__(self):
+        return self.id
+
+    @classmethod
+    def from_string(self, string: str) -> "InteractionType":
+        if not string.startswith(INTERACTION_PREFIX):
+            raise ValueError("Invalid enum string ID given")
+
+        enum_id = string.split(INTERACTION_SPLIT_CHARACTER)[-1]
+        match enum_id:
+            case "voteadd":
+                return InteractionType.VOTE_ADD
+            case "voteremove":
+                return InteractionType.VOTE_REMOVE
+            case "roleadd":
+                return InteractionType.ROLE_ADD
+            case "roleremove":
+                return InteractionType.ROLE_REMOVE
+            case _:
+                raise ValueError("Invalid enum string ID given")
 
 
 def timeout_role_mention(role: Role, duration: float):
