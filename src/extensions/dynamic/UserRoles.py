@@ -97,6 +97,16 @@ def make_vote_embed(poll_data: PollData, vote_threshold: int):
     return embed
 
 
+def make_role_embed(poll_data: PollData):
+    embed = Embed(
+        title=f"Get the {poll_data.role_name} (Pingable) Role",
+        description="This is a Pingable Role role menu.",
+        color=Color.random()
+    )
+
+    return embed
+
+
 @default_permissions(administrator=True)
 @guild_only()
 class UserRolesAdmin(GroupCog, name=COG_STRINGS["users_admin_group_name"]):
