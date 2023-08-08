@@ -1,2 +1,5 @@
 users_admin_group_name = "pingable-admin"
 users_group_name = "pingable"
+
+users_vote_menu_title = "Vote to create {name} Pingable Role"
+users_vote_menu_description = "For the role to be created it must surpass `{threshold} vote(s)`"

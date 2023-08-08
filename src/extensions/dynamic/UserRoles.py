@@ -35,15 +35,17 @@ def timeout_role_mention(role: Role, duration: float):
     create_task(timeout())
 
 
-def make_vote_embed(role_name: str, vote_duration: float, vote_threshold: int):
-    end = datetime.now().timestamp() + vote_duration
-    end_int = int(end)
+def make_vote_embed(poll_data: PollData, vote_threshold: int):
+    end_int = int(poll_data.end_time.timestamp())
     end_time = f"<t:{end_int}:R>"
 
+    description = COG_STRINGS["users_vote_menu_description"].format(threshold=vote_threshold)
+    description += f"\n\n**Current Votes:   `{len(poll_data.user_votes)}/{vote_threshold}`**"
+    description += f"\n\n**Voting Ends   {end_time}**"
+
     embed = Embed(
-        title=COG_STRINGS["users_vote_menu_title"].format(name=role_name),
-        description=COG_STRINGS["users_vote_menu_description"].format(threshold=vote_threshold,
-                                                                      timestamp=end_time),
+        title=COG_STRINGS["users_vote_menu_title"].format(name=poll_data.role_name),
+        description=description,
         color=Color.random()
     )
 
