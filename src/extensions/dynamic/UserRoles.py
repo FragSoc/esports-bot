@@ -47,12 +47,14 @@ class UserRolesAdmin(GroupCog, name=COG_STRINGS["users_admin_group_name"]):
 @guild_only()
 class UserRoles(GroupCog, name=COG_STRINGS["users_group_name"]):
 
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: Bot, admin_cog_instance: GroupCog):
         self.bot = bot
+        self.admin_cog = admin_cog_instance
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"{__name__}.{__class__.__name__} has been added as a Cog")
 
 
 async def setup(bot: Bot):
-    await bot.add_cog(UserRolesAdmin(bot))
-    await bot.add_cog(UserRoles(bot))
+    admin_cog = UserRolesAdmin(bot)
+    await bot.add_cog(admin_cog)
+    await bot.add_cog(UserRoles(bot, admin_cog))
