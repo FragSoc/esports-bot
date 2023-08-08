@@ -343,7 +343,8 @@ class UserRoles(GroupCog, name=COG_STRINGS["users_group_name"]):
         remove_button = Button(emoji="❌", custom_id=f"{InteractionType.ROLE_REMOVE.id}{INTERACTION_SPLIT_CHARACTER}{role.id}")
         view.add_item(remove_button)
 
-        await channel.send(embed=embed, view=view)
+        message = await channel.send(embed=embed, view=view)
+        await message.pin()
 
         guild_config = self.admin_cog.guild_configs.get(poll_data.guild_id)
         vote_ended_embed = make_vote_ended_embed(poll_data, guild_config.vote_threshold)
