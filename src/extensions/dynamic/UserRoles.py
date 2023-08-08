@@ -192,17 +192,6 @@ class UserRoles(GroupCog, name=COG_STRINGS["users_group_name"]):
         if not check_interaction_prefix(interaction, INTERACTION_PREFIX):
             return
 
-        print(interaction.data.get("custom_id"))
-
-        if interaction.user.id in self.user_interaction_timeout:
-            time = f"{USER_INTERACTION_COOLDOWN}s"
-            await interaction.response.send_message(
-                COG_STRINGS["users_interaction_timeout"].format(time=time),
-                ephemeral=True,
-                delete_after=5
-            )
-            return
-
         current_guild_polls = self.current_polls.get(interaction.guild.id, {})
         poll_data: PollData = current_guild_polls.get(interaction.message.id, None)
 
@@ -253,6 +242,17 @@ class UserRoles(GroupCog, name=COG_STRINGS["users_group_name"]):
         await interaction.user.remove_roles(role)
         await interaction.response.send_message(COG_STRINGS["users_role_removed"].format(role=role.name), ephemeral=True)
 
+    async def check_for_timeout(self, interaction: Interaction):
+        if interaction.user.id in self.user_interaction_timeout:
+            time = f"{USER_INTERACTION_COOLDOWN}s"
+            await interaction.response.send_message(
+                COG_STRINGS["users_interaction_timeout"].format(time=time),
+                ephemeral=True,
+                delete_after=5
+            )
+            return False
+        return True
+
     async def validate_user_vote(self, interaction: Interaction, poll_data: PollData):
         if poll_data is None:
             await interaction.message.edit(view=None)
@@ -279,6 +279,9 @@ class UserRoles(GroupCog, name=COG_STRINGS["users_group_name"]):
         if not await self.validate_user_vote(interaction, poll_data):
             return
 
+        if not await self.check_for_timeout(interaction):
+            return
+
         poll_data.user_votes.add(interaction.user.id)
         await self.update_vote_count(poll_data, guild_config)
         if len(poll_data.user_votes) < guild_config.vote_threshold:
@@ -294,6 +297,9 @@ class UserRoles(GroupCog, name=COG_STRINGS["users_group_name"]):
 
     async def user_remove_vote(self, interaction: Interaction, poll_data: PollData, guild_config: UserRolesConfig):
         if not await self.validate_user_vote(interaction, poll_data):
+            return
+
+        if not await self.check_for_timeout(interaction):
             return
 
         poll_data.user_votes.discard(interaction.user.id)
