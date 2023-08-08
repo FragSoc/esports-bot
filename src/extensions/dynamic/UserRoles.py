@@ -17,6 +17,7 @@ COG_STRINGS = load_cog_toml(__name__)
 
 @dataclass()
 class PollData:
+    role_name: str
     guild_id: int
     channel_id: int
     message_id: int
