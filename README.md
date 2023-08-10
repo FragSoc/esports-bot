@@ -268,6 +268,10 @@ In order to function, a google API key with access to YouTube Data API v3 must b
 
 - Get the current settings for UserRoles or a specific setting by providing the name.
 
+#### /pingable-admin set-config \<setting\> \<value\>
+
+- Set a specific UserRoles setting to a given value.
+
 #### /pingable create-role \<role-name\>
 
 - Start a poll to create a new user role.
