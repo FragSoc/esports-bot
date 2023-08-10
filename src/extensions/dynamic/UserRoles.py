@@ -116,10 +116,10 @@ def make_vote_ended_embed(poll_data: PollData, vote_threshold: int):
     return embed
 
 
-def make_role_embed(poll_data: PollData):
+def make_role_embed(poll_data: PollData, role_id: int):
     embed = Embed(
-        title=f"Get the {poll_data.role_name} {ROLE_SUFFIX} Role",
-        description="This is a Pingable Role role menu. Use the buttons below to add/remove the role from yourself.",
+        title=COG_STRINGS["users_vote_menu_end_title"].format(role_name=f"{poll_data.role_name} {ROLE_SUFFIX}"),
+        description=COG_STRINGS["users_vote_menu_end_description"].format(role_id=role_id),
         color=Color.random()
     )
 
@@ -392,7 +392,6 @@ class UserRoles(GroupCog, name=COG_STRINGS["users_group_name"]):
         if not self.current_polls.get(poll_data.guild_id, {}).get(poll_data.message_id):
             return
 
-        embed = make_role_embed(poll_data)
         guild = self.bot.get_guild(poll_data.guild_id)
         channel = guild.get_channel(poll_data.channel_id)
 
@@ -408,6 +407,7 @@ class UserRoles(GroupCog, name=COG_STRINGS["users_group_name"]):
         remove_button = Button(emoji="❌", custom_id=f"{InteractionType.ROLE_REMOVE.id}{INTERACTION_SPLIT_CHARACTER}{role.id}")
         view.add_item(remove_button)
 
+        embed = make_role_embed(poll_data, role.id)
         message = await channel.send(embed=embed, view=view)
         await message.pin()
 
