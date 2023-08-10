@@ -219,7 +219,7 @@ In order to function, a google API key with access to YouTube Data API v3 must b
 1. Click on `Create Credentials` and then `API key`.
 1. Copy the key given. For security, it is recommended that you "restrict key" and only enable `YouTube Data API v3`.
 
-#### /music set-channel \<channel\> [optional: color] [optional: clear-channel] [optional: read-only]
+#### /music-admin set-channel \<channel\> [optional: color] [optional: clear-channel] [optional: read-only]
 
 - Sets the channel to define as the music channel.
 
