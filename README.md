@@ -283,7 +283,7 @@ In order to function, a google API key with access to YouTube Data API v3 must b
 - ~~Implement unimplemented commands in VoiceAdmin and AdminTools cogs.~~
 - ~~Implement EventTools cog~~
 - ~~Implement AutoRoles cog~~
-- Add back functionality of previous bot (eg. Music, PingableRoles, etc.)
+- ~~Add back functionality of previous bot (eg. Music, PingableRoles, etc.)~~
 - Add game deal tracker (DealTracker(?) cog)
 - ~~Add proper support for SQLite auto increment primary keys~~
 - ~~Add proper use of command groups~~
@@ -305,7 +305,7 @@ In order to function, a google API key with access to YouTube Data API v3 must b
 - [x] EventCategoriesCog ✅ Implemented as EventTools
 - [x] LogChannelCog ✅ Implementation as LogChannel
 - [x] MusicCog ✅ Implemented as VCMusic
-- [ ] PingableRolesCog ⏳ WIP - Mostly done, implementation in UserRoles
+- [x] PingableRolesCog ✅ Implementation as UserRoles
 - [x] RoleReactCog ✅ Implemented as RoleReact
 - [ ] TwitchCog ⚠️
 - [ ] TwitterCog ❌ Needs Twitter API v2 Bearer Token
