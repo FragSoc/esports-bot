@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from enum import IntEnum
 
 from discord import Color, Embed, Interaction, Role, Message
-from discord.app_commands import command, default_permissions, describe, guild_only, rename, autocomplete
+from discord.app_commands import command, default_permissions, describe, guild_only, Range, rename, autocomplete
 from discord.ext.commands import Bot, GroupCog
 from discord.ui import View, Button
 
@@ -178,6 +178,37 @@ class UserRolesAdmin(GroupCog, name=COG_STRINGS["users_admin_group_name"]):
         except AttributeError:
             await interaction.response.send_message(
                 COG_STRINGS["users_admin_get_config_wrong_setting"].format(setting=setting),
+                ephemeral=True,
+                delete_after=15
+            )
+
+    @command(name=COG_STRINGS["users_admin_set_config_name"], description=COG_STRINGS["users_admin_set_config_description"])
+    @describe(
+        setting=COG_STRINGS["users_admin_set_config_property_describe"],
+        value=COG_STRINGS["users_admin_set_config_value_describe"]
+    )
+    @rename(
+        setting=COG_STRINGS["users_admin_set_config_property_rename"],
+        value=COG_STRINGS["users_admin_set_config_value_rename"]
+    )
+    @autocomplete(setting=UserRolesConfigTransformer.autocomplete)
+    async def set_config(self, interaction: Interaction, setting: str, value: Range[int, 1]):
+        guild_config = self.guild_configs.get(interaction.guild.id)
+
+        try:
+            _ = getattr(guild_config, setting)
+            setattr(guild_config, setting, value)
+            self.guild_configs[interaction.guild.id] = guild_config
+            DBSession.update(guild_config)
+            await interaction.response.send_message(
+                COG_STRINGS["users_admin_set_config_success"].format(
+                    setting=" ".join(x.capitalize() for x in setting.split("_")),
+                    value=value
+                )
+            )
+        except AttributeError:
+            await interaction.response.send_message(
+                COG_STRINGS["users_admin_set_config_wrong_setting"].format(setting=setting),
                 ephemeral=True,
                 delete_after=15
             )
