@@ -7,7 +7,7 @@ from discord.abc import GuildChannel
 from discord.app_commands import Choice, Transformer
 from discord.ui import View
 
-from database.models import RoleReactMenus
+from database.models import UserRolesConfig, RoleReactMenus
 from database.gateway import DBSession
 
 ROLE_REGEX = re.compile(r"(?<=\<\@\&)(\d)+(?=\>)")
@@ -365,4 +365,15 @@ class TwitterWebhookIDTransformer(Transformer):
         else:
             choices = [Choice(name=f"{guild_webhooks.get(x).name} ({x})", value=str(x)) for x in guild_webhooks]
 
+        return choices[:25]
+
+
+class UserRolesConfigTransformer(Transformer):
+
+    async def autocomplete(self, interaction: Interaction, value: str) -> List[Choice[str]]:
+        attributes = [x for x in UserRolesConfig.__dict__.keys() if not x.startswith("_") and "guild" not in x.lower()]
+        choices = [
+            Choice(name=" ".join(j.capitalize() for j in x.split("_")),
+                   value=x) for x in attributes if value.lower() in x.lower()
+        ]
         return choices[:25]

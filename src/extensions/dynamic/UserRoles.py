@@ -7,11 +7,11 @@ from datetime import datetime, timedelta
 from enum import IntEnum
 
 from discord import Color, Embed, Interaction, Role, Message
-from discord.app_commands import command, default_permissions, describe, guild_only, rename
+from discord.app_commands import command, default_permissions, describe, guild_only, rename, autocomplete
 from discord.ext.commands import Bot, GroupCog
 from discord.ui import View, Button
 
-from common.discord import respond_or_followup, check_interaction_prefix
+from common.discord import respond_or_followup, check_interaction_prefix, UserRolesConfigTransformer
 from common.io import load_cog_toml
 from database.gateway import DBSession
 from database.models import UserRolesConfig, UserRolesRoles
@@ -147,6 +147,40 @@ class UserRolesAdmin(GroupCog, name=COG_STRINGS["users_admin_group_name"]):
                 DBSession.create(UserRolesConfig(guild_id=guild.id))
 
         self.load_config()
+
+    @command(name=COG_STRINGS["users_admin_get_config_name"], description=COG_STRINGS["users_admin_get_config_description"])
+    @describe(setting=COG_STRINGS["users_admin_get_config_property_describe"])
+    @rename(setting=COG_STRINGS["users_admin_get_config_property_rename"])
+    @autocomplete(setting=UserRolesConfigTransformer.autocomplete)
+    async def get_config(self, interaction: Interaction, setting: str = None):
+        guild_config: UserRolesConfig = self.guild_configs.get(interaction.guild.id)
+
+        if not setting:
+            config_title = COG_STRINGS["users_admin_get_config_title"]
+            config_description = COG_STRINGS["users_admin_get_config_subtext"]
+            settings = "\n".join(
+                f"• _{' '.join(x.capitalize() for x in x.split('_'))}_ – `{getattr(guild_config, x)}`"
+                for x in guild_config.__dict__ if not x.startswith("_") and "guild" not in x.lower()
+            )
+
+            message = f"{config_title}\n{config_description}\n\n{settings}"
+            await interaction.response.send_message(message, ephemeral=True)
+            return
+
+        try:
+            value = getattr(guild_config, setting)
+            pretty_string = " ".join(x.capitalize() for x in setting.split("_"))
+            await interaction.response.send_message(
+                COG_STRINGS["users_admin_get_config_single"].format(setting=pretty_string,
+                                                                    value=value),
+                ephemeral=True,
+            )
+        except AttributeError:
+            await interaction.response.send_message(
+                COG_STRINGS["users_admin_get_config_wrong_setting"].format(setting=setting),
+                ephemeral=True,
+                delete_after=15
+            )
 
 
 @guild_only()
