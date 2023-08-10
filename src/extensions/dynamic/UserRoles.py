@@ -153,7 +153,7 @@ class UserRolesAdmin(GroupCog, name=COG_STRINGS["users_admin_group_name"]):
     @rename(setting=COG_STRINGS["users_admin_get_config_property_rename"])
     @autocomplete(setting=UserRolesConfigTransformer.autocomplete)
     async def get_config(self, interaction: Interaction, setting: str = None):
-        guild_config: UserRolesConfig = self.guild_configs.get(interaction.guild.id)
+        guild_config = self.guild_configs.get(interaction.guild.id)
 
         if not setting:
             config_title = COG_STRINGS["users_admin_get_config_title"]
