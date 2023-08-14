@@ -307,7 +307,7 @@ In order to function, a google API key with access to YouTube Data API v3 must b
 - [x] MusicCog ✅ Implemented as VCMusic
 - [x] PingableRolesCog ✅ Implementation as UserRoles
 - [x] RoleReactCog ✅ Implemented as RoleReact
-- [ ] TwitchCog ⚠️
+- [ ] TwitchCog ❌ Announcements precede most livestreams
 - [ ] TwitterCog ❌ Needs Twitter API v2 Bearer Token
 - [x] VoicemasterCog ✅ Implemented as VoiceAdmin
 - [ ] VotingCog ⚠️
