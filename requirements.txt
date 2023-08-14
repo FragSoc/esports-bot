@@ -1,0 +1,8 @@
+psycopg2-binary>=2.8
+sqlalchemy
+sqlalchemy-utils
+discord.py[voice]
+python-dotenv
+coloredlogs
+uvloop
+toml

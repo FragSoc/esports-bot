@@ -1,0 +1,17 @@
+log_group_name="logging"
+
+log_set_channel_name="set-channel"
+log_set_channel_description="Set the logging channel."
+log_set_channel_channel_describe="The channel to set as the logging channel."
+log_set_channel_channel_rename="channel"
+log_set_channel_success="Now sending logs to {channel} ✅"
+
+log_get_channel_name="get-channel"
+log_get_channel_description="Get the current logging channel."
+log_warn_channel_not_set="The logging channel has not been set ⚠️"
+log_error_channel_deleted="The log channel with ID `{channel_id}` has been deleted ❌"
+log_get_channel_success="The log channel is currently set to {channel}"
+
+log_remove_channel_name="remove-channel"
+log_remove_channel_description="Stops sending logs to the logging channel."
+log_remove_channel_success="No longer sending logs to {channel} ✅"

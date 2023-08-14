@@ -1,0 +1,52 @@
+{
+	"timezones": {
+		"atvie": {
+          "_description": "Vienna, Austria",
+          "_alias": "Europe/Vienna"
+        },
+        "deber": {
+          "_description": "Berlin, Germany",
+          "_alias": "Europe/Berlin"
+        },
+        "esmad": {
+          "_description": "Madrid, Spain",
+          "_alias": "Europe/Madrid"
+        },
+        "frpar": {
+          "_description": "Paris, France",
+          "_alias": "Europe/Paris"
+        },
+        "gblon": {
+          "_description": "London, United Kingdom",
+          "_alias": "Europe/London"
+        },
+        "hkhkg": {
+          "_description": "Hong Kong SAR China",
+          "_alias": "Asia/Hong_Kong"
+        },
+        "jptyo": {
+          "_description": "Tokyo, Japan",
+          "_alias": "Asia/Tokyo"
+        },
+        "krsel": {
+          "_description": "Seoul, South Korea",
+          "_alias": "Asia/Seoul"
+        },
+        "sgsin": {
+          "_description": "Singapore",
+          "_alias": "Asia/Singapore"
+        },
+        "uslax": {
+          "_description": "Los Angeles, United States",
+          "_alias": "US/Pacific"
+        },
+        "usnyc": {
+          "_description": "New York, United States",
+          "_alias": "US/Eastern"
+        },
+        "usden": {
+          "_description": "Denver, United States",
+          "_alias": "US/Mountain"
+        }
+    }
+}

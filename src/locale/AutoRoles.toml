@@ -1,0 +1,33 @@
+roles_group_name = "autoroles"
+
+roles_set_list_name = "set-list"
+roles_set_list_description = "Set the list of automatically applied roles when a user joins."
+roles_set_list_param_describe = "The list of roles to give."
+roles_set_list_param_rename = "roles"
+roles_set_warn_empty = "No roles were configured to be applied when members join. Any roles previously configured are still present ⚠️"
+roles_set_success_title = "Finished Configuring AutoRoles!"
+roles_set_success_description = "Below is the list of roles that will be automatically applied to new members when they join the server: \n\n {roles}"
+
+roles_add_role_name = "add-role"
+roles_add_role_description = "Add a role to the list of automatically applied roles."
+roles_add_role_param_describe = "The role to add."
+roles_add_role_param_rename = "role"
+roles_add_role_success = "Succesfully added {role} to the AutoRoles config ✅"
+roles_add_role_warn_already_added = "The role given is already in the list of roles to apply ⚠️"
+
+roles_remove_role_name = "remove-role"
+roles_remove_role_description = "Remove a role from the list of automatically applied roles."
+roles_remove_role_param_describe = "The role to remove."
+roles_remove_role_param_rename = "role"
+roles_remove_role_success = "Succesfully removed {role} from the AutoRoles config ✅"
+roles_remove_role_warn_not_added = "The role given is not in the list of roles to apply ⚠️"
+
+roles_get_list_name = "get-list"
+roles_get_list_description = "Get the list of currently configured AutoRoles."
+roles_get_list_warn_no_roles = "No roles are currently configured to be applied when a member joins ⚠️"
+roles_get_list_success_title = "Current AutoRoles Config"
+roles_get_list_success_description = "Below is the list of roles that will be automatically applied to new members when they join the server: \n\n {roles}"
+
+roles_clear_list_name = "clear-list"
+roles_clear_list_description = "Clears the list of roles to apply."
+roles_clear_list_success = "The list of roles has been cleared ✅"

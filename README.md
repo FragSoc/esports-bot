@@ -7,8 +7,9 @@
 </div>
 
 Dependency Versions:
+
 <div align=left>
-    <img src="https://img.shields.io/badge/min%20python%20version-3.8.0-green?style=flat-square" />
+    <img src="https://img.shields.io/badge/min%20python%20version-3.9.0-green?style=flat-square" />
     <img src="https://img.shields.io/badge/min%20postgres%20version-11-lightgrey?style=flat-square" />
     <img src="https://img.shields.io/badge/min%20docker%20version-20.0.0-blue?style=flat-square" />
     <img src="https://img.shields.io/badge/min%20docker--compose%20version-1.25.0-blue?style=flat-square" />
@@ -16,463 +17,197 @@ Dependency Versions:
 
 This Discord bot was written to merge all the functions of different bots used in the Fragsoc Discord server into one bot that is maintained by Fragsoc members.
 
-## How to set up an instance of this bot with Docker
+# Current Functions
 
-1. Clone this repository:
-```console
-$ git clone https://github.com/FragSoc/Esports-Bot-Rewrite.git
-```
-
-2. Change into the repo directory:
-```console
-$ cd Esports-Bot-Rewrite
-```
-
-3. Rename the `secrets.template` to `secrets.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:
-```console
-$ nano secrets.env
-```
-
-4. Run docker-compose:
-```console
-$ docker-compose up
-```
-
-## How to set up an instance of this bot without Docker
-
-Requirements needed to run:
-
-- Python 3.8
-- Pip
-- [A postgres 11 database](https://www.postgresql.org/docs/current/admin.html)
-
-1. Clone this repository:
-```console
-$ git clone https://github.com/FragSoc/Esports-Bot-Rewrite.git
-
-```
-
-2. Change into the repo directory:
-```console
-$ cd Esports-Bot-Rewrite
-```
-
-3. Rename the `secrets.template` to `secrets.env` and set all the variables. Be sure to read the `Current Functions` section below for the Cog you want to enable in case of any special setup instructions:
-```console
-$ nano secrets.env
-$ source secrets.env
-```
-
-4. Change into the bot directory:
-```bash
-$ cd src
-```
-5. Install all the requirements for python:
-```bash
-pip install -r requirements.txt
-```
-6. Run the bot:
-```bash
-python3 main.py
-```
-
-## Current Functions
 The list below describes the different "Cogs" of the bot, their associated commands, and any additional information required to set them up.
 
 <details>
-<summary>Voicemaster</summary>
+<summary>AdminTools</summary>
 
-### Voicemaster
- #### !voice setparent <channel_id>
-* Aliases: `setvmparent`
-* Make the given ID a Voicemaster parent voice channel.
+## AdminTools
 
-#### !voice getparents 
-* Aliases: `setvmparent`
-* Get all the Voicemaster parent voice channels in the server.
+AdminTools cog is used to manage basic Administrator/Moderation tools.
+All commands in this cog require the user to have the administrator permission in a given guild/server.
 
-#### !voice removeparent <channel_id>
-* Aliases: `removevmparent`
-* Remove the given ID as a Voicemaster parent voice channel.
+### Current Commands:
 
-#### !voice removeallparents 
-* Remove all Voicemaster parents from the server.
+#### /admin member-count
 
-#### !voice removeallchildren 
-* Delete all the Voicemaster child channels in the server.
+- Get the current member count of the server.
 
-#### !voice lock
-* Aliases: `lockvm`
-* Locks the Voicemaster child you're currently in to the number of current members.
+#### /admin clear-messages [optional: message-count]
 
-#### !voice unlock
-* Aliases: `unlockvm`
-* Unlocks the Voicemaster child you're currently in.
+- Delete a specific number of messages in the given channel.
+  Defaults to 5 messages, with a maximum of 100 messages.
 
-#### !voice rename
-* Aliases: `renamevm`
-* Renames your current Voicemaster voice channel.
-</details>
+#### /admin get-version
 
-<details>
-<summary>Default Role</summary>
-
-### Default role
- #### !setdefaultroles <role_mention | role_id>
-* Sets the roles that the server gives to members when they join the server.
-
-#### !getdefaultroles 
-* Gets the current default roles set for the server.
-
-#### !removedefaultroles
-* Removes the current default roles for the server.
-</details>
-
-<details>
-<summary>Log Channel</summary>
-
-### Log Channel
- #### !setlogchannel <channel_mention | channel_id> 
-* Set the log channel to the #'ed channel or given role ID.
-
-#### !getlogchannel 
-* Gets the current log channel value.
-
-#### !removelogchannel 
-* Removes the current log channel value.
-</details>
-
-<details>
-<summary>Administrator Tools</summary>
-
-### Administrator Tools
- Adds a few commands useful for admin operations.
-
-#### !admin clear 
-* Aliases: `cls, purge, delete`
-* Clear the specified number of messages from the current text channel.
-
-#### !admin version
-* Get the current version of the bot.
-
-#### !admin members
-* List the current number of members in the server.
-
-#### !dev remove-cog \<cog name>
-* Unloads the given cog.
-* *This command requires your user ID to be defined in the env file under `DEV_IDS`*
-
-#### !dev add-cog \<cog name>
-* Loads the given cog.
-* *This command requires your user ID to be defined in the env file under `DEV_IDS`*
-
-#### !dev reload-cog \<cog name>
-* Reloads the given cog.
-* *This command requires your user ID to be defined in the env file under `DEV_IDS`*
-
-#### !admin set-rep \<user mention> \<channel or category IDs>
-* Sets the permissions for a user in the channels/categories given.
-* *Requires `administrator` permission in Discord*
-
-#### !admin user-info \<user mention>
-* Get basic information about a users profile.
-* *Requires `administrator` permission in Discord*
+- Get the current version of the Bot.
 
 </details>
 
 <details>
-<summary>Twitter Integration</summary>
+<summary>RoleReact</summary>
 
-### Twitter Integration
+## RoleReact
 
-Enables forwarding tweets when they are tweeted to a discord channel for specific Twitter accounts.
+RoleReact cog is used to allow users to self-assign roles from a defined list of roles set by admins.
+All commands in this cog require the user to have the administrator permissions in a given guild/server.
 
-Requires the `ENABLE_TWITTER` variable to be set to `TRUE` in order to function.
+### Current Commands:
 
-#### !twitter add \<twitter handle>
+#### /reactroles create [optional: color]
 
-* Add a Twitter handle to notify when they tweet or quote retweet.
+- Creates a new menu to add roles to.
 
-#### !twitter remove \<twitter handle>
+#### /reactroles delete \<menu ID\>
 
-* Remove the given Twitter handle from notifications.
+- Deletes a given menu and it's message.
 
-#### !twitter hook [optional: channel mention] [optional: hook name]
+#### /reactroles add-role \<menu ID\> \<role\> [optional: emoji] [optional: description]
 
-* Aliases:  `addtwitterhook, create-hook`
-* Creates a Discord Webhook bound to the channel the command was executed in, unless a channel is given, and with a default name unless a name is given.
+- Add a role to a given menu. Optionally give the role an emoji and/or description.
 
-#### !twitter remove-hook \<hook name>
+#### /reactroles remove-role \<menu ID\> \<role\>
 
-* Aliases: `deltwitterhook, delete-hook`
-* Deletes the Discord Webhook so that updates are no longer sent to that channel
-
-#### !twitter list
-
-* Aliases: `accounts, get-all`.
-* Returns a list of the currently tracked Twitter accounts for the server.
+- Remove a role from a given menu.
 
 </details>
 
 <details>
-<summary>Event Channel Management</summary>
+<summary>LogChannel</summary>
 
-### Event Category Management
+LogChannel is a cog used to send log messages to a specified discord channel per-guild. A standard logging message can be forwarded by prefixing the message with the `LOGGING_PREFIX` and the guild, eg. `"LOGGING_PREFIX[guild_id] Message...".` This will send the log message to the specified log channel for the given guild if it has been configured to do so.
 
-Each server can have any number of named event categories, where each category creates a sign-in channel, a general chat, a voice chat and a role for the event. All commands in this cog required the `administrator` permission in Discord.
+#### /logging set-channel \<Text Channel\>
 
-#### !events create-event \<event name> \<role mention | role ID>
+- Configures the given channel to be the logging channel.
 
-* Creates the text channels, and voice channel for the event. The role given is used to later expose the sign-in channel to members. Upon creation the event is set to `closed`.
-* See the `open-event` and `close-event` for more information regarding which members can see which channels.
-* The role created for this event will have the same as the event name, it is not the role given in the command.
+#### /logging get-channel
 
-#### !events open-event \<event name>
+- Gets the currently assigned logging channel.
 
-* Allows the role given in the `create-event` command to see the sign-in channel, and add reactions to the sign-in message.
-* The sign-in message grants the role created by the bot for the event.
+#### /logging remove-channel
 
-#### !events close-event \<event name>
-
-* Stops any member who is not an administrator from being able to see any of the event channels.
-
-#### !events delete-event \<event name>
-
-* Deletes all the channels in the category for the event and deletes the role created by the bot for the event.
+- Removes the currently configured logging channel.
 
 </details>
 
 <details>
-<summary>Twitch Integration</summary>
+<summary>VoiceAdmin</summary>
 
-### Twitch Integration
+## VoiceAdmin
 
-Enables sending notifications to a Discord channel whenever a tracked channel goes live.
+### Environment Variable: `ENABLE_VOICEADMIN`
 
-Requires the  `ENABLE_TWITCH` variable to be set to  `TRUE` in order to function.
+VoiceAdmin cog is used to dynamically create and manage Voice Channels, by assigning specific channels to act as parent channels.
+When users join parent Voice Channels, a new chil Voice Channel is created, and the user moved to it.
+The user has control over the child Voice Channel name, and can limit how many/who can join.
 
-Set the `TEMP_BEARER_FILE` to anything you like, this will be the file where your bearer token is stored for reuse.
+### Current Commands:
 
-### Creating your self-signed SSL keys:
+#### /voice-admin set-parent \<voice-channel\>
 
-1. Create the Certificate Authority (CA) private key:
-```console
-$ openssl genrsa -des3 -out servercakey.pem
-```
+- Set a Voice Channel to be a parent Voice Channel.
 
-2. Create the CA public certificate:
-```console
-$ openssl req -new -x509 -key servercakey.pem -out root.crt
-```
+#### /voice-admin remove-parent \<voice-channel\>
 
-3. Create the server's private key file:
-```console
-$ openssl genrsa -out server.key
-```
+- Remove a Voice Channel from being a parent Voice Channel.
 
-4. Create the server's certificate request:
-```console
-$ openssl req -new -out reqout.txt -key server.key
-```
+#### /voice get-parents
 
-5. Use the CA private key file to sign the server's certificate:
-```
-$ openssl x509 -req -in reqout.txt -days 3650 -sha1 -CAcreateserial -CA root.crt -CAkey servercakey.pem -out server.crt
-```
-  
-6. Move your `server.crt` and `server.key` files into the `src` folder.
+- Get the list of current parent Voice Channels.
 
-7. Set the environment variable `SSL_CERT_FILE` to the name of your `server.crt` file and the variable `SSL_KEY_FILE` to the name of your `server.key` file.
+#### /voice rename \<new-name\>
 
-### Getting your Twitch Credentials:
+- Rename your current Voice Channel
 
-1. Go to the [Twitch Developers](https://dev.twitch.tv/) site.
-1. Once logged in, in the top left, go to `Your Console` or [this](https://dev.twitch.tv/console) site.
-1. Register a new application using any name and the OAuth Redirect URL of `http://localhost`.
-1. Once created, click `manage`. Copy the string that is in `Client ID` and then click the `New Secret` button to generate a new `Client Secret` and then copy the string it generates.
+#### /voice lock
 
-In your `.env` file the `TWITCH_SUB_SECRET` should be a string that is 10-100 characters long and should not be shared anywhere. This is used to authenticate if a message has come from Twitch or if it has been altered along the way.
+- Only allow current members to (re)join your Voice Channel.
 
-The `TWITCH_CALLBACK` is the URL to your HTTPS server. For testing you can use `ngrok`:
+#### /voice unlock
 
-- Run `ngrok http 443` and copy the `https` URL **not** the `htttp` URL and use that as your `TWITCH_CALLBACK` variable.
+- Allow anyone to join your Voice Channel again.
 
-#### !twitch createhook \<channel mention> \<hook name>
+#### /voice limit
 
-* Creates a Discord Webhook bound to the channel given and with the name given, but prefixed with the Twitch Webhook prefix.
+- Set the member count limit of your Voice Channel.
 
-#### !twitch deletehook \<hook name>
+#### /voice remove-limit
 
-* Deletes the given Discord Webhook.
-
-#### !twitch add \<channel name | channel url> \<hook name> [optional: custom message]
-
-* Adds a Twitch channel to be tracked in the given Webhook.
-* *__If a custom message is given, it must be surrounded by double quotes__*: `!twitch add <twitch_handle> "custom_message"`
-
-#### !twitch remove \<twitch handle> \<hook name>
-
-* Removes a Twitch channel from being tracked in the current Discord server.
-
-#### !twitch list [optional: hook name]
-
-* Shows a list of all the currently tracked Twitch accounts and their custom messages.
-* If a hook name is given, only shows the information for the given hook.
-
-#### !twitch webhooks
-* Get a list of the current Discord Webhooks for Twitch notifications.
-
-#### !twitch setmessage \<twitch handle> \<hook name> [optional: custom message]
-
-* Sets the custom message of a Twitch channel. Can be left empty if the custom message is to be removed.
-* *__If a custom message is given, it must be surrounded by double quotes__*: `!twitch setmessage <twitch_handle> "custom_message"`
-
-#### !twitch getmessage \<twitch handle> [optional: hook name]
-
-* Gets the currently set custom message for a Twitch channel.
-* If a hook name is given, gets the currently set custom message for the Twitch channel in that Webhook.
-
-#### !twitch preview \<twitch handle> \<hook name>
-* Get a preview of the live notification for the given Twitch channel in the given Webhook.
+- Remove the member count limit of your Voice Channel.
 
 </details>
 
 <details>
-<summary>Role Reaction Menus</summary>
+<summary>AutoRoles</summary>
 
-### Role Reaction Menus.
+## AutoRoles
 
-Role reaction menus allow admins to create reactable menus that when reacted to grant defined roles to the user.
+### Environment Variable: `ENABLE_AUTOROLES`
 
-For devs:
+#### /autoroles set-list \<One or many roles mentioned\>
 
-* To enable this function in the bot use the `ENABLE_ROLEREACTIONS` env var and set it to `TRUE`.
-* Making new types of reaction menus is easy - simply extend `DiscordReactableMenus.ReactableMenu` or one of the example menus in `DiscordReactableMenus.ExampleMenus`.
+- Sets the roles to be given to new users when they join the guild/server.
+  - If one or more the of the roles are valid, any roles previously configured will be removed.
 
-#### !roles make-menu \<title> \<description> [\<mentioned role> \<emoji>]
+#### /autoroles add-role \<role\>
 
-* Creates a new role reaction menu with the given roles and their emojis.
-* Each option must be a mentioned role followed by the emoji to use as its reaction. There can be up to 25 roles in a single reaction menu.
-* The `title` is displayed at the top of the menu, and the `description` just below. To have either blank leave the quotes empty.
-* If the `DELETE_ROLE_CREATION` env var is set to `TRUE` the command message will be deleted.
-* *Requires `administrator` permission in Discord*
-* An example usage of this command is as such: `!roles make-menu "{title}" "{description}" {@option1 role} {option1 emoji} ... ...`
+- Adds a role to the list of roles without overriding the currently configured roles.
 
-#### !roles add-option [optional: menu id] [\<mentioned role> \<emoji>]
+#### /autoroles remove-role \<role\>
 
-* Adds more role reaction options to the given menu. If there is no menu id given, the latest role reaction menu will be used.
-* There can be one or many options added at the same time with this command.
-* Each option must be a mentioned role followed by the emoji to use as its reaction. There can be up to 25 roles in a single reaction menu.
-* *Requires `administrator` permission in Discord*
-* An example usage of this command is as such: `!roles add-option {menu id} {@option role} {option emoji} ... ...`
+- Removes a role from the list of currently configured roles.
 
-#### !roles remove-option \<emoji> [optional: menu id]
+#### /autoroles get-list
 
-* Removes the role associated with the emoji from the given menu. If there is no menu id given, the latest role reaction menu will be used.
-* *Requires `administrator` permission in Discord*
+- Gets the list of currently configured AutoRoles.
 
-#### !roles disable-menu [optional: menu id]
+#### /autoroles clear-list
 
-* Disables a reaction menu. This means that roles will not be given to users when they react to the message. If there is no menu id given, the latest role reaction menu will be used.
-* *Requires `administrator` permission in Discord*
-
-#### !roles enable-menu [optional: menu id]
-
-* Enables a reaction menu. This means that users will be able to receive roles from the reaction menu when they react. If there is no menu id given, the latest role reaction menu will be used.
-* *Requires `administrator` permission in Discord*
-
-#### !roles delete-menu \<menu id>
-
-* Deletes the given role reaction menu. __Does not__ delete any of the roles in the menu, just the message.
-* *Requires `administrator` permission in Discord*
-
-#### !roles toggle-ids
-
-* Shows or Hides all role reaction menu footers, which contain the ID of the role reaction menu for ease of identification.
-* *Requires `administrator` permission in Discord*
+- Clears all roles from the list of configured AutoRoles.
 
 </details>
 
 <details>
-<summary>Poll Reaction Menus</summary>
+<summary>EventTools</summary>
 
-### Poll Reaction menus.
+## EventTools
 
-Poll reaction menus allow users to create polls with up to 25 different options for other users, and themselves, to vote on.
+### Environment Variable: `ENABLE_EVENTTOOLS`
 
-The poll start and end is not time based, but instead controlled by the user that created the poll or administrators.
+#### /events create-event \<name\> \<physical location\> \<start time\> \<end time\> \<timezone\> \<common member role\> \<role color\>
 
-For devs:
+- Creates a new event.
 
-* To enable this function in the bot use the `ENABLE_VOTINGMENUS` env var and set it to `TRUE`.
-* Making new types of reaction menus is easy - simply extend `DiscordReactableMenus.ReactableMenu` or one of the example menus in `DiscordReactableMenus.ExampleMenus`.
+#### /events open-event \<event name or ID\>
 
-#### !votes make-poll \<title> [\<emoji> \<description>]
+- Opens the given event. This will show the sign-in menu to members.
 
-* Creates a new poll with each emoji having a description.
-* Each option must be an emoji and a description, with each one on a new line. There can be up to 25 roles in a single reaction menu.
-* If the `DELETE_VOTING_CREATION` env var is set to `TRUE` the command message will be deleted.
-* An example usage of this command is as such:
-  ```
-  !votes make-poll {title}
-  {option1 emoji} {option1 description}
-  {option2 emoji} {option2 description}
-  ... ...
-  [up to option 25]
-  ```
+#### /events close-event \<event name or ID\> [optional: keep-event?] [optional: clear-messages?]
 
-#### !votes add-option \<menu id> \<emoji> \<description>
+- Ends the given event. This will hide all the channels from members.
+- If keep-event is set to True, the event will be archived, otherwise it's channels and roles will be deleted.
+- If clear-messages is set to True, when the event is archived, messages in all channels will be deleted.
 
-* Aliases: `add, aoption`
-* Adds another option to the poll with the menu id given.
-* Only one option can be added at a time with this command.
-* Each option must be an emoji and a description, with each one on a new line. There can be up to 25 roles in a single reaction menu.
-* *You must be the owner of the poll or be an administrator*
-* An example usage of this command is as such: `!votes add-option {menu id} {option emoji} {option description}`
+#### /events reschedule-event \<physical location\> \<start time\> \<end time\> \<timezone\>
 
-#### !votes remove-option \<menu id> \<emoji>
+- If an event has been archived, it can be reused and rescheduled for a new date using this command.
 
-* Aliases: `remove, roption`
-* Removes the option from the poll with the menu id given.
-* *You must be the owner of the poll or be an administrator*
+#### /events remove-event \<event name or ID\>
 
-#### !votes delete-poll \<menu id>
-
-* Aliases: `delete, del`
-* Deletes the poll with the menu id given.
-* *You must be the owner of the poll or be an administrator*
-
-#### !votes end-poll \<menu id>
-
-* Aliases: `finish, complete, end`
-* Deletes the actual poll message and sends a new message with the results of the poll.
-* *You must be the owner of the poll or be an administrator*
-
-#### !votes reset-poll \<menu id>
-
-* Aliases: `reset, clear, restart`
-* Removes all the current user-added reactions from the poll with the menu id given.
-* *You must be the owner of the poll or be an administrator*
-
+- Entirely deletes either an active or archived event.
 </details>
 
 <details>
-<summary>Music Bot</summary>
+<summary>VCMusic</summary>
 
-### Music Bot
+## VCMusic
 
-A basic music bot that functions similarly to the popular 'Hydra Bot'.
+### Environment Variable: `ENABLE_VCMUSIC`
 
-Commands that use the prefix of `!music` are commands that must be sent in the defined music channel for the server.
-The rest of the commands in this cog can be sent anywhere.
-Most `!music` commands require you to be in the same voice channel as the bot, or if it is not in a channel, for you to be in a voice channel.
-Some `!music` commands can have this requirement ignored if the user performing the command is an administrator and uses the `force` or `-f` flag in the command.
-
-To add new songs to the queue, just put the name, YouTube link, or a YouTube playlist into the music channel once set.
-Also requires you to be in the voice channel with the bot, or if the bot is inactive, in any voice channel.
-
-To enable this cog, use the `ENABLE_MUSIC` env var in your `secrets.env` file, and set it to `TRUE`.
-For this cog to work, the `GOOGLE_API` env var must also be set, and instructions on how to get an API credential is below:
+In order to function, a google API key with access to YouTube Data API v3 must be set to the `GOOGLE_API` environment variable.
 
 ### To create your Google API credentials:
 
@@ -484,178 +219,148 @@ For this cog to work, the `GOOGLE_API` env var must also be set, and instruction
 1. Click on `Create Credentials` and then `API key`.
 1. Copy the key given. For security, it is recommended that you "restrict key" and only enable `YouTube Data API v3`.
 
-#### !musicadmin set \<channel mention> [optional: [args]]
+#### /music-admin set-channel \<channel\> [optional: color] [optional: clear-channel] [optional: read-only]
 
-* This sets the channel mentioned to be used as the music channel. All messages into this channel will be considered music requests, and any music commands must be sent in this channel.
-* Optional args:
-  * Using `-c` will clear the entire channel before setting it up as the music channel.
-* *Requires `administrator` permission in Discord*
+- Sets the channel to define as the music channel.
 
-#### !musicadmin get
-* Sends the currently set music channel for the server.
-* *Requires `administrator` permission in Discord*
+#### /music play
 
-#### !musicadmin reset
-* This clears the current music channel and resets the preview and queue messages.
-* *Requires `administrator` permission in Discord*
+- Resumes or starts playback.
 
-#### !musicadmin remove
+#### /music pause
 
-* Unlinks the currently linked music channel from being the music channel. This will not delete the channel or its contents.
-* *Requires `administrator` permission in Discord*
+- Pauses playback.
 
-#### !musicadmin fix
-* If the bot has broken and thinks it is still in a Voice Channel, use this command to force it to reset.
-* *Requires `administrator` permission in Discord*
+#### /music skip-song
 
-#### !music queue
+- Skips the current song. Stops playback if the last song in the queue.
 
-* Aliases: `songqueue, songs, songlist, songslist`
-* Gets the current list of songs in the queue.
+#### /music shuffle-queue
 
-#### !music join [optional: -f | force]
+- Shuffles the current queue.
 
-* Aliases: `connect`
-* Make the bot join the channel.
-* If you are an admin you can force it join your voice channel using the `-f` or `force` option.
+#### /music add-music
 
-#### !music kick [optional: -f | force]
+- Opens the dialogue to add one or many songs to the queue.
 
-* Aliases: `leave`
-* Kicks the bot from the channel.
-* If you are an admin you can force it to leave a voice channel with the `-f` or `force` option.
+#### /music view-queue
 
-#### !music play [optional: song request]
+- Shows the current queue.
 
-* Aliases: `resume`
-* Resumes playback of the current song.
-* If a song is requested and there is no current song, it is played, otherwise it is added to the queue.
+#### /music stop
 
-#### !music pause
+- Stop the current playback.
 
-* Pauses the current song.
+#### /music volume \<volume\>
 
-#### !music shuffle
-
-* Shuffles the current queue of songs.
-
-#### !music volume \<volume level>
-
-* Sets the volume of the bot for everyone to the level given.
-
-#### !music clear
-
-* Clears the queue entirely, does not stop the current song from playing.
-
-#### !music skip [optional: skip to position]
-
-* Skips the current song.
-* If a number is given it will also skip to the song at the position given.
-* For example, if 'songs to skip' is 4, the next song to play would be song 4 in the queue.
-
-#### !music remove \<song position>
-
-* Removes the song at the given position from the queue.
-
-#### !music move \<from position> \<to position>
-
-* Moves the song at position `from position` to position `to position` in the queue.
+- Sets the volume percentage between 0-100
 
 </details>
 
 <details>
-<summary>Pingable Roles</summary>
+<summary>UserRoles</summary>
 
-### Pingable Roles
+## UserRoles
 
-Pingable roles are roles that can be voted in to be created by any user, and that once created have a cooldown tied to how often that role can be pinged.
+### Environment Variable: `ENABLE_USERROLES`
 
-A user can create a poll where if there are enough votes by the time the poll ends, a role will be created. The length of the poll and the number of votes required are customisable by server admins.
+#### /pingable-admin get-config [optional: setting]
 
-After the poll finishes, a reaction menu gets created, allowing *any* user to react and receive the role. Initially the role will have the default cooldown of the server, but can be overridden.
+- Get the current settings for UserRoles or a specific setting by providing the name.
 
-#### !pingme settings get-settings
+#### /pingable-admin set-config \<setting\> \<value\>
 
-* Returns an embed of the current default settings for the server.
-* *Requires `administrator` permission in Discord*
+- Set a specific UserRoles setting to a given value.
 
-#### !pingme settings default-settings
+#### /pingable create-role \<role-name\>
 
-* Resets all settings for this guild to the bot-defined defaults defined in the `.env` file.
-* *Requires `administrator` permission in Discord*
-
-#### !pingme settings poll-length \<poll length in seconds>
-
-* Sets the default poll length to the given time in seconds.
-* Polls can have a custom length by specifying it when using the [`!pingme create-role`](#pingme-create-role-role-name-optional-poll-length-in-seconds) command.
-* *Requires `administrator` permission in Discord*
-
-#### !pingme settings poll-threshold \<number of votes threshold>
-
-* Sets the number of votes required in a poll for the role to be created.
-* *Requires `administrator` permission in Discord*
-
-#### !pingme settings ping-cooldown \<cooldown in seconds>
-
-* Sets the default ping cooldown for any pingable role created with this cog.
-* Roles can have their cooldown altered individually with the [`!pingme role-cooldown`](#pingme-role-cooldown-role-mention--role-id-cooldown-in-seconds) command.
-* *Requires `administrator` permission in Discord*
-
-#### !pingme settings poll-emoji \<emoji>
-
-* Sets the emoji to be used when creating a poll to vote in.
-* *Requires `administrator` permission in Discord*
-
-#### !pingme settings role-emoji \<emoji>
-
-* Sets the default emoji to be used in the role reaction menu for the pingable role once it has been created.
-* Roles can have their reactable emoji altered individually with the [`!pingme role-emoji`](#pingme-role-emoji-role-mention--role-id-emoji) command.
-* *Requires `administrator` permission in Discord*
-
-#### !pingme disable-role \<one or many role mentions>
-
-* Disables the roles mentioned from being mentioned by non-administrators and disables their reaction menus.
-* The roles provided __must__ be pingable roles created with this cog.
-* *Requires `administrator` permission in Discord*
-
-#### !pingme enable-role \<one or many role mentions>
-
-* Enabled the roles mentioned to be mentioned by non-administrators and allows their reaction menus to be reacted to.
-* The roles provided __must__ be pingable roles created with this cog.
-* *Requires `administrator` permission in Discord*
-
-#### !pingme create-role \<role name> [optional: poll length in seconds]
-
-* Creates a new poll to create a role if the number of votes has surpassed the server's threshold after the poll length has passed.
-
-#### !pingme delete-role \<one or many role mentions>
-
-* Deletes the mentioned roles from the server.
-* The roles provided __must__ be pingable roles created with this cog.
-* *Requires `administrator` permission in Discord*
-
-#### !pingme convert-role \<one or many role mentions>
-
-* Converts the mentioned roles into pingable roles and creates their reaction menus.
-* The roles provided __cannot__ be roles that are already pingable roles.
-* *Requires `administrator` permission in Discord*
-
-#### !pingme convert-pingable \<one or many role mentions>
-
-* Converts the mentioned roles from pingable roles into normal roles and deletes their reaction menus.
-* The roles provided __must__ be pingable roles created with this cog.
-* *Requires `administrator` permission in Discord*
-
-#### !pingme role-cooldown \<role mention | role ID> \<cooldown in seconds>
-
-* Sets the ping cooldown for a specific role which overrides the server default for that role.
-* The role provided __must__ be a pingable role created with this cog.
-* *Requires `administrator` permission in Discord*
-
-#### !pingme role-emoji \<role mention | role ID> \<emoji>
-
-* Sets the emoji to use in the reaction menu for the given role.
-* The role provided __must__ be a pingable role created with this cog.
-* *Requires `administrator` permission in Discord*
+- Start a poll to create a new user role.
 
 </details>
+
+# TODO
+
+- ~~Implement unimplemented commands in VoiceAdmin and AdminTools cogs.~~
+- ~~Implement EventTools cog~~
+- ~~Implement AutoRoles cog~~
+- ~~Add back functionality of previous bot (eg. Music, PingableRoles, etc.)~~
+- Add game deal tracker (DealTracker(?) cog)
+- ~~Add proper support for SQLite auto increment primary keys~~
+- ~~Add proper use of command groups~~
+
+## Previous extensions to implement
+
+<pre>
+✅ Extension implemented either partially or fully.
+
+⏳ Extension currently being implemented not yet ready.
+
+❌ High priority extension not yet implemented.
+
+⚠️ Low priority extension not yet implemented.
+</pre>
+
+- [x] AdminCog ✅ Implemented as AdminTools
+- [x] DefaultRoleCog ✅ Implemented as AutoRoles
+- [x] EventCategoriesCog ✅ Implemented as EventTools
+- [x] LogChannelCog ✅ Implementation as LogChannel
+- [x] MusicCog ✅ Implemented as VCMusic
+- [x] PingableRolesCog ✅ Implementation as UserRoles
+- [x] RoleReactCog ✅ Implemented as RoleReact
+- [ ] TwitchCog ❌ Announcements precede most livestreams
+- [ ] TwitterCog ❌ Needs Twitter API v2 Bearer Token
+- [x] VoicemasterCog ✅ Implemented as VoiceAdmin
+- [ ] VotingCog ⚠️
+
+# Quick Setup Guide
+
+Requirements needed to run:
+
+- Python 3.8
+- Pip
+- [A postgres 11 database](https://www.postgresql.org/docs/current/admin.html)
+  - If using the `DB_OVERRIDE` environment variable, any valid DB schema for SQLAlchemy can be used by providing the correct schema URI. These can be [found here](https://docs.sqlalchemy.org/en/14/dialects/).
+
+1. Clone this repository:
+
+```console
+$ git clone https://github.com/FragSoc/esports-bot.git
+```
+
+2. Change into the repo directory:
+
+```console
+$ cd esports-bot
+```
+
+3. Rename the `secrets.template` to `secrets.env` and set all the variables.
+
+```console
+$ nano secrets.env
+$ source secrets.env
+```
+
+4. Install all the requirements for python:
+
+```bash
+pip install -r requirements.txt
+```
+
+5. Run the bot:
+
+```bash
+python3 src/main.py
+```
+
+# Contributing Guide
+
+If you wish to contribute to this bot please use the following paradigms:
+
+- Ensure that yapf is configured with the configuration defined in `setup.cfg`
+  - Optionally also configure flake8 to help with linting
+  - This project uses match/case statements, consider using [char101's fork](https://github.com/char101/yapf/releases/tag/v0.31.0) of YAPF until the official fork addresses [the issue](https://github.com/google/yapf/issues/983)
+- When adding a new extension consider the following:
+  - Create user-facing strings inside of `src/locale/` using the same name as the extension of the filename (eg. for VoiceAdmin.py extension, there exists VoiceAdmin.toml). The strings can then be loaded with `load_cog_strings(__name__)` from `common.io`
+  - If your extension should always be enabled, it should be in `extensions/default/`, otherwise it should have an environment variable to toggle it and it should be in `extensions/dynamic/`.
+  - Extensions should be modular, meaning that they should be able to be enabled/disabled with hindering the function of other extensions
+- Any file loading or IO operations should be defined in `src/common/io.py`
